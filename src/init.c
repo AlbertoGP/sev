@@ -61,18 +61,26 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     }
 
     #ifdef __EMSCRIPTEN__
-    #define FONT_PATH "/resources/Fira-Code.ttf"
+    #define FONT_PATH_REGULAR "/resources/VictorMono-Regular.ttf"
+    #define FONT_PATH_BOLD "/resources/VictorMono-Bold.ttf"
+    #define FONT_PATH_ITALIC "/resources/VictorMono-Italic.ttf"
     #else
     char* basePath = (char*)SDL_GetBasePath();
-    char fontPath[1024];
-    snprintf(fontPath, sizeof(fontPath), "%sresources/Fira-Code.ttf", basePath);
+    char fontPathRegular[1024];
+    char fontPathBold[1024];
+    char fontPathItalic[1024];
+    snprintf(fontPathRegular, sizeof(fontPathRegular), "%sresources/VictorMono-Regular.ttf", basePath);
+    snprintf(fontPathBold, sizeof(fontPathBold), "%sresources/VictorMono-Bold.ttf", basePath);
+    snprintf(fontPathItalic, sizeof(fontPathItalic), "%sresources/VictorMono-Italic.ttf", basePath);
     SDL_free(basePath);
-    #define FONT_PATH fontPath
+    #define FONT_PATH_REGULAR fontPathRegular
+    #define FONT_PATH_BOLD fontPathBold
+    #define FONT_PATH_ITALIC fontPathItalic
     #endif
     
-    TTF_Font* font_normal = TTF_OpenFont(FONT_PATH, 24);
-    TTF_Font* font_bold   = TTF_OpenFont(FONT_PATH, 24);
-    TTF_Font* font_italic = TTF_OpenFont(FONT_PATH, 24);
+    TTF_Font* font_normal = TTF_OpenFont(FONT_PATH_REGULAR, 24);
+    TTF_Font* font_bold   = TTF_OpenFont(FONT_PATH_BOLD, 24);
+    TTF_Font* font_italic = TTF_OpenFont(FONT_PATH_ITALIC, 24);
     
     if (!font_normal || !font_bold || !font_italic) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load font = %s", SDL_GetError());
