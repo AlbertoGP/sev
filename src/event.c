@@ -2,23 +2,20 @@
 #include "state.h"
 #include "theme.h"
 
+#include "keyboard.h"
+
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     AppState *state = (AppState*) appstate;
 
     switch (event->type) {
+    case SDL_EVENT_TEXT_INPUT:
+        handle_text_input(state, &event->text);
+        break;
+
     case SDL_EVENT_KEY_DOWN:
-        switch (event->key.scancode) {
-        case SDL_SCANCODE_ESCAPE:
-            return SDL_APP_SUCCESS;
-        case SDL_SCANCODE_APOSTROPHE:
-            state->needs_redraw = true;
-            state->debug_open = !state->debug_open;
-            Clay_SetDebugModeEnabled(state->debug_open);
-            break;
-        default:
-            break;
-        }
+        handle_key_down(state, &event->key);
+        break;
 
     case SDL_EVENT_MOUSE_MOTION:
         state->needs_redraw = true; 

@@ -1,0 +1,315 @@
+// Implementation of editor buffer data structures,
+// and the functions that manipulate them.
+
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#include "buffer.h"
+#include "gap.h"
+#include "mark.h"
+#include "mode.h"
+
+typedef struct {
+    struct timespec mtime;
+} Time;
+
+#define BUFFER_NAME_MAX 256
+#define FILE_NAME_MAX 256
+
+// Stores the data for a text buffer.
+// Part of a doubly-linked list of all buffers.
+typedef struct Buffer {
+    struct Buffer *next;
+    struct Buffer *prev;
+    char name[BUFFER_NAME_MAX];
+
+    Location point;
+    int cur_line;
+    int num_chars;
+    int num_lines;
+
+    Mark *marks;
+    Mode *modes;
+
+    GapBuf *contents;
+    char file_name[FILE_NAME_MAX];
+    Time file_time;
+    bool is_modified;
+} Buffer;
+
+typedef struct BufferList {
+    Buffer *list;
+    Buffer *current;
+} BufferList;
+
+
+static BufferList bl;
+
+bool buffer_list_init(void) {
+    bl.list = NULL;
+    bl.current = NULL;
+    
+    if (!buffer_create("*scratch*")) {
+        return false;
+    }
+    
+    return true;
+}
+
+static void buffer_destroy(Buffer *buf) {
+    if (bl.current == buf) {
+        bl.current = buf->next ? buf->next : buf->prev;
+    }
+
+    if (buf->prev)
+        buf->prev->next = buf->next;
+    else
+        bl.list = buf->next;
+
+    if (buf->next)
+        buf->next->prev = buf->prev;
+
+    if (buf->marks) {
+        mark_delete_all(buf->marks);
+        buf->marks = NULL;
+    }
+    if (buf->modes) {
+        mode_delete_all(buf->modes);
+        buf->modes = NULL;
+    }
+    if (buf->contents) {
+        gb_free(buf->contents);
+        buf->contents = NULL;
+    }
+
+    free(buf);
+}
+
+
+void buffer_list_quit(void) {
+    Buffer *buf = bl.list;
+
+    if (!buf) return;
+    
+    while (buf) {
+        Buffer *next = buf->next;
+        buffer_destroy(buf);
+        buf = next;
+    }
+
+    bl.list = NULL;
+    bl.current = NULL;
+}
+
+
+bool buffer_create(const char *name) {
+    Buffer *buf = calloc(1, sizeof(Buffer));
+    if (!buf) return false;
+
+    buf->next = NULL;
+
+    strncpy(buf->name, name, BUFFER_NAME_MAX - 1);
+    buf->name[BUFFER_NAME_MAX - 1] = '\0';
+
+    buf->cur_line = 1;
+    buf->num_lines = 1;
+
+    buf->contents = gb_new(0);
+    if (!buf->contents) {
+        free (buf);
+        return false;
+    }
+
+    // if buffer list is empty, buffer becomes list head
+    if (!bl.list) {
+        buf->prev = NULL;
+        buf->next = NULL;
+        bl.list = buf;
+        bl.current = buf;
+    // otherwise append to the end of the list
+    } else {
+        Buffer *list = bl.list;
+        while (list->next) {
+            list = list->next;
+        }
+        list->next = buf;
+        buf->prev = list;
+    }
+
+    return true;
+}
+
+Buffer *buffer_get_by_name(const char *name) {
+    Buffer *buf = bl.list;
+    while (buf && strcmp(buf->name, name)) {
+        buf = buf->next;
+    };
+    return buf;
+}
+
+bool buffer_clear(const char *name) {
+    Buffer *buf = buffer_get_by_name(name);
+    if (!buf) return false;
+
+    if (buf->marks) {
+        mark_delete_all(buf->marks);
+        buf->marks = NULL;
+    }
+
+    gb_free(buf->contents);
+    buf->contents = gb_new(0);
+    if (!buf->contents) return false;
+
+    buf->point.pos = 0;
+    buf->cur_line = 1;
+    buf->num_lines = 1;
+    buf->num_chars = 0;
+    if (buf->file_name[0] == '\0') {
+        buf->is_modified = true;
+    }
+
+    return true;
+}
+
+bool buffer_delete(const char *name) {
+    Buffer *buf = buffer_get_by_name(name);
+    if (!buf) return false;
+
+    buffer_destroy(buf);
+    // In the event that this was the only open buffer
+    if (!bl.list) {
+        buffer_create("*scratch*");
+    }
+
+    return true;
+}
+
+bool buffer_set_current(const char *name) {
+    Buffer *buf = buffer_get_by_name(name);
+    if (!buf) return false;
+
+    bl.current = buf;
+    return true;
+}
+
+char *buffer_set_next(void) {
+    if (bl.current->next)
+        bl.current = bl.current->next;
+    else bl.current = bl.list;
+
+    return bl.current->name;
+}
+
+char *buffer_set_prev(void) {
+    if (bl.current->prev)
+        bl.current = bl.current->prev;
+    else {
+        while (bl.current->next)
+            bl.current = bl.current->next;
+    }
+
+    return bl.current->name;
+}
+
+bool buffer_set_name(const char *name) {
+    if (!bl.current  || !name)
+        return false;
+
+    if (strlen(name) >= BUFFER_NAME_MAX)
+        return false;
+
+    if (buffer_get_by_name(name))
+        return false;
+
+    strcpy(bl.current->name, name);
+    return true;
+}
+
+char *buffer_get_name(void) {
+    return bl.current->name;
+}
+
+bool point_set(Location loc) {
+    if (!bl.current) return false;
+
+    gb_point_set(bl.current->contents, loc.pos);
+    return true;
+}
+
+bool point_move(int count) {
+    if (!bl.current) return false;
+
+    if (!count) return true;
+
+    gb_point_set(bl.current->contents, bl.current->contents->point + count);
+    return true;
+}
+
+Location point_get(void) {
+    return (Location){ .pos = bl.current->contents->point };
+}
+
+int point_get_line(void);
+Location buffer_start(void);
+Location buffer_end(void);
+int compare_locations(Location loc1, Location loc2);
+int location_to_count(Location loc);
+Location count_to_location(int count);
+char get_char(void);
+void get_string(char *string, int count);
+
+int get_char_count(void) {
+    return bl.current->num_chars;
+}
+
+int get_line_count(void);
+void get_file_name(char *file_name, int size);
+bool set_file_name(char *file_name);
+bool buffer_write(void);
+bool buffer_read(void);
+bool buffer_insert(char *file_name);
+bool is_file_changed(void);
+void set_modified(bool is_modified);
+bool get_modified(void);
+void insert_char(char c) {
+    gb_insert(bl.current->contents, c);
+    bl.current->num_chars = gb_used(bl.current->contents);
+}
+void insert_string(char *s) {
+    while (*s) {
+        insert_char(*s);
+        s++;
+    }
+}
+void replace_char(char c);
+void replace_string(char *string);
+
+bool delete_chars(int count) {
+    if (!bl.current) return false;
+
+    gb_backspace(bl.current->contents, count);
+    bl.current->num_chars = gb_used(bl.current->contents);
+    return true;
+}
+
+bool delete_region(Mark *mark);
+bool copy_region(char *buffer_name, Mark *mark);
+bool search_forward(char *string);
+bool search_backward(char *string);
+bool is_a_match(char *string);
+bool find_first_in_forward(char *string);
+bool find_first_in_backward(char *string);
+bool find_first_not_in_forward(char *string);
+bool find_first_not_in_backward(char *string);
+int get_column(void);
+void set_column(int column, bool round);
+
+
+char *buffer_text(void) {
+    static char* text;
+    if (text) free(text);
+    text = gb_text(bl.current->contents);
+    return text;
+}

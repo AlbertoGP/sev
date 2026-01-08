@@ -9,7 +9,11 @@
 #include "state.h"
 #include "theme.h"
 
+#include "subeditor/buffer.h"
+
 #include <stdio.h>
+
+#include <chibi/eval.h>
 
 void HandleClayErrors(Clay_ErrorData errorData) {
     SDL_Log("%s", errorData.errorText.chars);
@@ -43,6 +47,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
+    SDL_StartTextInput(state->window);
+
     if (!TTF_Init()) {
         SDL_Log("Failed to initialise SDL_ttf = %s", SDL_GetError());
         return SDL_APP_FAILURE;
@@ -57,6 +63,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     state->rendererData.fonts = SDL_calloc(FONT_COUNT, sizeof(TTF_Font *));
     if (!state->rendererData.fonts) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to allocate memory for the font array = %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+
+    if (!buffer_list_init()) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to initialise buffer list.");
         return SDL_APP_FAILURE;
     }
 
@@ -112,6 +123,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     state->needs_redraw = true;
     state->animating = false;
     state->last_frame_ns = 0;
+
+    sexp_scheme_init();
+    state->chibi = sexp_make_eval_context(NULL, NULL, NULL, 0, 0);
+    sexp_load_standard_env(state->chibi, NULL, SEXP_SEVEN);
+    sexp_load_standard_ports(state->chibi, NULL, stdin, stdout, stderr, 1);
 
     return SDL_APP_CONTINUE;
 }

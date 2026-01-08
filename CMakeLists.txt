@@ -9,10 +9,14 @@ set(SRC_FILES
     src/iterate.c
     src/event.c
     src/quit.c
+    src/keyboard.c
     src/clay/renderer.c
     src/layout/layout.c
     src/layout/toggle_button.c
     src/layout/current_mode.c
+    src/subeditor/buffer.c
+    src/subeditor/gap.c
+    src/subeditor/mark.c
 )
 
 # Create executable
@@ -41,9 +45,19 @@ if(EMSCRIPTEN)
         vendored/SDL/include
         vendored/SDL_ttf/include
     )
+    
+    add_subdirectory(
+        vendored/chibi-scheme
+        ${CMAKE_BINARY_DIR}/chibi-build
+        EXCLUDE_FROM_ALL
+    )
 
     # Link the libraries
-    target_link_libraries(app PUBLIC SDL3 SDL3_ttf::SDL3_ttf)
+    target_link_libraries(app PRIVATE
+        SDL3
+        SDL3_ttf::SDL3_ttf
+        chibi::libchibi-scheme
+    )
 
 else()
     # ------------------------------------------------------------
@@ -62,4 +76,8 @@ else()
     find_package(SDL3_ttf REQUIRED)
 
     target_link_libraries(app PUBLIC SDL3::SDL3 SDL3_ttf::SDL3_ttf)
+
+    add_subdirectory(vendored/chibi-scheme)
+    target_link_libraries(app PRIVATE chibi::libchibi-scheme)
+
 endif()

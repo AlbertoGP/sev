@@ -4,3 +4,6 @@
 [submodule "vendored/SDL_ttf"]
 	path = vendored/SDL_ttf
 	url = https://github.com/libsdl-org/SDL_ttf
+[submodule "vendored/chibi-scheme"]
+	path = vendored/chibi-scheme
+	url = https://github.com/ashinn/chibi-scheme.git

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SDL3/SDL.h>
+#include <chibi/eval.h>
 #include "clay/renderer.h"
 
 enum FontID {
@@ -23,6 +24,11 @@ typedef enum Theme {
     THEME_LIGHT
 } Theme;
 
+typedef struct {
+    struct Keymap *global_map;
+    struct Keymap *current_map;
+} InputState;
+
 typedef struct AppState {
     SDL_Window *window;
     Clay_SDL3RendererData rendererData;
@@ -32,4 +38,6 @@ typedef struct AppState {
     bool animating;
     Uint64 last_frame_ns;
     bool debug_open;
+    sexp chibi;
+    InputState input;
 } AppState;

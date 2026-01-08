@@ -1,4 +1,5 @@
 #include <SDL3/SDL.h>
+#include <chibi/sexp.h>
 
 #include "state.h"
 
@@ -27,6 +28,9 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
 
         if (state->rendererData.textEngine)
             TTF_DestroyRendererTextEngine(state->rendererData.textEngine);
+
+        if (state->chibi)
+            sexp_destroy_context(state->chibi);
 
         SDL_free(state);
     }
