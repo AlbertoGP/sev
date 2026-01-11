@@ -1,3 +1,5 @@
+// Keypress event types and equivalence-checking function.
+
 #pragma once
 
 #include <stdint.h>
@@ -7,65 +9,67 @@ typedef enum {
     KEYEVENT_SPECIAL
 } KeyEventType;
 
-enum {
+// Internal codes for standard modifier keys.
+typedef enum {
     MOD_NONE  = 0,
     MOD_CTRL  = 1 << 0,
     MOD_META  = 1 << 1,
     MOD_SHIFT = 1 << 2,
     MOD_SUPER = 1 << 3,
-};
+} KeyMod;
 
+// Internal codes for non-character, non-modifier keys.
 typedef enum {
-    KEY_SPECIAL_ESC,
-    KEY_SPECIAL_RETURN,
-    KEY_SPECIAL_TAB,
-    KEY_SPECIAL_BACKSPACE,
-    KEY_SPECIAL_DELETE,
+    KEY_ESC,
+    KEY_RETURN,
+    KEY_TAB,
+    KEY_BACKSPACE,
+    KEY_DELETE,
 
-    KEY_SPECIAL_LEFT,
-    KEY_SPECIAL_RIGHT,
-    KEY_SPECIAL_UP,
-    KEY_SPECIAL_DOWN,
+    KEY_LEFT,
+    KEY_RIGHT,
+    KEY_UP,
+    KEY_DOWN,
 
-    KEY_SPECIAL_HOME,
-    KEY_SPECIAL_END,
-    KEY_SPECIAL_PAGE_UP,
-    KEY_SPECIAL_PAGE_DOWN,
+    KEY_HOME,
+    KEY_END,
+    KEY_PAGE_UP,
+    KEY_PAGE_DOWN,
 
-    KEY_SPECIAL_F1,
-    KEY_SPECIAL_F2,
-    KEY_SPECIAL_F3,
-    KEY_SPECIAL_F4,
-    KEY_SPECIAL_F5,
-    KEY_SPECIAL_F6,
-    KEY_SPECIAL_F7,
-    KEY_SPECIAL_F8,
-    KEY_SPECIAL_F9,
-    KEY_SPECIAL_F10,
-    KEY_SPECIAL_F11,
-    KEY_SPECIAL_F12,
-    KEY_SPECIAL_F13,
-    KEY_SPECIAL_F14,
-    KEY_SPECIAL_F15,
-    KEY_SPECIAL_F16,
-    KEY_SPECIAL_F17,
-    KEY_SPECIAL_F18,
-    KEY_SPECIAL_F19,
-    KEY_SPECIAL_F20,
-    KEY_SPECIAL_F21,
-    KEY_SPECIAL_F22,
-    KEY_SPECIAL_F23,
-    KEY_SPECIAL_F24,
+    KEY_F1,
+    KEY_F2,
+    KEY_F3,
+    KEY_F4,
+    KEY_F5,
+    KEY_F6,
+    KEY_F7,
+    KEY_F8,
+    KEY_F9,
+    KEY_F10,
+    KEY_F11,
+    KEY_F12,
+    KEY_F13,
+    KEY_F14,
+    KEY_F15,
+    KEY_F16,
+    KEY_F17,
+    KEY_F18,
+    KEY_F19,
+    KEY_F20,
+    KEY_F21,
+    KEY_F22,
+    KEY_F23,
+    KEY_F24,
 
-    KEY_SPECIAL_INSERT,
-    KEY_SPECIAL_MENU,     // context menu key
-    KEY_SPECIAL_PRINT,    // print screen
-    KEY_SPECIAL_PAUSE,
+    KEY_INSERT,
+    KEY_MENU,     // context menu key
+    KEY_PRINT,    // print screen
+    KEY_PAUSE,
 } KeySpecial;
 
 typedef struct {
     KeyEventType type;
-    uint16_t mods;       // CTRL | META | SHIFT
+    uint16_t mods;       // CTRL | META | SHIFT | SUPER
     union {
         uint32_t codepoint;  // Unicode
         KeySpecial keycode; // F1, ESC, arrows

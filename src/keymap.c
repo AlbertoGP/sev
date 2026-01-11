@@ -1,3 +1,5 @@
+// Keymap binding function implementations.
+
 #include <assert.h>
 #include "keymap.h"
 
@@ -77,7 +79,7 @@ void keymap_bind_ctrl_prefix(Keymap *km, uint32_t codepoint, Keymap *submap) {
     keymap_add(km, key, binding);
 }
 
-Binding *keymap_lookup(Keymap *km, const KeyEvent *ev) {
+static Binding *keymap_lookup(Keymap *km, const KeyEvent *ev) {
     if (!km) return NULL;
     for (size_t i = 0; i < km->count; i++) {
         if (keyevent_equal(&km->entries[i].key, ev))
@@ -86,7 +88,7 @@ Binding *keymap_lookup(Keymap *km, const KeyEvent *ev) {
     return NULL;
 }
 
-void execute_command(AppState *app, Binding *b) {
+static void execute_command(AppState *app, Binding *b) {
     Command *cmd = &b->command;
 
     if (cmd->type == COMMAND_C) {

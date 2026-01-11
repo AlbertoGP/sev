@@ -1,3 +1,5 @@
+// Keymap, binding and command types and functions.
+
 #pragma once
 
 #include "state.h"
@@ -45,6 +47,4 @@ void init_input(AppState *state);
 void keymap_bind_char(Keymap *km, uint32_t codepoint, void (*fn)(AppState *));
 void keymap_bind_ctrl(Keymap *km, uint32_t codepoint, void (*fn)(AppState *));
 void keymap_bind_ctrl_prefix(Keymap *km, uint32_t codepoint, Keymap *submap);
-Binding *keymap_lookup(Keymap *km, const KeyEvent *ev);
-void execute_command(AppState *app, Binding *b);
 void key_dispatch(AppState *state, const KeyEvent *ev);
