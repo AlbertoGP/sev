@@ -1,10 +1,19 @@
 ![Banner image](banner.png)
 
-# Fun with SDL3 and Clay
+# Emacs From Scratch
 
-This repo follows my blog posts ([part 1](https://dylancobb.dev/blog/clay-sdl-setup-1/), [part 2](https://dylancobb.dev/blog/clay-sdl-setup-2/), [part 3](https://dylancobb.dev/blog/clay-sdl-setup-3/)) about setting up SDL3 and Clay, rendering some basic UI, and building to both a desktop application and WebAssembly with CMake.
+This repo is my attempt at building an Emacs-like extensible text editor powered by:
 
-Feel free to use this as a template to start your own SDL3 + Clay project. You'll need to install [`SDL3`](https://github.com/libsdl-org/SDL) and [`SDL3_ttf`](https://github.com/libsdl-org/SDL_ttf) before using the below commands to build the application.
+- [SDL3](https://libsdl.org/) for windowing, rendering and low level device input.
+- [Clay](https://www.nicbarker.com/clay) for UI.
+- [Chibi Scheme](https://synthcode.com/wiki/chibi-scheme) as an embedded interpreted language, filling the same role as elisp in Emacs or Lua in Neovim.
+
+It is *not* an attempt to build a feature-complete clone of Emacs, but does aim to be:
+
+- Genuinely usable.
+- Lightweight / performant.
+- Portable. More specifically, able to run on Windows, Mac, Linux *and* in the browser via Emscripten and WebAssembly.
+- Highly configurable and extensible via Scheme.
 
 ## Fresh build commands
 
