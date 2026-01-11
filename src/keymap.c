@@ -15,17 +15,31 @@ void init_input(AppState *state) {
     state->input.current_map = global;
 }
 
-static void keymap_add(Keymap *km, KeyEvent key, Binding binding) {
+static bool keymap_add(Keymap *km, KeyEvent key, Binding binding) {
+    for (int i = 0; i < km->count; i++) {
+        if (keyevent_equal(&km->entries[i].key, &key)) {
+            km->entries[i].binding = binding; // overwrite
+            return true;
+        }
+    }
+
     if (km->count == km->cap) {
         km->cap = km->cap ? km->cap * 2 : 8;
-        km->entries = realloc(km->entries,
+        KeymapEntry *temp = realloc(km->entries,
                                km->cap * sizeof(KeymapEntry));
+        if (temp == NULL) {
+            fprintf(stderr, "Error adding binding: memory reallocation failed!\n");
+            return false;
+        } else {
+            km->entries = temp;
+        }
     }
 
     km->entries[km->count++] = (KeymapEntry){
         .key = key,
         .binding = binding,
     };
+    return true;
 }
 
 void keymap_bind_char(Keymap *km, uint32_t codepoint, void (*fn)(AppState *)) {
