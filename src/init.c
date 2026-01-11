@@ -10,10 +10,20 @@
 #include "theme.h"
 
 #include "subeditor/buffer.h"
+#include "keymap.h"
 
 #include <stdio.h>
 
 #include <chibi/eval.h>
+
+void self_insert(AppState *state) {
+    KeyEvent *ev = &state->input.last_event;
+
+    if (ev->type != KEYEVENT_CHAR)
+        return;
+
+    insert_char(ev->codepoint);
+}
 
 void HandleClayErrors(Clay_ErrorData errorData) {
     SDL_Log("%s", errorData.errorText.chars);
@@ -63,11 +73,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     state->rendererData.fonts = SDL_calloc(FONT_COUNT, sizeof(TTF_Font *));
     if (!state->rendererData.fonts) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to allocate memory for the font array = %s", SDL_GetError());
-        return SDL_APP_FAILURE;
-    }
-
-    if (!buffer_list_init()) {
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to initialise buffer list.");
         return SDL_APP_FAILURE;
     }
 
@@ -128,6 +133,20 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     state->chibi = sexp_make_eval_context(NULL, NULL, NULL, 0, 0);
     sexp_load_standard_env(state->chibi, NULL, SEXP_SEVEN);
     sexp_load_standard_ports(state->chibi, NULL, stdin, stdout, stderr, 1);
+
+    init_input(state);
+
+    keymap_bind_ctrl(state->input.global_map, 't', toggle_theme);
+
+    Keymap *ctl_x = keymap_create();
+    keymap_bind_ctrl_prefix(state->input.global_map, 'x', ctl_x);
+    keymap_bind_char(ctl_x, 'b', toggle_theme);
+
+
+    if (!buffer_list_init()) {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to initialise buffer list.");
+        return SDL_APP_FAILURE;
+    }
 
     return SDL_APP_CONTINUE;
 }

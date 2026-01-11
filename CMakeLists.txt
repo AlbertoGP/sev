@@ -10,6 +10,7 @@ set(SRC_FILES
     src/event.c
     src/quit.c
     src/keyboard.c
+    src/keymap.c
     src/clay/renderer.c
     src/layout/layout.c
     src/layout/toggle_button.c

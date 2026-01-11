@@ -82,7 +82,7 @@ void handle_key_down(AppState *state, const SDL_KeyboardEvent *key) {
 
     if (mods & MOD_CTRL) {
         KeyEvent ev = {
-            .type = KEYEVENT_SPECIAL,
+            .type = KEYEVENT_CHAR,
             .keycode = key->key,
             .mods = mods
         };
@@ -94,10 +94,102 @@ void handle_key_down(AppState *state, const SDL_KeyboardEvent *key) {
     if (is_non_text_key(key->key)) {
         KeyEvent ev = {
             .type = KEYEVENT_SPECIAL,
-            .keycode = key->key,
+            .keycode = sdl_to_keyspecial(key->key),
             .mods = mods
         };
         key_dispatch(state, &ev);
     }
 }
 
+KeySpecial sdl_to_keyspecial(SDL_Keycode keycode) {
+    switch (keycode) {
+    case SDLK_ESCAPE:
+        return KEY_SPECIAL_ESC;
+    case SDLK_RETURN:
+        return KEY_SPECIAL_RETURN;
+    case SDLK_TAB:
+        return KEY_SPECIAL_TAB;
+    case SDLK_BACKSPACE:
+        return KEY_SPECIAL_BACKSPACE;
+    case SDLK_DELETE:
+        return KEY_SPECIAL_DELETE;
+
+    case SDLK_LEFT:
+        return KEY_SPECIAL_LEFT;
+    case SDLK_RIGHT:
+        return KEY_SPECIAL_RIGHT;
+    case SDLK_UP:
+        return KEY_SPECIAL_UP;
+    case SDLK_DOWN:
+        return KEY_SPECIAL_DOWN;
+
+    case SDLK_HOME:
+        return KEY_SPECIAL_HOME;
+    case SDLK_END:
+        return KEY_SPECIAL_END;
+    case SDLK_PAGEUP:
+        return KEY_SPECIAL_PAGE_UP;
+    case SDLK_PAGEDOWN:
+        return KEY_SPECIAL_PAGE_DOWN;
+        
+    case SDLK_F1:
+        return KEY_SPECIAL_F1;
+    case SDLK_F2:
+        return KEY_SPECIAL_F2;
+    case SDLK_F3:
+        return KEY_SPECIAL_F3;
+    case SDLK_F4:
+        return KEY_SPECIAL_F4;
+    case SDLK_F5:
+        return KEY_SPECIAL_F5;
+    case SDLK_F6:
+        return KEY_SPECIAL_F6;
+    case SDLK_F7:
+        return KEY_SPECIAL_F7;
+    case SDLK_F8:
+        return KEY_SPECIAL_F8;
+    case SDLK_F9:
+        return KEY_SPECIAL_F9;
+    case SDLK_F10:
+        return KEY_SPECIAL_F10;
+    case SDLK_F11:
+        return KEY_SPECIAL_F11;
+    case SDLK_F12:
+        return KEY_SPECIAL_F12;
+    case SDLK_F13:
+        return KEY_SPECIAL_F13;
+    case SDLK_F14:
+        return KEY_SPECIAL_F14;
+    case SDLK_F15:
+        return KEY_SPECIAL_F15;
+    case SDLK_F16:
+        return KEY_SPECIAL_F16;
+    case SDLK_F17:
+        return KEY_SPECIAL_F17;
+    case SDLK_F18:
+        return KEY_SPECIAL_F18;
+    case SDLK_F19:
+        return KEY_SPECIAL_F19;
+    case SDLK_F20:
+        return KEY_SPECIAL_F20;
+    case SDLK_F21:
+        return KEY_SPECIAL_F21;
+    case SDLK_F22:
+        return KEY_SPECIAL_F22;
+    case SDLK_F23:
+        return KEY_SPECIAL_F23;
+    case SDLK_F24:
+        return KEY_SPECIAL_F24;
+
+    case SDLK_INSERT:
+        return KEY_SPECIAL_INSERT;
+    case SDLK_MENU:
+        return KEY_SPECIAL_MENU;     // context menu key
+    case SDLK_PRINTSCREEN:
+        return KEY_SPECIAL_PRINT;    // print screen
+    case SDLK_PAUSE:
+        return KEY_SPECIAL_PAUSE;
+    default:
+        return 0;
+    }
+}

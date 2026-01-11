@@ -1,10 +1,80 @@
+#include <assert.h>
 #include "keymap.h"
+
+Keymap *keymap_create(void) {
+    Keymap *km = calloc(1, sizeof(Keymap));
+    return km;
+}
 
 void init_input(AppState *state) {
     Keymap *global = keymap_create();
 
     state->input.global_map  = global;
     state->input.current_map = global;
+}
+
+static void keymap_add(Keymap *km, KeyEvent key, Binding binding) {
+    if (km->count == km->cap) {
+        km->cap = km->cap ? km->cap * 2 : 8;
+        km->entries = realloc(km->entries,
+                               km->cap * sizeof(KeymapEntry));
+    }
+
+    km->entries[km->count++] = (KeymapEntry){
+        .key = key,
+        .binding = binding,
+    };
+}
+
+void keymap_bind_char(Keymap *km, uint32_t codepoint, void (*fn)(AppState *)) {
+    KeyEvent key = {
+        .type = KEYEVENT_CHAR,
+        .mods = MOD_NONE,
+        .codepoint = codepoint,
+    };
+
+    Binding binding = {
+        .type = BINDING_COMMAND,
+        .command = {
+            .type = COMMAND_C,
+            .c_fn = fn,
+        },
+    };
+
+    keymap_add(km, key, binding);
+}
+
+void keymap_bind_ctrl(Keymap *km, uint32_t codepoint, void (*fn)(AppState *)) {
+    KeyEvent key = {
+        .type = KEYEVENT_CHAR,
+        .mods = MOD_CTRL,
+        .codepoint = codepoint,
+    };
+
+    Binding binding = {
+        .type = BINDING_COMMAND,
+        .command = {
+            .type = COMMAND_C,
+            .c_fn = fn,
+        },
+    };
+
+    keymap_add(km, key, binding);
+}
+
+void keymap_bind_ctrl_prefix(Keymap *km, uint32_t codepoint, Keymap *submap) {
+    KeyEvent key = {
+        .type = KEYEVENT_CHAR,
+        .mods = MOD_CTRL,
+        .codepoint = (uint32_t)codepoint,
+    };
+
+    Binding binding = {
+        .type = BINDING_KEYMAP,
+        .keymap = submap,
+    };
+
+    keymap_add(km, key, binding);
 }
 
 Binding *keymap_lookup(Keymap *km, const KeyEvent *ev) {
@@ -33,12 +103,18 @@ static void reset_key_state(AppState *state) {
 }
 
 void key_dispatch(AppState *state, const KeyEvent *ev) {
+    assert(state->input.current_map);
+
+    state->input.last_event = *ev;
+
     Binding *b = keymap_lookup(state->input.current_map, ev);
 
     if (!b) {
         reset_key_state(state);
         // minibuffer_message("Undefined key");
-        printf("Undefined key\n");
+        printf("Undefined key: %c   %d\n",
+               state->input.last_event.codepoint,
+               state->input.last_event.mods);
         return;
     }
 
@@ -47,7 +123,6 @@ void key_dispatch(AppState *state, const KeyEvent *ev) {
         return;
     }
 
-    printf("this fired\n");
     execute_command(state, b);
     reset_key_state(state);
 }

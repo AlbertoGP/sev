@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 #include <chibi/eval.h>
 #include "clay/renderer.h"
+#include "keyevent.h"
 
 enum FontID {
     FONT_NORMAL,
@@ -27,6 +28,7 @@ typedef enum Theme {
 typedef struct {
     struct Keymap *global_map;
     struct Keymap *current_map;
+    KeyEvent last_event;
 } InputState;
 
 typedef struct AppState {
