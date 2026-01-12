@@ -8,11 +8,14 @@ Keymap *keymap_create(void) {
     return km;
 }
 
-void init_input(AppState *state) {
+bool init_input(AppState *state) {
     Keymap *global = keymap_create();
+    if (!global) return false;
 
     state->input.global_map  = global;
     state->input.current_map = global;
+
+    return true;
 }
 
 static bool keymap_add(Keymap *km, KeyEvent key, Binding binding) {

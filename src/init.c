@@ -114,9 +114,13 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     /* Initialize Clay */
     uint64_t totalMemorySize = Clay_MinMemorySize();
     Clay_Arena clayMemory = (Clay_Arena) {
-        .memory = SDL_malloc(totalMemorySize),
+        .memory = malloc(totalMemorySize),
         .capacity = totalMemorySize
     };
+    if (!clayMemory.memory) {
+        fprintf(stderr, "Failed to initialise Clay UI.");
+        return SDL_APP_FAILURE;
+    }
 
     int width, height;
     SDL_GetWindowSize(state->window, &width, &height);
@@ -134,7 +138,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     sexp_load_standard_env(state->chibi, NULL, SEXP_SEVEN);
     sexp_load_standard_ports(state->chibi, NULL, stdin, stdout, stderr, 1);
 
-    init_input(state);
+    if (!init_input(state)) {
+        fprintf(stderr, "Failed to initialise keybinding module.");
+        return SDL_APP_FAILURE;
+    }
 
     keymap_bind_ctrl(state->input.global_map, 't', toggle_theme);
 
@@ -142,9 +149,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     keymap_bind_ctrl_prefix(state->input.global_map, 'x', ctl_x);
     keymap_bind_char(ctl_x, 'b', toggle_theme);
 
-
     if (!buffer_list_init()) {
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to initialise buffer list.");
+        fprintf(stderr, "Failed to initialise buffer list.");
         return SDL_APP_FAILURE;
     }
 

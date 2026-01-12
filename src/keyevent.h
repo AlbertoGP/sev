@@ -4,9 +4,10 @@
 
 #include <stdint.h>
 
+// Type tag for KeyEvent payload union.
 typedef enum {
-    KEYEVENT_CHAR,
-    KEYEVENT_SPECIAL
+    KEYEVENT_CHAR,   // KeyEvent is a text character key.
+    KEYEVENT_SPECIAL // KeyEvent is a non-character, non-modifier key.
 } KeyEventType;
 
 // Internal codes for standard modifier keys.
@@ -67,6 +68,7 @@ typedef enum {
     KEY_PAUSE,
 } KeySpecial;
 
+// Struct type holding key event information.
 typedef struct {
     KeyEventType type;
     uint16_t mods;       // CTRL | META | SHIFT | SUPER
@@ -76,6 +78,8 @@ typedef struct {
     };
 } KeyEvent;
 
+// Deep comparison function for two KeyEvent structs.
+// Returns true if and only if they contain identical information.
 static inline bool keyevent_equal(const KeyEvent *k1, const KeyEvent *k2) {
     if (k1->type == k2->type &&
         k1->mods == k2->mods &&

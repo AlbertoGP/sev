@@ -47,7 +47,9 @@ void handle_text_input(AppState *state, const SDL_TextInputEvent *text) {
     }
 }
 
-static uint16_t normalize_mods(SDL_Keymod m) {
+// Convert from SDL3's keymod types to internal KeyMod enum so that
+// keymap logic does not need to be aware of SDL3.
+static KeyMod normalize_mods(SDL_Keymod m) {
     uint16_t r = 0;
     if (m & SDL_KMOD_CTRL)  r |= MOD_CTRL;
     if (m & SDL_KMOD_ALT)   r |= MOD_META;   // Emacs-style Meta
@@ -56,6 +58,7 @@ static uint16_t normalize_mods(SDL_Keymod m) {
     return r;
 }
 
+// Returns true if an SDL_Keycode is a non-text key (e.g. Esc, Tab, Backspace)
 static bool is_non_text_key(SDL_Keycode k) {
     if (SDLK_F1 <= k && k <= SDLK_F24)
         return true;
