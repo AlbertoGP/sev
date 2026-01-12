@@ -1,7 +1,10 @@
 // Keymap binding function implementations.
 
 #include <assert.h>
+#include <chibi/sexp.h>
 #include "keymap.h"
+
+KeyEvent last_event;
 
 Keymap *keymap_create(void) {
     Keymap *km = calloc(1, sizeof(Keymap));
@@ -111,7 +114,7 @@ static void execute_command(AppState *app, Binding *b) {
     if (cmd->type == COMMAND_C) {
         cmd->c_fn(app);
     } else {
-        sexp_apply(app->chibi,
+        sexp_apply(app->chibi.ctx,
                    cmd->scheme_proc,
                    SEXP_NULL);
     }
@@ -124,7 +127,7 @@ static void reset_key_state(AppState *state) {
 void key_dispatch(AppState *state, const KeyEvent *ev) {
     assert(state->input.current_map);
 
-    state->input.last_event = *ev;
+    last_event = *ev;
 
     Binding *b = keymap_lookup(state->input.current_map, ev);
 
@@ -132,8 +135,8 @@ void key_dispatch(AppState *state, const KeyEvent *ev) {
         reset_key_state(state);
         // minibuffer_message("Undefined key");
         printf("Undefined key: %c   %d\n",
-               state->input.last_event.codepoint,
-               state->input.last_event.mods);
+               last_event.codepoint,
+               last_event.mods);
         return;
     }
 
@@ -144,5 +147,64 @@ void key_dispatch(AppState *state, const KeyEvent *ev) {
 
     execute_command(state, b);
     reset_key_state(state);
+}
+
+int parse_key_sequence(const char *s, KeyEvent *out) {
+    int count = 0;
+    uint16_t mods = 0;
+
+    while (*s) {
+        if (*s == ' ') {
+            s++;
+            continue;
+        }
+
+        mods = 0;
+
+        /* modifiers */
+        while (s[1] == '-') {
+            switch (*s) {
+            case 'C': mods |= MOD_CTRL; break;
+            case 'M': mods |= MOD_META; break;
+            case 'S': mods |= MOD_SHIFT; break;
+            }
+            s += 2; // skip "C-"
+        }
+
+        /* key */
+        if (*s) {
+            out[count++] = (KeyEvent){
+                .type = KEYEVENT_CHAR,
+                .mods = mods,
+                .codepoint = (uint32_t)*s
+            };
+            s++;
+        }
+    }
+
+    return count;
+}
+
+void keymap_bind_sequence(Keymap *km, KeyEvent *seq, int n, Binding final) {
+    for (int i = 0; i < n - 1; i++) {
+        Binding *b = keymap_lookup(km, &seq[i]);
+
+        if (!b || b->type != BINDING_KEYMAP) {
+            Keymap *next = keymap_create();
+
+            Binding nb = {
+                .type = BINDING_KEYMAP,
+                .keymap = next
+            };
+
+            keymap_add(km, seq[i], nb);
+            km = next;
+        } else {
+            km = b->keymap;
+        }
+    }
+
+    /* final key */
+    keymap_add(km, seq[n - 1], final);
 }
 

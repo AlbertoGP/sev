@@ -12,12 +12,14 @@ set(SRC_FILES
     src/keyboard.c
     src/keymap.c
     src/clay/renderer.c
+    src/clay/init.c
     src/layout/layout.c
     src/layout/toggle_button.c
     src/layout/current_mode.c
     src/subeditor/buffer.c
     src/subeditor/gap.c
     src/subeditor/mark.c
+    src/scheme/scheme.c
 )
 
 # Create executable

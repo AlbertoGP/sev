@@ -3,8 +3,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
-#define CLAY_IMPLEMENTATION
-#include "clay/clay.h"
+#include "clay/init.h"
 
 #include "state.h"
 #include "theme.h"
@@ -12,35 +11,13 @@
 #include "subeditor/buffer.h"
 #include "keymap.h"
 
+#include "scheme/scheme.h"
+
 #include <stdio.h>
 
 #include <chibi/eval.h>
 
-void self_insert(AppState *state) {
-    KeyEvent *ev = &state->input.last_event;
-
-    if (ev->type != KEYEVENT_CHAR)
-        return;
-
-    insert_char(ev->codepoint);
-}
-
-void HandleClayErrors(Clay_ErrorData errorData) {
-    SDL_Log("%s", errorData.errorText.chars);
-}
-
-static inline Clay_Dimensions SDL_MeasureText(Clay_StringSlice text, Clay_TextElementConfig *config, void *userData) {
-    TTF_Font **fonts = userData;
-    TTF_Font *font = fonts[config->fontId];
-    int width, height;
-
-    TTF_SetFontSize(font, config->fontSize);
-    if (!TTF_GetStringSize(font, text.chars, text.length, &width, &height)) {
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to measure text = %s", SDL_GetError());
-    }
-
-    return (Clay_Dimensions) { (float) width, (float) height };
-}
+extern KeyEvent last_event;
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
@@ -111,21 +88,22 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     state->rendererData.fonts[FONT_BOLD]   = font_bold;
     state->rendererData.fonts[FONT_ITALIC] = font_italic;
 
-    /* Initialize Clay */
-    uint64_t totalMemorySize = Clay_MinMemorySize();
-    Clay_Arena clayMemory = (Clay_Arena) {
-        .memory = malloc(totalMemorySize),
-        .capacity = totalMemorySize
-    };
-    if (!clayMemory.memory) {
+    if (!clay_init(state)) {
         fprintf(stderr, "Failed to initialise Clay UI.");
         return SDL_APP_FAILURE;
     }
 
-    int width, height;
-    SDL_GetWindowSize(state->window, &width, &height);
-    Clay_Initialize(clayMemory, (Clay_Dimensions) { (float) width, (float) height }, (Clay_ErrorHandler) { HandleClayErrors });
-    Clay_SetMeasureTextFunction(SDL_MeasureText, state->rendererData.fonts);
+    scheme_init(state);
+
+    if (!init_input(state)) {
+        fprintf(stderr, "Failed to initialise keybinding module.");
+        return SDL_APP_FAILURE;
+    }
+
+    if (!buffer_list_init()) {
+        fprintf(stderr, "Failed to initialise buffer list.");
+        return SDL_APP_FAILURE;
+    }
 
     set_theme_dark(state);
 
@@ -133,26 +111,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     state->animating = false;
     state->last_frame_ns = 0;
 
-    sexp_scheme_init();
-    state->chibi = sexp_make_eval_context(NULL, NULL, NULL, 0, 0);
-    sexp_load_standard_env(state->chibi, NULL, SEXP_SEVEN);
-    sexp_load_standard_ports(state->chibi, NULL, stdin, stdout, stderr, 1);
 
-    if (!init_input(state)) {
-        fprintf(stderr, "Failed to initialise keybinding module.");
-        return SDL_APP_FAILURE;
-    }
+    sexp_eval_string(state->chibi.ctx, "(define-key! global-keymap \"a\" (lambda () (insert-char #\\a)))", -1, NULL);
 
-    keymap_bind_ctrl(state->input.global_map, 't', toggle_theme);
-
-    Keymap *ctl_x = keymap_create();
-    keymap_bind_ctrl_prefix(state->input.global_map, 'x', ctl_x);
-    keymap_bind_char(ctl_x, 'b', toggle_theme);
-
-    if (!buffer_list_init()) {
-        fprintf(stderr, "Failed to initialise buffer list.");
-        return SDL_APP_FAILURE;
-    }
-
+    
     return SDL_APP_CONTINUE;
 }

@@ -31,6 +31,12 @@ typedef struct {
     KeyEvent last_event;
 } InputState;
 
+typedef struct {
+    sexp ctx;
+    sexp env;
+    sexp protected_commands;
+} Chibi;
+
 typedef struct AppState {
     SDL_Window *window;
     Clay_SDL3RendererData rendererData;
@@ -40,6 +46,6 @@ typedef struct AppState {
     bool animating;
     Uint64 last_frame_ns;
     bool debug_open;
-    sexp chibi;
+    Chibi chibi;
     InputState input;
 } AppState;

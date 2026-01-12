@@ -61,3 +61,6 @@ void keymap_bind_ctrl(Keymap *km, uint32_t codepoint, void (*fn)(AppState *));
 void keymap_bind_ctrl_prefix(Keymap *km, uint32_t codepoint, Keymap *submap);
 // Handle a key event via its appropriate binding (if one exists).
 void key_dispatch(AppState *state, const KeyEvent *ev);
+
+int parse_key_sequence(const char *s, KeyEvent *out);
+void keymap_bind_sequence(Keymap *km, KeyEvent *seq, int n, Binding final);

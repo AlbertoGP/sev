@@ -29,8 +29,8 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
         if (state->rendererData.textEngine)
             TTF_DestroyRendererTextEngine(state->rendererData.textEngine);
 
-        if (state->chibi)
-            sexp_destroy_context(state->chibi);
+        if (state->chibi.ctx)
+            sexp_destroy_context(state->chibi.ctx);
 
         SDL_free(state);
     }
