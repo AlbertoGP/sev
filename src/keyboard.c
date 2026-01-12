@@ -180,16 +180,6 @@ void handle_key_down(AppState *state, const SDL_KeyboardEvent *key) {
 
     uint16_t mods = normalize_mods(key->mod);
 
-    if (mods & MOD_CTRL) {
-        KeyEvent ev = {
-            .type = KEYEVENT_CHAR,
-            .codepoint = key->key,
-            .mods = mods
-        };
-        key_dispatch(state, &ev);
-        return;
-    }
-
     // Non-text, non-char keys
     if (is_non_text_key(key->key)) {
         KeyEvent ev = {
@@ -198,5 +188,13 @@ void handle_key_down(AppState *state, const SDL_KeyboardEvent *key) {
             .mods = mods
         };
         key_dispatch(state, &ev);
+    } else {
+        KeyEvent ev = {
+            .type = KEYEVENT_CHAR,
+            .codepoint = key->key,
+            .mods = mods
+        };
+        key_dispatch(state, &ev);
+        return;
     }
 }

@@ -93,8 +93,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
-    scheme_init(state);
-
     if (!init_input(state)) {
         fprintf(stderr, "Failed to initialise keybinding module.");
         return SDL_APP_FAILURE;
@@ -111,9 +109,17 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     state->animating = false;
     state->last_frame_ns = 0;
 
+    scheme_init(state);
+    sexp result = sexp_eval_string(state->chibi.ctx, 
+        "(define-key! global-keymap \"M-x a\" (lambda () (insert-char #\\a)))", 
+        -1, 
+        state->chibi.env);
 
-    sexp_eval_string(state->chibi.ctx, "(define-key! global-keymap \"a\" (lambda () (insert-char #\\a)))", -1, NULL);
-
+    if (sexp_exceptionp(result)) {
+        printf("ERROR: define-key! failed\n");
+        sexp_print_exception(state->chibi.ctx, result, sexp_current_error_port(state->chibi.ctx));
+        return SDL_APP_FAILURE;
+    }
     
     return SDL_APP_CONTINUE;
 }
