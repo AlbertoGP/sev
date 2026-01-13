@@ -6,7 +6,6 @@
 #include "clay/init.h"
 
 #include "state.h"
-#include "theme.h"
 
 #include "subeditor/buffer.h"
 #include "keymap.h"
@@ -103,7 +102,13 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
-    set_theme_dark(state);
+    state->colors = (ColorSet){
+        .background = { 30, 30, 46, 255 },
+        .foreground = { 24, 24, 37, 255 },
+        .bar = { 17, 17, 27, 255 },
+        .text = { 205, 214, 244, 255 },
+        .textFaded = { 88, 91, 112, 255 },
+    };
 
     state->needs_redraw = true;
     state->animating = false;
@@ -111,7 +116,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     scheme_init(state);
     sexp result = sexp_eval_string(state->chibi.ctx, 
-        "(define-key! global-keymap \"M-x a\" (lambda () (insert-char #\\a)))", 
+        "(define-key! global-keymap \"C-x t\" (lambda () (toggle-theme)))", 
         -1, 
         state->chibi.env);
 

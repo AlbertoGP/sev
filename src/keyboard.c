@@ -50,7 +50,7 @@ void handle_text_input(AppState *state, const SDL_TextInputEvent *text) {
 // Convert from SDL3's keymod types to internal KeyMod enum so that
 // keymap logic does not need to be aware of SDL3.
 static KeyMod normalize_mods(SDL_Keymod m) {
-    uint16_t r = 0;
+    uint16_t r = MOD_NONE;
     if (m & SDL_KMOD_CTRL)  r |= MOD_CTRL;
     if (m & SDL_KMOD_ALT)   r |= MOD_META;   // Emacs-style Meta
     if (m & SDL_KMOD_SHIFT) r |= MOD_SHIFT;
@@ -188,7 +188,7 @@ void handle_key_down(AppState *state, const SDL_KeyboardEvent *key) {
             .mods = mods
         };
         key_dispatch(state, &ev);
-    } else {
+    } else if (mods != MOD_SHIFT && mods != MOD_NONE) {
         KeyEvent ev = {
             .type = KEYEVENT_CHAR,
             .codepoint = key->key,

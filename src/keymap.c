@@ -134,7 +134,7 @@ void key_dispatch(AppState *state, const KeyEvent *ev) {
     if (!b) {
         reset_key_state(state);
         // minibuffer_message("Undefined key");
-        printf("Undefined key: %c   %d\n",
+        printf("Undefined key:\n\tcodepoint: %c\n\tmods: %d\n",
                last_event.codepoint,
                last_event.mods);
         return;

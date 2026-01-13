@@ -41,6 +41,9 @@ typedef struct AppState {
     SDL_Window *window;
     Clay_SDL3RendererData rendererData;
     ColorSet colors;
+    ColorSet colors_target;
+    ColorSet colors_delta;
+    int color_frames;
     Theme theme;
     bool needs_redraw;
     bool animating;

@@ -1,6 +1,5 @@
 #include <SDL3/SDL.h>
 #include "state.h"
-#include "theme.h"
 
 #include "keyboard.h"
 

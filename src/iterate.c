@@ -2,6 +2,7 @@
 
 #include "layout/layout.h"
 #include "state.h"
+#include "theme.h"
 
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
@@ -27,6 +28,10 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         }
     }
     state->last_frame_ns = SDL_GetTicksNS();
+
+    if (state->color_frames) {
+        add_color_delta(state);
+    }
 
     /* Draw to the screen */
     SDL_SetRenderDrawColor(state->rendererData.renderer, 0, 0, 0, 255);

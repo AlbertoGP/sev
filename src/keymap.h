@@ -62,5 +62,8 @@ void keymap_bind_ctrl_prefix(Keymap *km, uint32_t codepoint, Keymap *submap);
 // Handle a key event via its appropriate binding (if one exists).
 void key_dispatch(AppState *state, const KeyEvent *ev);
 
+// Parse a key sequence into a series of KeyEvents.
+// Returns the length of the resulting sequence.
 int parse_key_sequence(const char *s, KeyEvent *out);
+// Create a bunding for a key sequence
 void keymap_bind_sequence(Keymap *km, KeyEvent *seq, int n, Binding final);

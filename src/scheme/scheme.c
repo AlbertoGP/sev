@@ -1,6 +1,7 @@
 #include "scheme.h"
 #include "../keymap.h"
 #include "../subeditor/buffer.h"
+#include "../theme.h"
 #include <chibi/eval.h>
 #include <chibi/sexp.h>
 
@@ -9,12 +10,14 @@ static sexp keymap_type;
 static sexp buffer_type;
 
 static sexp scm_insert_char(sexp ctx, sexp self, sexp n, sexp ch) {
+    G->needs_redraw = true;
     sexp_assert_type(ctx, sexp_charp, SEXP_CHAR, ch);
     insert_char(sexp_unbox_character(ch));
     return SEXP_VOID;
 }
 
 static sexp scm_self_insert(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
     KeyEvent last = G->input.last_event;
     
     if (last.type != KEYEVENT_CHAR) return SEXP_VOID;
@@ -31,12 +34,16 @@ static sexp scm_make_keymap(sexp ctx, sexp self, sexp n) {
         0);
 }
 
+static sexp scm_toggle_theme(sexp ctx, sexp self, sexp n) {
+    toggle_theme(G);
+    return SEXP_VOID;
+}
+
 // FIXED: Removed the extra 'sexp n' parameter for 3-argument function
 static sexp scm_define_key(sexp ctx, sexp self, sexp n,
                     sexp skeymap, sexp skeystr, sexp scommand) {
     // ... type checks ...
     
-    printf("test");
     Keymap *km = sexp_cpointer_value(skeymap);
     if (!km) {
         return sexp_user_exception(ctx, self, "null keymap pointer", skeymap);
@@ -70,7 +77,6 @@ static sexp scm_define_key(sexp ctx, sexp self, sexp n,
 }
 
 void scheme_init(AppState *state) {
-    printf("scheme_init: start\n");
     G = state;
     
     sexp_scheme_init();
@@ -107,4 +113,5 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "define-key!", 3, scm_define_key);
     sexp_define_foreign(ctx, env, "insert-char", 1, scm_insert_char);
     sexp_define_foreign(ctx, env, "self-insert", 0, scm_self_insert);
+    sexp_define_foreign(ctx, env, "toggle-theme", 0, scm_toggle_theme);
 }
