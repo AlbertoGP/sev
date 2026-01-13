@@ -1,8 +1,5 @@
 #include "../state.h"
 
-#include "current_mode.h"
-#include "toggle_button.h"
-
 #include "../subeditor/buffer.h"
 #include <stdio.h>
 
@@ -18,70 +15,39 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
         .layout = {
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
             .sizing = layoutExpand,
-            .padding = CLAY_PADDING_ALL(32),
-            .childGap = 8,
-            .childAlignment = {
-                .x = CLAY_ALIGN_X_CENTER
-            }
         },
         .backgroundColor = state->colors.background
     }) {
-        CLAY_TEXT(CLAY_STRING("Going Interactive"), CLAY_TEXT_CONFIG({
-            .fontId = FONT_BOLD,
-            .fontSize = 32,
-            .textColor = state->colors.text,
-        }));
-        CLAY(CLAY_ID("Main Container"), {
+        int length = get_char_count();
+        char *chars = buffer_text();
+        int point = point_get().pos;
+        Clay_String head = {
+            .chars = chars,
+            .length = point,
+            .isStaticallyAllocated = true
+        };
+        Clay_String tail = {
+            .chars = chars + point,
+            .length = length - point,
+            .isStaticallyAllocated = true
+        };
+
+        CLAY(CLAY_ID("buffer"), {
             .layout = {
-                .layoutDirection = CLAY_TOP_TO_BOTTOM,
                 .sizing = layoutExpand,
-                .padding = {
-                    .top = 24
-                },
-                .childAlignment = {
-                    .x = CLAY_ALIGN_X_CENTER
-                },
-                .childGap = 24
-            },
-            .backgroundColor = state->colors.foreground,
-            .cornerRadius = CLAY_CORNER_RADIUS(8)
-        }) {
-            current_mode(state);
-            toggle_button(state);
-
-            int length = get_char_count();
-            char *chars = buffer_text();
-            int point = point_get().pos;
-            Clay_String head = {
-                .chars = chars,
-                .length = point,
-                .isStaticallyAllocated = true
-            };
-            Clay_String tail = {
-                .chars = chars + point,
-                .length = length - point,
-                .isStaticallyAllocated = true
-            };
-
-            CLAY(CLAY_ID("buffer"), {
-                .layout = {
-                    .sizing = {
-                        .width = CLAY_SIZING_GROW(0)
-                    },
-                    .padding = CLAY_PADDING_ALL(24)
-                }
-            }) {
-                CLAY_TEXT(head, CLAY_TEXT_CONFIG({
-                    .fontId = FONT_NORMAL,
-                    .fontSize = 18,
-                    .textColor = state->colors.text,
-                }));
-                CLAY_TEXT(tail, CLAY_TEXT_CONFIG({
-                    .fontId = FONT_NORMAL,
-                    .fontSize = 18,
-                    .textColor = state->colors.textFaded,
-                }));
+                .padding = CLAY_PADDING_ALL(24)
             }
+        }) {
+            CLAY_TEXT(head, CLAY_TEXT_CONFIG({
+                .fontId = FONT_NORMAL,
+                .fontSize = 18,
+                .textColor = state->colors.text,
+            }));
+            CLAY_TEXT(tail, CLAY_TEXT_CONFIG({
+                .fontId = FONT_NORMAL,
+                .fontSize = 18,
+                .textColor = state->colors.textFaded,
+            }));
         }
         Clay_String bufName = {
              .chars = buffer_get_name(),
@@ -153,6 +119,14 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
                     .textColor = state->colors.text,
                 }));
         }
+        CLAY(CLAY_ID("echo area"), {
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_GROW(0),
+                    .height = CLAY_SIZING_FIXED(25)
+                }
+            }
+        }){}
     }
 
     return Clay_EndLayout();

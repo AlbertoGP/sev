@@ -64,7 +64,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     snprintf(fontPathRegular, sizeof(fontPathRegular), "%sresources/VictorMono-Regular.ttf", basePath);
     snprintf(fontPathBold, sizeof(fontPathBold), "%sresources/VictorMono-Bold.ttf", basePath);
     snprintf(fontPathItalic, sizeof(fontPathItalic), "%sresources/VictorMono-Italic.ttf", basePath);
-    SDL_free(basePath);
     #define FONT_PATH_REGULAR fontPathRegular
     #define FONT_PATH_BOLD fontPathBold
     #define FONT_PATH_ITALIC fontPathItalic

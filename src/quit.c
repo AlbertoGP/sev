@@ -23,8 +23,6 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
                 TTF_CloseFont(state->rendererData.fonts[i]);
                 state->rendererData.fonts[i] = NULL;
             }
-            // TTF_CloseFont(state->rendererData.fonts[FONT_NORMAL]);
-            // TTF_CloseFont(state->rendererData.fonts[FONT_ITALIC]);
 
             SDL_free(state->rendererData.fonts);
         }
