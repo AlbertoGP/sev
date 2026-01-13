@@ -2,12 +2,20 @@
 #include "../keymap.h"
 #include "../subeditor/buffer.h"
 #include "../theme.h"
+#include <SDL3/SDL_events.h>
 #include <chibi/eval.h>
 #include <chibi/sexp.h>
 
 static AppState *G;   // global app state for commands
 static sexp keymap_type;
 static sexp buffer_type;
+
+static sexp scm_quit(sexp ctx, sexp self, sexp n) {
+    SDL_Event quit_event;
+    quit_event.type = SDL_EVENT_QUIT;
+    SDL_PushEvent(&quit_event);
+    return SEXP_VOID;
+}
 
 static sexp scm_insert_char(sexp ctx, sexp self, sexp n, sexp ch) {
     G->needs_redraw = true;
@@ -109,6 +117,7 @@ void scheme_init(AppState *state) {
         )
     );
     
+    sexp_define_foreign(ctx, env, "quit", 0, scm_quit);
     sexp_define_foreign(ctx, env, "make-keymap", 0, scm_make_keymap);
     sexp_define_foreign(ctx, env, "define-key!", 3, scm_define_key);
     sexp_define_foreign(ctx, env, "insert-char", 1, scm_insert_char);

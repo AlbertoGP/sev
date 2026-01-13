@@ -114,6 +114,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     state->last_frame_ns = 0;
 
     scheme_init(state);
+    sexp_eval_string(state->chibi.ctx, 
+        "(define-key! global-keymap \"C-q\" (lambda () (quit)))", 
+        -1, 
+        state->chibi.env);
     sexp result = sexp_eval_string(state->chibi.ctx, 
         "(define-key! global-keymap \"C-x t\" (lambda () (toggle-theme)))", 
         -1, 
