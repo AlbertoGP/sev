@@ -204,6 +204,66 @@ int parse_key_sequence(const char *s, KeyEvent *out) {
             continue;
         }
 
+        if (s[0] == 'B' && s[1] == 'S' && s[2] == 'P') {
+            out[count++] = (KeyEvent){
+                .type = KEYEVENT_SPECIAL,
+                .mods = mods,
+                .keycode = KEY_BACKSPACE
+            };
+            s += 3;
+            continue;
+        }
+
+        if (s[0] == 'D' && s[1] == 'E' && s[2] == 'L') {
+            out[count++] = (KeyEvent){
+                .type = KEYEVENT_SPECIAL,
+                .mods = mods,
+                .keycode = KEY_DELETE
+            };
+            s += 3;
+            continue;
+        }
+
+        if (s[0] == 'U' && s[1] == 'P') {
+            out[count++] = (KeyEvent){
+                .type = KEYEVENT_SPECIAL,
+                .mods = mods,
+                .keycode = KEY_UP
+            };
+            s += 2;
+            continue;
+        }
+
+        if (s[0] == 'D' && s[1] == 'O' && s[2] == 'W' && s[3] == 'N') {
+            out[count++] = (KeyEvent){
+                .type = KEYEVENT_SPECIAL,
+                .mods = mods,
+                .keycode = KEY_DOWN
+            };
+            s += 4;
+            continue;
+        }
+
+        if (s[0] == 'L' && s[1] == 'E' && s[2] == 'F' && s[3] == 'T') {
+            out[count++] = (KeyEvent){
+                .type = KEYEVENT_SPECIAL,
+                .mods = mods,
+                .keycode = KEY_LEFT
+            };
+            s += 4;
+            continue;
+        }
+
+        if (s[0] == 'R' && s[1] == 'I' && s[2] == 'G' && s[3] == 'H' && s[4] == 'T') {
+            out[count++] = (KeyEvent){
+                .type = KEYEVENT_SPECIAL,
+                .mods = mods,
+                .keycode = KEY_RIGHT
+            };
+            s += 5;
+            continue;
+        }
+
         /* key */
         if (*s) {
             out[count++] = (KeyEvent){

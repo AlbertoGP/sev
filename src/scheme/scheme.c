@@ -32,6 +32,19 @@ static sexp scm_self_insert(sexp ctx, sexp self, sexp n) {
     return SEXP_VOID;
 }
 
+static sexp scm_delete_char(sexp ctx, sexp self, sexp n, sexp num) {
+    G->needs_redraw = true;
+    delete_chars(sexp_unbox_fixnum(num));
+    return SEXP_VOID;
+}
+
+static sexp scm_point_move(sexp ctx, sexp self, sexp n, sexp num) {
+    printf("this fired\n");
+    G->needs_redraw = true;
+    point_move(sexp_unbox_fixnum(num));
+    return SEXP_VOID;
+}
+
 static sexp scm_make_keymap(sexp ctx, sexp self, sexp n) {
     Keymap *km = keymap_create();
     if (!km) {
@@ -114,6 +127,8 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "set-key!", 3, scm_set_key);
     sexp_define_foreign(ctx, env, "insert-char", 1, scm_insert_char);
     sexp_define_foreign(ctx, env, "self-insert", 0, scm_self_insert);
+    sexp_define_foreign(ctx, env, "delete-char", 1, scm_delete_char);
+    sexp_define_foreign(ctx, env, "move-point", 1, scm_point_move);
     sexp_define_foreign(ctx, env, "toggle-theme", 0, scm_toggle_theme);
     
     sexp result = sexp_load(ctx, sexp_c_string(ctx, "resources/init.scm", -1), env);
