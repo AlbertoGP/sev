@@ -25,11 +25,11 @@ static ColorSet generate_set_delta(AppState *state) {
 
 static inline void set_theme_dark(AppState *state) {
     state->colors_target = (ColorSet){
-        .background = { 30, 30, 46, 255 },
-        .foreground = { 24, 24, 37, 255 },
-        .bar = { 17, 17, 27, 255 },
-        .text = { 205, 214, 244, 255 },
-        .textFaded = { 88, 91, 112, 255 },
+        .background = { 36, 39, 58, 255 },
+        .foreground = { 30, 32, 48, 255 },
+        .bar = { 54, 58, 79, 255 },
+        .text = { 202, 211, 245, 255 },
+        .textFaded = { 91, 96, 120, 255 },
     };
     state->colors_delta = generate_set_delta(state);
     state->color_frames = FRAMES;
@@ -42,7 +42,7 @@ static inline void set_theme_light(AppState *state) {
     state->colors_target = (ColorSet){
         .background = { 239, 241, 245, 255 },
         .foreground = { 230, 233, 239, 255 },
-        .bar = { 220, 224, 232, 255 },
+        .bar = { 204, 208, 218, 255 },
         .text = { 76, 79, 105, 255 },
         .textFaded = { 172, 176, 190, 255 },
     };

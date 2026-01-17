@@ -34,7 +34,6 @@ typedef struct {
 typedef struct {
     sexp ctx;
     sexp env;
-    sexp protected_commands;
 } Chibi;
 
 typedef struct AppState {

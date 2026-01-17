@@ -7,8 +7,7 @@
 #include <chibi/sexp.h>
 
 static AppState *G;   // global app state for commands
-static sexp keymap_type;
-static sexp buffer_type;
+extern KeyEvent last_event;
 
 static sexp scm_quit(sexp ctx, sexp self, sexp n) {
     SDL_Event quit_event;
@@ -26,7 +25,7 @@ static sexp scm_insert_char(sexp ctx, sexp self, sexp n, sexp ch) {
 
 static sexp scm_self_insert(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
-    KeyEvent last = G->input.last_event;
+    KeyEvent last = last_event;
     
     if (last.type != KEYEVENT_CHAR) return SEXP_VOID;
     insert_char(last.codepoint);
@@ -35,11 +34,15 @@ static sexp scm_self_insert(sexp ctx, sexp self, sexp n) {
 
 static sexp scm_make_keymap(sexp ctx, sexp self, sexp n) {
     Keymap *km = keymap_create();
-    return sexp_make_cpointer(ctx,
-        sexp_type_tag(keymap_type),
+    if (!km) {
+        return SEXP_VOID;
+    }
+    sexp result = sexp_make_cpointer(ctx,
+        SEXP_CPOINTER,
         km,
         SEXP_FALSE,
         0);
+    return result;
 }
 
 static sexp scm_toggle_theme(sexp ctx, sexp self, sexp n) {
@@ -47,29 +50,19 @@ static sexp scm_toggle_theme(sexp ctx, sexp self, sexp n) {
     return SEXP_VOID;
 }
 
-// FIXED: Removed the extra 'sexp n' parameter for 3-argument function
-static sexp scm_define_key(sexp ctx, sexp self, sexp n,
+static sexp scm_set_key(sexp ctx, sexp self, sexp n,
                     sexp skeymap, sexp skeystr, sexp scommand) {
-    // ... type checks ...
-    
     Keymap *km = sexp_cpointer_value(skeymap);
     if (!km) {
         return sexp_user_exception(ctx, self, "null keymap pointer", skeymap);
     }
-    
+
     const char *keystr = sexp_string_data(skeystr);
     KeyEvent seq[8];
     int key_count = parse_key_sequence(keystr, seq);
-    
-    if (key_count <= 0) {
+    if (key_count < 1) {
         return sexp_user_exception(ctx, self, "invalid key sequence", skeystr);
     }
-    
-    // Protect the command from GC by adding to protected list
-    sexp protected_sym = sexp_intern(ctx, "*protected-commands*", -1);
-    sexp old_list = sexp_env_ref(ctx, G->chibi.env, protected_sym, SEXP_NULL);
-    sexp new_list = sexp_cons(ctx, scommand, old_list);
-    sexp_env_define(ctx, G->chibi.env, protected_sym, new_list);
     
     Binding binding = {
         .type = BINDING_COMMAND,
@@ -78,7 +71,9 @@ static sexp scm_define_key(sexp ctx, sexp self, sexp n,
             .scheme_proc = scommand
         }
     };
-    
+    // After creating/modifying a binding with a scheme_proc:
+    sexp_preserve_object(ctx, binding.command.scheme_proc);
+
     keymap_bind_sequence(km, seq, key_count, binding);
     
     return SEXP_VOID;
@@ -86,41 +81,43 @@ static sexp scm_define_key(sexp ctx, sexp self, sexp n,
 
 void scheme_init(AppState *state) {
     G = state;
-    
     sexp_scheme_init();
     
-    sexp ctx = sexp_make_eval_context(NULL, NULL, NULL, 0, 0);
-    sexp env = sexp_context_env(ctx);
+    sexp ctx = sexp_make_eval_context(NULL, NULL, NULL, 0, 512*1024*1024);
+    sexp env = sexp_load_standard_env(ctx, NULL, SEXP_SEVEN);
+    sexp_load_standard_ports(ctx, env, stdin, stdout, stderr, 1);
     
     state->chibi.ctx = ctx;
     state->chibi.env = env;
-    state->chibi.protected_commands = SEXP_NULL;
     
-    keymap_type = sexp_register_c_type(
-        ctx, sexp_intern(ctx, "keymap", -1), NULL
-    );
+    sexp_gc_var1(global_km);
+    sexp_gc_preserve1(ctx, global_km);
     
-    buffer_type = sexp_register_c_type(
-        ctx, sexp_intern(ctx, "buffer", -1), NULL
-    );
-    
-    sexp_env_define(
+    // DON'T register custom types for now - just use built-in CPOINTER
+    global_km = sexp_make_cpointer(
         ctx,
-        env,
-        sexp_intern(ctx, "global-keymap", -1),
-        sexp_make_cpointer(
-            ctx,
-            sexp_type_tag(keymap_type),
-            state->input.global_map,
-            SEXP_FALSE,
-            0
-        )
+        SEXP_CPOINTER,
+        state->input.global_map,
+        SEXP_FALSE,
+        0
     );
     
+    sexp_env_define(ctx, env,
+                    sexp_intern(ctx, "global-keymap", -1),
+                    global_km);
+    
+    sexp_gc_release1(ctx);
+    
+    // Register foreign functions
     sexp_define_foreign(ctx, env, "quit", 0, scm_quit);
     sexp_define_foreign(ctx, env, "make-keymap", 0, scm_make_keymap);
-    sexp_define_foreign(ctx, env, "define-key!", 3, scm_define_key);
+    sexp_define_foreign(ctx, env, "set-key!", 3, scm_set_key);
     sexp_define_foreign(ctx, env, "insert-char", 1, scm_insert_char);
     sexp_define_foreign(ctx, env, "self-insert", 0, scm_self_insert);
     sexp_define_foreign(ctx, env, "toggle-theme", 0, scm_toggle_theme);
+    
+    sexp result = sexp_load(ctx, sexp_c_string(ctx, "resources/init.scm", -1), env);
+    if (sexp_exceptionp(result)) {
+        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+    }
 }

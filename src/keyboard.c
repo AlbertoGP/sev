@@ -64,6 +64,12 @@ static bool is_non_text_key(SDL_Keycode k) {
         return true;
 
     switch (k) {
+    case SDLK_LCTRL:
+    case SDLK_RCTRL:
+    case SDLK_LGUI:
+    case SDLK_RGUI:
+    case SDLK_LALT:
+    case SDLK_RALT:
     case SDLK_ESCAPE:
     case SDLK_RETURN:
     case SDLK_TAB:

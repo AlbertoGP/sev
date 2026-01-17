@@ -16,8 +16,6 @@
 
 #include <chibi/eval.h>
 
-extern KeyEvent last_event;
-
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     AppState *state = SDL_calloc(1, sizeof(AppState));
@@ -102,11 +100,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     }
 
     state->colors = (ColorSet){
-        .background = { 30, 30, 46, 255 },
-        .foreground = { 24, 24, 37, 255 },
-        .bar = { 17, 17, 27, 255 },
-        .text = { 205, 214, 244, 255 },
-        .textFaded = { 88, 91, 112, 255 },
+        .background = { 36, 39, 58, 255 },
+        .foreground = { 30, 32, 48, 255 },
+        .bar = { 54, 58, 79, 255 },
+        .text = { 202, 211, 245, 255 },
+        .textFaded = { 91, 96, 120, 255 },
     };
 
     state->needs_redraw = true;
@@ -114,20 +112,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     state->last_frame_ns = 0;
 
     scheme_init(state);
-    sexp_eval_string(state->chibi.ctx, 
-        "(define-key! global-keymap \"C-q\" (lambda () (quit)))", 
-        -1, 
-        state->chibi.env);
-    sexp result = sexp_eval_string(state->chibi.ctx, 
-        "(define-key! global-keymap \"C-x t\" (lambda () (toggle-theme)))", 
-        -1, 
-        state->chibi.env);
-
-    if (sexp_exceptionp(result)) {
-        printf("ERROR: define-key! failed\n");
-        sexp_print_exception(state->chibi.ctx, result, sexp_current_error_port(state->chibi.ctx));
-        return SDL_APP_FAILURE;
-    }
     
     return SDL_APP_CONTINUE;
 }

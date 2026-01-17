@@ -70,7 +70,7 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
                 .sizing = {
                     .width = CLAY_SIZING_GROW(0),
                 },
-                .padding = CLAY_PADDING_ALL(5)
+                // .padding = CLAY_PADDING_ALL(5)
             },
             .backgroundColor = state->colors.bar,
         }) {

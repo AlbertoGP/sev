@@ -1,8 +1,9 @@
 // Keymap binding function implementations.
 
 #include <assert.h>
-#include <chibi/sexp.h>
+#include <chibi/eval.h>
 #include "keymap.h"
+#include "keyevent.h"
 
 KeyEvent last_event;
 
@@ -108,13 +109,13 @@ static Binding *keymap_lookup(Keymap *km, const KeyEvent *ev) {
     return NULL;
 }
 
-static void execute_command(AppState *app, Binding *b) {
+static void execute_command(AppState *state, Binding *b) {
     Command *cmd = &b->command;
 
     if (cmd->type == COMMAND_C) {
-        cmd->c_fn(app);
+        cmd->c_fn(state);
     } else {
-        sexp_apply(app->chibi.ctx,
+        sexp_apply(state->chibi.ctx,
                    cmd->scheme_proc,
                    SEXP_NULL);
     }
@@ -137,6 +138,8 @@ void key_dispatch(AppState *state, const KeyEvent *ev) {
         printf("Undefined key:\n\tcodepoint: %c\n\tmods: %d\n",
                last_event.codepoint,
                last_event.mods);
+        // if (ev->type == KEYEVENT_CHAR)
+        //     insert_char(ev->codepoint);
         return;
     }
 
@@ -169,6 +172,36 @@ int parse_key_sequence(const char *s, KeyEvent *out) {
             case 'S': mods |= MOD_SHIFT; break;
             }
             s += 2; // skip "C-"
+        }
+
+        if (s[0] == 'S' && s[1] == 'P' && s[2] == 'C') {
+            out[count++] = (KeyEvent){
+                .type = KEYEVENT_CHAR,
+                .mods = mods,
+                .codepoint = (uint32_t)' '
+            };
+            s += 3;
+            continue;
+        }
+
+        if (s[0] == 'E' && s[1] == 'S' && s[2] == 'C') {
+            out[count++] = (KeyEvent){
+                .type = KEYEVENT_SPECIAL,
+                .mods = mods,
+                .keycode = KEY_ESC
+            };
+            s += 3;
+            continue;
+        }
+
+        if (s[0] == 'R' && s[1] == 'E' && s[2] == 'T') {
+            out[count++] = (KeyEvent){
+                .type = KEYEVENT_SPECIAL,
+                .mods = mods,
+                .keycode = KEY_RETURN
+            };
+            s += 3;
+            continue;
         }
 
         /* key */

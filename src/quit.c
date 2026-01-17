@@ -1,5 +1,4 @@
 #include <SDL3/SDL.h>
-#include <chibi/sexp.h>
 
 #include "state.h"
 
