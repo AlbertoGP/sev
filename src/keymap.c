@@ -204,6 +204,16 @@ int parse_key_sequence(const char *s, KeyEvent *out) {
             continue;
         }
 
+        if (s[0] == 'T' && s[1] == 'A' && s[2] == 'B') {
+            out[count++] = (KeyEvent){
+                .type = KEYEVENT_SPECIAL,
+                .mods = mods,
+                .keycode = KEY_TAB
+            };
+            s += 3;
+            continue;
+        }
+
         if (s[0] == 'B' && s[1] == 'S' && s[2] == 'P') {
             out[count++] = (KeyEvent){
                 .type = KEYEVENT_SPECIAL,

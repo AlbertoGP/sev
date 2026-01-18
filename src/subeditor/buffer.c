@@ -243,6 +243,7 @@ bool point_set(Location loc) {
     if (!bl.current) return false;
 
     gb_point_set(bl.current->contents, loc.pos);
+    bl.current->col = 0;
     update_point();
     return true;
 }
@@ -257,23 +258,22 @@ bool point_move(int count) {
         for (int i = 0; i < count; i++) {
             if (gb_char_at(bl.current->contents, point_get().pos + i) == '\n') {
                 bl.current->cur_line++;
-                bl.current->col_saved = bl.current->col = 0;
+                bl.current->col = 0;
             } else {
-                bl.current->col_saved++;
                 bl.current->col++;
             }
         }
     } else {
         if (!point_get().pos) return true;
-        if (count > point_get().pos)
-            count = point_get().pos;
+        if (count < -point_get().pos)
+            count = -point_get().pos;
         for (int i = 0; i > count; i--) {
             if (gb_char_at(bl.current->contents, point_get().pos + i - 1) == '\n') {
                 bl.current->cur_line--;
+            }
+            if (gb_char_at(bl.current->contents, point_get().pos + i) == '\n') {
                 bl.current->col = 0;
-                bl.current->col_saved = get_column();
-            } else {
-                bl.current->col_saved--;
+            } else if (bl.current->col) {
                 bl.current->col--;
             }
         }
@@ -281,7 +281,61 @@ bool point_move(int count) {
 
     gb_point_set(bl.current->contents, point_get().pos + count);
     update_point();
+    bl.current->col_saved = get_column();
     return true;
+}
+
+bool point_move_by_line(int count) {
+    if (!bl.current) return false;
+
+    if (!count) return true;
+    if (count <= 1 - bl.current->cur_line) {
+        point_set(buffer_start());
+        get_column();
+        set_column(bl.current->col_saved, false);
+        bl.current->cur_line = 1;
+        return true;
+    }
+    if (count >= bl.current->num_lines - bl.current->cur_line) {
+        point_set(buffer_end());
+        get_column();
+        set_column(bl.current->col_saved, false);
+        bl.current->cur_line = bl.current->num_lines;
+        return true;
+    }
+    if (count > 0) {
+        int lines = 0;
+        for (int i = bl.current->point.pos; i < bl.current->num_chars; i++) {
+            if (gb_char_at(bl.current->contents, i) == '\n') {
+                lines++;
+                if (lines == count) {
+                    point_set((Location){.pos = i + 1});
+                    get_column();
+                    set_column(bl.current->col_saved, false);
+                    bl.current->cur_line = 0;
+                    point_get_line();
+                    return true;
+                }
+            }
+        }
+    }
+    if (count < 0) {
+        int lines = 0;
+        for (int i = bl.current->point.pos; i > 0; i--) {
+            if (gb_char_at(bl.current->contents, i) == '\n') {
+                lines--;
+                if (lines == count) {
+                    point_set((Location){.pos = i});
+                    get_column();
+                    set_column(bl.current->col_saved, false);
+                    bl.current->cur_line = 0;
+                    point_get_line();
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 Location point_get(void) {
@@ -299,12 +353,29 @@ int point_get_line(void) {
         return bl.current->cur_line;
     }
 }
-Location buffer_start(void);
-Location buffer_end(void);
-int compare_locations(Location loc1, Location loc2);
-int location_to_count(Location loc);
-Location count_to_location(int count);
-char get_char(void);
+Location buffer_start(void) {
+    return (Location){.pos = 0};
+}
+Location buffer_end(void) {
+    return (Location){.pos = gb_used(bl.current->contents)};
+}
+int compare_locations(Location loc1, Location loc2) {
+    int cmp = loc1.pos - loc2.pos;
+    if (cmp > 0) return 1;
+    if (cmp < 0) return -1;
+    return 0;
+}
+int location_to_count(Location loc) {
+    return loc.pos;
+}
+Location count_to_location(int count) {
+    return (Location){.pos = count};
+}
+char get_char(void) {
+    if (bl.current->point.pos == bl.current->num_chars)
+        return '\0';
+    return char_at_point();
+}
 void get_string(char *string, int count);
 
 int get_char_count(void) {
@@ -335,8 +406,7 @@ void insert_char(char c) {
         bl.current->cur_line++;
         bl.current->col_saved = bl.current->col = 0;
     } else {
-        bl.current->col_saved++;
-        bl.current->col++;
+        bl.current->col_saved = ++(bl.current->col);
     }
     gb_insert(bl.current->contents, c);
     bl.current->num_chars = gb_used(bl.current->contents);
@@ -363,8 +433,7 @@ bool delete_chars(int count) {
                 bl.current->num_lines--;
                 bl.current->col = 0;
             } else {
-                bl.current->col_saved--;
-                bl.current->col--;
+                bl.current->col_saved = --(bl.current->col);
             }
         }
         gb_backspace(bl.current->contents, count);
@@ -394,18 +463,36 @@ bool find_first_in_backward(char *string);
 bool find_first_not_in_forward(char *string);
 bool find_first_not_in_backward(char *string);
 int get_column(void) {
-    if (bl.current->col)
+    if (bl.current->col) {  // column is known
         return bl.current->col;
+    } else {    // column must be recalculated.
+        for (int i = 1; i < point_get().pos; i++) {
+            if (gb_char_at(bl.current->contents, point_get().pos - i) == '\n') {
+                return bl.current->col = i;
+            }
+        }
+        return bl.current->col = point_get().pos + 1;
+    }
+}
+void set_column(int column, bool round) {
+    if (bl.current->col == column) return;
+    if (column < 0) column = 0;
 
-    for (int i = 0; i < point_get().pos; i++) {
-        bl.current->col = i;
-        if (gb_char_at(bl.current->contents, point_get().pos - i) == '\n') {
-            return bl.current->col;
+    int delta = column - bl.current->col;
+    if (delta < 0) {
+        point_move(delta);
+        return;
+    }
+    if (delta > gb_back(bl.current->contents))
+        delta = gb_back(bl.current->contents);
+    for (int i = 0; i < delta; i++) {
+        if (char_at_point() == '\n') {
+            delta = i;
+            break;
         }
     }
-    return bl.current->col += 2;
+    point_move(delta);
 }
-void set_column(int column, bool round);
 
 
 char *buffer_text(void) {
@@ -417,6 +504,12 @@ char *buffer_text(void) {
 
 char char_at_point(void) {
     return gb_char_at(bl.current->contents, bl.current->point.pos);
+}
+
+char char_from_point(int n) {
+    if (n < 0) n = 0;
+    if (n > bl.current->num_chars) return '\0';
+    return gb_char_at(bl.current->contents, bl.current->point.pos + n);
 }
 
 void clear_line_num(void) {

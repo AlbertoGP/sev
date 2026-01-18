@@ -7,8 +7,6 @@
 #include "mark.h"
 #include "mode.h"
 
-void clear_line_num(void);
-
 // Initialises the global buffer list.
 bool buffer_list_init(void);
 // Frees the global buffer list.
@@ -41,6 +39,10 @@ bool point_set(Location loc);
 // Moves the point forward (if count is positive) or backward (if negative)
 // by abs(count) characters.
 bool point_move(int count);
+// Moves count lines up or down (down if count is positive, up if negative).
+// Sets the column to as close to col_saved as possible.
+// Does not change col_saved.
+bool point_move_by_line(int count);
 // Returns the current location.
 Location point_get(void);
 // Returns the number of the line that the the point is on.
@@ -169,4 +171,6 @@ void set_column(int column, bool round);
 
 char *buffer_text(void);
 char char_at_point(void);
+char char_from_point(int n);
 void print_buffer(void);
+void clear_line_num(void);

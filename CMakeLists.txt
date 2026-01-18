@@ -47,6 +47,23 @@ if(EMSCRIPTEN)
         vendored/SDL_ttf/include
     )
     
+    # Build native bootstrap first
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/native-chibi
+    )
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} 
+            ${CMAKE_SOURCE_DIR}/vendored/chibi-scheme
+            -DCMAKE_BUILD_TYPE=Release
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/native-chibi
+    )
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} --build . --target chibi-scheme-bootstrap
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/native-chibi
+    )
+    
+    set(CHIBI_BOOTSTRAP_EXECUTABLE "${CMAKE_BINARY_DIR}/native-chibi/chibi-scheme-bootstrap" CACHE FILEPATH "")
+    
     add_subdirectory(
         vendored/chibi-scheme
         ${CMAKE_BINARY_DIR}/chibi-build

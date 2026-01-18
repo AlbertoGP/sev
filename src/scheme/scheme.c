@@ -32,15 +32,33 @@ static sexp scm_self_insert(sexp ctx, sexp self, sexp n) {
     return SEXP_VOID;
 }
 
-static sexp scm_delete_char(sexp ctx, sexp self, sexp n, sexp num) {
+static sexp scm_delete_char(sexp ctx, sexp self, sexp n, sexp count) {
     G->needs_redraw = true;
-    delete_chars(sexp_unbox_fixnum(num));
+    delete_chars(sexp_unbox_fixnum(count));
     return SEXP_VOID;
 }
 
-static sexp scm_point_move(sexp ctx, sexp self, sexp n, sexp num) {
+static sexp scm_point_move(sexp ctx, sexp self, sexp n, sexp count) {
     G->needs_redraw = true;
-    point_move(sexp_unbox_fixnum(num));
+    point_move(sexp_unbox_fixnum(count));
+    return SEXP_VOID;
+}
+
+static sexp scm_point_move_by_line(sexp ctx, sexp self, sexp n, sexp count) {
+    G->needs_redraw = true;
+    point_move_by_line(sexp_unbox_fixnum(count));
+    return SEXP_VOID;
+}
+
+static sexp scm_next_line(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    point_move_by_line(1);
+    return SEXP_VOID;
+}
+
+static sexp scm_prev_line(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    point_move_by_line(-1);
     return SEXP_VOID;
 }
 
@@ -93,7 +111,14 @@ static sexp scm_set_key(sexp ctx, sexp self, sexp n,
 
 static sexp scm_char_at_point(sexp ctx, sexp self, sexp n) {
     printf("point: %c\n", char_at_point());
-    print_buffer();
+    // print_buffer();
+
+    return SEXP_VOID;
+}
+
+static sexp scm_set_column(sexp ctx, sexp self, sexp n, sexp column) {
+    G->needs_redraw = true;
+    set_column(sexp_unbox_fixnum(column), false);
 
     return SEXP_VOID;
 }
@@ -140,6 +165,10 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "self-insert", 0, scm_self_insert);
     sexp_define_foreign(ctx, env, "delete-char", 1, scm_delete_char);
     sexp_define_foreign(ctx, env, "move-point", 1, scm_point_move);
+    sexp_define_foreign(ctx, env, "move-point-by-line", 1, scm_point_move_by_line);
+    sexp_define_foreign(ctx, env, "next-line", 0, scm_next_line);
+    sexp_define_foreign(ctx, env, "prev-line", 0, scm_prev_line);
+    sexp_define_foreign(ctx, env, "set-column", 1, scm_set_column);
     sexp_define_foreign(ctx, env, "toggle-theme", 0, scm_toggle_theme);
     sexp_define_foreign(ctx, env, "char-at-point", 0, scm_char_at_point);
     sexp_define_foreign(ctx, env, "clear-line-num", 0, scm_clear_line_num);
