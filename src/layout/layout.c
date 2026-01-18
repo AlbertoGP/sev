@@ -65,6 +65,18 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
              .chars = ccount,
              .length = strlen(ccount),
         };
+        static char lncount[24];
+        snprintf(lncount, 24, "%d / %d", point_get_line(), get_line_count());
+        Clay_String lineCount = {
+             .chars = lncount,
+             .length = strlen(lncount),
+        };
+        static char colcount[24];
+        snprintf(colcount, 24, "%d", get_column());
+        Clay_String col = {
+             .chars = colcount,
+             .length = strlen(colcount),
+        };
         CLAY(CLAY_ID("Status Bar"), {
             .layout = {
                 .sizing = {
@@ -114,6 +126,40 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
                     .textColor = state->colors.text,
                 }));
              CLAY_TEXT(charCount, CLAY_TEXT_CONFIG({
+                    .fontId = FONT_NORMAL,
+                    .fontSize = 14,
+                    .textColor = state->colors.text,
+                }));
+             CLAY(CLAY_ID("spacer 3"), {
+             .layout = {
+             .sizing = {
+             .width = CLAY_SIZING_FIXED(25)
+             }
+             }
+             }) {}
+             CLAY_TEXT(CLAY_STRING("Line: "), CLAY_TEXT_CONFIG({
+                    .fontId = FONT_BOLD,
+                    .fontSize = 14,
+                    .textColor = state->colors.text,
+                }));
+             CLAY_TEXT(lineCount, CLAY_TEXT_CONFIG({
+                    .fontId = FONT_NORMAL,
+                    .fontSize = 14,
+                    .textColor = state->colors.text,
+                }));
+             CLAY(CLAY_ID("spacer 4"), {
+             .layout = {
+             .sizing = {
+             .width = CLAY_SIZING_FIXED(25)
+             }
+             }
+             }) {}
+             CLAY_TEXT(CLAY_STRING("Col: "), CLAY_TEXT_CONFIG({
+                    .fontId = FONT_BOLD,
+                    .fontSize = 14,
+                    .textColor = state->colors.text,
+                }));
+             CLAY_TEXT(col, CLAY_TEXT_CONFIG({
                     .fontId = FONT_NORMAL,
                     .fontSize = 14,
                     .textColor = state->colors.text,

@@ -39,7 +39,6 @@ static sexp scm_delete_char(sexp ctx, sexp self, sexp n, sexp num) {
 }
 
 static sexp scm_point_move(sexp ctx, sexp self, sexp n, sexp num) {
-    printf("this fired\n");
     G->needs_redraw = true;
     point_move(sexp_unbox_fixnum(num));
     return SEXP_VOID;
@@ -92,6 +91,18 @@ static sexp scm_set_key(sexp ctx, sexp self, sexp n,
     return SEXP_VOID;
 }
 
+static sexp scm_char_at_point(sexp ctx, sexp self, sexp n) {
+    printf("point: %c\n", char_at_point());
+    print_buffer();
+
+    return SEXP_VOID;
+}
+
+static sexp scm_clear_line_num(sexp ctx, sexp self, sexp n) {
+    clear_line_num();
+    return SEXP_VOID;
+}
+
 void scheme_init(AppState *state) {
     G = state;
     sexp_scheme_init();
@@ -130,6 +141,8 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "delete-char", 1, scm_delete_char);
     sexp_define_foreign(ctx, env, "move-point", 1, scm_point_move);
     sexp_define_foreign(ctx, env, "toggle-theme", 0, scm_toggle_theme);
+    sexp_define_foreign(ctx, env, "char-at-point", 0, scm_char_at_point);
+    sexp_define_foreign(ctx, env, "clear-line-num", 0, scm_clear_line_num);
     
     sexp result = sexp_load(ctx, sexp_c_string(ctx, "resources/init.scm", -1), env);
     if (sexp_exceptionp(result)) {

@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <limits.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -89,6 +90,10 @@ bool gb_insert(GapBuf *buf, char c) {
     return true;
 }
 
+int gb_point_get(GapBuf *buf) {
+    return buf->point;
+}
+
 void gb_point_set(GapBuf *buf, int target) {
     if (target < 0)
         target = 0;
@@ -136,18 +141,20 @@ void gb_point_right(GapBuf *buf) {
 }
 
 void gb_backspace(GapBuf *buf, int count) {
-    if (buf->point > 0) {
-        buf->point -= count;
-    }
+    if (count < 0) return;
+    if (count > buf->point)
+        count = buf->point;
+    buf->point -= count;
     if (gb_used(buf) < buf->size / 4) {
         gb_shrink(buf, buf->size / 2);
     }
 }
 
-void gb_delete(GapBuf *buf) {
-    if (buf->gap_end < buf->size) {
-        buf->gap_end++;
-    }
+void gb_delete(GapBuf *buf, int count) {
+    if (count < 0) return;
+    if (count > gb_back(buf))
+        count = gb_back(buf);
+    buf->gap_end += count;
     if (gb_used(buf) < buf->size / 4) {
         gb_shrink(buf, buf->size / 2);
     }
@@ -166,4 +173,39 @@ char *gb_text(GapBuf *buf) {
     strncpy(text + buf->point, buf->buffer + buf->gap_end, gb_back(buf));
     text[gb_used(buf)] = '\0';
     return text;
+}
+
+char gb_char_at(GapBuf *buf, int i) {
+    if (i < 0 || i > gb_used(buf)) return '\0';
+    if (i < gb_front(buf)) {
+        return buf->buffer[i];
+    } else {
+        return buf->buffer[i + buf->gap_end - buf->point];
+    }
+}
+
+void gb_print_state(GapBuf *buf) {
+    printf("back: %d\n", gb_back(buf));
+    for (int i = 0; i < buf->size; i++) {
+        if (buf->buffer[i] != '\n')
+            putchar(buf->buffer[i]);
+        else putchar('~');
+    }
+    putchar('\n');
+    for (int i = 0; i < buf->size; i++) {
+        if (i == buf->point || i == buf->gap_end)
+            putchar('^');
+        else putchar(' ');
+    }
+    for (int i = 0; i < buf->point; i++) {
+        if (buf->buffer[i] != '\n')
+            putchar(buf->buffer[i]);
+        else putchar('~');
+    }
+    for (int i = buf->gap_end; i < buf->size; i++) {
+        if (buf->buffer[i] != '\n')
+            putchar(buf->buffer[i]);
+        else putchar('~');
+    }
+    fflush(stdout);
 }

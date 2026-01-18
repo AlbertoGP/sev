@@ -33,6 +33,8 @@ bool gb_grow(GapBuf *buf, int new_size);
 // Can fail exceptionally if buffer is full, and the attempt
 // to grow it fails.
 bool gb_insert(GapBuf *buf, char c);
+// Get the position of the point.
+int gb_point_get(GapBuf *buf);
 // Set the point to an arbitrary position.
 // Will not exceed the start or end of buffer content.
 void gb_point_set(GapBuf *buf, int target);
@@ -43,6 +45,9 @@ void gb_point_right(GapBuf *buf);
 // Delete the chracter before the point and move the point back by 1.
 void gb_backspace(GapBuf *buf, int count);
 // Delete the chracter after the gap.
-void gb_delete(GapBuf *buf);
+void gb_delete(GapBuf *buf, int count);
 // Returns the text of the gap buffer as a nul-terminated string.
 char *gb_text(GapBuf *buf);
+// Returns the specified character, as if there is no gap.
+char gb_char_at(GapBuf *buf, int i);
+void gb_print_state(GapBuf *buf);

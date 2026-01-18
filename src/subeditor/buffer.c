@@ -30,6 +30,9 @@ typedef struct Buffer {
     int num_chars;
     int num_lines;
 
+    int col;
+    int col_saved;
+
     Mark *marks;
     Mode *modes;
 
@@ -44,8 +47,11 @@ typedef struct BufferList {
     Buffer *current;
 } BufferList;
 
-
 static BufferList bl;
+
+static void update_point(void) {
+    bl.current->point.pos = gb_point_get(bl.current->contents);
+}
 
 bool buffer_list_init(void) {
     bl.list = NULL;
@@ -115,6 +121,7 @@ bool buffer_create(const char *name) {
 
     buf->cur_line = 1;
     buf->num_lines = 1;
+    buf->col_saved = buf->col = 1;
 
     buf->contents = gb_new(0);
     if (!buf->contents) {
@@ -166,6 +173,7 @@ bool buffer_clear(const char *name) {
     buf->cur_line = 1;
     buf->num_lines = 1;
     buf->num_chars = 0;
+    buf->col_saved = buf->col = 1;
     if (buf->file_name[0] == '\0') {
         buf->is_modified = true;
     }
@@ -235,6 +243,7 @@ bool point_set(Location loc) {
     if (!bl.current) return false;
 
     gb_point_set(bl.current->contents, loc.pos);
+    update_point();
     return true;
 }
 
@@ -242,16 +251,54 @@ bool point_move(int count) {
     if (!bl.current) return false;
 
     if (!count) return true;
+    else if (count > 0) {
+        if (count > bl.current->num_chars - point_get().pos)
+            count = bl.current->num_chars - point_get().pos;
+        for (int i = 0; i < count; i++) {
+            if (gb_char_at(bl.current->contents, point_get().pos + i) == '\n') {
+                bl.current->cur_line++;
+                bl.current->col_saved = bl.current->col = 0;
+            } else {
+                bl.current->col_saved++;
+                bl.current->col++;
+            }
+        }
+    } else {
+        if (!point_get().pos) return true;
+        if (count > point_get().pos)
+            count = point_get().pos;
+        for (int i = 0; i > count; i--) {
+            if (gb_char_at(bl.current->contents, point_get().pos + i - 1) == '\n') {
+                bl.current->cur_line--;
+                bl.current->col = 0;
+                bl.current->col_saved = get_column();
+            } else {
+                bl.current->col_saved--;
+                bl.current->col--;
+            }
+        }
+    }
 
-    gb_point_set(bl.current->contents, bl.current->contents->point + count);
+    gb_point_set(bl.current->contents, point_get().pos + count);
+    update_point();
     return true;
 }
 
 Location point_get(void) {
-    return (Location){ .pos = bl.current->contents->point };
+    return bl.current->point;
 }
 
-int point_get_line(void);
+int point_get_line(void) {
+    if (bl.current->cur_line) {
+        return bl.current->cur_line;
+    } else {
+        bl.current->cur_line = 1;
+        char *c = gb_text(bl.current->contents);
+        for (int i = 0; i < bl.current->contents->point; i++, c++)
+            if (*c == '\n') bl.current->cur_line++;
+        return bl.current->cur_line;
+    }
+}
 Location buffer_start(void);
 Location buffer_end(void);
 int compare_locations(Location loc1, Location loc2);
@@ -264,7 +311,16 @@ int get_char_count(void) {
     return bl.current->num_chars;
 }
 
-int get_line_count(void);
+int get_line_count(void) {
+    if (bl.current->num_lines) {
+        return bl.current->num_lines;
+    } else {
+        bl.current->num_lines = 1;
+        for (char *c = gb_text(bl.current->contents); *c; c++)
+            if (*c == '\n') bl.current->num_lines++;
+        return bl.current->num_lines;
+    }
+}
 void get_file_name(char *file_name, int size);
 bool set_file_name(char *file_name);
 bool buffer_write(void);
@@ -274,8 +330,17 @@ bool is_file_changed(void);
 void set_modified(bool is_modified);
 bool get_modified(void);
 void insert_char(char c) {
+    if (c == '\n') {
+        bl.current->num_lines++;
+        bl.current->cur_line++;
+        bl.current->col_saved = bl.current->col = 0;
+    } else {
+        bl.current->col_saved++;
+        bl.current->col++;
+    }
     gb_insert(bl.current->contents, c);
     bl.current->num_chars = gb_used(bl.current->contents);
+    update_point();
 }
 void insert_string(char *s) {
     while (*s) {
@@ -289,8 +354,33 @@ void replace_string(char *string);
 bool delete_chars(int count) {
     if (!bl.current) return false;
 
-    gb_backspace(bl.current->contents, count);
+    if (count > 0) {
+        if (count > bl.current->point.pos)
+            count = bl.current->point.pos;
+        for (int i = 0; i < count; i++) {
+            if (gb_char_at(bl.current->contents, point_get().pos + i - 1) == '\n') {
+                bl.current->cur_line--;
+                bl.current->num_lines--;
+                bl.current->col = 0;
+            } else {
+                bl.current->col_saved--;
+                bl.current->col--;
+            }
+        }
+        gb_backspace(bl.current->contents, count);
+    }
+    if (count < 0) {
+        if (count < -gb_back(bl.current->contents))
+            count = -gb_back(bl.current->contents);
+        for (int i = 0; i > count; i--) {
+            if (gb_char_at(bl.current->contents, point_get().pos + i) == '\n')
+                bl.current->num_lines--;
+        }
+        gb_delete(bl.current->contents, -count);
+    }
     bl.current->num_chars = gb_used(bl.current->contents);
+    update_point();
+    bl.current->col_saved = get_column();
     return true;
 }
 
@@ -303,7 +393,18 @@ bool find_first_in_forward(char *string);
 bool find_first_in_backward(char *string);
 bool find_first_not_in_forward(char *string);
 bool find_first_not_in_backward(char *string);
-int get_column(void);
+int get_column(void) {
+    if (bl.current->col)
+        return bl.current->col;
+
+    for (int i = 0; i < point_get().pos; i++) {
+        bl.current->col = i;
+        if (gb_char_at(bl.current->contents, point_get().pos - i) == '\n') {
+            return bl.current->col;
+        }
+    }
+    return bl.current->col += 2;
+}
 void set_column(int column, bool round);
 
 
@@ -312,4 +413,17 @@ char *buffer_text(void) {
     if (text) free(text);
     text = gb_text(bl.current->contents);
     return text;
+}
+
+char char_at_point(void) {
+    return gb_char_at(bl.current->contents, bl.current->point.pos);
+}
+
+void clear_line_num(void) {
+    bl.current->cur_line = 0;
+    bl.current->num_lines = 0;
+}
+
+void print_buffer(void) {
+    gb_print_state(bl.current->contents);
 }

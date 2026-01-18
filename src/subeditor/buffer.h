@@ -7,6 +7,8 @@
 #include "mark.h"
 #include "mode.h"
 
+void clear_line_num(void);
+
 // Initialises the global buffer list.
 bool buffer_list_init(void);
 // Frees the global buffer list.
@@ -166,3 +168,5 @@ int get_column(void);
 void set_column(int column, bool round);
 
 char *buffer_text(void);
+char char_at_point(void);
+void print_buffer(void);
