@@ -58,18 +58,28 @@ static KeyMod normalize_mods(SDL_Keymod m) {
     return r;
 }
 
-// Returns true if an SDL_Keycode is a non-text key (e.g. Esc, Tab, Backspace)
-static bool is_non_text_key(SDL_Keycode k) {
-    if (SDLK_F1 <= k && k <= SDLK_F24)
-        return true;
-
+// Returns true if an SDL_Keycode is a mod key.
+static bool is_mod_key(SDL_Keycode k) {
     switch (k) {
+    case SDLK_RSHIFT:
+    case SDLK_LSHIFT:
     case SDLK_LCTRL:
     case SDLK_RCTRL:
     case SDLK_LGUI:
     case SDLK_RGUI:
     case SDLK_LALT:
     case SDLK_RALT:
+        return true;
+    }
+    return false;
+}
+
+// Returns true if an SDL_Keycode is a non-mod, non-text key.
+static bool is_non_text_key(SDL_Keycode k) {
+    if (SDLK_F1 <= k && k <= SDLK_F24)
+        return true;
+
+    switch (k) {
     case SDLK_ESCAPE:
     case SDLK_RETURN:
     case SDLK_TAB:
@@ -186,8 +196,11 @@ void handle_key_down(AppState *state, const SDL_KeyboardEvent *key) {
 
     uint16_t mods = normalize_mods(key->mod);
 
+    // Don't pass mod key press events to key_dispatch.
+    if (is_mod_key(key->key)) {
+        return;
     // Non-text, non-char keys
-    if (is_non_text_key(key->key)) {
+    } else if (is_non_text_key(key->key)) {
         KeyEvent ev = {
             .type = KEYEVENT_SPECIAL,
             .keycode = sdl_to_keyspecial(key->key),
@@ -201,6 +214,6 @@ void handle_key_down(AppState *state, const SDL_KeyboardEvent *key) {
             .mods = mods
         };
         key_dispatch(state, &ev);
-        return;
     }
+    return;
 }
