@@ -253,10 +253,10 @@ bool point_move(int count) {
 
     if (!count) return true;
     else if (count > 0) {
-        if (count > bl.current->num_chars - point_get().pos)
-            count = bl.current->num_chars - point_get().pos;
+        if (count > get_char_count() - point_get().pos)
+            count = get_char_count() - point_get().pos;
         for (int i = 0; i < count; i++) {
-            if (gb_char_at(bl.current->contents, point_get().pos + i) == '\n') {
+            if (char_from_point(i) == '\n') {
                 bl.current->cur_line++;
                 bl.current->col = 0;
             } else {
@@ -268,10 +268,10 @@ bool point_move(int count) {
         if (count < -point_get().pos)
             count = -point_get().pos;
         for (int i = 0; i > count; i--) {
-            if (gb_char_at(bl.current->contents, point_get().pos + i - 1) == '\n') {
+            if (char_from_point(i - 1) == '\n') {
                 bl.current->cur_line--;
             }
-            if (gb_char_at(bl.current->contents, point_get().pos + i) == '\n') {
+            if (char_from_point(i) == '\n') {
                 bl.current->col = 0;
             } else if (bl.current->col) {
                 bl.current->col--;
@@ -305,7 +305,7 @@ bool point_move_by_line(int count) {
     }
     if (count > 0) {
         int lines = 0;
-        for (int i = bl.current->point.pos; i < bl.current->num_chars; i++) {
+        for (int i = point_get().pos; i < get_char_count(); i++) {
             if (gb_char_at(bl.current->contents, i) == '\n') {
                 lines++;
                 if (lines == count) {
@@ -321,7 +321,7 @@ bool point_move_by_line(int count) {
     }
     if (count < 0) {
         int lines = 0;
-        for (int i = bl.current->point.pos; i > 0; i--) {
+        for (int i = point_get().pos; i > 0; i--) {
             if (gb_char_at(bl.current->contents, i) == '\n') {
                 lines--;
                 if (lines == count) {
@@ -343,9 +343,9 @@ Location point_get(void) {
 }
 
 int point_get_line(void) {
-    if (bl.current->cur_line) {
+    if (bl.current->cur_line) {     // line is known
         return bl.current->cur_line;
-    } else {
+    } else {                        // line must be recalculated
         bl.current->cur_line = 1;
         char *c = gb_text(bl.current->contents);
         for (int i = 0; i < bl.current->contents->point; i++, c++)
@@ -372,7 +372,7 @@ Location count_to_location(int count) {
     return (Location){.pos = count};
 }
 char get_char(void) {
-    if (bl.current->point.pos == bl.current->num_chars)
+    if (point_get().pos == get_char_count())
         return '\0';
     return char_at_point();
 }
@@ -414,8 +414,7 @@ void insert_char(char c) {
 }
 void insert_string(char *s) {
     while (*s) {
-        insert_char(*s);
-        s++;
+        insert_char(*s++);
     }
 }
 void replace_char(char c);
@@ -425,10 +424,10 @@ bool delete_chars(int count) {
     if (!bl.current) return false;
 
     if (count > 0) {
-        if (count > bl.current->point.pos)
-            count = bl.current->point.pos;
+        if (count > point_get().pos)
+            count = point_get().pos;
         for (int i = 0; i < count; i++) {
-            if (gb_char_at(bl.current->contents, point_get().pos + i - 1) == '\n') {
+            if (char_from_point(i - 1) == '\n') {
                 bl.current->cur_line--;
                 bl.current->num_lines--;
                 bl.current->col = 0;
@@ -442,7 +441,7 @@ bool delete_chars(int count) {
         if (count < -gb_back(bl.current->contents))
             count = -gb_back(bl.current->contents);
         for (int i = 0; i > count; i--) {
-            if (gb_char_at(bl.current->contents, point_get().pos + i) == '\n')
+            if (char_from_point(i) == '\n')
                 bl.current->num_lines--;
         }
         gb_delete(bl.current->contents, -count);
@@ -510,13 +509,4 @@ char char_from_point(int n) {
     if (n < 0) n = 0;
     if (n > bl.current->num_chars) return '\0';
     return gb_char_at(bl.current->contents, bl.current->point.pos + n);
-}
-
-void clear_line_num(void) {
-    bl.current->cur_line = 0;
-    bl.current->num_lines = 0;
-}
-
-void print_buffer(void) {
-    gb_print_state(bl.current->contents);
 }

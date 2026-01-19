@@ -172,5 +172,3 @@ void set_column(int column, bool round);
 char *buffer_text(void);
 char char_at_point(void);
 char char_from_point(int n);
-void print_buffer(void);
-void clear_line_num(void);

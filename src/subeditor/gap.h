@@ -50,4 +50,3 @@ void gb_delete(GapBuf *buf, int count);
 char *gb_text(GapBuf *buf);
 // Returns the specified character, as if there is no gap.
 char gb_char_at(GapBuf *buf, int i);
-void gb_print_state(GapBuf *buf);

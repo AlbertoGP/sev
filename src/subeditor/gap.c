@@ -2,7 +2,6 @@
 
 #include <stdbool.h>
 #include <limits.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -182,30 +181,4 @@ char gb_char_at(GapBuf *buf, int i) {
     } else {
         return buf->buffer[i + buf->gap_end - buf->point];
     }
-}
-
-void gb_print_state(GapBuf *buf) {
-    printf("back: %d\n", gb_back(buf));
-    for (int i = 0; i < buf->size; i++) {
-        if (buf->buffer[i] != '\n')
-            putchar(buf->buffer[i]);
-        else putchar('~');
-    }
-    putchar('\n');
-    for (int i = 0; i < buf->size; i++) {
-        if (i == buf->point || i == buf->gap_end)
-            putchar('^');
-        else putchar(' ');
-    }
-    for (int i = 0; i < buf->point; i++) {
-        if (buf->buffer[i] != '\n')
-            putchar(buf->buffer[i]);
-        else putchar('~');
-    }
-    for (int i = buf->gap_end; i < buf->size; i++) {
-        if (buf->buffer[i] != '\n')
-            putchar(buf->buffer[i]);
-        else putchar('~');
-    }
-    fflush(stdout);
 }

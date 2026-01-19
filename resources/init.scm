@@ -1,6 +1,4 @@
-(set-key! global-keymap "C-x l" clear-line-num)
-; (set-key! global-keymap "ESC" char-at-point)
-(set-key! global-keymap "ESC" (lambda () (set-column 5)))
+(set-key! global-keymap "ESC" char-at-point)
 (set-key! global-keymap "C-q" quit)
 (set-key! global-keymap "C-x t" toggle-theme)
 (set-key! global-keymap "SPC" self-insert)
