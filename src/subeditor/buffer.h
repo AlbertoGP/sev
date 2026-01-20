@@ -7,6 +7,8 @@
 #include "mark.h"
 #include "mode.h"
 
+typedef struct Buffer Buffer;
+
 // Initialises the global buffer list.
 bool buffer_list_init(void);
 // Frees the global buffer list.
@@ -172,3 +174,5 @@ void set_column(int column, bool round);
 char *buffer_text(void);
 char char_at_point(void);
 char char_from_point(int n);
+int buf_char_at(Buffer *buf, int index);
+int buf_size(Buffer *buf);

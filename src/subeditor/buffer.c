@@ -510,3 +510,11 @@ char char_from_point(int n) {
     if (n > bl.current->num_chars) return '\0';
     return gb_char_at(bl.current->contents, bl.current->point.pos + n);
 }
+
+int buf_char_at(Buffer *buf, int index) {
+    return gb_char_at(buf->contents, index);
+}
+
+int buf_size(Buffer *buf) {
+    return gb_used(buf->contents);
+}
