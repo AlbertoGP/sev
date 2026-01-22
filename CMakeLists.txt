@@ -16,6 +16,7 @@ set(SRC_FILES
     src/layout/layout.c
     src/subeditor/buffer.c
     src/subeditor/gap.c
+    src/subeditor/line.c
     src/subeditor/mark.c
     src/scheme/scheme.c
 )
@@ -32,9 +33,13 @@ if(EMSCRIPTEN)
     # Set output suffix to .html
     set_target_properties(app PROPERTIES SUFFIX ".html")
 
-    # Preload resources folder
-    set(EMCC_ASSETS "--preload-file ${CMAKE_SOURCE_DIR}/resources@/resources")
-    set_target_properties(app PROPERTIES LINK_FLAGS "${EMCC_ASSETS}")
+    # Preload resources folder and chibi-scheme lib (required for standard env)
+    set(EMCC_ASSETS
+        "--preload-file ${CMAKE_SOURCE_DIR}/resources@/resources"
+        "--preload-file ${CMAKE_SOURCE_DIR}/vendored/chibi-scheme/lib@/lib"
+    )
+    list(JOIN EMCC_ASSETS " " EMCC_ASSETS_STR)
+    set_target_properties(app PROPERTIES LINK_FLAGS "${EMCC_ASSETS_STR}")
 
     # Add vendored SDL libraries
     add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
@@ -47,22 +52,31 @@ if(EMSCRIPTEN)
         vendored/SDL_ttf/include
     )
     
-    # Build native bootstrap first
+    # Build native bootstrap first (clear emscripten env vars)
     execute_process(
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/native-chibi
     )
     execute_process(
-        COMMAND ${CMAKE_COMMAND} 
+        COMMAND ${CMAKE_COMMAND} -E env --unset=CC --unset=CXX --unset=AR --unset=RANLIB
+            ${CMAKE_COMMAND}
             ${CMAKE_SOURCE_DIR}/vendored/chibi-scheme
             -DCMAKE_BUILD_TYPE=Release
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/native-chibi
+        RESULT_VARIABLE bootstrap_config_result
     )
+    if(NOT bootstrap_config_result EQUAL 0)
+        message(FATAL_ERROR "Failed to configure native chibi-scheme bootstrap")
+    endif()
     execute_process(
         COMMAND ${CMAKE_COMMAND} --build . --target chibi-scheme-bootstrap
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/native-chibi
+        RESULT_VARIABLE bootstrap_build_result
     )
-    
-    set(CHIBI_BOOTSTRAP_EXECUTABLE "${CMAKE_BINARY_DIR}/native-chibi/chibi-scheme-bootstrap" CACHE FILEPATH "")
+    if(NOT bootstrap_build_result EQUAL 0)
+        message(FATAL_ERROR "Failed to build native chibi-scheme bootstrap")
+    endif()
+
+    set(CHIBI_BOOTSTRAP_EXECUTABLE "${CMAKE_BINARY_DIR}/native-chibi/chibi-scheme-bootstrap" CACHE FILEPATH "" FORCE)
     
     add_subdirectory(
         vendored/chibi-scheme
@@ -72,8 +86,8 @@ if(EMSCRIPTEN)
 
     # Link the libraries
     target_link_libraries(app PRIVATE
-        SDL3
-        SDL3_ttf::SDL3_ttf
+        SDL3::SDL3-static
+        SDL3_ttf::SDL3_ttf-static
         chibi::libchibi-scheme
     )
 

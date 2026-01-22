@@ -2,7 +2,7 @@
 compile: build run
 
 build:
-	gcc ./src/*.c ./src/clay/*.c ./src/layout/*.c ./src/scheme/*.c ./src/subeditor/*.c -o ./out/app -lSDL3 -lSDL3_ttf -lchibi-scheme
+	gcc ./src/*.c ./src/clay/*.c ./src/layout/*.c ./src/scheme/*.c ./src/subeditor/*.c -o ./out/app -lSDL3 -lSDL3_ttf -lchibi-scheme && cp ./resources/init.scm ./out/resources/init.scm
 
 # Debug build with AddressSanitizer
 debug: build-debug run

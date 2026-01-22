@@ -132,11 +132,30 @@ static sexp scm_line_table_print(sexp ctx, sexp self, sexp n) {
 void scheme_init(AppState *state) {
     G = state;
     sexp_scheme_init();
-    
+
     sexp ctx = sexp_make_eval_context(NULL, NULL, NULL, 0, 512*1024*1024);
+    if (!ctx || sexp_exceptionp(ctx)) {
+        fprintf(stderr, "ERROR: failed to create eval context\n");
+        return;
+    }
+
     sexp env = sexp_load_standard_env(ctx, NULL, SEXP_SEVEN);
-    sexp_load_standard_ports(ctx, env, stdin, stdout, stderr, 1);
-    
+    if (sexp_exceptionp(env)) {
+        fprintf(stderr, "ERROR: failed to load standard env\n");
+        // Try to print exception message directly
+        sexp msg = sexp_exception_message(env);
+        if (sexp_stringp(msg)) {
+            fprintf(stderr, "  Exception: %s\n", sexp_string_data(msg));
+        }
+        sexp irritants = sexp_exception_irritants(env);
+        if (sexp_pairp(irritants) && sexp_stringp(sexp_car(irritants))) {
+            fprintf(stderr, "  Irritant: %s\n", sexp_string_data(sexp_car(irritants)));
+        }
+        return;
+    }
+
+    sexp_load_standard_ports(ctx, env, stdin, stdout, stderr, 0);
+
     state->chibi.ctx = ctx;
     state->chibi.env = env;
     
@@ -173,8 +192,17 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "toggle-theme", 0, scm_toggle_theme);
     sexp_define_foreign(ctx, env, "char-at-point", 0, scm_char_at_point);
     sexp_define_foreign(ctx, env, "line-table-print", 0, scm_line_table_print);
+
+    #ifdef __EMSCRIPTEN__
+    #define INIT_SCRIPT_PATH "/resources/init.scm"
+    #else
+    char* basePath = (char*)SDL_GetBasePath();
+    char initScriptPath[1024];
+    snprintf(initScriptPath, sizeof(initScriptPath), "%sresources/init.scm", basePath);
+    #define INIT_SCRIPT_PATH initScriptPath
+    #endif
     
-    sexp result = sexp_load(ctx, sexp_c_string(ctx, "resources/init.scm", -1), env);
+    sexp result = sexp_load(ctx, sexp_c_string(ctx, INIT_SCRIPT_PATH, -1), env);
     if (sexp_exceptionp(result)) {
         sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
     }

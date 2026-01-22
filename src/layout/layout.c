@@ -54,19 +54,19 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
              .length = strlen(buffer_get_name()),
         };
         static char pos[12];
-        snprintf(pos, 12, "%d", point_get().pos);
+        snprintf(pos, 12, "%zu", point_get().pos);
         Clay_String pointPos = {
              .chars = pos,
              .length = strlen(pos),
         };
         static char ccount[12];
-        snprintf(ccount, 12, "%d", get_char_count());
+        snprintf(ccount, 12, "%zu", get_char_count());
         Clay_String charCount = {
              .chars = ccount,
              .length = strlen(ccount),
         };
         static char lncount[24];
-        snprintf(lncount, 24, "%d / %d", point_get_line(), get_line_count());
+        snprintf(lncount, 24, "%zu / %zu", point_get_line(), get_line_count());
         Clay_String lineCount = {
              .chars = lncount,
              .length = strlen(lncount),
