@@ -6,6 +6,7 @@
 #include "location.h"
 #include "mark.h"
 #include "mode.h"
+#include <stddef.h>
 
 typedef struct Buffer Buffer;
 
@@ -48,7 +49,7 @@ bool point_move_by_line(int count);
 // Returns the current location.
 Location point_get(void);
 // Returns the number of the line that the the point is on.
-int point_get_line(void);
+size_t point_get_line(void);
 // Returns the location of the start of the buffer.
 Location buffer_start(void);
 // Returns the location of the end of the buffer.
@@ -61,9 +62,9 @@ Location buffer_end(void);
 int compare_locations(Location loc1, Location loc2);
 // Accepts a location and returns the number of characters between the location
 // and the beginning of the buffer.
-int location_to_count(Location loc);
+size_t location_to_count(Location loc);
 // Accepts a nonnegative count and converts it to the corresponding location.
-Location count_to_location(int count);
+Location count_to_location(size_t count);
 
 // Returns the character after the point.
 // Results are undefined if the point is at the end of the buffer.
@@ -72,12 +73,12 @@ char get_char(void);
 // starting from the point.
 // It will return fewer than count characters if the end of the buffer is encountered.
 // Requires a pointer to char to store the result.
-void get_string(char *string, int count);
+void get_string(char *string, size_t count);
 // Returns the number of characters in the current buffer.
-int get_char_count(void);
+size_t get_char_count(void);
 // Returns the number of lines in the current buffer.
 // It is undefined whether or not one counts an incomplete last line.
-int get_line_count(void);
+size_t get_line_count(void);
 
 // Returns the file name that is currently associated with the current buffer.
 // The size of the buffer allocated for the returned filename is passed in.
@@ -174,5 +175,6 @@ void set_column(int column, bool round);
 char *buffer_text(void);
 char char_at_point(void);
 char char_from_point(int n);
-int buf_char_at(Buffer *buf, int index);
+int buf_char_at(Buffer *buf, size_t index);
 int buf_size(Buffer *buf);
+void line_table_print(void);

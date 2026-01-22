@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <stddef.h>
+
 typedef struct Location {
-    int pos;
+    size_t pos;
 } Location;

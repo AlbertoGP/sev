@@ -10,7 +10,7 @@
 #define MIN_BUF_SIZE 1024
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
-GapBuf *gb_new(int init_size) {
+GapBuf *gb_new(size_t init_size) {
     GapBuf *buf = (GapBuf*) malloc(sizeof *buf);
     if (!buf) return NULL;
 
@@ -31,13 +31,17 @@ void gb_free(GapBuf *buf) {
     free(buf);
 }
 
-void gb_move_backtext(GapBuf *buf, char *new_buf, int new_size) {
+// Move backtext of `buf` to back of `new_buf`.
+static void gb_move_backtext(GapBuf *buf, char *new_buf, size_t new_size) {
   memmove(new_buf + new_size - gb_back(buf), // back of new_buf
           buf->buffer + buf->gap_end,        // back of buf
           gb_back(buf));                     // size of backtext
 }
 
-void gb_shrink(GapBuf *buf, int new_size) {
+// Shrink buf to new_size - never fails.
+// No return value; i.e. no bool as in gb_grow(),
+// because it does not matter if we cannot shrink buffer.
+static void gb_shrink(GapBuf *buf, size_t new_size) {
     // we have to move first the backtext forward and then shrink
     new_size = MAX(new_size, MIN_BUF_SIZE);
     if (new_size < gb_used(buf)) {
@@ -56,7 +60,8 @@ void gb_shrink(GapBuf *buf, int new_size) {
     }
 }
 
-bool gb_grow(GapBuf *buf, int new_size) {
+// Grow buf to new_size. Operation can fail.
+static bool gb_grow(GapBuf *buf, size_t new_size) {
     // we have to grow first and then move the backtext
     new_size = MAX(new_size, MIN_BUF_SIZE);
     if (buf->size >= new_size) {
@@ -79,7 +84,7 @@ bool gb_grow(GapBuf *buf, int new_size) {
 bool gb_insert(GapBuf *buf, char c) {
     // grow buffer if there is no more space
     if (buf->point == buf->gap_end) {
-        int new_size = capped_dbl_size(buf->size);
+        size_t new_size = capped_dbl_size(buf->size);
         if (!gb_grow(buf, new_size)) {
             return false;
         }
@@ -93,9 +98,7 @@ int gb_point_get(GapBuf *buf) {
     return buf->point;
 }
 
-void gb_point_set(GapBuf *buf, int target) {
-    if (target < 0)
-        target = 0;
+void gb_point_set(GapBuf *buf, size_t target) {
     if (target > gb_used(buf))
         target = gb_used(buf);
 
@@ -103,7 +106,7 @@ void gb_point_set(GapBuf *buf, int target) {
         return;
 
     if (target > buf->point) {
-        int delta = target - buf->point;
+        size_t delta = target - buf->point;
 
         memmove(
             buf->buffer + buf->point,
@@ -114,7 +117,7 @@ void gb_point_set(GapBuf *buf, int target) {
         buf->point   += delta;
         buf->gap_end += delta;
     } else {
-        int delta = buf->point - target;
+        size_t delta = buf->point - target;
 
         memmove(
             buf->buffer + buf->gap_end - delta,
@@ -139,8 +142,7 @@ void gb_point_right(GapBuf *buf) {
     }
 }
 
-void gb_backspace(GapBuf *buf, int count) {
-    if (count < 0) return;
+void gb_backspace(GapBuf *buf, size_t count) {
     if (count > buf->point)
         count = buf->point;
     buf->point -= count;
@@ -149,8 +151,7 @@ void gb_backspace(GapBuf *buf, int count) {
     }
 }
 
-void gb_delete(GapBuf *buf, int count) {
-    if (count < 0) return;
+void gb_delete(GapBuf *buf, size_t count) {
     if (count > gb_back(buf))
         count = gb_back(buf);
     buf->gap_end += count;
@@ -174,11 +175,11 @@ char *gb_text(GapBuf *buf) {
     return text;
 }
 
-char gb_char_at(GapBuf *buf, int i) {
-    if (i < 0 || i > gb_used(buf)) return '\0';
-    if (i < gb_front(buf)) {
-        return buf->buffer[i];
+char gb_char_at(GapBuf *buf, size_t index) {
+    if (index < 0 || index > gb_used(buf)) return '\0';
+    if (index < gb_front(buf)) {
+        return buf->buffer[index];
     } else {
-        return buf->buffer[i + buf->gap_end - buf->point];
+        return buf->buffer[index + buf->gap_end - buf->point];
     }
 }

@@ -2,12 +2,15 @@
 // and the functions that manipulate them.
 
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
 #include "buffer.h"
 #include "gap.h"
+#include "line.h"
 #include "mark.h"
 #include "mode.h"
 
@@ -26,9 +29,11 @@ typedef struct Buffer {
     char name[BUFFER_NAME_MAX];
 
     Location point;
-    int cur_line;
-    int num_chars;
-    int num_lines;
+    size_t cur_line;
+    size_t num_chars;
+    size_t num_lines;
+
+    LineTable lt;
 
     int col;
     int col_saved;
@@ -89,6 +94,7 @@ static void buffer_destroy(Buffer *buf) {
         gb_free(buf->contents);
         buf->contents = NULL;
     }
+    line_table_destroy(&buf->lt);
 
     free(buf);
 }
@@ -123,8 +129,15 @@ bool buffer_create(const char *name) {
     buf->num_lines = 1;
     buf->col_saved = buf->col = 1;
 
+    buf->lt = line_table_create();
+    if (!buf->lt.lines) {
+        free (buf);
+        return false;
+    }
+
     buf->contents = gb_new(0);
     if (!buf->contents) {
+        line_table_destroy(&buf->lt);
         free (buf);
         return false;
     }
@@ -251,11 +264,14 @@ bool point_set(Location loc) {
 bool point_move(int count) {
     if (!bl.current) return false;
 
+    size_t point = point_get().pos;
+
     if (!count) return true;
     else if (count > 0) {
-        if (count > get_char_count() - point_get().pos)
-            count = get_char_count() - point_get().pos;
-        for (int i = 0; i < count; i++) {
+        size_t remaining = get_char_count() - point;
+        if (count > remaining)
+            count = remaining;
+        for (size_t i = 0; i < count; i++) {
             if (char_from_point(i) == '\n') {
                 bl.current->cur_line++;
                 bl.current->col = 0;
@@ -264,9 +280,9 @@ bool point_move(int count) {
             }
         }
     } else {
-        if (!point_get().pos) return true;
-        if (count < -point_get().pos)
-            count = -point_get().pos;
+        if (point == 0) return true;
+        if (count < -point)
+            count = -point;
         for (int i = 0; i > count; i--) {
             if (char_from_point(i - 1) == '\n') {
                 bl.current->cur_line--;
@@ -279,7 +295,7 @@ bool point_move(int count) {
         }
     }
 
-    gb_point_set(bl.current->contents, point_get().pos + count);
+    gb_point_set(bl.current->contents, point + count);
     update_point();
     bl.current->col_saved = get_column();
     return true;
@@ -342,13 +358,13 @@ Location point_get(void) {
     return bl.current->point;
 }
 
-int point_get_line(void) {
+size_t point_get_line(void) {
     if (bl.current->cur_line) {     // line is known
         return bl.current->cur_line;
     } else {                        // line must be recalculated
         bl.current->cur_line = 1;
         char *c = gb_text(bl.current->contents);
-        for (int i = 0; i < bl.current->contents->point; i++, c++)
+        for (size_t i = 0; i < point_get().pos; i++, c++)
             if (*c == '\n') bl.current->cur_line++;
         return bl.current->cur_line;
     }
@@ -365,10 +381,10 @@ int compare_locations(Location loc1, Location loc2) {
     if (cmp < 0) return -1;
     return 0;
 }
-int location_to_count(Location loc) {
+size_t location_to_count(Location loc) {
     return loc.pos;
 }
-Location count_to_location(int count) {
+Location count_to_location(size_t count) {
     return (Location){.pos = count};
 }
 char get_char(void) {
@@ -376,13 +392,13 @@ char get_char(void) {
         return '\0';
     return char_at_point();
 }
-void get_string(char *string, int count);
+void get_string(char *string, size_t count);
 
-int get_char_count(void) {
+size_t get_char_count(void) {
     return bl.current->num_chars;
 }
 
-int get_line_count(void) {
+size_t get_line_count(void) {
     if (bl.current->num_lines) {
         return bl.current->num_lines;
     } else {
@@ -410,6 +426,7 @@ void insert_char(char c) {
     }
     gb_insert(bl.current->contents, c);
     bl.current->num_chars = gb_used(bl.current->contents);
+    line_insert_char(&bl.current->lt, point_get().pos, c);
     update_point();
 }
 void insert_string(char *s) {
@@ -421,34 +438,41 @@ void replace_char(char c);
 void replace_string(char *string);
 
 bool delete_chars(int count) {
-    if (!bl.current) return false;
+    Buffer *b = bl.current;
+    if (!b) return false;
+
+    int point = point_get().pos;
 
     if (count > 0) {
-        if (count > point_get().pos)
-            count = point_get().pos;
+        if (count > point)
+            count = point;
         for (int i = 0; i < count; i++) {
-            if (char_from_point(i - 1) == '\n') {
-                bl.current->cur_line--;
-                bl.current->num_lines--;
-                bl.current->col = 0;
+            char c = char_from_point(i - 1);
+            line_backspace_char(&b->lt, point, c);
+            if (c == '\n') {
+                b->cur_line--;
+                b->num_lines--;
+                b->col = 0;
             } else {
-                bl.current->col_saved = --(bl.current->col);
+                b->col_saved = --(b->col);
             }
         }
-        gb_backspace(bl.current->contents, count);
+        gb_backspace(b->contents, count);
     }
     if (count < 0) {
-        if (count < -gb_back(bl.current->contents))
-            count = -gb_back(bl.current->contents);
+        if (count < -gb_back(b->contents))
+            count = -gb_back(b->contents);
         for (int i = 0; i > count; i--) {
-            if (char_from_point(i) == '\n')
-                bl.current->num_lines--;
+            char c = char_from_point(i);
+            line_delete_char(&b->lt, point, c);
+            if (c == '\n')
+                b->num_lines--;
         }
-        gb_delete(bl.current->contents, -count);
+        gb_delete(b->contents, -count);
     }
-    bl.current->num_chars = gb_used(bl.current->contents);
+    b->num_chars = gb_used(b->contents);
     update_point();
-    bl.current->col_saved = get_column();
+    b->col_saved = get_column();
     return true;
 }
 
@@ -465,7 +489,7 @@ int get_column(void) {
     if (bl.current->col) {  // column is known
         return bl.current->col;
     } else {    // column must be recalculated.
-        for (int i = 1; i < point_get().pos; i++) {
+        for (size_t i = 1; i < point_get().pos; i++) {
             if (gb_char_at(bl.current->contents, point_get().pos - i) == '\n') {
                 return bl.current->col = i;
             }
@@ -502,19 +526,28 @@ char *buffer_text(void) {
 }
 
 char char_at_point(void) {
-    return gb_char_at(bl.current->contents, bl.current->point.pos);
+    return gb_char_at(bl.current->contents, point_get().pos);
 }
 
 char char_from_point(int n) {
-    if (n < 0) n = 0;
-    if (n > bl.current->num_chars) return '\0';
-    return gb_char_at(bl.current->contents, bl.current->point.pos + n);
+    int point = point_get().pos;
+    int remaining = get_char_count() - point;
+    if (n < -point || n > remaining) return '\0';
+    return gb_char_at(bl.current->contents, point + n);
 }
 
-int buf_char_at(Buffer *buf, int index) {
+int buf_char_at(Buffer *buf, size_t index) {
     return gb_char_at(buf->contents, index);
 }
 
 int buf_size(Buffer *buf) {
     return gb_used(buf->contents);
+}
+
+void line_table_print(void) {
+    LineTable lt = bl.current->lt;
+    printf("\nLine: %4zu    Count: %4zu    Cap: %4zu\n\n", line_index_at(&lt, point_get().pos), lt.count, lt.cap);
+    for (size_t i = 0; i < lt.count; i++) {
+        printf("Line: %4zu    Start: %4zu    End:%4zu\n", i, lt.lines[i].start, lt.lines[i].end);
+    }
 }

@@ -123,6 +123,12 @@ static sexp scm_set_column(sexp ctx, sexp self, sexp n, sexp column) {
     return SEXP_VOID;
 }
 
+static sexp scm_line_table_print(sexp ctx, sexp self, sexp n) {
+    line_table_print();
+
+    return SEXP_VOID;
+}
+
 void scheme_init(AppState *state) {
     G = state;
     sexp_scheme_init();
@@ -166,6 +172,7 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "set-column", 1, scm_set_column);
     sexp_define_foreign(ctx, env, "toggle-theme", 0, scm_toggle_theme);
     sexp_define_foreign(ctx, env, "char-at-point", 0, scm_char_at_point);
+    sexp_define_foreign(ctx, env, "line-table-print", 0, scm_line_table_print);
     
     sexp result = sexp_load(ctx, sexp_c_string(ctx, "resources/init.scm", -1), env);
     if (sexp_exceptionp(result)) {
