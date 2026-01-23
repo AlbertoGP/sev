@@ -446,8 +446,12 @@ bool delete_chars(int count) {
     if (count > 0) {
         if (count > point)
             count = point;
+        printf("count: %d\n", count);
+        fflush(stdout);
         for (int i = 0; i < count; i++) {
             char c = char_from_point(i - 1);
+            printf("this fired\n");
+            fflush(stdout);
             line_backspace_char(&b->lt, point, c);
             if (c == '\n') {
                 b->cur_line--;
@@ -460,9 +464,13 @@ bool delete_chars(int count) {
         gb_backspace(b->contents, count);
     }
     if (count < 0) {
-        if (count < -gb_back(b->contents))
-            count = -gb_back(b->contents);
+        if (count < -(int)(gb_back(b->contents)))
+            count = -(int)(gb_back(b->contents));
+        printf("count: %d\n", count);
+        fflush(stdout);
         for (int i = 0; i > count; i--) {
+            printf("this fired\n");
+            fflush(stdout);
             char c = char_from_point(i);
             line_delete_char(&b->lt, point, c);
             if (c == '\n')
@@ -544,10 +552,11 @@ int buf_size(Buffer *buf) {
     return gb_used(buf->contents);
 }
 
+// Diagnostic function, delete once logical lines are confirmed working properly.
 void line_table_print(void) {
     LineTable lt = bl.current->lt;
-    printf("\nLine: %4zu    Count: %4zu    Cap: %4zu\n\n", line_index_at(&lt, point_get().pos), lt.count, lt.cap);
+    printf("\nLine: %4zu  Count: %4zu  Cap: %4zu\n\n", line_index_at(&lt, point_get().pos), lt.count, lt.cap);
     for (size_t i = 0; i < lt.count; i++) {
-        printf("Line: %4zu    Start: %4zu    End:%4zu\n", i, lt.lines[i].start, lt.lines[i].end);
+        printf("L: %4zu  ID: %4lu  Loc: %2zu - %2zu  Ver: %lu\n", i, lt.lines[i].line_id, lt.lines[i].start, lt.lines[i].end, lt.lines[i].version);
     }
 }

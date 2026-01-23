@@ -11,11 +11,16 @@ LineTable line_table_create(void) {
 
     lt.lines = calloc(MIN_TABLE_SIZE, sizeof(Line));
 
-    lt.cap = MIN_TABLE_SIZE;
+    lt.next_line_id = 1;
+
+    lt.lines[0].line_id = lt.next_line_id++;
     lt.lines[0].start = 0;
     lt.lines[0].end = 0;
-    lt.lines[0].flags = 0;
+    lt.lines[0].version = 0;
+
     lt.count = 1;
+    lt.cap = MIN_TABLE_SIZE;
+
     return lt;
 }
 
@@ -101,22 +106,36 @@ bool line_insert_char(LineTable *lt, size_t pos, char ch) {
     if (ch != '\n') {
         // Simple case: structure unchanged, line end moves forward by 1
         current_line->end += 1;
-        current_line->flags |= LINE_DIRTY_TEXT;
+        current_line->version++;
+
+        // Update start/end indices for all subsequent lines
+        for (int i = line_number + 1; i < lt->count; i++) {
+            lt->lines[i].start++;
+            lt->lines[i].end++;
+        }
+
         return true;
     }
 
     // Newline insertion: split the line
     Line new_line;
 
+    new_line.line_id = lt->next_line_id++;
     new_line.start = pos + 1;
     new_line.end   = current_line->end + 1; // buffer already grew
-    new_line.flags = LINE_DIRTY_TEXT;
-
-    current_line->end = pos;
-    current_line->flags |= LINE_DIRTY_TEXT;
+    new_line.version = 0;
 
     if (!line_table_insert(lt, line_number + 1, new_line))
         return false;
+
+    current_line->end = pos;
+    current_line->version++;
+
+    // Update start/end indices for all subsequent lines
+    for (int i = line_number + 2; i < lt->count; i++) {
+        lt->lines[i].start++;
+        lt->lines[i].end++;
+    }
 
     return true;
 }
@@ -128,7 +147,14 @@ void line_backspace_char(LineTable *lt, size_t pos, char ch) {
     if (ch != '\n') {
         // Simple case: structure unchanged, line shrinks
         current_line->end -= 1;
-        current_line->flags |= LINE_DIRTY_TEXT;
+        current_line->version++;
+
+        // Update the start/end indices of all subsequent lines
+        for (int i = line_number + 1; i < lt->count; i++) {
+            lt->lines[i].start--;
+            lt->lines[i].end--;
+        }
+
         return;
     }
 
@@ -136,12 +162,23 @@ void line_backspace_char(LineTable *lt, size_t pos, char ch) {
     Line *prev_line = &lt->lines[line_number - 1];
 
     prev_line->end = current_line->end - 1; // buffer already shrank
-    prev_line->flags |= LINE_DIRTY_TEXT;
+    prev_line->version++;
+
+    // remove current line
+    memmove(current_line,
+            current_line + 1,
+            (lt->count - (line_number + 1)) * sizeof(Line));
 
     lt->count--;
 
     if (lt->count < lt->cap / 4) {
         line_table_shrink(lt, lt->cap / 2);
+    }
+
+    // Update the start/end indices of all subsequent lines
+    for (int i = line_number; i < lt->count; i++) {
+        lt->lines[i].start--;
+        lt->lines[i].end--;
     }
 }
 
@@ -152,24 +189,37 @@ void line_delete_char(LineTable *lt, size_t pos, char ch) {
     if (ch != '\n') {
         // Simple case: structure unchanged, line shrinks
         current_line->end -= 1;
-        current_line->flags |= LINE_DIRTY_TEXT;
+        current_line->version++;
+
+        // Update the start/end indices of all subsequent lines
+        for (int i = line_number + 1; i < lt->count; i++) {
+            lt->lines[i].start--;
+            lt->lines[i].end--;
+        }
+
         return;
     }
 
     // Newline deletion: merge line i with line i+1
-    Line *next = &lt->lines[line_number + 1];
+    Line *next_line = &lt->lines[line_number + 1];
 
-    current_line->end = next->end - 1; // buffer already shrank
-    current_line->flags |= LINE_DIRTY_TEXT;
+    current_line->end = next_line->end - 1; // buffer already shrank
+    current_line->version++;
 
     // remove next line
-    memmove(next,
-            next + 1,
+    memmove(next_line,
+            next_line + 1,
             (lt->count - (line_number + 2)) * sizeof(Line));
 
     lt->count--;
 
     if (lt->count < lt->cap / 4) {
         line_table_shrink(lt, lt->cap / 2);
+    }
+
+    // Update the start/end indices of all subsequent lines
+    for (int i = line_number + 1; i < lt->count; i++) {
+        lt->lines[i].start--;
+        lt->lines[i].end--;
     }
 }

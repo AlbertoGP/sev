@@ -8,29 +8,28 @@
 
 // Data structure for storing information on logical lines in a buffer.
 typedef struct Line {
-    size_t start;      // buffer index of first char
-    size_t end;        // buffer index *after* newline (or buffer end)
-    uint32_t flags;    // dirty, needs_highlight, etc
+    uint64_t line_id;   // uniquely identifies line even if position changes.
+    size_t start, end;  // indices into buffer.
+    uint64_t version;   // dirty, needs_highlight, etc.
 } Line;
 
-typedef enum {
-    LINE_DIRTY_TEXT   = 1 << 0,
-    LINE_DIRTY_WRAP   = 1 << 1,
-    LINE_DIRTY_STYLE  = 1 << 2,
-} LineFlags;
-
+// Vector of Line data type. Each buffer has its own LineTable.
 typedef struct {
-    Line *lines;
-    size_t count;
-    size_t cap;
+    Line *lines;            // array of lines.
+    uint64_t next_line_id;  // unique ID next line will receive.
+    size_t count;           // number of lines in vector.
+    size_t cap;             // size of vector.
 } LineTable;
 
+// Create a new LineTable with a single Line.
 LineTable line_table_create(void);
+// Free up all memory allocated to a given LineTable.
 void line_table_destroy(LineTable *lt);
+// Locate the line number of a given buffer position via binary search.
+size_t line_index_at(const LineTable *lt, size_t pos);
 // Update LineTable after the event of character insertion into a buffer.
 bool line_insert_char(LineTable *lt, size_t pos, char ch);
 // Update LineTable after the event of character backspaced from a buffer.
 void line_backspace_char(LineTable *lt, size_t pos, char ch);
 // Update LineTable after the event of character deleted from a buffer.
 void line_delete_char(LineTable *lt, size_t pos, char ch);
-size_t line_index_at(const LineTable *lt, size_t pos);
