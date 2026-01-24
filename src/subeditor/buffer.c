@@ -169,6 +169,14 @@ Buffer *buffer_get_by_name(const char *name) {
     return buf;
 }
 
+bool buffer_set_by_name(const char *name) {
+    Buffer *buf = buffer_get_by_name(name);
+    if (!buf) return false;
+
+    bl.current = buf;
+    return true;
+}
+
 bool buffer_clear(const char *name) {
     Buffer *buf = buffer_get_by_name(name);
     if (!buf) return false;
@@ -211,8 +219,7 @@ Buffer *buffer_get_current(void) {
     return bl.current;
 }
 
-bool buffer_set_current(const char *name) {
-    Buffer *buf = buffer_get_by_name(name);
+bool buffer_set_current(Buffer *buf) {
     if (!buf) return false;
 
     bl.current = buf;
@@ -525,7 +532,7 @@ void set_column(int column, bool round) {
 char *buffer_text(Buffer *buf) {
     static char* text;
     if (text) free(text);
-    text = gb_text(bl.current->contents);
+    text = gb_text(buf->contents);
     return text;
 }
 

@@ -8,16 +8,27 @@ bool tab_list_init(void) {
     tl.list = NULL;
     tl.current = NULL;
     
-    Buffer *buf = buffer_get_current();
-    if (!buf) return false;
+    if (!buffer_get_current()) return false;
 
     if (!tab_create("*scratch*")) {
         return false;
     }
-    tab_create("untitled-1");
-    tab_create("untitled-2");
     tl.current->contents = pane_create();
-    pane_set_to_buffer(tl.current->contents, buf, true);
+    pane_set_to_buffer(tl.current->contents, "*scratch*", true);
+
+    #define NAME_1 "untitled-1"
+    buffer_create(NAME_1);
+    tab_create(NAME_1);
+    Tab *next = tl.list->next;
+    next->contents = pane_create();
+    pane_set_to_buffer(next->contents, NAME_1, true);
+
+    #define NAME_2 "untitled-2"
+    buffer_create(NAME_2);
+    tab_create(NAME_2);
+    next = next->next;
+    next->contents = pane_create();
+    pane_set_to_buffer(next->contents, NAME_2, true);
 
     return true;
 }
@@ -105,7 +116,7 @@ Pane *pane_create(void) {
     return pane;
 }
 
-bool pane_set_to_buffer(Pane *pane, Buffer *buf, bool make_active) {
+bool pane_set_to_buffer(Pane *pane, const char *buf, bool make_active) {
     if (!pane) return false;
     // Don't abandon *or* delete a pane sub-tree, just return a signal.
     if (pane->type == PANE_V_SPLIT && (pane->v_split.left || pane->v_split.right))
@@ -116,7 +127,7 @@ bool pane_set_to_buffer(Pane *pane, Buffer *buf, bool make_active) {
     // Otherwise proceed.
     pane->type = PANE_CONTENT;
     pane->content.type = CONTENT_TEXT;
-    pane->content.buffer = buf;
+    pane->content.buffer = buffer_get_by_name(buf);
     pane->content.active = make_active;
 
     return true;
@@ -272,6 +283,10 @@ void HandleClickTab(Clay_ElementId elementId, Clay_PointerData pointerInfo, void
     Tab *t = (Tab *)userData;
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         tl.current = t;
+        Pane *active = pane_get_active();
+        if (active->content.type == CONTENT_TEXT) {
+            buffer_set_current(active->content.buffer);
+        }
     }
 }
 
@@ -354,11 +369,10 @@ void BufferPane(AppState *state, Pane *pane, int width, int height) {
             .padding = CLAY_PADDING_ALL(24)
         },
         .border = {
-            .width = pane->content.active
-                 ? (Clay_BorderWidth){ .top = 1, .bottom = 1, .left = 1, .right = 1 }
-                 : (Clay_BorderWidth){ .top = 0, .bottom = 0, .left = 0, .right = 0 },
-            .color = state->colors.text
+            .width = { .top = 1, .bottom = 1, .left = 1, .right = 1 },
+            .color = pane->content.active ? state->colors.text : state->colors.textFaded
         },
+        // .cornerRadius = CLAY_CORNER_RADIUS(3)
     }) {
         CLAY_TEXT(head, CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
@@ -380,10 +394,12 @@ void VSplitPane(AppState *state, Pane *pane, int width, int height) {
             .sizing = {
                 .width = width ? CLAY_SIZING_PERCENT(width) : CLAY_SIZING_GROW(0),
                 .height = height ? CLAY_SIZING_PERCENT(height) : CLAY_SIZING_GROW(0),
-            }
-        }
+            },
+            .childGap = 2
+        },
     }) {
-        HandlePane(state, pane->v_split.left, pane->v_split.left_width, 0);
+        HandlePane(state, pane->v_split.left,
+                   pane->v_split.left_width, 1 - pane->v_split.left_width);
         HandlePane(state, pane->v_split.right, 0, 0);
     }
 }
@@ -395,10 +411,12 @@ void HSplitPane(AppState *state, Pane *pane, int width, int height) {
             .sizing = {
                 .width = width ? CLAY_SIZING_PERCENT(width) : CLAY_SIZING_GROW(0),
                 .height = height ? CLAY_SIZING_PERCENT(height) : CLAY_SIZING_GROW(0),
-            }
+            },
+            .childGap = 2
         }
     }) {
-        HandlePane(state, pane->h_split.top, 0, pane->h_split.top_height);
+        HandlePane(state, pane->h_split.top, 1 - pane->h_split.top_height,
+                   pane->h_split.top_height);
         HandlePane(state, pane->h_split.bottom, 0, 0);
     }
 }
@@ -411,6 +429,11 @@ void HandlePane(AppState *state, Pane *pane, int width, int height) {
 
 void TabContent(AppState *state) {
     Tab *t = tl.current;
+
+    if (!t->contents) {
+         CLAY_AUTO_ID({ .layout = { .sizing = layoutExpand } });
+         return;
+    }
 
     HandlePane(state, t->contents, 0, 0);
 }

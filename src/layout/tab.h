@@ -86,7 +86,7 @@ Pane *pane_create(void);
 
 // Sets a pane to a specified buffer.
 // If make_active is true, the pane becomes focused.
-bool pane_set_to_buffer(Pane *pane, Buffer *buf, bool make_active);
+bool pane_set_to_buffer(Pane *pane, const char *buf, bool make_active);
 
 Pane *pane_get_active(void);
 

@@ -27,7 +27,7 @@ bool buffer_delete(const char *name);
 // Returns a pointer to the currently selected buffer.
 Buffer *buffer_get_current(void);
 // Sets the current buffer to the one specified.
-bool buffer_set_current(const char *name);
+bool buffer_set_current(Buffer *buf);
 // Sets the current buffer to the next one in the buffer list.
 // Returns the name of the newly selected buffer.
 char *buffer_set_next(void);
@@ -40,6 +40,8 @@ bool buffer_set_name(const char *name);
 char *buffer_get_name(void);
 // Returns a pointer to buffer matching name.
 Buffer *buffer_get_by_name(const char *name);
+// Sets the current buffer to the one specified.
+bool buffer_set_by_name(const char *name);
 
 // Sets the point to the specified location in the current buffer.
 bool point_set(Location loc);
@@ -182,3 +184,4 @@ char char_from_point(int n);
 int buf_char_at(Buffer *buf, size_t index);
 int buf_size(Buffer *buf);
 void line_table_print(void);
+void print_buffer_list(void);
