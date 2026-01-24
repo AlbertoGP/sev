@@ -1,0 +1,102 @@
+// Tab and Pane data structures and functions
+
+#pragma once
+
+#include <stdbool.h>
+#include "../state.h"
+#include "../subeditor/buffer.h"
+
+#define TAB_NAME_MAX 256
+
+typedef enum {
+    CONTENT_TEXT,
+    CONTENT_UI
+} ContentType;
+
+// A content node in a pane tree.
+// Can either be associated with a buffer, or a custom UI component.
+// Only one content pane can be active in a tab at any time.
+typedef struct {
+    bool active;
+    ContentType type;
+    union {
+        Buffer *buffer;
+        // TODO: add custom UI type.
+    };
+} Content;
+
+// A vertical split node in a pane tree.
+// Records the width of the left sub-pane.
+typedef struct {
+    float left_width;
+    struct Pane *left;
+    struct Pane *right;
+} VSplit;
+
+// A horizontal split node in a pane tree.
+// Records the height of the upper sub-pane.
+typedef struct {
+    float top_height;
+    struct Pane *top;
+    struct Pane *bottom;
+} HSplit;
+
+typedef enum {
+    PANE_CONTENT,
+    PANE_V_SPLIT,
+    PANE_H_SPLIT
+} PaneType;
+
+// A pane either contains content, or is split into sub-panes.
+typedef struct Pane {
+    PaneType type;
+    union {
+        Content content;
+        VSplit v_split;
+        HSplit h_split;
+    };
+    struct Pane *parent;
+} Pane;
+
+// A tab is a node in a doubly-linked list of named Panes.
+typedef struct Tab {
+    struct Tab *next;
+    struct Tab *prev;
+    char name[TAB_NAME_MAX];
+
+    Pane *contents;
+} Tab;
+
+// List of all active tabs.
+typedef struct {
+    Tab *list;
+    Tab *current;
+} TabList;
+
+// Initialise tab list.
+bool tab_list_init(void);
+
+// Free up resources allocated to tab list.
+void tab_list_quit(void);
+
+// Create a new, empty tab with the given name.
+bool tab_create(const char *name);
+
+Pane *pane_create(void);
+
+// Sets a pane to a specified buffer.
+// If make_active is true, the pane becomes focused.
+bool pane_set_to_buffer(Pane *pane, Buffer *buf, bool make_active);
+
+Pane *pane_get_active(void);
+
+bool pane_split_horizontal(Pane *pane);
+
+bool pane_split_vertical(Pane *pane);
+
+// TabBar Clay component
+void TabBar(AppState *state);
+
+void HandlePane(AppState *state, Pane *pane, int width, int height);
+
+void TabContent(AppState *state);

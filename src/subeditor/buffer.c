@@ -207,6 +207,10 @@ bool buffer_delete(const char *name) {
     return true;
 }
 
+Buffer *buffer_get_current(void) {
+    return bl.current;
+}
+
 bool buffer_set_current(const char *name) {
     Buffer *buf = buffer_get_by_name(name);
     if (!buf) return false;
@@ -446,12 +450,8 @@ bool delete_chars(int count) {
     if (count > 0) {
         if (count > point)
             count = point;
-        printf("count: %d\n", count);
-        fflush(stdout);
         for (int i = 0; i < count; i++) {
             char c = char_from_point(i - 1);
-            printf("this fired\n");
-            fflush(stdout);
             line_backspace_char(&b->lt, point, c);
             if (c == '\n') {
                 b->cur_line--;
@@ -466,11 +466,7 @@ bool delete_chars(int count) {
     if (count < 0) {
         if (count < -(int)(gb_back(b->contents)))
             count = -(int)(gb_back(b->contents));
-        printf("count: %d\n", count);
-        fflush(stdout);
         for (int i = 0; i > count; i--) {
-            printf("this fired\n");
-            fflush(stdout);
             char c = char_from_point(i);
             line_delete_char(&b->lt, point, c);
             if (c == '\n')
@@ -526,7 +522,7 @@ void set_column(int column, bool round) {
 }
 
 
-char *buffer_text(void) {
+char *buffer_text(Buffer *buf) {
     static char* text;
     if (text) free(text);
     text = gb_text(bl.current->contents);

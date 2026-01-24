@@ -1,3 +1,4 @@
+#include "layout/tab.h"
 #define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL.h>
@@ -96,6 +97,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     if (!buffer_list_init()) {
         fprintf(stderr, "Failed to initialise buffer list.");
+        return SDL_APP_FAILURE;
+    }
+
+    if (!tab_list_init()) {
+        fprintf(stderr, "Failed to initialise tab list.");
         return SDL_APP_FAILURE;
     }
 

@@ -24,6 +24,8 @@ bool buffer_clear(const char *name);
 // the next buffer in the chain becomes the current one. If no buffers are
 // left, the initial "scratch" buffer is automatically recreated.
 bool buffer_delete(const char *name);
+// Returns a pointer to the currently selected buffer.
+Buffer *buffer_get_current(void);
 // Sets the current buffer to the one specified.
 bool buffer_set_current(const char *name);
 // Sets the current buffer to the next one in the buffer list.
@@ -36,6 +38,8 @@ char *buffer_set_prev(void);
 bool buffer_set_name(const char *name);
 // Returns the name of the current buffer.
 char *buffer_get_name(void);
+// Returns a pointer to buffer matching name.
+Buffer *buffer_get_by_name(const char *name);
 
 // Sets the point to the specified location in the current buffer.
 bool point_set(Location loc);
@@ -172,7 +176,7 @@ int get_column(void);
 // If round is false, the point is "rounded down".
 void set_column(int column, bool round);
 
-char *buffer_text(void);
+char *buffer_text(Buffer *buf);
 char char_at_point(void);
 char char_from_point(int n);
 int buf_char_at(Buffer *buf, size_t index);

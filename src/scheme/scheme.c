@@ -2,6 +2,7 @@
 #include "../keymap.h"
 #include "../subeditor/buffer.h"
 #include "../theme.h"
+#include "../layout/tab.h"
 #include <SDL3/SDL_events.h>
 #include <chibi/eval.h>
 #include <chibi/sexp.h>
@@ -123,6 +124,28 @@ static sexp scm_set_column(sexp ctx, sexp self, sexp n, sexp column) {
     return SEXP_VOID;
 }
 
+static sexp scm_split_vertical(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    pane_split_vertical(pane_get_active());
+
+    return SEXP_VOID;
+}
+
+static sexp scm_split_horizontal(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    pane_split_horizontal(pane_get_active());
+
+    return SEXP_VOID;
+}
+
+static sexp scm_clay_debug(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    G->debug_open = !G->debug_open;
+    Clay_SetDebugModeEnabled(G->debug_open);
+
+    return SEXP_VOID;
+}
+
 static sexp scm_line_table_print(sexp ctx, sexp self, sexp n) {
     line_table_print();
 
@@ -191,6 +214,9 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "set-column", 1, scm_set_column);
     sexp_define_foreign(ctx, env, "toggle-theme", 0, scm_toggle_theme);
     sexp_define_foreign(ctx, env, "char-at-point", 0, scm_char_at_point);
+    sexp_define_foreign(ctx, env, "split-vertical", 0, scm_split_vertical);
+    sexp_define_foreign(ctx, env, "split-horizontal", 0, scm_split_horizontal);
+    sexp_define_foreign(ctx, env, "clay-debug", 0, scm_clay_debug);
     sexp_define_foreign(ctx, env, "line-table-print", 0, scm_line_table_print);
 
     #ifdef __EMSCRIPTEN__

@@ -1,12 +1,17 @@
 #include <SDL3/SDL.h>
 
+#include "layout/tab.h"
 #include "state.h"
+#include "subeditor/buffer.h"
 
 /* This function runs once at shutdown. */
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     if (result != SDL_APP_SUCCESS) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Application failed to run");
     }
+
+    tab_list_quit();
+    buffer_list_quit();
 
     AppState *state = appstate;
 

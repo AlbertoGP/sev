@@ -1,7 +1,6 @@
 #include "../state.h"
-
-#include "../subeditor/buffer.h"
-#include <stdio.h>
+#include "status.h"
+#include "tab.h"
 
 Clay_RenderCommandArray create_app_layout(AppState *state) {
     Clay_Sizing layoutExpand = {
@@ -18,153 +17,9 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
         },
         .backgroundColor = state->colors.background
     }) {
-        int length = get_char_count();
-        char *chars = buffer_text();
-        int point = point_get().pos;
-        Clay_String head = {
-            .chars = chars,
-            .length = point,
-            .isStaticallyAllocated = true
-        };
-        Clay_String tail = {
-            .chars = chars + point,
-            .length = length - point,
-            .isStaticallyAllocated = true
-        };
-
-        CLAY(CLAY_ID("buffer"), {
-            .layout = {
-                .sizing = layoutExpand,
-                .padding = CLAY_PADDING_ALL(24)
-            }
-        }) {
-            CLAY_TEXT(head, CLAY_TEXT_CONFIG({
-                .fontId = FONT_NORMAL,
-                .fontSize = 18,
-                .textColor = state->colors.text,
-            }));
-            CLAY_TEXT(tail, CLAY_TEXT_CONFIG({
-                .fontId = FONT_NORMAL,
-                .fontSize = 18,
-                .textColor = state->colors.textFaded,
-            }));
-        }
-        Clay_String bufName = {
-             .chars = buffer_get_name(),
-             .length = strlen(buffer_get_name()),
-        };
-        static char pos[12];
-        snprintf(pos, 12, "%zu", point_get().pos);
-        Clay_String pointPos = {
-             .chars = pos,
-             .length = strlen(pos),
-        };
-        static char ccount[12];
-        snprintf(ccount, 12, "%zu", get_char_count());
-        Clay_String charCount = {
-             .chars = ccount,
-             .length = strlen(ccount),
-        };
-        static char lncount[24];
-        snprintf(lncount, 24, "%zu / %zu", point_get_line(), get_line_count());
-        Clay_String lineCount = {
-             .chars = lncount,
-             .length = strlen(lncount),
-        };
-        static char colcount[24];
-        snprintf(colcount, 24, "%d", get_column());
-        Clay_String col = {
-             .chars = colcount,
-             .length = strlen(colcount),
-        };
-        CLAY(CLAY_ID("Status Bar"), {
-            .layout = {
-                .sizing = {
-                    .width = CLAY_SIZING_GROW(0),
-                },
-                // .padding = CLAY_PADDING_ALL(5)
-            },
-            .backgroundColor = state->colors.bar,
-        }) {
-             CLAY_TEXT(CLAY_STRING("Buffer: "), CLAY_TEXT_CONFIG({
-                    .fontId = FONT_BOLD,
-                    .fontSize = 14,
-                    .textColor = state->colors.text,
-                }));
-             CLAY_TEXT(bufName, CLAY_TEXT_CONFIG({
-                    .fontId = FONT_NORMAL,
-                    .fontSize = 14,
-                    .textColor = state->colors.text,
-                }));
-             CLAY(CLAY_ID("spacer"), {
-             .layout = {
-             .sizing = {
-             .width = CLAY_SIZING_FIXED(25)
-             }
-             }
-             }) {}
-             CLAY_TEXT(CLAY_STRING("Point: "), CLAY_TEXT_CONFIG({
-                    .fontId = FONT_BOLD,
-                    .fontSize = 14,
-                    .textColor = state->colors.text,
-                }));
-             CLAY_TEXT(pointPos, CLAY_TEXT_CONFIG({
-                    .fontId = FONT_NORMAL,
-                    .fontSize = 14,
-                    .textColor = state->colors.text,
-                }));
-             CLAY(CLAY_ID("spacer 2"), {
-             .layout = {
-             .sizing = {
-             .width = CLAY_SIZING_FIXED(25)
-             }
-             }
-             }) {}
-             CLAY_TEXT(CLAY_STRING("Chars: "), CLAY_TEXT_CONFIG({
-                    .fontId = FONT_BOLD,
-                    .fontSize = 14,
-                    .textColor = state->colors.text,
-                }));
-             CLAY_TEXT(charCount, CLAY_TEXT_CONFIG({
-                    .fontId = FONT_NORMAL,
-                    .fontSize = 14,
-                    .textColor = state->colors.text,
-                }));
-             CLAY(CLAY_ID("spacer 3"), {
-             .layout = {
-             .sizing = {
-             .width = CLAY_SIZING_FIXED(25)
-             }
-             }
-             }) {}
-             CLAY_TEXT(CLAY_STRING("Line: "), CLAY_TEXT_CONFIG({
-                    .fontId = FONT_BOLD,
-                    .fontSize = 14,
-                    .textColor = state->colors.text,
-                }));
-             CLAY_TEXT(lineCount, CLAY_TEXT_CONFIG({
-                    .fontId = FONT_NORMAL,
-                    .fontSize = 14,
-                    .textColor = state->colors.text,
-                }));
-             CLAY(CLAY_ID("spacer 4"), {
-             .layout = {
-             .sizing = {
-             .width = CLAY_SIZING_FIXED(25)
-             }
-             }
-             }) {}
-             CLAY_TEXT(CLAY_STRING("Col: "), CLAY_TEXT_CONFIG({
-                    .fontId = FONT_BOLD,
-                    .fontSize = 14,
-                    .textColor = state->colors.text,
-                }));
-             CLAY_TEXT(col, CLAY_TEXT_CONFIG({
-                    .fontId = FONT_NORMAL,
-                    .fontSize = 14,
-                    .textColor = state->colors.text,
-                }));
-        }
+        TabBar(state);
+        TabContent(state);
+        StatusBar(state);
         CLAY(CLAY_ID("echo area"), {
             .layout = {
                 .sizing = {
