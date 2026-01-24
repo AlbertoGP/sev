@@ -399,7 +399,8 @@ static void HandleCloseTab(Clay_ElementId elementId, Clay_PointerData pointerInf
     }
 }
 
-static void CloseButton(AppState *state, Tab *t) {
+static bool CloseButton(AppState *state, Tab *t) {
+    bool hovered = false;
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {
@@ -420,7 +421,9 @@ static void CloseButton(AppState *state, Tab *t) {
             .fontSize = 21,
             .textColor = tl.current == t ? state->colors.text : state->colors.textFaded
         }));
+        hovered = Clay_Hovered();
     }
+    return hovered;
 }
 
 static void HandleClickTab(Clay_ElementId elementId, Clay_PointerData pointerInfo, void *userData) {
@@ -461,7 +464,6 @@ void TabBar(AppState *state) {
                     ? state->colors.background
                     : state->colors.foreground,
         }) {
-            Clay_OnHover(HandleClickTab, t);
             CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {
@@ -477,7 +479,8 @@ void TabBar(AppState *state) {
                     .textColor = tl.current == t ? state->colors.text : state->colors.textFaded
                 }));
             }
-            CloseButton(state, t);
+            bool block = CloseButton(state, t);
+            Clay_OnHover(block ? NULL : HandleClickTab, t);
         }
     }
 }
