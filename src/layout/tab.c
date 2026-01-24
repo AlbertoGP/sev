@@ -376,6 +376,7 @@ void BufferPane(AppState *state, Pane *pane, int width, int height) {
 void VSplitPane(AppState *state, Pane *pane, int width, int height) {
     CLAY_AUTO_ID({
         .layout = {
+            .layoutDirection = CLAY_LEFT_TO_RIGHT,
             .sizing = {
                 .width = width ? CLAY_SIZING_PERCENT(width) : CLAY_SIZING_GROW(0),
                 .height = height ? CLAY_SIZING_PERCENT(height) : CLAY_SIZING_GROW(0),
@@ -390,6 +391,7 @@ void VSplitPane(AppState *state, Pane *pane, int width, int height) {
 void HSplitPane(AppState *state, Pane *pane, int width, int height) {
     CLAY_AUTO_ID({
         .layout = {
+            .layoutDirection = CLAY_TOP_TO_BOTTOM,
             .sizing = {
                 .width = width ? CLAY_SIZING_PERCENT(width) : CLAY_SIZING_GROW(0),
                 .height = height ? CLAY_SIZING_PERCENT(height) : CLAY_SIZING_GROW(0),
