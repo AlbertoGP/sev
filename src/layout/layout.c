@@ -18,9 +18,16 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
         .backgroundColor = state->colors.background
     }) {
         TabBar(state);
-        TabContent(state);
+        CLAY(CLAY_ID("Tab Content"), {
+            .layout = {
+                .sizing = layoutExpand,
+                .padding = CLAY_PADDING_ALL(2)
+            }
+        }) {
+            TabContent(state);
+        }
         StatusBar(state);
-        CLAY(CLAY_ID("echo area"), {
+        CLAY(CLAY_ID("Echo Area"), {
             .layout = {
                 .sizing = {
                     .width = CLAY_SIZING_GROW(0),

@@ -187,6 +187,34 @@ static sexp scm_pane_navigate_right(sexp ctx, sexp self, sexp n) {
     return SEXP_VOID;
 }
 
+static sexp scm_pane_v_split_increase(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    pane_v_split_increase();
+
+    return SEXP_VOID;
+}
+
+static sexp scm_pane_v_split_decrease(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    pane_v_split_decrease();
+
+    return SEXP_VOID;
+}
+
+static sexp scm_pane_h_split_increase(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    pane_h_split_increase();
+
+    return SEXP_VOID;
+}
+
+static sexp scm_pane_h_split_decrease(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    pane_h_split_decrease();
+
+    return SEXP_VOID;
+}
+
 static sexp scm_clay_debug(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     G->debug_open = !G->debug_open;
@@ -272,6 +300,10 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "pane-navigate-down", 0, scm_pane_navigate_down);
     sexp_define_foreign(ctx, env, "pane-navigate-left", 0, scm_pane_navigate_left);
     sexp_define_foreign(ctx, env, "pane-navigate-right", 0, scm_pane_navigate_right);
+    sexp_define_foreign(ctx, env, "pane-v-split-increase", 0, scm_pane_v_split_increase);
+    sexp_define_foreign(ctx, env, "pane-v-split-decrease", 0, scm_pane_v_split_decrease);
+    sexp_define_foreign(ctx, env, "pane-h-split-increase", 0, scm_pane_h_split_increase);
+    sexp_define_foreign(ctx, env, "pane-h-split-decrease", 0, scm_pane_h_split_decrease);
     sexp_define_foreign(ctx, env, "clay-debug", 0, scm_clay_debug);
     sexp_define_foreign(ctx, env, "line-table-print", 0, scm_line_table_print);
 

@@ -9,6 +9,13 @@
 #define TAB_NAME_MAX 256
 
 typedef enum {
+    DIR_UP,
+    DIR_DOWN,
+    DIR_LEFT,
+    DIR_RIGHT
+} Direction;
+
+typedef enum {
     CONTENT_TEXT,
     CONTENT_UI
 } ContentType;
@@ -80,6 +87,8 @@ void tab_list_quit(void);
 
 // Create a new, empty tab with the given name.
 bool tab_create(const char *name);
+// Get the current tab.
+Tab *tab_get_current(void);
 // Sets current tab to next (circular).
 void tab_next(void);
 // Sets current tab to prev (circular).
@@ -96,14 +105,29 @@ bool pane_set_to_buffer(Pane *pane, const char *buf, bool make_active);
 // Returns the currently active pane in the currently selected tab.
 Pane *pane_get_active(void);
 
-// Splits the currently active pane horizontally.
-bool pane_split_horizontal(Pane *pane);
-// Splits the currently active pane vertically.
-bool pane_split_vertical(Pane *pane);
-bool pane_navigate_up(void);
-bool pane_navigate_down(void);
-bool pane_navigate_left(void);
-bool pane_navigate_right(void);
+// Splits a pane. Use PANE_H_SPLIT or PANE_V_SPLIT.
+bool pane_split(Pane *pane, PaneType split_type);
+// Navigate to adjacent pane in the given direction.
+bool pane_navigate(Direction dir);
+// Check if pane has a neighbour in the given direction.
+bool pane_has_neighbour(Pane *pane, Direction dir);
+// Get the sibling of a pane (NULL if root).
+Pane *pane_get_sibling(Pane *pane);
+// Replace a child in a parent split node.
+void pane_replace_child(Pane *parent, Pane *old_child, Pane *new_child);
+
+// Convenience wrappers (call pane_split/pane_navigate internally).
+static inline bool pane_split_horizontal(Pane *pane) { return pane_split(pane, PANE_H_SPLIT); }
+static inline bool pane_split_vertical(Pane *pane) { return pane_split(pane, PANE_V_SPLIT); }
+static inline bool pane_navigate_up(void) { return pane_navigate(DIR_UP); }
+static inline bool pane_navigate_down(void) { return pane_navigate(DIR_DOWN); }
+static inline bool pane_navigate_left(void) { return pane_navigate(DIR_LEFT); }
+static inline bool pane_navigate_right(void) { return pane_navigate(DIR_RIGHT); }
+
+bool pane_v_split_increase(void);
+bool pane_v_split_decrease(void);
+bool pane_h_split_increase(void);
+bool pane_h_split_decrease(void);
 
 // Clay component for rendering the tab selector bar.
 void TabBar(AppState *state);

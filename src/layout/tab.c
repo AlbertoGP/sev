@@ -4,7 +4,7 @@
 
 static TabList tl;
 
-static void HandlePane(AppState *state, Pane *pane, int width, int height);
+static void HandlePane(AppState *state, Pane *pane, float width, float height);
 
 bool tab_list_init(void) {
     tl.list = NULL;
@@ -40,13 +40,55 @@ static void pane_destroy(Pane *pane) {
     if (pane->type == PANE_H_SPLIT) {
         pane_destroy(pane->h_split.top);
         pane_destroy(pane->h_split.bottom);
-    }
-    if (pane->type == PANE_V_SPLIT) {
+    } else if (pane->type == PANE_V_SPLIT) {
         pane_destroy(pane->v_split.left);
         pane_destroy(pane->v_split.right);
     }
-
     free(pane);
+}
+
+// Get first/second child of a split pane (NULL if content pane).
+static Pane *pane_first_child(Pane *pane) {
+    if (pane->type == PANE_H_SPLIT) return pane->h_split.top;
+    if (pane->type == PANE_V_SPLIT) return pane->v_split.left;
+    return NULL;
+}
+
+static Pane *pane_second_child(Pane *pane) {
+    if (pane->type == PANE_H_SPLIT) return pane->h_split.bottom;
+    if (pane->type == PANE_V_SPLIT) return pane->v_split.right;
+    return NULL;
+}
+
+// Check if pane is the first child (top/left) of its parent.
+static bool pane_is_first_child(Pane *pane) {
+    Pane *parent = pane->parent;
+    if (!parent) return false;
+    return pane_first_child(parent) == pane;
+}
+
+Pane *pane_get_sibling(Pane *pane) {
+    Pane *parent = pane->parent;
+    if (!parent) return NULL;
+    return pane_is_first_child(pane) ? pane_second_child(parent) : pane_first_child(parent);
+}
+
+void pane_replace_child(Pane *parent, Pane *old_child, Pane *new_child) {
+    if (!parent) {
+        tl.current->contents = new_child;
+        return;
+    }
+    if (parent->type == PANE_H_SPLIT) {
+        if (parent->h_split.top == old_child)
+            parent->h_split.top = new_child;
+        else
+            parent->h_split.bottom = new_child;
+    } else if (parent->type == PANE_V_SPLIT) {
+        if (parent->v_split.left == old_child)
+            parent->v_split.left = new_child;
+        else
+            parent->v_split.right = new_child;
+    }
 }
 
 // Free resources allocated for a tab.
@@ -121,12 +163,21 @@ bool tab_create(const char *name) {
     return true;
 }
 
-void tab_next(void) {
-    tl.current = tl.current->next ? tl.current->next : tl.list;
+Tab *tab_get_current(void) {
+    return tl.current;
+}
+
+// Sync the current buffer to match the active pane.
+static void sync_active_buffer(void) {
     Pane *active = pane_get_active();
-    if (active->content.type == CONTENT_TEXT) {
+    if (active && active->content.type == CONTENT_TEXT) {
         buffer_set_current(active->content.buffer);
     }
+}
+
+void tab_next(void) {
+    tl.current = tl.current->next ? tl.current->next : tl.list;
+    sync_active_buffer();
 }
 
 void tab_prev(void) {
@@ -135,10 +186,7 @@ void tab_prev(void) {
     } else {
         while (tl.current->next) tl.current = tl.current->next;
     }
-    Pane *active = pane_get_active();
-    if (active->content.type == CONTENT_TEXT) {
-        buffer_set_current(active->content.buffer);
-    }
+    sync_active_buffer();
 }
 
 Pane *pane_create(void) {
@@ -148,29 +196,16 @@ Pane *pane_create(void) {
 
 static void usurp_parent(Pane *pane, Pane *parent) {
     Pane *grandparent = parent->parent;
-    if (!grandparent) {
-        tl.current->contents = pane;
-    } else if (grandparent->type == PANE_H_SPLIT) {
-        if (grandparent->h_split.top == parent)
-            grandparent->h_split.top = pane;
-        else grandparent->h_split.bottom = pane;
-    } else {
-        if (grandparent->v_split.left == parent)
-            grandparent->v_split.left = pane;
-        else grandparent->v_split.right = pane;
-    }
+    pane_replace_child(grandparent, parent, pane);
     pane->parent = grandparent;
     free(parent);
 }
 
-static void descend_pane_tree(Pane *pane, bool hug_top, bool hug_left) {
+// Descend into pane tree, preferring the side closest to the given direction.
+// E.g., DIR_UP prefers top/left children, DIR_DOWN prefers bottom/right.
+static void descend_pane_tree(Pane *pane, Direction from_dir) {
     while (pane->type != PANE_CONTENT) {
-        if (pane->type == PANE_H_SPLIT) {
-            pane = hug_top ? pane->h_split.top : pane->h_split.bottom;
-        }
-        if (pane->type == PANE_V_SPLIT) {
-            pane = hug_left ? pane->v_split.left : pane->v_split.right;
-        }
+        pane = pane_first_child(pane);
     }
     pane->content.active = true;
 }
@@ -179,21 +214,13 @@ void pane_close(void) {
     Pane *pane = pane_get_active();
     if (!pane) return;
     Pane *parent = pane->parent;
-    Pane *sibling;
     if (!parent) {
         tab_destroy(tl.current);
         return;
-    } else if (parent->type == PANE_H_SPLIT) {
-        sibling = (parent->h_split.top == pane)
-            ? parent->h_split.bottom
-            : parent->h_split.top;
-    } else {
-        sibling = (parent->v_split.left == pane)
-            ? parent->v_split.right
-            : parent->v_split.left;
     }
+    Pane *sibling = pane_get_sibling(pane);
     pane->content.active = false;
-    descend_pane_tree(sibling, true, true);
+    descend_pane_tree(sibling, DIR_DOWN);
     usurp_parent(sibling, parent);
     free(pane);
 }
@@ -244,7 +271,10 @@ Pane *pane_get_active(void) {
     return pane_get_active_from_children(pane);
 }
 
-bool pane_split_horizontal(Pane *pane) {
+bool pane_split(Pane *pane, PaneType split_type) {
+    if (split_type != PANE_H_SPLIT && split_type != PANE_V_SPLIT)
+        return false;
+
     Pane *split = malloc(sizeof(Pane));
     if (!split) return false;
     Pane *new = malloc(sizeof(Pane));
@@ -253,144 +283,111 @@ bool pane_split_horizontal(Pane *pane) {
         return false;
     }
 
-    split->type = PANE_H_SPLIT;
-    split->h_split.top_height = 0.5;
-    split->h_split.top = pane;
-    split->h_split.bottom = new;
-
-    if (!pane->parent) {
-        tl.current->contents = split;
+    split->type = split_type;
+    if (split_type == PANE_H_SPLIT) {
+        split->h_split.top_height = 0.5;
+        split->h_split.top = pane;
+        split->h_split.bottom = new;
     } else {
-        Pane *p = pane->parent;
-        if (p->type == PANE_V_SPLIT) {
-            if (p->v_split.left == pane)
-                p->v_split.left = split;
-            if (p->v_split.right == pane)
-                p->v_split.right = split;
-        }
-        if (p->type == PANE_H_SPLIT) {
-            if (p->h_split.top == pane)
-                p->h_split.top = split;
-            if (p->h_split.bottom == pane)
-                p->h_split.bottom = split;
-        }
+        split->v_split.left_width = 0.5;
+        split->v_split.left = pane;
+        split->v_split.right = new;
     }
 
+    pane_replace_child(pane->parent, pane, split);
     split->parent = pane->parent;
     pane->parent = split;
 
     new->type = PANE_CONTENT;
     new->content.type = CONTENT_TEXT;
     new->content.buffer = pane->content.buffer;
+    new->content.active = false;
     new->parent = split;
 
     return true;
 }
 
-bool pane_split_vertical(Pane *pane) {
-    Pane *split = malloc(sizeof(Pane));
-    if (!split) return false;
-    Pane *new = malloc(sizeof(Pane));
-    if (!new) {
-        free(split);
-        return false;
-    }
-
-    split->type = PANE_V_SPLIT;
-    split->v_split.left_width = 0.5;
-    split->v_split.left = pane;
-    split->v_split.right = new;
-
-    if (!pane->parent) {
-        tl.current->contents = split;
-    } else {
-        Pane *p = pane->parent;
-        if (p->type == PANE_V_SPLIT) {
-            if (p->v_split.left == pane)
-                p->v_split.left = split;
-            if (p->v_split.right == pane)
-                p->v_split.right = split;
-        }
-        if (p->type == PANE_H_SPLIT) {
-            if (p->h_split.top == pane)
-                p->h_split.top = split;
-            if (p->h_split.bottom == pane)
-                p->h_split.bottom = split;
-        }
-    }
-
-    split->parent = pane->parent;
-    pane->parent = split;
-
-    new->type = PANE_CONTENT;
-    new->content.type = CONTENT_TEXT;
-    new->content.buffer = pane->content.buffer;
-    new->parent = split;
-
-    return true;
+// Returns the split type relevant for the given direction.
+static PaneType dir_split_type(Direction dir) {
+    return (dir == DIR_UP || dir == DIR_DOWN) ? PANE_H_SPLIT : PANE_V_SPLIT;
 }
 
-bool pane_navigate_up(void) {
+// Returns true if navigating in `dir` means we need to be the second child.
+static bool dir_from_second(Direction dir) {
+    return (dir == DIR_UP || dir == DIR_LEFT);
+}
+
+bool pane_navigate(Direction dir) {
     Pane *pane = pane_get_active();
     Pane *parent = pane->parent;
+    PaneType target_split = dir_split_type(dir);
+    bool from_second = dir_from_second(dir);
+
     while (parent) {
-        if (parent->type == PANE_H_SPLIT && parent->h_split.bottom == pane) {
-            pane_get_active()->content.active = false;
-            descend_pane_tree(parent->h_split.top, false, true);
-            return true;
+        if (parent->type == target_split) {
+            bool is_second = !pane_is_first_child(pane);
+            if (is_second == from_second) {
+                Pane *target = from_second ? pane_first_child(parent) : pane_second_child(parent);
+                pane_get_active()->content.active = false;
+                descend_pane_tree(target, dir);
+                sync_active_buffer();
+                return true;
+            }
         }
         pane = parent;
         parent = pane->parent;
     }
-
     return false;
 }
 
-bool pane_navigate_down(void) {
-    Pane *pane = pane_get_active();
-    Pane *parent = pane->parent;
-    while (parent) {
-        if (parent->type == PANE_H_SPLIT && parent->h_split.top == pane) {
-            pane_get_active()->content.active = false;
-            descend_pane_tree(parent->h_split.bottom, true, true);
-            return true;
-        }
-        pane = parent;
-        parent = pane->parent;
-    }
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
 
+bool pane_v_split_increase(void) {
+    Pane *pane = pane_get_active();
+    while (pane && pane->type != PANE_V_SPLIT) {
+        pane = pane->parent;
+    }
+    if (pane) {
+        pane->v_split.left_width = MIN(0.8, pane->v_split.left_width + 0.05);
+        return true;
+    }
     return false;
 }
 
-bool pane_navigate_left(void) {
+bool pane_v_split_decrease(void) {
     Pane *pane = pane_get_active();
-    Pane *parent = pane->parent;
-    while (parent) {
-        if (parent->type == PANE_V_SPLIT && parent->v_split.right == pane) {
-            pane_get_active()->content.active = false;
-            descend_pane_tree(parent->v_split.left, true, false);
-            return true;
-        }
-        pane = parent;
-        parent = pane->parent;
+    while (pane && pane->type != PANE_V_SPLIT) {
+        pane = pane->parent;
     }
-
+    if (pane) {
+        pane->v_split.left_width = MAX(0.2, pane->v_split.left_width - 0.05);
+        return true;
+    }
     return false;
 }
 
-bool pane_navigate_right(void) {
+bool pane_h_split_increase(void) {
     Pane *pane = pane_get_active();
-    Pane *parent = pane->parent;
-    while (parent) {
-        if (parent->type == PANE_V_SPLIT && parent->v_split.left == pane) {
-            pane_get_active()->content.active = false;
-            descend_pane_tree(parent->v_split.right, true, true);
-            return true;
-        }
-        pane = parent;
-        parent = pane->parent;
+    while (pane && pane->type != PANE_H_SPLIT) {
+        pane = pane->parent;
     }
+    if (pane) {
+        pane->h_split.top_height = MIN(0.8, pane->h_split.top_height + 0.05);
+        return true;
+    }
+    return false;
+}
 
+bool pane_h_split_decrease(void) {
+    Pane *pane = pane_get_active();
+    while (pane && pane->type != PANE_H_SPLIT) {
+        pane = pane->parent;
+    }
+    if (pane) {
+        pane->h_split.top_height = MAX(0.2, pane->h_split.top_height - 0.05);
+        return true;
+    }
     return false;
 }
 
@@ -398,10 +395,7 @@ static void HandleCloseTab(Clay_ElementId elementId, Clay_PointerData pointerInf
     Tab *t = (Tab *)userData;
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         tab_destroy(t);
-    }
-    Pane *active = pane_get_active();
-    if (active->content.type == CONTENT_TEXT) {
-        buffer_set_current(active->content.buffer);
+        sync_active_buffer();
     }
 }
 
@@ -433,10 +427,7 @@ static void HandleClickTab(Clay_ElementId elementId, Clay_PointerData pointerInf
     Tab *t = (Tab *)userData;
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         tl.current = t;
-        Pane *active = pane_get_active();
-        if (active->content.type == CONTENT_TEXT) {
-            buffer_set_current(active->content.buffer);
-        }
+        sync_active_buffer();
     }
 }
 
@@ -496,11 +487,16 @@ static Clay_Sizing layoutExpand = {
     .height = CLAY_SIZING_GROW(0)
 };
 
-static bool has_upper_neighbour(Pane *pane) {
+bool pane_has_neighbour(Pane *pane, Direction dir) {
     Pane *parent = pane->parent;
+    PaneType target_split = dir_split_type(dir);
+    bool from_second = dir_from_second(dir);
+
     while (parent) {
-        if (parent->type == PANE_H_SPLIT && parent->h_split.bottom == pane) {
-            return true;
+        if (parent->type == target_split) {
+            bool is_second = !pane_is_first_child(pane);
+            if (is_second == from_second)
+                return true;
         }
         pane = parent;
         parent = pane->parent;
@@ -508,43 +504,7 @@ static bool has_upper_neighbour(Pane *pane) {
     return false;
 }
 
-static bool has_lower_neighbour(Pane *pane) {
-    Pane *parent = pane->parent;
-    while (parent) {
-        if (parent->type == PANE_H_SPLIT && parent->h_split.top == pane) {
-            return true;
-        }
-        pane = parent;
-        parent = pane->parent;
-    }
-    return false;
-}
-
-static bool has_left_neighbour(Pane *pane) {
-    Pane *parent = pane->parent;
-    while (parent) {
-        if (parent->type == PANE_V_SPLIT && parent->v_split.right == pane) {
-            return true;
-        }
-        pane = parent;
-        parent = pane->parent;
-    }
-    return false;
-}
-
-static bool has_right_neighbour(Pane *pane) {
-    Pane *parent = pane->parent;
-    while (parent) {
-        if (parent->type == PANE_V_SPLIT && parent->v_split.left == pane) {
-            return true;
-        }
-        pane = parent;
-        parent = pane->parent;
-    }
-    return false;
-}
-
-static void BufferPane(AppState *state, Pane *pane, int width, int height) {
+static void BufferPane(AppState *state, Pane *pane, float width, float height) {
     int length = get_char_count();
     char *chars = buffer_text(pane->content.buffer);
     int point = point_get().pos;
@@ -559,10 +519,7 @@ static void BufferPane(AppState *state, Pane *pane, int width, int height) {
         .isStaticallyAllocated = true
     };
     Clay_BorderWidth borderWidth = {
-         .top    = has_upper_neighbour(pane) ? 1 : 0,
-         .bottom = has_lower_neighbour(pane) ? 1 : 0,
-         .left   = has_left_neighbour(pane)  ? 1 : 0,
-         .right  = has_right_neighbour(pane) ? 1 : 0
+         .top    = 1, .bottom = 1, .left   = 1, .right  = 1
     };
 
     CLAY_AUTO_ID({
@@ -592,7 +549,7 @@ static void BufferPane(AppState *state, Pane *pane, int width, int height) {
     }
 }
 
-static void VSplitPane(AppState *state, Pane *pane, int width, int height) {
+static void VSplitPane(AppState *state, Pane *pane, float width, float height) {
     CLAY_AUTO_ID({
         .layout = {
             .layoutDirection = CLAY_LEFT_TO_RIGHT,
@@ -604,12 +561,12 @@ static void VSplitPane(AppState *state, Pane *pane, int width, int height) {
         },
     }) {
         HandlePane(state, pane->v_split.left,
-                   pane->v_split.left_width, 1 - pane->v_split.left_width);
-        HandlePane(state, pane->v_split.right, 0, 0);
+                   pane->v_split.left_width, 0);
+        HandlePane(state, pane->v_split.right, 1 - pane->v_split.left_width, 0);
     }
 }
 
-static void HSplitPane(AppState *state, Pane *pane, int width, int height) {
+static void HSplitPane(AppState *state, Pane *pane, float width, float height) {
     CLAY_AUTO_ID({
         .layout = {
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
@@ -620,13 +577,13 @@ static void HSplitPane(AppState *state, Pane *pane, int width, int height) {
             .childGap = 2
         }
     }) {
-        HandlePane(state, pane->h_split.top, 1 - pane->h_split.top_height,
+        HandlePane(state, pane->h_split.top, 0,
                    pane->h_split.top_height);
-        HandlePane(state, pane->h_split.bottom, 0, 0);
+        HandlePane(state, pane->h_split.bottom, 0, 1 - pane->h_split.top_height);
     }
 }
 
-static void HandlePane(AppState *state, Pane *pane, int width, int height) {
+static void HandlePane(AppState *state, Pane *pane, float width, float height) {
     if (pane->type == PANE_V_SPLIT) VSplitPane(state, pane, width, height);
     if (pane->type == PANE_H_SPLIT) HSplitPane(state, pane, width, height);
     if (pane->type == PANE_CONTENT) BufferPane(state, pane, width, height);
