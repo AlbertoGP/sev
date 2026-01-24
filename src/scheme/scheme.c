@@ -124,6 +124,20 @@ static sexp scm_set_column(sexp ctx, sexp self, sexp n, sexp column) {
     return SEXP_VOID;
 }
 
+static sexp scm_tab_next(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    tab_next();
+
+    return SEXP_VOID;
+}
+
+static sexp scm_tab_prev(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    tab_prev();
+
+    return SEXP_VOID;
+}
+
 static sexp scm_split_vertical(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     pane_split_vertical(pane_get_active());
@@ -134,6 +148,41 @@ static sexp scm_split_vertical(sexp ctx, sexp self, sexp n) {
 static sexp scm_split_horizontal(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     pane_split_horizontal(pane_get_active());
+
+    return SEXP_VOID;
+}
+
+static sexp scm_pane_close(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    pane_close();
+
+    return SEXP_VOID;
+}
+
+static sexp scm_pane_navigate_up(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    pane_navigate_up();
+
+    return SEXP_VOID;
+}
+
+static sexp scm_pane_navigate_down(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    pane_navigate_down();
+
+    return SEXP_VOID;
+}
+
+static sexp scm_pane_navigate_left(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    pane_navigate_left();
+
+    return SEXP_VOID;
+}
+
+static sexp scm_pane_navigate_right(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    pane_navigate_right();
 
     return SEXP_VOID;
 }
@@ -214,8 +263,15 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "set-column", 1, scm_set_column);
     sexp_define_foreign(ctx, env, "toggle-theme", 0, scm_toggle_theme);
     sexp_define_foreign(ctx, env, "char-at-point", 0, scm_char_at_point);
+    sexp_define_foreign(ctx, env, "tab-next", 0, scm_tab_next);
+    sexp_define_foreign(ctx, env, "tab-prev", 0, scm_tab_prev);
     sexp_define_foreign(ctx, env, "split-vertical", 0, scm_split_vertical);
     sexp_define_foreign(ctx, env, "split-horizontal", 0, scm_split_horizontal);
+    sexp_define_foreign(ctx, env, "pane-close", 0, scm_pane_close);
+    sexp_define_foreign(ctx, env, "pane-navigate-up", 0, scm_pane_navigate_up);
+    sexp_define_foreign(ctx, env, "pane-navigate-down", 0, scm_pane_navigate_down);
+    sexp_define_foreign(ctx, env, "pane-navigate-left", 0, scm_pane_navigate_left);
+    sexp_define_foreign(ctx, env, "pane-navigate-right", 0, scm_pane_navigate_right);
     sexp_define_foreign(ctx, env, "clay-debug", 0, scm_clay_debug);
     sexp_define_foreign(ctx, env, "line-table-print", 0, scm_line_table_print);
 

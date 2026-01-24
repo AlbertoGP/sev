@@ -75,28 +75,37 @@ typedef struct {
 
 // Initialise tab list.
 bool tab_list_init(void);
-
 // Free up resources allocated to tab list.
 void tab_list_quit(void);
 
 // Create a new, empty tab with the given name.
 bool tab_create(const char *name);
+// Sets current tab to next (circular).
+void tab_next(void);
+// Sets current tab to prev (circular).
+void tab_prev(void);
 
+// Creates and returns a pointer to a new pane.
 Pane *pane_create(void);
-
+// Closes current pane.
+// If it is the root pane in a tab, the tab is closed.
+void pane_close(void);
 // Sets a pane to a specified buffer.
 // If make_active is true, the pane becomes focused.
 bool pane_set_to_buffer(Pane *pane, const char *buf, bool make_active);
-
+// Returns the currently active pane in the currently selected tab.
 Pane *pane_get_active(void);
 
+// Splits the currently active pane horizontally.
 bool pane_split_horizontal(Pane *pane);
-
+// Splits the currently active pane vertically.
 bool pane_split_vertical(Pane *pane);
+bool pane_navigate_up(void);
+bool pane_navigate_down(void);
+bool pane_navigate_left(void);
+bool pane_navigate_right(void);
 
-// TabBar Clay component
+// Clay component for rendering the tab selector bar.
 void TabBar(AppState *state);
-
-void HandlePane(AppState *state, Pane *pane, int width, int height);
-
+// Clay component for rendering the contents of the currently selected tab.
 void TabContent(AppState *state);
