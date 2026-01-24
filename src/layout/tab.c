@@ -51,6 +51,14 @@ static void pane_destroy(Pane *pane) {
 
 // Free resources allocated for a tab.
 static void tab_destroy(Tab *tab) {
+    // Quit if tab is only tab.
+    if (!tl.current->next && !tl.current->prev) {    
+        SDL_Event quit_event;
+        quit_event.type = SDL_EVENT_QUIT;
+        SDL_PushEvent(&quit_event);
+        return;
+    }
+
     if (tl.current == tab) {
         tl.current = tab->next ? tab->next : tab->prev;
     }
@@ -550,18 +558,12 @@ static void BufferPane(AppState *state, Pane *pane, int width, int height) {
         .length = length - point,
         .isStaticallyAllocated = true
     };
-    Clay_BorderWidth borderWidth = {0};
-    if (pane->parent) {
-
-        if (has_upper_neighbour(pane))
-            borderWidth.top = 1;
-        if (has_lower_neighbour(pane))
-            borderWidth.bottom = 1;
-        if (has_left_neighbour(pane))
-            borderWidth.left = 1;
-        if (has_right_neighbour(pane))
-            borderWidth.right = 1;
-    }
+    Clay_BorderWidth borderWidth = {
+         .top    = has_upper_neighbour(pane) ? 1 : 0,
+         .bottom = has_lower_neighbour(pane) ? 1 : 0,
+         .left   = has_left_neighbour(pane)  ? 1 : 0,
+         .right  = has_right_neighbour(pane) ? 1 : 0
+    };
 
     CLAY_AUTO_ID({
         .layout = {
@@ -572,7 +574,7 @@ static void BufferPane(AppState *state, Pane *pane, int width, int height) {
             .padding = CLAY_PADDING_ALL(24)
         },
         .border = {
-            .width = borderWidth,
+            .width = pane->parent ? borderWidth : (Clay_BorderWidth){0},
             .color = pane->content.active ? state->colors.text : state->colors.textFaded
         },
         // .cornerRadius = CLAY_CORNER_RADIUS(3)
