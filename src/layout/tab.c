@@ -138,7 +138,7 @@ Pane *pane_create(void) {
     return pane;
 }
 
-void usurp_parent(Pane *pane, Pane *parent) {
+static void usurp_parent(Pane *pane, Pane *parent) {
     Pane *grandparent = parent->parent;
     if (!grandparent) {
         tl.current->contents = pane;
@@ -169,12 +169,13 @@ static void descend_pane_tree(Pane *pane, bool hug_top, bool hug_left) {
 
 void pane_close(void) {
     Pane *pane = pane_get_active();
+    if (!pane) return;
     Pane *parent = pane->parent;
+    Pane *sibling;
     if (!parent) {
         tab_destroy(tl.current);
-    }
-    Pane *sibling;
-    if (parent->type == PANE_H_SPLIT) {
+        return;
+    } else if (parent->type == PANE_H_SPLIT) {
         sibling = (parent->h_split.top == pane)
             ? parent->h_split.bottom
             : parent->h_split.top;
@@ -184,8 +185,8 @@ void pane_close(void) {
             : parent->v_split.left;
     }
     pane->content.active = false;
-    usurp_parent(sibling, parent);
     descend_pane_tree(sibling, true, true);
+    usurp_parent(sibling, parent);
     free(pane);
 }
 
@@ -487,6 +488,54 @@ static Clay_Sizing layoutExpand = {
     .height = CLAY_SIZING_GROW(0)
 };
 
+static bool has_upper_neighbour(Pane *pane) {
+    Pane *parent = pane->parent;
+    while (parent) {
+        if (parent->type == PANE_H_SPLIT && parent->h_split.bottom == pane) {
+            return true;
+        }
+        pane = parent;
+        parent = pane->parent;
+    }
+    return false;
+}
+
+static bool has_lower_neighbour(Pane *pane) {
+    Pane *parent = pane->parent;
+    while (parent) {
+        if (parent->type == PANE_H_SPLIT && parent->h_split.top == pane) {
+            return true;
+        }
+        pane = parent;
+        parent = pane->parent;
+    }
+    return false;
+}
+
+static bool has_left_neighbour(Pane *pane) {
+    Pane *parent = pane->parent;
+    while (parent) {
+        if (parent->type == PANE_V_SPLIT && parent->v_split.right == pane) {
+            return true;
+        }
+        pane = parent;
+        parent = pane->parent;
+    }
+    return false;
+}
+
+static bool has_right_neighbour(Pane *pane) {
+    Pane *parent = pane->parent;
+    while (parent) {
+        if (parent->type == PANE_V_SPLIT && parent->v_split.left == pane) {
+            return true;
+        }
+        pane = parent;
+        parent = pane->parent;
+    }
+    return false;
+}
+
 static void BufferPane(AppState *state, Pane *pane, int width, int height) {
     int length = get_char_count();
     char *chars = buffer_text(pane->content.buffer);
@@ -501,6 +550,18 @@ static void BufferPane(AppState *state, Pane *pane, int width, int height) {
         .length = length - point,
         .isStaticallyAllocated = true
     };
+    Clay_BorderWidth borderWidth = {0};
+    if (pane->parent) {
+
+        if (has_upper_neighbour(pane))
+            borderWidth.top = 1;
+        if (has_lower_neighbour(pane))
+            borderWidth.bottom = 1;
+        if (has_left_neighbour(pane))
+            borderWidth.left = 1;
+        if (has_right_neighbour(pane))
+            borderWidth.right = 1;
+    }
 
     CLAY_AUTO_ID({
         .layout = {
@@ -511,9 +572,7 @@ static void BufferPane(AppState *state, Pane *pane, int width, int height) {
             .padding = CLAY_PADDING_ALL(24)
         },
         .border = {
-            .width = pane->parent 
-                 ? (Clay_BorderWidth){ .top = 1, .bottom = 1, .left = 1, .right = 1 } 
-                 : (Clay_BorderWidth){0},
+            .width = borderWidth,
             .color = pane->content.active ? state->colors.text : state->colors.textFaded
         },
         // .cornerRadius = CLAY_CORNER_RADIUS(3)
