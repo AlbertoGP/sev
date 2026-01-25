@@ -439,7 +439,9 @@ static void HandleClickTab(Clay_ElementId elementId, Clay_PointerData pointerInf
 
 void TabBar(AppState *state) {
     Tab *t = tl.list;
-    if (!t || !t->next) return;
+    // TODO: extract to a state variable toggle-able from Scheme.
+    // if (!t || !t->next) return;  // Hide tab bar if only one tab.
+    if (!t) return;                 // Show tab bar if only one tab.
     CLAY(CLAY_ID("Tab Bar"), {
         .layout = {
             .sizing = { .width = CLAY_SIZING_GROW(0) },
