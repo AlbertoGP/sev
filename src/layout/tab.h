@@ -24,7 +24,7 @@ typedef struct {
 } TabList;
 
 // Initialise tab list.
-bool tab_list_init(void);
+bool tab_list_init(AppState *state);
 // Free up resources allocated to tab list.
 void tab_list_quit(void);
 

@@ -4,10 +4,19 @@
 #include <string.h>
 
 static TabList tl;
+static SDL_Window *window;
 
-bool tab_list_init(void) {
+static void update_window_title(void) {
+    char buf[TAB_NAME_MAX];
+    snprintf(buf, TAB_NAME_MAX, "%s - sev", tl.current->name);
+    SDL_SetWindowTitle(window, buf);
+}
+
+bool tab_list_init(AppState *state) {
     tl.list = NULL;
     tl.current = NULL;
+
+    window = state->window;
 
     if (!buffer_get_current()) return false;
 
@@ -30,6 +39,8 @@ bool tab_list_init(void) {
     next = next->next;
     next->contents = pane_create();
     pane_set_to_buffer(next->contents, NAME_2, true);
+
+    update_window_title();
 
     return true;
 }
@@ -62,6 +73,8 @@ static void tab_destroy(Tab *tab) {
     }
 
     free(tab);
+
+    update_window_title();
 }
 
 
@@ -113,6 +126,7 @@ Tab *tab_get_current(void) {
 void tab_next(void) {
     tl.current = tl.current->next ? tl.current->next : tl.list;
     sync_active_buffer();
+    update_window_title();
 }
 
 void tab_prev(void) {
@@ -122,6 +136,7 @@ void tab_prev(void) {
         while (tl.current->next) tl.current = tl.current->next;
     }
     sync_active_buffer();
+    update_window_title();
 }
 
 Pane *tab_get_root_pane(void) {
@@ -177,6 +192,7 @@ static void HandleClickTab(Clay_ElementId elementId, Clay_PointerData pointerInf
     if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
         tl.current = t;
         sync_active_buffer();
+        update_window_title();
     }
 }
 

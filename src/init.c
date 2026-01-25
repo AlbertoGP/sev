@@ -26,7 +26,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     }
     *appstate = state;
 
-    if (!SDL_CreateWindowAndRenderer("Text Editor", 800, 600, SDL_WINDOW_RESIZABLE,
+    if (!SDL_CreateWindowAndRenderer("sev", 800, 600, SDL_WINDOW_RESIZABLE,
                                      &state->window, &state->rendererData.renderer)) {
         SDL_Log("Failed to create window and renderer = %s", SDL_GetError());
         return SDL_APP_FAILURE;
@@ -103,7 +103,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
-    if (!tab_list_init()) {
+    if (!tab_list_init(state)) {
         fprintf(stderr, "Failed to initialise tab list.");
         return SDL_APP_FAILURE;
     }
