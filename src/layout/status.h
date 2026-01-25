@@ -1,3 +1,3 @@
 #include "../state.h"
 
-void StatusBar(AppState *state);
+void StatusBar(AppState *state, bool active);

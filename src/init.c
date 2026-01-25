@@ -60,9 +60,12 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     char fontPathRegular[1024];
     char fontPathBold[1024];
     char fontPathItalic[1024];
-    snprintf(fontPathRegular, sizeof(fontPathRegular), "%sresources/VictorMono-Regular.ttf", basePath);
-    snprintf(fontPathBold, sizeof(fontPathBold), "%sresources/VictorMono-Bold.ttf", basePath);
-    snprintf(fontPathItalic, sizeof(fontPathItalic), "%sresources/VictorMono-Italic.ttf", basePath);
+    // snprintf(fontPathRegular, sizeof(fontPathRegular), "%sresources/VictorMono-Regular.ttf", basePath);
+    // snprintf(fontPathBold, sizeof(fontPathBold), "%sresources/VictorMono-Bold.ttf", basePath);
+    // snprintf(fontPathItalic, sizeof(fontPathItalic), "%sresources/VictorMono-Italic.ttf", basePath);
+    snprintf(fontPathRegular, sizeof(fontPathRegular), "%sresources/JetBrainsMono.ttf", basePath);
+    snprintf(fontPathBold, sizeof(fontPathBold), "%sresources/JetBrainsMono.ttf", basePath);
+    snprintf(fontPathItalic, sizeof(fontPathItalic), "%sresources/JetBrainsMono-Italic.ttf", basePath);
     #define FONT_PATH_REGULAR fontPathRegular
     #define FONT_PATH_BOLD fontPathBold
     #define FONT_PATH_ITALIC fontPathItalic

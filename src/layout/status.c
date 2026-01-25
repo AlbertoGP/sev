@@ -9,7 +9,7 @@ static void Spacer(int size) {
     }}}) {}
 }
 
-void StatusBar(AppState *state) {
+void StatusBar(AppState *state, bool active) {
     Clay_String bufName = {
          .chars = buffer_get_name(),
          .length = strlen(buffer_get_name()),
@@ -38,68 +38,68 @@ void StatusBar(AppState *state) {
          .chars = colcount,
          .length = strlen(colcount),
     };
-    CLAY(CLAY_ID("Status Bar"), {
+    Clay_Color textColor = active ? state->colors.text : state->colors.textFaded;
+    CLAY_AUTO_ID({
         .layout = {
             .sizing = {
                 .width = CLAY_SIZING_GROW(0),
             },
-            // .padding = CLAY_PADDING_ALL(5)
         },
         .backgroundColor = state->colors.bar,
     }) {
         CLAY_TEXT(CLAY_STRING("Buffer: "), CLAY_TEXT_CONFIG({
             .fontId = FONT_BOLD,
             .fontSize = 14,
-            .textColor = state->colors.text,
+            .textColor = textColor,
         }));
         CLAY_TEXT(bufName, CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
             .fontSize = 14,
-            .textColor = state->colors.text,
+            .textColor = textColor,
         }));
         Spacer(25);
         CLAY_TEXT(CLAY_STRING("Point: "), CLAY_TEXT_CONFIG({
             .fontId = FONT_BOLD,
             .fontSize = 14,
-            .textColor = state->colors.text,
+            .textColor = textColor,
         }));
         CLAY_TEXT(pointPos, CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
             .fontSize = 14,
-            .textColor = state->colors.text,
+            .textColor = textColor,
         }));
         Spacer(25);
         CLAY_TEXT(CLAY_STRING("Chars: "), CLAY_TEXT_CONFIG({
             .fontId = FONT_BOLD,
             .fontSize = 14,
-            .textColor = state->colors.text,
+            .textColor = textColor,
         }));
         CLAY_TEXT(charCount, CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
             .fontSize = 14,
-            .textColor = state->colors.text,
+            .textColor = textColor,
         }));
         Spacer(25);
         CLAY_TEXT(CLAY_STRING("Line: "), CLAY_TEXT_CONFIG({
             .fontId = FONT_BOLD,
             .fontSize = 14,
-            .textColor = state->colors.text,
+            .textColor = textColor,
         }));
         CLAY_TEXT(lineCount, CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
             .fontSize = 14,
-            .textColor = state->colors.text,
+            .textColor = textColor,
         }));
         Spacer(25);
         CLAY_TEXT(CLAY_STRING("Col: "), CLAY_TEXT_CONFIG({
             .fontId = FONT_BOLD,
             .fontSize = 14,
-            .textColor = state->colors.text,
+            .textColor = textColor,
         }));
         CLAY_TEXT(col, CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
             .fontSize = 14,
-            .textColor = state->colors.text,
+            .textColor = textColor,
         }));
     }
 }

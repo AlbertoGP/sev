@@ -1,3 +1,4 @@
+#include "status.h"
 #include "tab.h"
 #include <stdlib.h>
 #include <string.h>
@@ -216,6 +217,7 @@ void pane_close(void) {
     Pane *parent = pane->parent;
     if (!parent) {
         tab_destroy(tl.current);
+        sync_active_buffer();
         return;
     }
     Pane *sibling = pane_get_sibling(pane);
@@ -521,9 +523,6 @@ static void BufferPane(AppState *state, Pane *pane, float width, float height) {
         .length = length - point,
         .isStaticallyAllocated = true
     };
-    Clay_BorderWidth borderWidth = {
-         .top    = 1, .bottom = 1, .left   = 1, .right  = 1
-    };
 
     CLAY_AUTO_ID({
         .layout = {
@@ -531,24 +530,27 @@ static void BufferPane(AppState *state, Pane *pane, float width, float height) {
                 .width = width ? CLAY_SIZING_PERCENT(width) : CLAY_SIZING_GROW(0),
                 .height = height ? CLAY_SIZING_PERCENT(height) : CLAY_SIZING_GROW(0),
             },
-            .padding = CLAY_PADDING_ALL(24)
+            .layoutDirection = CLAY_TOP_TO_BOTTOM,
         },
-        .border = {
-            .width = pane->parent ? borderWidth : (Clay_BorderWidth){0},
-            .color = pane->content.active ? state->colors.text : state->colors.textFaded
-        },
-        // .cornerRadius = CLAY_CORNER_RADIUS(3)
     }) {
-        CLAY_TEXT(head, CLAY_TEXT_CONFIG({
-            .fontId = FONT_NORMAL,
-            .fontSize = 18,
-            .textColor = state->colors.text,
-        }));
-        CLAY_TEXT(tail, CLAY_TEXT_CONFIG({
-            .fontId = FONT_NORMAL,
-            .fontSize = 18,
-            .textColor = state->colors.textFaded,
-        }));
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = layoutExpand,
+                .padding = CLAY_PADDING_ALL(24)
+            }
+        }) {
+            CLAY_TEXT(head, CLAY_TEXT_CONFIG({
+                .fontId = FONT_NORMAL,
+                .fontSize = 16,
+                .textColor = state->colors.text,
+            }));
+            CLAY_TEXT(tail, CLAY_TEXT_CONFIG({
+                .fontId = FONT_NORMAL,
+                .fontSize = 16,
+                .textColor = state->colors.textFaded,
+            }));
+        }
+        StatusBar(state, pane->content.active);
     }
 }
 

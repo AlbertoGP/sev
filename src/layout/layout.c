@@ -26,7 +26,6 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
         }) {
             TabContent(state);
         }
-        StatusBar(state);
         CLAY(CLAY_ID("Echo Area"), {
             .layout = {
                 .sizing = {
