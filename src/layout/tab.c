@@ -406,22 +406,23 @@ static bool CloseButton(AppState *state, Tab *t) {
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {
-                .width = CLAY_SIZING_FIXED(20),
-                .height = CLAY_SIZING_FIXED(20),
+                .width = CLAY_SIZING_FIXED(16),
+                .height = CLAY_SIZING_FIXED(16),
              },
             .childAlignment = {
                 .x = CLAY_ALIGN_X_CENTER,
                 .y = CLAY_ALIGN_Y_CENTER
             }
         },
-        .cornerRadius = CLAY_CORNER_RADIUS(5),
+        .cornerRadius = CLAY_CORNER_RADIUS(8),
         .backgroundColor = Clay_Hovered() ? state->colors.bar : (Clay_Color){0, 0, 0, 0}
     }) {
         Clay_OnHover(HandleCloseTab, t);
         CLAY_TEXT(CLAY_STRING("×"), CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
-            .fontSize = 21,
-            .textColor = tl.current == t ? state->colors.text : state->colors.textFaded
+            .fontSize = 20,
+            .textColor = tl.current == t ? state->colors.text : state->colors.textFaded,
+            .textAlignment = CLAY_TEXT_ALIGN_CENTER,
         }));
         hovered = Clay_Hovered();
     }
@@ -452,7 +453,7 @@ void TabBar(AppState *state) {
             .length = strlen(t->name),
             .isStaticallyAllocated = true
         };
-        CLAY(CLAY_IDI("Tab-", i), {
+        CLAY(CLAY_IDI("Tab", i), {
             .layout = {
                 .padding = { .left = 10, .right = 5 },
                 .childAlignment = {

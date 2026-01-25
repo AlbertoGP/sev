@@ -44,8 +44,12 @@ void StatusBar(AppState *state, bool active) {
             .sizing = {
                 .width = CLAY_SIZING_GROW(0),
             },
+            .padding = { .left = 10 }
         },
         .backgroundColor = state->colors.bar,
+        .clip = {
+            .horizontal = true
+        }
     }) {
         CLAY_TEXT(CLAY_STRING("Buffer: "), CLAY_TEXT_CONFIG({
             .fontId = FONT_BOLD,

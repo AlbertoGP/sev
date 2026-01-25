@@ -26,7 +26,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     }
     *appstate = state;
 
-    if (!SDL_CreateWindowAndRenderer("SDL3 + Clay", 800, 600, SDL_WINDOW_RESIZABLE,
+    if (!SDL_CreateWindowAndRenderer("Text Editor", 800, 600, SDL_WINDOW_RESIZABLE,
                                      &state->window, &state->rendererData.renderer)) {
         SDL_Log("Failed to create window and renderer = %s", SDL_GetError());
         return SDL_APP_FAILURE;
