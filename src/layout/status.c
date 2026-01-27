@@ -15,19 +15,19 @@ void StatusBar(AppState *state, bool active) {
          .length = strlen(buffer_get_name()),
     };
     static char pos[12];
-    snprintf(pos, 12, "%zu", point_get().pos);
+    snprintf(pos, 12, "%zu", point_get(buffer_get_current()).pos);
     Clay_String pointPos = {
          .chars = pos,
          .length = strlen(pos),
     };
     static char ccount[12];
-    snprintf(ccount, 12, "%zu", get_char_count());
+    snprintf(ccount, 12, "%zu", get_char_count(buffer_get_current()));
     Clay_String charCount = {
          .chars = ccount,
          .length = strlen(ccount),
     };
     static char lncount[24];
-    snprintf(lncount, 24, "%zu / %zu", point_get_line(), get_line_count());
+    snprintf(lncount, 24, "%zu / %zu", point_get_line(), get_line_count(buffer_get_current()));
     Clay_String lineCount = {
          .chars = lncount,
          .length = strlen(lncount),

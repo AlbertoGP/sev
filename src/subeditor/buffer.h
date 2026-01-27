@@ -19,11 +19,11 @@ void buffer_list_quit(void);
 // Note: no two buffers may share the same name.
 bool buffer_create(const char *name);
 // Removes all characters and marks from the specified buffer.
-bool buffer_clear(const char *name);
+bool buffer_clear(Buffer *buf);
 // Deletes the specified buffer. If the specified buffer is the current one,
 // the next buffer in the chain becomes the current one. If no buffers are
 // left, the initial "scratch" buffer is automatically recreated.
-bool buffer_delete(const char *name);
+bool buffer_delete(Buffer *buf);
 // Returns a pointer to the currently selected buffer.
 Buffer *buffer_get_current(void);
 // Sets the current buffer to the one specified.
@@ -40,8 +40,6 @@ bool buffer_set_name(const char *name);
 char *buffer_get_name(void);
 // Returns a pointer to buffer matching name.
 Buffer *buffer_get_by_name(const char *name);
-// Sets the current buffer to the one specified.
-bool buffer_set_by_name(const char *name);
 
 // Sets the point to the specified location in the current buffer.
 bool point_set(Location loc);
@@ -52,8 +50,8 @@ bool point_move(int count);
 // Sets the column to as close to col_saved as possible.
 // Does not change col_saved.
 bool point_move_by_line(int count);
-// Returns the current location.
-Location point_get(void);
+// Returns the current location in the specified buf.
+Location point_get(Buffer *buf);
 // Returns the number of the line that the the point is on.
 size_t point_get_line(void);
 // Returns the location of the start of the buffer.
@@ -80,11 +78,11 @@ char get_char(void);
 // It will return fewer than count characters if the end of the buffer is encountered.
 // Requires a pointer to char to store the result.
 void get_string(char *string, size_t count);
-// Returns the number of characters in the current buffer.
-size_t get_char_count(void);
-// Returns the number of lines in the current buffer.
+// Returns the number of characters in the specified buffer.
+size_t get_char_count(Buffer *buf);
+// Returns the number of lines in the specified buffer.
 // It is undefined whether or not one counts an incomplete last line.
-size_t get_line_count(void);
+size_t get_line_count(Buffer *buf);
 
 // Returns the file name that is currently associated with the current buffer.
 // The size of the buffer allocated for the returned filename is passed in.
@@ -115,10 +113,10 @@ bool get_modified(void);
 
 // Inserts a single character at the point.
 // The point is placed after the inserted character.
-void insert_char(char c);
+void insert_char(Buffer *buf, char c);
 // Inserts a string of characters at the point.
 // The point is placed after the last character in the string.
-void insert_string(char *string);
+void insert_string(Buffer *buf, const char *string);
 // Replaces the character directly after the point with another.
 void replace_char(char c);
 // Replaces a string as if replace_char had been called on each of its characters.
@@ -128,7 +126,7 @@ void replace_string(char *string);
 // or before the point if count is negative.
 // If the specified count extends beyond the start or end of the buffer,
 // the excess is ignored.
-bool delete_chars(int count);
+bool delete_chars(Buffer *buf, int count);
 // Removes all characters between the point and the mark.
 bool delete_region(Mark *mark);
 // Copies the characters between the point and the mark to the specified buffer,
@@ -184,4 +182,9 @@ char char_from_point(int n);
 int buf_char_at(Buffer *buf, size_t index);
 int buf_size(Buffer *buf);
 void line_table_print(void);
+
+void message_send(const char *message);
+void message_clear(void);
+char *get_message_text(void);
+
 void print_buffer_list(void);

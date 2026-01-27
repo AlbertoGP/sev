@@ -33,9 +33,9 @@ bool tab_create(const char *name);
 // Get the current tab.
 Tab *tab_get_current(void);
 // Sets current tab to next (circular).
-void tab_next(void);
+bool tab_next(void);
 // Sets current tab to prev (circular).
-void tab_prev(void);
+bool tab_prev(void);
 
 // Get the root pane of the current tab.
 Pane *tab_get_root_pane(void);

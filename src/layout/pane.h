@@ -23,12 +23,15 @@ typedef enum {
 // Can either be associated with a buffer, or a custom UI component.
 // Only one content pane can be active in a tab at any time.
 typedef struct {
-    bool active;
     ContentType type;
     union {
         Buffer *buffer;
         // TODO: add custom UI type.
     };
+    uint64_t layout_version;
+    float width;
+    float height;
+    bool active;
 } Content;
 
 // A vertical split node in a pane tree.

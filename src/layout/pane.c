@@ -291,9 +291,11 @@ static Clay_Sizing layoutExpand = {
 };
 
 static void BufferPane(AppState *state, Pane *pane, float width, float height) {
-    int length = get_char_count();
-    char *chars = buffer_text(pane->content.buffer);
-    int point = point_get().pos;
+    int length = get_char_count(pane->content.buffer);
+    static char *chars;
+    if (chars) free (chars);
+    chars = buffer_text(pane->content.buffer);
+    int point = point_get(pane->content.buffer).pos;
     Clay_String head = {
         .chars = chars,
         .length = point,
@@ -346,8 +348,7 @@ static void VSplitPane(AppState *state, Pane *pane, float width, float height) {
             .childGap = 2
         },
     }) {
-        PaneContent(state, pane->v_split.left,
-                   pane->v_split.left_width, 0);
+        PaneContent(state, pane->v_split.left, pane->v_split.left_width, 0);
         PaneContent(state, pane->v_split.right, 1 - pane->v_split.left_width, 0);
     }
 }
@@ -363,8 +364,7 @@ static void HSplitPane(AppState *state, Pane *pane, float width, float height) {
             .childGap = 2
         }
     }) {
-        PaneContent(state, pane->h_split.top, 0,
-                   pane->h_split.top_height);
+        PaneContent(state, pane->h_split.top, 0, pane->h_split.top_height);
         PaneContent(state, pane->h_split.bottom, 0, 1 - pane->h_split.top_height);
     }
 }

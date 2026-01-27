@@ -123,13 +123,19 @@ Tab *tab_get_current(void) {
     return tl.current;
 }
 
-void tab_next(void) {
+bool tab_next(void) {
+    if (!tl.current->prev && !tl.current->next) return false;
+
     tl.current = tl.current->next ? tl.current->next : tl.list;
     sync_active_buffer();
     update_window_title();
+
+    return true;
 }
 
-void tab_prev(void) {
+bool tab_prev(void) {
+    if (!tl.current->prev && !tl.current->next) return false;
+
     if (tl.current->prev) {
          tl.current = tl.current->prev;
     } else {
@@ -137,6 +143,8 @@ void tab_prev(void) {
     }
     sync_active_buffer();
     update_window_title();
+
+    return true;
 }
 
 Pane *tab_get_root_pane(void) {

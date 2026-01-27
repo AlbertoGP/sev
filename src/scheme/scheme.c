@@ -20,7 +20,9 @@ static sexp scm_quit(sexp ctx, sexp self, sexp n) {
 static sexp scm_insert_char(sexp ctx, sexp self, sexp n, sexp ch) {
     G->needs_redraw = true;
     sexp_assert_type(ctx, sexp_charp, SEXP_CHAR, ch);
-    insert_char(sexp_unbox_character(ch));
+    insert_char(buffer_get_current(), sexp_unbox_character(ch));
+
+    message_clear();
     return SEXP_VOID;
 }
 
@@ -29,18 +31,42 @@ static sexp scm_self_insert(sexp ctx, sexp self, sexp n) {
     KeyEvent last = last_event;
     
     if (last.type != KEYEVENT_CHAR) return SEXP_VOID;
-    insert_char(last.codepoint);
+    insert_char(buffer_get_current(), last.codepoint);
+
+    message_clear();
     return SEXP_VOID;
 }
 
 static sexp scm_delete_char(sexp ctx, sexp self, sexp n, sexp count) {
     G->needs_redraw = true;
-    delete_chars(sexp_unbox_fixnum(count));
+
+    int count_unboxed = sexp_unbox_fixnum(count);
+    size_t point = point_get(buffer_get_current()).pos;
+    size_t chars = get_char_count(buffer_get_current());
+
+    message_clear();
+    if (count_unboxed > (int)point)
+        message_send("Beginning of buffer");
+    if (count_unboxed < 0 && -count_unboxed > (int)(chars - point))
+        message_send("End of buffer");
+
+    delete_chars(buffer_get_current(), sexp_unbox_fixnum(count));
     return SEXP_VOID;
 }
 
 static sexp scm_point_move(sexp ctx, sexp self, sexp n, sexp count) {
     G->needs_redraw = true;
+
+    int count_unboxed = sexp_unbox_fixnum(count);
+    size_t point = point_get(buffer_get_current()).pos;
+    size_t chars = get_char_count(buffer_get_current());
+
+    message_clear();
+    if (count_unboxed < 0 && -count_unboxed > (int)point)
+        message_send("Beginning of buffer");
+    if (count_unboxed > (int)(chars - point))
+        message_send("End of buffer");
+
     point_move(sexp_unbox_fixnum(count));
     return SEXP_VOID;
 }
@@ -78,6 +104,10 @@ static sexp scm_make_keymap(sexp ctx, sexp self, sexp n) {
 
 static sexp scm_toggle_theme(sexp ctx, sexp self, sexp n) {
     toggle_theme(G);
+
+    char message[100];
+    sprintf(message, "Theme set to %s mode", G->theme == THEME_DARK ? "dark" : "light");
+    message_send(message);
     return SEXP_VOID;
 }
 
@@ -126,15 +156,19 @@ static sexp scm_set_column(sexp ctx, sexp self, sexp n, sexp column) {
 
 static sexp scm_tab_next(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
-    tab_next();
 
+    message_clear();
+    if (tab_next())
+        message_send("tab-next");
     return SEXP_VOID;
 }
 
 static sexp scm_tab_prev(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
-    tab_prev();
 
+    message_clear();
+    if (tab_prev())
+        message_send("tab-prev");
     return SEXP_VOID;
 }
 
@@ -142,6 +176,7 @@ static sexp scm_split_vertical(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     pane_split_vertical(pane_get_active());
 
+    message_send("split-vertical");
     return SEXP_VOID;
 }
 
@@ -149,6 +184,7 @@ static sexp scm_split_horizontal(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     pane_split_horizontal(pane_get_active());
 
+    message_send("split-horizontal");
     return SEXP_VOID;
 }
 
@@ -156,62 +192,79 @@ static sexp scm_pane_close(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     pane_close();
 
+    message_send("pane-close");
     return SEXP_VOID;
 }
 
 static sexp scm_pane_navigate_up(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
-    pane_navigate_up();
 
+    message_clear();
+    if (pane_navigate_up())
+        message_send("pane-navigate-up");
     return SEXP_VOID;
 }
 
 static sexp scm_pane_navigate_down(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
-    pane_navigate_down();
 
+    message_clear();
+    if (pane_navigate_down())
+        message_send("pane-navigate-down");
     return SEXP_VOID;
 }
 
 static sexp scm_pane_navigate_left(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
-    pane_navigate_left();
 
+    message_clear();
+    if (pane_navigate_left())
+        message_send("pane-navigate-left");
     return SEXP_VOID;
 }
 
 static sexp scm_pane_navigate_right(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
-    pane_navigate_right();
-
+    
+    message_clear();
+    if (pane_navigate_right())
+        message_send("pane-navigate-right");
     return SEXP_VOID;
 }
 
 static sexp scm_pane_v_split_increase(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
-    pane_v_split_increase();
 
+    message_clear();
+    if (pane_v_split_increase())
+        message_send("pane-v-split-increase");
     return SEXP_VOID;
 }
 
 static sexp scm_pane_v_split_decrease(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
-    pane_v_split_decrease();
 
+    message_clear();
+    if (pane_v_split_decrease())
+        message_send("pane-v-split-decrease");
     return SEXP_VOID;
 }
 
 static sexp scm_pane_h_split_increase(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
-    pane_h_split_increase();
 
+    message_clear();
+    if (pane_h_split_increase())
+        message_send("pane-h-split-increase");
     return SEXP_VOID;
 }
 
 static sexp scm_pane_h_split_decrease(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
-    pane_h_split_decrease();
 
+    message_clear();
+    if (pane_h_split_decrease())
+        message_send("pane-h-split-decrease");
     return SEXP_VOID;
 }
 
