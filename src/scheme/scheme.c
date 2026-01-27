@@ -268,6 +268,27 @@ static sexp scm_pane_h_split_decrease(sexp ctx, sexp self, sexp n) {
     return SEXP_VOID;
 }
 
+static sexp scm_eval_buffer(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+
+    sexp_gc_var2(result, str);
+    sexp_gc_preserve2(ctx, result, str);
+
+    result = sexp_eval_string(ctx, buffer_text(buffer_get_current()), -1, NULL);
+
+    if (sexp_exceptionp(result)) {
+        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+        message_send("exception");
+    } else {
+        sexp str = sexp_write_to_string(ctx, result);
+        message_send(sexp_string_data(str));
+    }
+
+    sexp_gc_release2(ctx);
+
+    return SEXP_VOID;
+}
+
 static sexp scm_clay_debug(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     G->debug_open = !G->debug_open;
@@ -357,6 +378,7 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "pane-v-split-decrease", 0, scm_pane_v_split_decrease);
     sexp_define_foreign(ctx, env, "pane-h-split-increase", 0, scm_pane_h_split_increase);
     sexp_define_foreign(ctx, env, "pane-h-split-decrease", 0, scm_pane_h_split_decrease);
+    sexp_define_foreign(ctx, env, "eval-buffer", 0, scm_eval_buffer);
     sexp_define_foreign(ctx, env, "clay-debug", 0, scm_clay_debug);
     sexp_define_foreign(ctx, env, "line-table-print", 0, scm_line_table_print);
 

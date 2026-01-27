@@ -2,6 +2,7 @@
 ; (set-key! global-keymap "ESC" line-table-print)
 (set-key! global-keymap "C-q" quit)
 (set-key! global-keymap "C-x t" toggle-theme)
+(set-key! global-keymap "C-e" eval-buffer)
 (set-key! global-keymap "SPC" self-insert)
 (set-key! global-keymap "RET" (lambda () (insert-char #\newline)))
 (set-key! global-keymap "TAB" (lambda () (insert-char #\tab)))
