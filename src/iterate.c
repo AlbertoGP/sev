@@ -1,6 +1,8 @@
 #include <SDL3/SDL.h>
 
 #include "layout/layout.h"
+#include "layout/pane.h"
+#include "layout/status.h"
 #include "state.h"
 #include "theme.h"
 
@@ -38,6 +40,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_RenderClear(state->rendererData.renderer);
     Clay_RenderCommandArray render_commands = create_app_layout(state);
     SDL_Clay_RenderClayCommands(&state->rendererData, &render_commands);
+    pane_free_strings();
+    bar_free_strings();
     SDL_RenderPresent(state->rendererData.renderer);
 
     /* Reset dirty flag */

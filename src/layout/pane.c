@@ -85,6 +85,7 @@ static void descend_pane_tree(Pane *pane, Direction from_dir) {
         pane = pane_first_child(pane);
     }
     pane->content.active = true;
+    sync_active_buffer();
 }
 
 void pane_close(void) {
@@ -103,7 +104,7 @@ void pane_close(void) {
     free(pane);
 }
 
-bool pane_set_to_buffer(Pane *pane, Buffer *buf, bool make_active) {
+bool pane_set_buffer(Pane *pane, Buffer *buf) {
     if (!pane) return false;
     // Don't abandon *or* delete a pane sub-tree, just return a signal.
     if (pane->type == PANE_V_SPLIT && (pane->v_split.left || pane->v_split.right))
@@ -115,7 +116,6 @@ bool pane_set_to_buffer(Pane *pane, Buffer *buf, bool make_active) {
     pane->type = PANE_CONTENT;
     pane->content.type = CONTENT_TEXT;
     pane->content.buffer = buf;
-    pane->content.active = make_active;
 
     return true;
 }
@@ -146,6 +146,15 @@ static Pane *pane_get_active_from_children(Pane *pane) {
 Pane *pane_get_active(void) {
     Pane *pane = tab_get_root_pane();
     return pane_get_active_from_children(pane);
+}
+
+bool pane_set_active(Pane *pane) {
+    if (!pane) return false;
+    Pane *current = pane_get_active();
+    if (current) current->content.active = false;
+    pane->content.active = true;
+    sync_active_buffer();
+    return true;
 }
 
 Pane *pane_split(Pane *pane, PaneType split_type) {
@@ -196,6 +205,7 @@ static bool dir_from_second(Direction dir) {
 
 bool pane_navigate(Direction dir) {
     Pane *pane = pane_get_active();
+    if (!pane) return false;
     Pane *parent = pane->parent;
     PaneType target_split = dir_split_type(dir);
     bool from_second = dir_from_second(dir);
@@ -290,11 +300,23 @@ static Clay_Sizing layoutExpand = {
     .height = CLAY_SIZING_GROW(0)
 };
 
+#define PANE_STRINGS_MAX 32
+static char *pane_strings[PANE_STRINGS_MAX];
+static int pane_strings_count = 0;
+
+void pane_free_strings(void) {
+    for (int i = 0; i < pane_strings_count; i++) {
+        free(pane_strings[i]);
+    }
+    pane_strings_count = 0;
+}
+
 static void BufferPane(AppState *state, Pane *pane, float width, float height) {
     int length = get_char_count(pane->content.buffer);
-    static char *chars;
-    if (chars) free (chars);
-    chars = buffer_text(pane->content.buffer);
+    char *chars = buffer_text(pane->content.buffer);
+    if (pane_strings_count < PANE_STRINGS_MAX) {
+        pane_strings[pane_strings_count++] = chars;
+    }
     int point = point_get(pane->content.buffer).pos;
     Clay_String head = {
         .chars = chars,
@@ -333,7 +355,7 @@ static void BufferPane(AppState *state, Pane *pane, float width, float height) {
                 .textColor = state->colors.textFaded,
             }));
         }
-        StatusBar(state, pane->content.active);
+        StatusBar(state, pane);
     }
 }
 

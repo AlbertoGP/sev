@@ -286,10 +286,18 @@ static sexp scm_eval_buffer(sexp ctx, sexp self, sexp n) {
         if (!buf) {
             buffer_create(NAME);
             buf = buffer_get_by_name(NAME);
+        } else {
+            buffer_clear(buf);
         }
         insert_string(buf, "Error: ");
-        insert_string(buf, sexp_string_data(str));
-        pane_set_to_buffer(pane, buf, true);
+        insert_string(buf, sexp_string_data(str) + 1);
+        delete_chars(buf, 1);
+        str = sexp_write_to_string(ctx, sexp_exception_irritants(result));
+        insert_string(buf, ": ");
+        insert_string(buf, sexp_string_data(str) + 1);
+        delete_chars(buf, 1);
+        pane_set_buffer(pane, buf);
+        pane_set_active(pane);
     } else {
         str = sexp_write_to_string(ctx, result);
         message_send(sexp_string_data(str));

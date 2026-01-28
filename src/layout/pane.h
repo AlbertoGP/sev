@@ -74,11 +74,12 @@ void pane_destroy(Pane *pane);
 // Closes current pane.
 // If it is the root pane in a tab, the tab is closed.
 void pane_close(void);
-// Sets a pane to a specified buffer.
-// If make_active is true, the pane becomes focused.
-bool pane_set_to_buffer(Pane *pane, Buffer *buf, bool make_active);
+// Sets a pane's content to a specified buffer.
+bool pane_set_buffer(Pane *pane, Buffer *buf);
 // Returns the currently active pane in the currently selected tab.
 Pane *pane_get_active(void);
+// Makes the specified pane the active pane.
+bool pane_set_active(Pane *pane);
 
 // Splits a pane. Use PANE_H_SPLIT or PANE_V_SPLIT.
 Pane *pane_split(Pane *pane, PaneType split_type);
@@ -110,3 +111,6 @@ void sync_active_buffer(void);
 
 // Clay component for rendering pane contents.
 void PaneContent(AppState *state, Pane *pane, float width, float height);
+
+// Free all strings allocated during layout. Call after rendering.
+void pane_free_strings(void);

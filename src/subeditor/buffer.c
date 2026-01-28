@@ -258,8 +258,8 @@ bool buffer_set_name(const char *name) {
     return true;
 }
 
-char *buffer_get_name(void) {
-    return bl.current->name;
+char *buffer_get_name(Buffer *buf) {
+    return buf->name;
 }
 
 bool point_set(Location loc) {
@@ -308,7 +308,7 @@ bool point_move(int count) {
 
     gb_point_set(bl.current->contents, point + count);
     update_point(bl.current);
-    bl.current->col_saved = get_column();
+    bl.current->col_saved = get_column(bl.current);
     return true;
 }
 
@@ -318,14 +318,14 @@ bool point_move_by_line(int count) {
     if (!count) return true;
     if (count <= 1 - bl.current->cur_line) {
         point_set(buffer_start());
-        get_column();
+        get_column(bl.current);
         set_column(bl.current->col_saved, false);
         bl.current->cur_line = 1;
         return true;
     }
     if (count >= bl.current->num_lines - bl.current->cur_line) {
         point_set(buffer_end());
-        get_column();
+        get_column(bl.current);
         set_column(bl.current->col_saved, false);
         bl.current->cur_line = bl.current->num_lines;
         return true;
@@ -337,10 +337,10 @@ bool point_move_by_line(int count) {
                 lines++;
                 if (lines == count) {
                     point_set((Location){.pos = i + 1});
-                    get_column();
+                    get_column(bl.current);
                     set_column(bl.current->col_saved, false);
                     bl.current->cur_line = 0;
-                    point_get_line();
+                    point_get_line(bl.current);
                     return true;
                 }
             }
@@ -353,10 +353,10 @@ bool point_move_by_line(int count) {
                 lines--;
                 if (lines == count) {
                     point_set((Location){.pos = i});
-                    get_column();
+                    get_column(bl.current);
                     set_column(bl.current->col_saved, false);
                     bl.current->cur_line = 0;
-                    point_get_line();
+                    point_get_line(bl.current);
                     return true;
                 }
             }
@@ -369,15 +369,15 @@ Location point_get(Buffer *buf) {
     return buf->point;
 }
 
-size_t point_get_line(void) {
-    if (bl.current->cur_line) {     // line is known
-        return bl.current->cur_line;
+size_t point_get_line(Buffer *buf) {
+    if (buf->cur_line) {     // line is known
+        return buf->cur_line;
     } else {                        // line must be recalculated
-        bl.current->cur_line = 1;
-        char *c = gb_text(bl.current->contents);
-        for (size_t i = 0; i < point_get(bl.current).pos; i++, c++)
-            if (*c == '\n') bl.current->cur_line++;
-        return bl.current->cur_line;
+        buf->cur_line = 1;
+        char *c = gb_text(buf->contents);
+        for (size_t i = 0; i < point_get(buf).pos; i++, c++)
+            if (*c == '\n') buf->cur_line++;
+        return buf->cur_line;
     }
 }
 Location buffer_start(void) {
@@ -483,7 +483,7 @@ bool delete_chars(Buffer *buf, int count) {
     }
     buf->num_chars = gb_used(buf->contents);
     update_point(buf);
-    buf->col_saved = get_column();
+    buf->col_saved = get_column(buf);
     return true;
 }
 
@@ -496,16 +496,16 @@ bool find_first_in_forward(char *string);
 bool find_first_in_backward(char *string);
 bool find_first_not_in_forward(char *string);
 bool find_first_not_in_backward(char *string);
-int get_column(void) {
-    if (bl.current->col) {  // column is known
-        return bl.current->col;
+int get_column(Buffer *buf) {
+    if (buf->col) {  // column is known
+        return buf->col;
     } else {    // column must be recalculated.
-        for (size_t i = 1; i < point_get(bl.current).pos; i++) {
-            if (gb_char_at(bl.current->contents, point_get(bl.current).pos - i) == '\n') {
-                return bl.current->col = i;
+        for (size_t i = 1; i < point_get(buf).pos; i++) {
+            if (gb_char_at(buf->contents, point_get(buf).pos - i) == '\n') {
+                return buf->col = i;
             }
         }
-        return bl.current->col = point_get(bl.current).pos + 1;
+        return buf->col = point_get(buf).pos + 1;
     }
 }
 void set_column(int column, bool round) {

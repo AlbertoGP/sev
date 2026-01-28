@@ -1,5 +1,6 @@
 #include "../state.h"
 #include "../subeditor/buffer.h"
+#include "pane.h"
 
 static void Spacer(int size) {
     CLAY_AUTO_ID({
@@ -9,31 +10,54 @@ static void Spacer(int size) {
     }}}) {}
 }
 
-void StatusBar(AppState *state, bool active) {
+#define BAR_STRINGS_MAX 256
+static char *bar_strings[BAR_STRINGS_MAX];
+static int bar_strings_count = 0;
+
+void bar_free_strings(void) {
+    for (int i = 0; i < bar_strings_count; i++) {
+        free(bar_strings[i]);
+    }
+    bar_strings_count = 0;
+}
+
+void bar_strings_push(char *p) {
+    if (bar_strings_count < BAR_STRINGS_MAX) {
+        bar_strings[bar_strings_count++] = p;
+    }
+}
+
+void StatusBar(AppState *state, Pane *pane) {
+    bool active = pane->content.active;
+    Buffer *buf = pane->content.buffer;
     Clay_String bufName = {
-         .chars = buffer_get_name(),
-         .length = strlen(buffer_get_name()),
+         .chars = buffer_get_name(buf),
+         .length = strlen(buffer_get_name(buf)),
     };
-    static char pos[12];
-    snprintf(pos, 12, "%zu", point_get(buffer_get_current()).pos);
+    char *pos = malloc(12 * sizeof(char));
+    snprintf(pos, 12, "%zu", point_get(buf).pos);
+    bar_strings_push(pos);
     Clay_String pointPos = {
          .chars = pos,
          .length = strlen(pos),
     };
-    static char ccount[12];
-    snprintf(ccount, 12, "%zu", get_char_count(buffer_get_current()));
+    char *ccount = malloc(12 * sizeof(char));
+    snprintf(ccount, 12, "%zu", get_char_count(buf));
+    bar_strings_push(ccount);
     Clay_String charCount = {
          .chars = ccount,
          .length = strlen(ccount),
     };
-    static char lncount[24];
-    snprintf(lncount, 24, "%zu / %zu", point_get_line(), get_line_count(buffer_get_current()));
+    char *lncount = malloc(24 * sizeof(char));
+    snprintf(lncount, 24, "%zu / %zu", point_get_line(buf), get_line_count(buf));
+    bar_strings_push(lncount);
     Clay_String lineCount = {
          .chars = lncount,
          .length = strlen(lncount),
     };
-    static char colcount[24];
-    snprintf(colcount, 24, "%d", get_column());
+    char *colcount = malloc(24 * sizeof(char));
+    snprintf(colcount, 24, "%d", get_column(buf));
+    bar_strings_push(colcount);
     Clay_String col = {
          .chars = colcount,
          .length = strlen(colcount),

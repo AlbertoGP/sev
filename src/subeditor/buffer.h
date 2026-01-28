@@ -37,7 +37,7 @@ char *buffer_set_prev(void);
 // Changes the name of the current buffer to the specified string.
 bool buffer_set_name(const char *name);
 // Returns the name of the current buffer.
-char *buffer_get_name(void);
+char *buffer_get_name(Buffer *buf);
 // Returns a pointer to buffer matching name.
 Buffer *buffer_get_by_name(const char *name);
 
@@ -52,8 +52,8 @@ bool point_move(int count);
 bool point_move_by_line(int count);
 // Returns the current location in the specified buf.
 Location point_get(Buffer *buf);
-// Returns the number of the line that the the point is on.
-size_t point_get_line(void);
+// Returns the number of the line that the the point is on in the specified buffer.
+size_t point_get_line(Buffer *buf);
 // Returns the location of the start of the buffer.
 Location buffer_start(void);
 // Returns the location of the end of the buffer.
@@ -167,7 +167,7 @@ bool find_first_not_in_backward(char *string);
 // Returns the zero-origin column that the point is in, after taking into account
 // tab stops, variable-width characters, and other special cases, but *not*
 // taking into account the screen width.
-int get_column(void);
+int get_column(Buffer *buf);
 // Moves the point to the desired column, stopping at the end of a line if
 // the line is not long enough.
 // If the specified column cannot be reached exactly (due to tab stops,
