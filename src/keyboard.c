@@ -191,7 +191,8 @@ static KeySpecial sdl_to_keyspecial(SDL_Keycode keycode) {
 }
 
 void handle_key_down(AppState *state, const SDL_KeyboardEvent *key) {
-    if (key->repeat)
+    // Block repeats except for non-text keys (backspace, arrows, etc.)
+    if (key->repeat && !is_non_text_key(key->key))
         return;
 
     uint16_t mods = normalize_mods(key->mod);
