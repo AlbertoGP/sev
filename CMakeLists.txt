@@ -21,6 +21,7 @@ set(SRC_FILES
     src/subeditor/gap.c
     src/subeditor/line.c
     src/subeditor/mark.c
+    src/subeditor/message.c
     src/scheme/scheme.c
 )
 
