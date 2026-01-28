@@ -76,12 +76,12 @@ void pane_destroy(Pane *pane);
 void pane_close(void);
 // Sets a pane to a specified buffer.
 // If make_active is true, the pane becomes focused.
-bool pane_set_to_buffer(Pane *pane, const char *buf, bool make_active);
+bool pane_set_to_buffer(Pane *pane, Buffer *buf, bool make_active);
 // Returns the currently active pane in the currently selected tab.
 Pane *pane_get_active(void);
 
 // Splits a pane. Use PANE_H_SPLIT or PANE_V_SPLIT.
-bool pane_split(Pane *pane, PaneType split_type);
+Pane *pane_split(Pane *pane, PaneType split_type);
 // Navigate to adjacent pane in the given direction.
 bool pane_navigate(Direction dir);
 // Check if pane has a neighbour in the given direction.
@@ -92,8 +92,8 @@ Pane *pane_get_sibling(Pane *pane);
 void pane_replace_child(Pane *parent, Pane *old_child, Pane *new_child);
 
 // Convenience wrappers (call pane_split/pane_navigate internally).
-static inline bool pane_split_horizontal(Pane *pane) { return pane_split(pane, PANE_H_SPLIT); }
-static inline bool pane_split_vertical(Pane *pane) { return pane_split(pane, PANE_V_SPLIT); }
+static inline Pane *pane_split_horizontal(Pane *pane) { return pane_split(pane, PANE_H_SPLIT); }
+static inline Pane *pane_split_vertical(Pane *pane) { return pane_split(pane, PANE_V_SPLIT); }
 static inline bool pane_navigate_up(void) { return pane_navigate(DIR_UP); }
 static inline bool pane_navigate_down(void) { return pane_navigate(DIR_DOWN); }
 static inline bool pane_navigate_left(void) { return pane_navigate(DIR_LEFT); }

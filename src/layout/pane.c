@@ -103,7 +103,7 @@ void pane_close(void) {
     free(pane);
 }
 
-bool pane_set_to_buffer(Pane *pane, const char *buf, bool make_active) {
+bool pane_set_to_buffer(Pane *pane, Buffer *buf, bool make_active) {
     if (!pane) return false;
     // Don't abandon *or* delete a pane sub-tree, just return a signal.
     if (pane->type == PANE_V_SPLIT && (pane->v_split.left || pane->v_split.right))
@@ -114,7 +114,7 @@ bool pane_set_to_buffer(Pane *pane, const char *buf, bool make_active) {
     // Otherwise proceed.
     pane->type = PANE_CONTENT;
     pane->content.type = CONTENT_TEXT;
-    pane->content.buffer = buffer_get_by_name(buf);
+    pane->content.buffer = buf;
     pane->content.active = make_active;
 
     return true;
@@ -148,16 +148,16 @@ Pane *pane_get_active(void) {
     return pane_get_active_from_children(pane);
 }
 
-bool pane_split(Pane *pane, PaneType split_type) {
+Pane *pane_split(Pane *pane, PaneType split_type) {
     if (split_type != PANE_H_SPLIT && split_type != PANE_V_SPLIT)
-        return false;
+        return NULL;
 
     Pane *split = malloc(sizeof(Pane));
-    if (!split) return false;
+    if (!split) return NULL;
     Pane *new = malloc(sizeof(Pane));
     if (!new) {
         free(split);
-        return false;
+        return NULL;
     }
 
     split->type = split_type;
@@ -181,7 +181,7 @@ bool pane_split(Pane *pane, PaneType split_type) {
     new->content.active = false;
     new->parent = split;
 
-    return true;
+    return new;
 }
 
 // Returns the split type relevant for the given direction.
@@ -299,12 +299,12 @@ static void BufferPane(AppState *state, Pane *pane, float width, float height) {
     Clay_String head = {
         .chars = chars,
         .length = point,
-        .isStaticallyAllocated = true
+        .isStaticallyAllocated = false
     };
     Clay_String tail = {
         .chars = chars + point,
         .length = length - point,
-        .isStaticallyAllocated = true
+        .isStaticallyAllocated = false
     };
 
     CLAY_AUTO_ID({

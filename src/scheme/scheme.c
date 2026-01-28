@@ -3,6 +3,7 @@
 #include "../subeditor/buffer.h"
 #include "../theme.h"
 #include "../layout/tab.h"
+#include "../subeditor/message.h"
 #include <SDL3/SDL_events.h>
 #include <chibi/eval.h>
 #include <chibi/sexp.h>
@@ -278,9 +279,19 @@ static sexp scm_eval_buffer(sexp ctx, sexp self, sexp n) {
 
     if (sexp_exceptionp(result)) {
         sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
-        message_send("exception");
+        str = sexp_write_to_string(ctx, sexp_exception_message(result));
+        Pane *pane = pane_split_horizontal(pane_get_active());
+        const char *NAME = "*Backtrace*";
+        Buffer *buf = buffer_get_by_name(NAME);
+        if (!buf) {
+            buffer_create(NAME);
+            buf = buffer_get_by_name(NAME);
+        }
+        insert_string(buf, "Error: ");
+        insert_string(buf, sexp_string_data(str));
+        pane_set_to_buffer(pane, buf, true);
     } else {
-        sexp str = sexp_write_to_string(ctx, result);
+        str = sexp_write_to_string(ctx, result);
         message_send(sexp_string_data(str));
     }
 

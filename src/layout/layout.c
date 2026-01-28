@@ -1,18 +1,9 @@
-#include <string.h>
 #include "../state.h"
 #include "tab.h"
 
-static void MessageArea(AppState *state) {
-    static char *message_text;
-    if (message_text) free(message_text);
-    message_text = get_message_text();
-    int length = strlen(message_text);
-    Clay_String message = {
-        .chars = message_text,
-        .length = length,
-        .isStaticallyAllocated = true
-    };
+extern Clay_String message_string;
 
+static void MessageArea(AppState *state) {
     CLAY(CLAY_ID("Echo Area"), {
         .layout = {
             .sizing = {
@@ -22,7 +13,7 @@ static void MessageArea(AppState *state) {
             .padding = { .left = 10, .right = 10 }
         }
     }){
-        CLAY_TEXT(message, CLAY_TEXT_CONFIG({
+        CLAY_TEXT(message_string, CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
             .fontSize = 14,
             .textColor = state->colors.text,

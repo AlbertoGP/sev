@@ -17,7 +17,7 @@ void buffer_list_quit(void);
 
 // Takes a name and creates an empty buffer with that name.
 // Note: no two buffers may share the same name.
-bool buffer_create(const char *name);
+Buffer *buffer_create(const char *name);
 // Removes all characters and marks from the specified buffer.
 bool buffer_clear(Buffer *buf);
 // Deletes the specified buffer. If the specified buffer is the current one,
@@ -182,9 +182,5 @@ char char_from_point(int n);
 int buf_char_at(Buffer *buf, size_t index);
 int buf_size(Buffer *buf);
 void line_table_print(void);
-
-void message_send(const char *message);
-void message_clear(void);
-char *get_message_text(void);
 
 void print_buffer_list(void);

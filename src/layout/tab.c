@@ -24,21 +24,21 @@ bool tab_list_init(AppState *state) {
         return false;
     }
     tl.current->contents = pane_create();
-    pane_set_to_buffer(tl.current->contents, "*scratch*", true);
+    pane_set_to_buffer(tl.current->contents, buffer_get_by_name("*scratch*"), true);
 
     #define NAME_1 "untitled-1"
-    buffer_create(NAME_1);
+    Buffer *buf = buffer_create(NAME_1);
     tab_create(NAME_1);
     Tab *next = tl.list->next;
     next->contents = pane_create();
-    pane_set_to_buffer(next->contents, NAME_1, true);
+    pane_set_to_buffer(next->contents, buf, true);
 
     #define NAME_2 "untitled-2"
-    buffer_create(NAME_2);
+    buf = buffer_create(NAME_2);
     tab_create(NAME_2);
     next = next->next;
     next->contents = pane_create();
-    pane_set_to_buffer(next->contents, NAME_2, true);
+    pane_set_to_buffer(next->contents, buf, true);
 
     update_window_title();
 

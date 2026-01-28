@@ -53,22 +53,15 @@ typedef struct BufferList {
 } BufferList;
 
 static BufferList bl;
-static Buffer *message_buf;
 
 static void update_point(Buffer *buf) {
     buf->point.pos = gb_point_get(buf->contents);
 }
 
-static bool message_buffer_init(void);
 bool buffer_list_init(void) {
     bl.list = NULL;
     bl.current = NULL;
     
-    if (!message_buf) {
-        if (!message_buffer_init())
-            return false;
-    }
-
     if (!buffer_create("*scratch*")) {
         return false;
     }
@@ -123,9 +116,9 @@ void buffer_list_quit(void) {
 }
 
 
-bool buffer_create(const char *name) {
+Buffer *buffer_create(const char *name) {
     Buffer *buf = calloc(1, sizeof(Buffer));
-    if (!buf) return false;
+    if (!buf) return NULL;
 
     buf->next = NULL;
 
@@ -139,14 +132,14 @@ bool buffer_create(const char *name) {
     buf->lt = line_table_create();
     if (!buf->lt.lines) {
         free (buf);
-        return false;
+        return NULL;
     }
 
     buf->contents = gb_new(0);
     if (!buf->contents) {
         line_table_destroy(&buf->lt);
         free (buf);
-        return false;
+        return NULL;
     }
 
     // if buffer list is empty, buffer becomes list head
@@ -165,7 +158,7 @@ bool buffer_create(const char *name) {
         buf->prev = list;
     }
 
-    return true;
+    return buf;
 }
 
 Buffer *buffer_get_by_name(const char *name) {
@@ -557,43 +550,6 @@ int buf_char_at(Buffer *buf, size_t index) {
 
 int buf_size(Buffer *buf) {
     return gb_used(buf->contents);
-}
-
-static bool message_buffer_init(void) {
-    message_buf = calloc(1, sizeof(Buffer));
-    if (!message_buf) return false;
-
-    message_buf->cur_line = 1;
-    message_buf->num_lines = 1;
-    message_buf->col_saved = message_buf->col = 1;
-
-    message_buf->lt = line_table_create();
-    if (!message_buf->lt.lines) {
-        free (message_buf);
-        return false;
-    }
-
-    message_buf->contents = gb_new(0);
-    if (!message_buf->contents) {
-        line_table_destroy(&message_buf->lt);
-        free (message_buf);
-        return false;
-    }
-
-    return true;
-}
-
-void message_send(const char* message) {
-    buffer_clear(message_buf);
-    insert_string(message_buf, message);
-}
-
-void message_clear(void) {
-    buffer_clear(message_buf);
-}
-
-char *get_message_text(void) {
-    return buffer_text(message_buf);
 }
 
 // Diagnostic function, delete once logical lines are confirmed working properly.
