@@ -1,7 +1,11 @@
+// The message area at the bottom of the screen's buffer + functions.
+// Note that this message is always completely overwritten, hence the use
+// of a regular, fixed-length array instead of a Buffer.
+
 #include "../clay/clay.h"
 #include <string.h>
 
-#define MAX_MESSAGE_LENGTH 1000
+#define MAX_MESSAGE_LENGTH 2048
 static char message_buf[MAX_MESSAGE_LENGTH];
 
 Clay_String message_string = {
