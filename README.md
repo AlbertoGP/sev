@@ -8,11 +8,11 @@ This repo is my attempt at building an Emacs-like extensible text editor powered
 - [Clay](https://www.nicbarker.com/clay) for UI.
 - [Chibi Scheme](https://synthcode.com/wiki/chibi-scheme) as an embedded interpreted language, filling the same role as elisp in Emacs or Lua in Neovim.
 
-It is *not* an attempt to build a feature-complete clone of Emacs, but does aim to be:
+It is _not_ an attempt to build a feature-complete clone of Emacs, but does aim to be:
 
 - Genuinely usable.
 - Lightweight / performant.
-- Portable. More specifically, able to run on Windows, Mac, Linux *and* in the browser via Emscripten and WebAssembly.
+- Portable. More specifically, able to run on Windows, Mac, Linux _and_ in the browser via Emscripten and WebAssembly.
 - Highly configurable and extensible via Scheme.
 
 ## Fresh build commands
@@ -24,6 +24,10 @@ cmake --build build-desktop
 
 # WASM
 emcmake cmake -S . -B build-wasm
+cmake --build build-wasm
+
+# WASM with optimisations
+emcmake cmake -S . -B build-wasm -DCMAKE_BUILD_TYPE=Release
 cmake --build build-wasm
 ```
 

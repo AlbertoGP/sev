@@ -110,7 +110,7 @@ bool pane_h_split_decrease(void);
 void sync_active_buffer(void);
 
 // Clay component for rendering pane contents.
-void PaneContent(AppState *state, Pane *pane, float width, float height);
+void PaneContent(AppState *state, Pane *pane, int32_t index, float width, float height);
 
 // Free all strings allocated during layout. Call after rendering.
 void pane_free_strings(void);

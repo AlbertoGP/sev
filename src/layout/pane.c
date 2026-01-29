@@ -311,7 +311,7 @@ void pane_free_strings(void) {
     pane_strings_count = 0;
 }
 
-static void BufferPane(AppState *state, Pane *pane, float width, float height) {
+static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, float height) {
     int length = get_char_count(pane->content.buffer);
     char *chars = buffer_text(pane->content.buffer);
     if (pane_strings_count < PANE_STRINGS_MAX) {
@@ -329,7 +329,7 @@ static void BufferPane(AppState *state, Pane *pane, float width, float height) {
         .isStaticallyAllocated = false
     };
 
-    CLAY_AUTO_ID({
+    CLAY(CLAY_IDI_LOCAL("BufferPane", index), {
         .layout = {
             .sizing = {
                 .width = width ? CLAY_SIZING_PERCENT(width) : CLAY_SIZING_GROW(0),
@@ -338,12 +338,41 @@ static void BufferPane(AppState *state, Pane *pane, float width, float height) {
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
         },
     }) {
-        CLAY_AUTO_ID({
+        Clay_ElementId id = CLAY_IDI_LOCAL("Buffer Text", index);
+        CLAY(id, {
             .layout = {
                 .sizing = layoutExpand,
                 .padding = CLAY_PADDING_ALL(24)
             }
         }) {
+            Clay_ElementData data = Clay_GetElementData(id);
+            if (!data.found) {
+                // We know the bounding box of the pane, and can use it for:
+                // 1. working out visual lines from logical lines,
+                // 2. figuring out which lines should be visible currently.
+                Clay_BoundingBox box = data.boundingBox;
+            } else {
+                // This *should* be an impossible state, and precludes rendering text.
+                CLAY_AUTO_ID({
+                    .layout = {
+                        .sizing = layoutExpand,
+                        .childAlignment = {
+                            .x = CLAY_ALIGN_X_CENTER,
+                            .y = CLAY_ALIGN_Y_CENTER
+                        }
+                    }
+                }) {
+                CLAY_TEXT(CLAY_STRING("ERROR RETRIEVING PANE DIMENSIONS\n"
+                                      "UNABLE TO RENDER BUFFER"),
+                    CLAY_TEXT_CONFIG({
+                        .fontId = FONT_BOLD,
+                        .fontSize = 16,
+                        .textColor = state->colors.text,
+                        .textAlignment = CLAY_TEXT_ALIGN_CENTER
+                    }));
+                }
+                goto pane_error;
+            }
             CLAY_TEXT(head, CLAY_TEXT_CONFIG({
                 .fontId = FONT_NORMAL,
                 .fontSize = 16,
@@ -354,13 +383,14 @@ static void BufferPane(AppState *state, Pane *pane, float width, float height) {
                 .fontSize = 16,
                 .textColor = state->colors.textFaded,
             }));
+            pane_error:;
         }
         StatusBar(state, pane);
     }
 }
 
-static void VSplitPane(AppState *state, Pane *pane, float width, float height) {
-    CLAY_AUTO_ID({
+static void VSplitPane(AppState *state, Pane *pane, int32_t index, float width, float height) {
+    CLAY(CLAY_ID_LOCAL("VSplitPane"), {
         .layout = {
             .layoutDirection = CLAY_LEFT_TO_RIGHT,
             .sizing = {
@@ -370,13 +400,13 @@ static void VSplitPane(AppState *state, Pane *pane, float width, float height) {
             .childGap = 2
         },
     }) {
-        PaneContent(state, pane->v_split.left, pane->v_split.left_width, 0);
-        PaneContent(state, pane->v_split.right, 1 - pane->v_split.left_width, 0);
+        PaneContent(state, pane->v_split.left, 1, pane->v_split.left_width, 0);
+        PaneContent(state, pane->v_split.right, 2, 1 - pane->v_split.left_width, 0);
     }
 }
 
-static void HSplitPane(AppState *state, Pane *pane, float width, float height) {
-    CLAY_AUTO_ID({
+static void HSplitPane(AppState *state, Pane *pane, int32_t index, float width, float height) {
+    CLAY(CLAY_ID_LOCAL("HSplitPane"), {
         .layout = {
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
             .sizing = {
@@ -386,13 +416,13 @@ static void HSplitPane(AppState *state, Pane *pane, float width, float height) {
             .childGap = 2
         }
     }) {
-        PaneContent(state, pane->h_split.top, 0, pane->h_split.top_height);
-        PaneContent(state, pane->h_split.bottom, 0, 1 - pane->h_split.top_height);
+        PaneContent(state, pane->h_split.top, 1, 0, pane->h_split.top_height);
+        PaneContent(state, pane->h_split.bottom, 2, 0, 1 - pane->h_split.top_height);
     }
 }
 
-void PaneContent(AppState *state, Pane *pane, float width, float height) {
-    if (pane->type == PANE_V_SPLIT) VSplitPane(state, pane, width, height);
-    if (pane->type == PANE_H_SPLIT) HSplitPane(state, pane, width, height);
-    if (pane->type == PANE_CONTENT) BufferPane(state, pane, width, height);
+void PaneContent(AppState *state, Pane *pane, int32_t index, float width, float height) {
+    if (pane->type == PANE_V_SPLIT) VSplitPane(state, pane, index, width, height);
+    if (pane->type == PANE_H_SPLIT) HSplitPane(state, pane, index, width, height);
+    if (pane->type == PANE_CONTENT) BufferPane(state, pane, index, width, height);
 }

@@ -2,7 +2,7 @@
 compile: build run
 
 build:
-	gcc ./src/*.c ./src/clay/*.c ./src/layout/*.c ./src/scheme/*.c ./src/subeditor/*.c -o ./out/app -lSDL3 -lSDL3_ttf -lchibi-scheme \
+	gcc ./src/*.c ./src/clay/*.c ./src/layout/*.c ./src/scheme/*.c ./src/subeditor/*.c -o ./out/sev -lSDL3 -lSDL3_ttf -lchibi-scheme \
 		&& cp ./resources/init.scm ./out/resources/init.scm
 
 # Debug build with AddressSanitizer
@@ -11,14 +11,14 @@ debug: build-debug run
 build-debug:
 	gcc -fsanitize=address -g -O0 -fno-omit-frame-pointer -Wall -Wextra \
 	    ./src/*.c ./src/clay/*.c ./src/layout/*.c ./src/scheme/*.c ./src/subeditor/*.c \
-	    -o ./out/app \
+	    -o ./out/sev \
 	    -fsanitize=address -lSDL3 -lSDL3_ttf -lchibi-scheme
 
 vg:
-	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all --log-file="vglog" ./out/app
+	valgrind --leak-check=full --track-origins=yes --show-leak-kinds=all --log-file="vglog" ./out/sev
 
 run:
-	./out/app
+	./out/sev
 
 clean:
-	rm -f ./out/app
+	rm -f ./out/sev

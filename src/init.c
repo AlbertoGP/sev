@@ -32,6 +32,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
+#ifdef __EMSCRIPTEN__
+    /* Enable vsync for proper requestAnimationFrame timing in browser */
+    SDL_SetRenderVSync(state->rendererData.renderer, 1);
+#endif
+
     SDL_StartTextInput(state->window);
 
     if (!TTF_Init()) {
@@ -119,6 +124,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     state->needs_redraw = true;
     state->animating = false;
     state->last_frame_ns = 0;
+
+    /* Start in event-driven mode; iterate.c switches to 60fps during animations */
+    SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, "waitevent");
 
     scheme_init(state);
     

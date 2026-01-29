@@ -34,6 +34,13 @@ add_executable(app ${SRC_FILES})
 if(EMSCRIPTEN)
     message(STATUS "Configuring for Emscripten / WASM")
 
+    # Optimization flags for WASM performance
+    set(CMAKE_C_FLAGS_RELEASE "-O3 -flto")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-O3 -flto")
+    if(NOT CMAKE_BUILD_TYPE)
+        set(CMAKE_BUILD_TYPE Release)
+    endif()
+
     # Set output suffix to .html
     set_target_properties(app PROPERTIES SUFFIX ".html")
 

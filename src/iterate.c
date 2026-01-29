@@ -6,20 +6,36 @@
 #include "state.h"
 #include "theme.h"
 
+/* Track callback rate mode to avoid redundant hint changes */
+static bool callback_rate_animating = false;
+
+static void set_callback_rate(bool animating) {
+    if (animating != callback_rate_animating) {
+        callback_rate_animating = animating;
+        SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, animating ? "60" : "waitevent");
+    }
+}
+
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
     AppState *state = (AppState*) appstate;
 
-    static const Uint64 FRAME_NS = 1000000000ULL / 60;
     Uint64 now = SDL_GetTicksNS();
 
     /* Idle: nothing to do */
     if (!state->needs_redraw && !state->animating) {
+        set_callback_rate(false);
+#ifndef __EMSCRIPTEN__
         SDL_Delay(16);
+#endif
         return SDL_APP_CONTINUE;
     }
 
-    /* Animation FPS cap */
+    set_callback_rate(state->animating);
+
+#ifndef __EMSCRIPTEN__
+    /* Animation FPS cap (desktop only - browser uses requestAnimationFrame) */
+    static const Uint64 FRAME_NS = 1000000000ULL / 60;
     if (state->animating) {
         if (state->last_frame_ns != 0) {
             Uint64 elapsed = now - state->last_frame_ns;
@@ -29,6 +45,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             }
         }
     }
+#endif
     state->last_frame_ns = SDL_GetTicksNS();
 
     if (state->color_frames) {

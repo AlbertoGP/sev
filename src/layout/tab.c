@@ -273,5 +273,5 @@ void TabContent(AppState *state) {
          return;
     }
 
-    PaneContent(state, t->contents, 0, 0);
+    PaneContent(state, t->contents, 1, 0, 0);
 }
