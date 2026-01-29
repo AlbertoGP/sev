@@ -119,9 +119,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         .bar = { 54, 58, 79, 255 },
         .text = { 202, 211, 245, 255 },
         .textFaded = { 91, 96, 120, 255 },
+        .cursor = { 198, 160, 246, 255 }
     };
 
     state->needs_redraw = true;
+    state->needs_extra_frame = true;
     state->animating = false;
     state->last_frame_ns = 0;
 

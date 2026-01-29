@@ -17,6 +17,7 @@ set(SRC_FILES
     src/layout/pane.c
     src/layout/status.c
     src/layout/tab.c
+    src/layout/vline.c
     src/subeditor/buffer.c
     src/subeditor/gap.c
     src/subeditor/line.c

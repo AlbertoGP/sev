@@ -18,6 +18,7 @@ typedef struct ColorSet {
     Clay_Color bar;
     Clay_Color text;
     Clay_Color textFaded;
+    Clay_Color cursor;
 } ColorSet;
 
 typedef enum Theme {
@@ -45,6 +46,7 @@ typedef struct AppState {
     int color_frames;
     Theme theme;
     bool needs_redraw;
+    bool needs_extra_frame;
     bool animating;
     Uint64 last_frame_ns;
     bool debug_open;

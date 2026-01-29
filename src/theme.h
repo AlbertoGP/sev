@@ -20,6 +20,7 @@ static ColorSet generate_set_delta(AppState *state) {
         .bar = generate_color_delta(state->colors.bar, state->colors_target.bar),
         .text = generate_color_delta(state->colors.text, state->colors_target.text),
         .textFaded = generate_color_delta(state->colors.textFaded, state->colors_target.textFaded),
+        .cursor = generate_color_delta(state->colors.cursor, state->colors_target.cursor),
     };
 }
 
@@ -30,6 +31,7 @@ static inline void set_theme_dark(AppState *state) {
         .bar = { 54, 58, 79, 255 },
         .text = { 202, 211, 245, 255 },
         .textFaded = { 91, 96, 120, 255 },
+        .cursor = { 198, 160, 246, 255 }
     };
     state->colors_delta = generate_set_delta(state);
     state->color_frames = FRAMES;
@@ -45,6 +47,7 @@ static inline void set_theme_light(AppState *state) {
         .bar = { 204, 208, 218, 255 },
         .text = { 76, 79, 105, 255 },
         .textFaded = { 172, 176, 190, 255 },
+        .cursor = { 136, 57, 239, 255 }
     };
     state->colors_delta = generate_set_delta(state);
     state->color_frames = FRAMES;
@@ -76,6 +79,7 @@ static inline void add_color_delta(AppState *state) {
         .bar = add_colors(state->colors.bar, state->colors_delta.bar),
         .text = add_colors(state->colors.text, state->colors_delta.text),
         .textFaded = add_colors(state->colors.textFaded, state->colors_delta.textFaded),
+        .cursor = add_colors(state->colors.cursor, state->colors_delta.cursor),
     };
     state->needs_redraw = true;
     state->color_frames--;

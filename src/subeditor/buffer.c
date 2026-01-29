@@ -501,7 +501,7 @@ int get_column(Buffer *buf) {
         return buf->col;
     } else {    // column must be recalculated.
         for (size_t i = 1; i < point_get(buf).pos; i++) {
-            if (gb_char_at(buf->contents, point_get(buf).pos - i) == '\n') {
+            if (buf_char_at(buf, point_get(buf).pos - i) == '\n') {
                 return buf->col = i;
             }
         }
@@ -534,14 +534,15 @@ char *buffer_text(Buffer *buf) {
 }
 
 char char_at_point(void) {
-    return gb_char_at(bl.current->contents, point_get(bl.current).pos);
+    if (point_get(bl.current).pos == get_char_count(bl.current)) return '\0';
+    return buf_char_at(bl.current, point_get(bl.current).pos);
 }
 
 char char_from_point(int n) {
     int point = point_get(bl.current).pos;
     int remaining = get_char_count(bl.current) - point;
     if (n < -point || n > remaining) return '\0';
-    return gb_char_at(bl.current->contents, point + n);
+    return buf_char_at(bl.current, point + n);
 }
 
 int buf_char_at(Buffer *buf, size_t index) {
@@ -559,4 +560,9 @@ void line_table_print(void) {
     for (size_t i = 0; i < lt.count; i++) {
         printf("L: %4zu  ID: %4lu  Loc: %2zu - %2zu  Ver: %lu\n", i, lt.lines[i].line_id, lt.lines[i].start, lt.lines[i].end, lt.lines[i].version);
     }
+}
+
+const LineTable *buffer_get_line_table(Buffer *buf) {
+    if (!buf) return NULL;
+    return &buf->lt;
 }

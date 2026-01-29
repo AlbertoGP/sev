@@ -175,6 +175,7 @@ static sexp scm_tab_prev(sexp ctx, sexp self, sexp n) {
 
 static sexp scm_split_vertical(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
+    G->needs_extra_frame = true;
     pane_split_vertical(pane_get_active());
 
     message_send("split-vertical");
@@ -183,6 +184,7 @@ static sexp scm_split_vertical(sexp ctx, sexp self, sexp n) {
 
 static sexp scm_split_horizontal(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
+    G->needs_extra_frame = true;
     pane_split_horizontal(pane_get_active());
 
     message_send("split-horizontal");
@@ -191,6 +193,7 @@ static sexp scm_split_horizontal(sexp ctx, sexp self, sexp n) {
 
 static sexp scm_pane_close(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
+    G->needs_extra_frame = true;
     pane_close();
 
     message_send("pane-close");
@@ -235,6 +238,7 @@ static sexp scm_pane_navigate_right(sexp ctx, sexp self, sexp n) {
 
 static sexp scm_pane_v_split_increase(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
+    G->needs_extra_frame = true;
 
     message_clear();
     if (pane_v_split_increase())
@@ -244,6 +248,7 @@ static sexp scm_pane_v_split_increase(sexp ctx, sexp self, sexp n) {
 
 static sexp scm_pane_v_split_decrease(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
+    G->needs_extra_frame = true;
 
     message_clear();
     if (pane_v_split_decrease())
@@ -253,6 +258,7 @@ static sexp scm_pane_v_split_decrease(sexp ctx, sexp self, sexp n) {
 
 static sexp scm_pane_h_split_increase(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
+    G->needs_extra_frame = true;
 
     message_clear();
     if (pane_h_split_increase())
@@ -262,6 +268,7 @@ static sexp scm_pane_h_split_increase(sexp ctx, sexp self, sexp n) {
 
 static sexp scm_pane_h_split_decrease(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
+    G->needs_extra_frame = true;
 
     message_clear();
     if (pane_h_split_decrease())
@@ -278,6 +285,8 @@ static sexp scm_eval_buffer(sexp ctx, sexp self, sexp n) {
     result = sexp_eval_string(ctx, buffer_text(buffer_get_current()), -1, NULL);
 
     if (sexp_exceptionp(result)) {
+        G->needs_extra_frame = true;
+
         sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
         str = sexp_write_to_string(ctx, sexp_exception_message(result));
         Pane *pane = pane_split_horizontal(pane_get_active());

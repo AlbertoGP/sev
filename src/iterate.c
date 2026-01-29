@@ -23,7 +23,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     Uint64 now = SDL_GetTicksNS();
 
     /* Idle: nothing to do */
-    if (!state->needs_redraw && !state->animating) {
+    if (!state->needs_redraw && !state->needs_extra_frame && !state->animating) {
         set_callback_rate(false);
 #ifndef __EMSCRIPTEN__
         SDL_Delay(16);
@@ -59,10 +59,17 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_Clay_RenderClayCommands(&state->rendererData, &render_commands);
     pane_free_strings();
     bar_free_strings();
+    if (state->needs_extra_frame) {
+        Clay_RenderCommandArray render_commands = create_app_layout(state);
+        SDL_Clay_RenderClayCommands(&state->rendererData, &render_commands);
+        pane_free_strings();
+        bar_free_strings();
+    }
     SDL_RenderPresent(state->rendererData.renderer);
 
     /* Reset dirty flag */
     state->needs_redraw = false;
+    state->needs_extra_frame = false;
 
     return SDL_APP_CONTINUE;
 }

@@ -2,9 +2,11 @@
 #include "pane.h"
 #include <stdlib.h>
 #include <string.h>
+#include <SDL3_image/SDL_image.h>
 
 static TabList tl;
 static SDL_Window *window;
+static SDL_Texture *icon;
 
 static void update_window_title(void) {
     char buf[TAB_NAME_MAX];
@@ -17,6 +19,17 @@ bool tab_list_init(AppState *state) {
     tl.current = NULL;
 
     window = state->window;
+
+    #ifdef __EMSCRIPTEN__
+    #define ICON_PATH "/resources/tab-icon.png"
+    #else
+    char* basePath = (char*)SDL_GetBasePath();
+    char iconPath[1024];
+    snprintf(iconPath, sizeof(iconPath), "%sresources/tab-icon.png", basePath);
+    #define ICON_PATH iconPath
+    #endif
+    icon = IMG_LoadTexture(state->rendererData.renderer, ICON_PATH);
+    if (!icon) return false;
 
     if (!buffer_get_current()) return false;
 
@@ -207,6 +220,8 @@ static void HandleClickTab(Clay_ElementId elementId, Clay_PointerData pointerInf
     }
 }
 
+void OpenTabs(AppState *state, Tab *t);
+
 void TabBar(AppState *state) {
     Tab *t = tl.list;
     // TODO: extract to a state variable toggle-able from Scheme.
@@ -216,10 +231,23 @@ void TabBar(AppState *state) {
         .layout = {
             .sizing = { .width = CLAY_SIZING_GROW(0) },
             .padding = CLAY_PADDING_ALL(5),
-            .childGap = 5
+            .childGap = 5,
+            .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
         },
         .backgroundColor = state->colors.foreground,
-    }) for (int i = 1; t != NULL; t = t->next, i++) {
+    }) {
+        CLAY(CLAY_ID("App Icon"), {
+            .layout = {
+                .sizing = { .width = 28, .height = 28 }
+            },
+            .image = icon
+        }) {}
+        OpenTabs(state, t);
+    }
+}
+
+void OpenTabs(AppState *state, Tab *t) {
+    for (int i = 1; t != NULL; t = t->next, i++) {
         Clay_String tab_name = {
             .chars = t->name,
             .length = strlen(t->name),

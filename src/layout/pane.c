@@ -1,4 +1,5 @@
 #include "pane.h"
+#include "vline.h"
 #include "status.h"
 #include "tab.h"
 #include <stdlib.h>
@@ -11,6 +12,8 @@ void pane_destroy(Pane *pane) {
     } else if (pane->type == PANE_V_SPLIT) {
         pane_destroy(pane->v_split.left);
         pane_destroy(pane->v_split.right);
+    } else if (pane->type == PANE_CONTENT) {
+        vline_cache_destroy(&pane->content.vline_cache);
     }
     free(pane);
 }
@@ -68,6 +71,9 @@ void sync_active_buffer(void) {
 
 Pane *pane_create(void) {
     Pane *pane = calloc(1, sizeof(Pane));
+    if (pane) {
+        pane->content.vline_cache = vline_cache_create();
+    }
     return pane;
 }
 
@@ -188,6 +194,7 @@ Pane *pane_split(Pane *pane, PaneType split_type) {
     new->content.type = CONTENT_TEXT;
     new->content.buffer = pane->content.buffer;
     new->content.active = false;
+    new->content.vline_cache = vline_cache_create();
     new->parent = split;
 
     return new;
@@ -312,22 +319,16 @@ void pane_free_strings(void) {
 }
 
 static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, float height) {
-    int length = get_char_count(pane->content.buffer);
-    char *chars = buffer_text(pane->content.buffer);
+    Buffer *buf = pane->content.buffer;
+    char *chars = buffer_text(buf);
     if (pane_strings_count < PANE_STRINGS_MAX) {
         pane_strings[pane_strings_count++] = chars;
     }
-    int point = point_get(pane->content.buffer).pos;
-    Clay_String head = {
-        .chars = chars,
-        .length = point,
-        .isStaticallyAllocated = false
-    };
-    Clay_String tail = {
-        .chars = chars + point,
-        .length = length - point,
-        .isStaticallyAllocated = false
-    };
+    size_t point = point_get(buf).pos;
+
+    const uint16_t font_id = FONT_NORMAL;
+    const uint16_t font_size = 16;
+    const float padding = 24.0f;
 
     CLAY(CLAY_IDI_LOCAL("BufferPane", index), {
         .layout = {
@@ -342,17 +343,114 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
         CLAY(id, {
             .layout = {
                 .sizing = layoutExpand,
-                .padding = CLAY_PADDING_ALL(24)
-            }
+                .padding = CLAY_PADDING_ALL(padding),
+                .layoutDirection = CLAY_TOP_TO_BOTTOM,
+            },
+            .clip = { .vertical = true }
         }) {
             Clay_ElementData data = Clay_GetElementData(id);
-            if (!data.found) {
-                // We know the bounding box of the pane, and can use it for:
-                // 1. working out visual lines from logical lines,
-                // 2. figuring out which lines should be visible currently.
+            if (data.found) {
                 Clay_BoundingBox box = data.boundingBox;
+                float text_width = box.width - (2 * padding);
+                float text_height = box.height - (2 * padding);
+
+                // Rebuild visual line cache
+                VLineCache *cache = &pane->content.vline_cache;
+                vline_rebuild(cache, buf, &state->rendererData,
+                              text_width, font_id, font_size);
+
+                // Calculate visible lines
+                int line_height = vline_get_line_height(&state->rendererData,
+                                                        font_id, font_size);
+                size_t visible_count = line_height > 0 ? (size_t)(text_height / line_height) : 1;
+                if (visible_count == 0) visible_count = 1;
+
+                // Scroll to keep cursor visible
+                vline_scroll_to_cursor(cache, point, visible_count);
+
+                // Render visible visual lines
+                size_t end_vline = cache->top_vline + visible_count;
+                if (end_vline > cache->count) end_vline = cache->count;
+
+                // Get font for cursor offset measurement
+                TTF_Font *font = state->rendererData.fonts[font_id];
+                TTF_SetFontSize(font, font_size);
+
+                for (size_t i = cache->top_vline; i < end_vline; i++) {
+                    VisualLine *vl = &cache->lines[i];
+                    size_t line_start = vl->byte_start;
+                    size_t line_end = vl->byte_end;
+                    size_t line_len = line_end - line_start;
+
+                    // Determine if cursor is on this line
+                    bool cursor_on_line = (point >= line_start && point <= line_end);
+
+                    // Calculate cursor x-offset if on this line
+                    float cursor_offset = 0;
+                    if (cursor_on_line) {
+                        size_t head_len = point - line_start;
+                        if (head_len > 0) {
+                            int w = 0, h = 0;
+                            TTF_GetStringSize(font, chars + line_start, head_len, &w, &h);
+                            cursor_offset = (float)w;
+                        }
+                    }
+
+                    CLAY(CLAY_IDI_LOCAL("VLine", (int32_t)i), {
+                        .layout = {
+                            .sizing = {
+                                .width = CLAY_SIZING_GROW(0),
+                                .height = CLAY_SIZING_FIXED(line_height)
+                            },
+                        }
+                    }) {
+                        // Render cursor as floating element (doesn't affect text layout)
+                        if (cursor_on_line && pane->content.active) {
+                            static char point_char[1];
+                            point_char[0] = char_at_point() ? char_at_point() : ' ';
+                            Clay_String point_str = {
+                                .chars = point_char,
+                                .length = 1,
+                                .isStaticallyAllocated = true
+                            };
+                            CLAY(CLAY_IDI_LOCAL("Cursor", (int32_t)i), {
+                                .floating = {
+                                    .attachTo = CLAY_ATTACH_TO_PARENT,
+                                    .offset = { .x = cursor_offset, .y = 0 }
+                                },
+                                .layout = {
+                                    .sizing = {
+                                        .width = CLAY_SIZING_FIT(2),
+                                        .height = CLAY_SIZING_FIXED(line_height)
+                                    }
+                                },
+                                .backgroundColor = state->colors.cursor
+                            }) {
+                                CLAY_TEXT(point_str, CLAY_TEXT_CONFIG({
+                                    .fontId = font_id,
+                                    .fontSize = font_size,
+                                    .textColor = state->colors.background,
+                                }));
+                            }
+                        }
+
+                        // Render entire line as single text element
+                        if (line_len > 0) {
+                            Clay_String text = {
+                                .chars = chars + line_start,
+                                .length = line_len,
+                                .isStaticallyAllocated = false
+                            };
+                            CLAY_TEXT(text, CLAY_TEXT_CONFIG({
+                                .fontId = font_id,
+                                .fontSize = font_size,
+                                .textColor = state->colors.text,
+                            }));
+                        }
+                    }
+                }
             } else {
-                // This *should* be an impossible state, and precludes rendering text.
+                // Dimensions not yet available, render placeholder
                 CLAY_AUTO_ID({
                     .layout = {
                         .sizing = layoutExpand,
@@ -362,28 +460,15 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                         }
                     }
                 }) {
-                CLAY_TEXT(CLAY_STRING("ERROR RETRIEVING PANE DIMENSIONS\n"
-                                      "UNABLE TO RENDER BUFFER"),
-                    CLAY_TEXT_CONFIG({
-                        .fontId = FONT_BOLD,
-                        .fontSize = 16,
-                        .textColor = state->colors.text,
-                        .textAlignment = CLAY_TEXT_ALIGN_CENTER
-                    }));
+                    CLAY_TEXT(CLAY_STRING("Loading..."),
+                        CLAY_TEXT_CONFIG({
+                            .fontId = FONT_NORMAL,
+                            .fontSize = 16,
+                            .textColor = state->colors.textFaded,
+                            .textAlignment = CLAY_TEXT_ALIGN_CENTER
+                        }));
                 }
-                goto pane_error;
             }
-            CLAY_TEXT(head, CLAY_TEXT_CONFIG({
-                .fontId = FONT_NORMAL,
-                .fontSize = 16,
-                .textColor = state->colors.text,
-            }));
-            CLAY_TEXT(tail, CLAY_TEXT_CONFIG({
-                .fontId = FONT_NORMAL,
-                .fontSize = 16,
-                .textColor = state->colors.textFaded,
-            }));
-            pane_error:;
         }
         StatusBar(state, pane);
     }

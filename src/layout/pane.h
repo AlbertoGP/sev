@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include "../state.h"
 #include "../subeditor/buffer.h"
+#include "vline.h"
 
 typedef enum {
     DIR_UP,
@@ -32,6 +33,7 @@ typedef struct {
     float width;
     float height;
     bool active;
+    VLineCache vline_cache;  // Cache for visual (wrapped) lines
 } Content;
 
 // A vertical split node in a pane tree.
