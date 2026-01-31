@@ -2,11 +2,11 @@
 #include "../subeditor/buffer.h"
 #include "pane.h"
 
-static void Spacer(int size) {
+static void Spacer() {
     CLAY_AUTO_ID({
         .layout = {
-        .sizing = {
-        .width = CLAY_SIZING_FIXED(size)
+            .sizing = {
+                .width = CLAY_SIZING_GROW(0)
     }}}) {}
 }
 
@@ -34,33 +34,12 @@ void StatusBar(AppState *state, Pane *pane) {
          .chars = buffer_get_name(buf),
          .length = strlen(buffer_get_name(buf)),
     };
-    char *pos = malloc(12 * sizeof(char));
-    snprintf(pos, 12, "%zu", point_get(buf).pos);
+    char *pos = malloc(32 * sizeof(char));
+    snprintf(pos, 32, "%zu:%d", buf_get_line(buf), get_column(buf));
     bar_strings_push(pos);
     Clay_String pointPos = {
          .chars = pos,
          .length = strlen(pos),
-    };
-    char *ccount = malloc(12 * sizeof(char));
-    snprintf(ccount, 12, "%zu", get_char_count(buf));
-    bar_strings_push(ccount);
-    Clay_String charCount = {
-         .chars = ccount,
-         .length = strlen(ccount),
-    };
-    char *lncount = malloc(24 * sizeof(char));
-    snprintf(lncount, 24, "%zu / %zu", point_get_line(buf), get_line_count(buf));
-    bar_strings_push(lncount);
-    Clay_String lineCount = {
-         .chars = lncount,
-         .length = strlen(lncount),
-    };
-    char *colcount = malloc(24 * sizeof(char));
-    snprintf(colcount, 24, "%d", get_column(buf));
-    bar_strings_push(colcount);
-    Clay_String col = {
-         .chars = colcount,
-         .length = strlen(colcount),
     };
     Clay_Color textColor = active ? state->colors.text : state->colors.textFaded;
     CLAY_AUTO_ID({
@@ -68,63 +47,20 @@ void StatusBar(AppState *state, Pane *pane) {
             .sizing = {
                 .width = CLAY_SIZING_GROW(0),
             },
-            .padding = { .left = 10 }
+            .padding = { .left = 10, .right = 10 }
         },
         .backgroundColor = state->colors.bar,
         .clip = {
             .horizontal = true
         }
     }) {
-        CLAY_TEXT(CLAY_STRING("Buffer: "), CLAY_TEXT_CONFIG({
-            .fontId = FONT_BOLD,
-            .fontSize = 14,
-            .textColor = textColor,
-        }));
         CLAY_TEXT(bufName, CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
             .fontSize = 14,
             .textColor = textColor,
         }));
-        Spacer(25);
-        CLAY_TEXT(CLAY_STRING("Point: "), CLAY_TEXT_CONFIG({
-            .fontId = FONT_BOLD,
-            .fontSize = 14,
-            .textColor = textColor,
-        }));
+        Spacer();
         CLAY_TEXT(pointPos, CLAY_TEXT_CONFIG({
-            .fontId = FONT_NORMAL,
-            .fontSize = 14,
-            .textColor = textColor,
-        }));
-        Spacer(25);
-        CLAY_TEXT(CLAY_STRING("Chars: "), CLAY_TEXT_CONFIG({
-            .fontId = FONT_BOLD,
-            .fontSize = 14,
-            .textColor = textColor,
-        }));
-        CLAY_TEXT(charCount, CLAY_TEXT_CONFIG({
-            .fontId = FONT_NORMAL,
-            .fontSize = 14,
-            .textColor = textColor,
-        }));
-        Spacer(25);
-        CLAY_TEXT(CLAY_STRING("Line: "), CLAY_TEXT_CONFIG({
-            .fontId = FONT_BOLD,
-            .fontSize = 14,
-            .textColor = textColor,
-        }));
-        CLAY_TEXT(lineCount, CLAY_TEXT_CONFIG({
-            .fontId = FONT_NORMAL,
-            .fontSize = 14,
-            .textColor = textColor,
-        }));
-        Spacer(25);
-        CLAY_TEXT(CLAY_STRING("Col: "), CLAY_TEXT_CONFIG({
-            .fontId = FONT_BOLD,
-            .fontSize = 14,
-            .textColor = textColor,
-        }));
-        CLAY_TEXT(col, CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
             .fontSize = 14,
             .textColor = textColor,

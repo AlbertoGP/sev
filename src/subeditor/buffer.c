@@ -312,24 +312,46 @@ bool point_move(int count) {
     return true;
 }
 
-bool point_move_by_line(int count) {
-    if (!bl.current) return false;
+size_t buf_get_line(Buffer *buf) {
+    return buf->cur_line;
+}
 
+bool buf_set_line(Buffer *buf, size_t line) {
+    if (!buf) return false;
+
+    const LineTable *lt = buffer_get_line_table(buf);
+    Location new_loc = {
+        .pos = lt->lines[line + 1].start
+    };
+
+    point_set(new_loc);
+    get_column(buf);
+    set_column(buf->col_saved, false);
+    buf->cur_line = line;
+    return true;
+}
+
+bool point_move_by_line(int count) {
+    Buffer *buf = bl.current;
+    if (!buf) return false;
     if (!count) return true;
-    
-    size_t line_index = line_index_at(&bl.current->lt, point_get(bl.current).pos);
+   
+    const LineTable *lt = buffer_get_line_table(buf);
+    size_t line_index = line_index_at(lt, point_get(buf).pos);
+
     if (count <= -(int)(line_index)) {
         count = -(int)(line_index);
-    } else if (count >= (int)(bl.current->num_lines - bl.current->cur_line)) {
-        count = (int)(bl.current->num_lines - bl.current->cur_line);
+    } else if (count >= (int)(buf->num_lines - buf->cur_line)) {
+        count = (int)(buf->num_lines - buf->cur_line);
     }
     Location new_loc = {
-        .pos = bl.current->lt.lines[line_index + count].start
+        .pos = lt->lines[line_index + count].start
     };
+
     point_set(new_loc);
-    get_column(bl.current);
-    set_column(bl.current->col_saved, false);
-    bl.current->cur_line = line_index + count + 1;
+    get_column(buf);
+    set_column(buf->col_saved, false);
+    buf->cur_line = line_index + count + 1;
     return true;
 }
 
@@ -471,28 +493,28 @@ int get_column(Buffer *buf) {
         size_t pos = buf->point.pos;
         size_t line_index = line_index_at(&buf->lt, pos);
         
-        return buf->col = (int)(pos - buf->lt.lines[line_index].start);
+        return buf->col = (int)(pos + 1 - buf->lt.lines[line_index].start);
     }
 }
 void set_column(int column, bool round) {
-    if (bl.current->col == column) return;
+    Buffer *buf = bl.current;
+    if (buf->col == column) return;
     if (column < 0) column = 0;
 
-    size_t pos = point_get(bl.current).pos;
-    LineTable lt = bl.current->lt;
+    size_t pos = point_get(buf).pos;
+    LineTable lt = buf->lt;
     size_t line_index = line_index_at(&lt, pos);
     size_t last_col = lt.lines[line_index].end - lt.lines[line_index].start;
 
     if (column > last_col)
         column = last_col;
 
-    int delta = column - bl.current->col;
+    int delta = column - buf->col;
     Location loc = {
         .pos = pos + delta
     };
     point_set(loc);
 }
-
 
 char *buffer_text(Buffer *buf) {
     return gb_text(buf->contents);
@@ -516,15 +538,6 @@ int buf_char_at(Buffer *buf, size_t index) {
 
 int buf_size(Buffer *buf) {
     return gb_used(buf->contents);
-}
-
-// Diagnostic function, delete once logical lines are confirmed working properly.
-void line_table_print(void) {
-    LineTable lt = bl.current->lt;
-    printf("\nLine: %4zu  Count: %4zu  Cap: %4zu\n\n", line_index_at(&lt, point_get(bl.current).pos), lt.count, lt.cap);
-    for (size_t i = 0; i < lt.count; i++) {
-        printf("L: %4zu  ID: %4lu  Loc: %2zu - %2zu  Ver: %lu\n", i, lt.lines[i].line_id, lt.lines[i].start, lt.lines[i].end, lt.lines[i].version);
-    }
 }
 
 const LineTable *buffer_get_line_table(Buffer *buf) {

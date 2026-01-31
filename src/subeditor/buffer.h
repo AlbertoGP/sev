@@ -47,6 +47,9 @@ bool point_set(Location loc);
 // Moves the point forward (if count is positive) or backward (if negative)
 // by abs(count) characters.
 bool point_move(int count);
+// Returns the line the point is currently at in the specified buffer.
+size_t buf_get_line(Buffer *buf);
+bool buf_set_line(Buffer *buf, size_t line);
 // Moves count lines up or down (down if count is positive, up if negative).
 // Sets the column to as close to col_saved as possible.
 // Does not change col_saved.
@@ -182,9 +185,6 @@ char char_at_point(void);
 char char_from_point(int n);
 int buf_char_at(Buffer *buf, size_t index);
 int buf_size(Buffer *buf);
-void line_table_print(void);
 
 // Returns a pointer to the buffer's LineTable for read-only access.
 const LineTable *buffer_get_line_table(Buffer *buf);
-
-void print_buffer_list(void);

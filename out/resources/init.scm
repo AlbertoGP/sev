@@ -1,5 +1,4 @@
 ; (set-key! global-keymap "ESC" char-at-point)
-; (set-key! global-keymap "ESC" line-table-print)
 (set-key! global-keymap "ESC" toggle-cursor)
 (set-key! global-keymap "C-q" quit)
 (set-key! global-keymap "C-x t" toggle-theme)

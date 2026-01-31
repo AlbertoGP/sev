@@ -344,7 +344,7 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
         CLAY(id, {
             .layout = {
                 .sizing = layoutExpand,
-                .padding = CLAY_PADDING_ALL(padding),
+                .padding = { .left = padding, .right = padding },
                 .layoutDirection = CLAY_TOP_TO_BOTTOM,
             },
             .clip = { .vertical = true }
@@ -353,7 +353,7 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
             if (data.found) {
                 Clay_BoundingBox box = data.boundingBox;
                 float text_width = box.width - (2 * padding);
-                float text_height = box.height - (2 * padding);
+                float text_height = box.height;
 
                 // Rebuild visual line cache
                 VLineCache *cache = &pane->content.vline_cache;
