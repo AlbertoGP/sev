@@ -316,53 +316,21 @@ bool point_move_by_line(int count) {
     if (!bl.current) return false;
 
     if (!count) return true;
-    if (count <= 1 - bl.current->cur_line) {
-        point_set(buffer_start());
-        get_column(bl.current);
-        set_column(bl.current->col_saved, false);
-        bl.current->cur_line = 1;
-        return true;
+    
+    size_t line_index = line_index_at(&bl.current->lt, point_get(bl.current).pos);
+    if (count <= -(int)(line_index)) {
+        count = -(int)(line_index);
+    } else if (count >= (int)(bl.current->num_lines - bl.current->cur_line)) {
+        count = (int)(bl.current->num_lines - bl.current->cur_line);
     }
-    if (count >= bl.current->num_lines - bl.current->cur_line) {
-        point_set(buffer_end());
-        get_column(bl.current);
-        set_column(bl.current->col_saved, false);
-        bl.current->cur_line = bl.current->num_lines;
-        return true;
-    }
-    if (count > 0) {
-        int lines = 0;
-        for (int i = point_get(bl.current).pos; i < get_char_count(bl.current); i++) {
-            if (gb_char_at(bl.current->contents, i) == '\n') {
-                lines++;
-                if (lines == count) {
-                    point_set((Location){.pos = i + 1});
-                    get_column(bl.current);
-                    set_column(bl.current->col_saved, false);
-                    bl.current->cur_line = 0;
-                    point_get_line(bl.current);
-                    return true;
-                }
-            }
-        }
-    }
-    if (count < 0) {
-        int lines = 0;
-        for (int i = point_get(bl.current).pos; i > 0; i--) {
-            if (gb_char_at(bl.current->contents, i) == '\n') {
-                lines--;
-                if (lines == count) {
-                    point_set((Location){.pos = i});
-                    get_column(bl.current);
-                    set_column(bl.current->col_saved, false);
-                    bl.current->cur_line = 0;
-                    point_get_line(bl.current);
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
+    Location new_loc = {
+        .pos = bl.current->lt.lines[line_index + count].start
+    };
+    point_set(new_loc);
+    get_column(bl.current);
+    set_column(bl.current->col_saved, false);
+    bl.current->cur_line = line_index + count + 1;
+    return true;
 }
 
 Location point_get(Buffer *buf) {
@@ -500,32 +468,29 @@ int get_column(Buffer *buf) {
     if (buf->col) {  // column is known
         return buf->col;
     } else {    // column must be recalculated.
-        for (size_t i = 1; i < point_get(buf).pos; i++) {
-            if (buf_char_at(buf, point_get(buf).pos - i) == '\n') {
-                return buf->col = i;
-            }
-        }
-        return buf->col = point_get(buf).pos + 1;
+        size_t pos = buf->point.pos;
+        size_t line_index = line_index_at(&buf->lt, pos);
+        
+        return buf->col = (int)(pos - buf->lt.lines[line_index].start);
     }
 }
 void set_column(int column, bool round) {
     if (bl.current->col == column) return;
     if (column < 0) column = 0;
 
+    size_t pos = point_get(bl.current).pos;
+    LineTable lt = bl.current->lt;
+    size_t line_index = line_index_at(&lt, pos);
+    size_t last_col = lt.lines[line_index].end - lt.lines[line_index].start;
+
+    if (column > last_col)
+        column = last_col;
+
     int delta = column - bl.current->col;
-    if (delta < 0) {
-        point_move(delta);
-        return;
-    }
-    if (delta > gb_back(bl.current->contents))
-        delta = gb_back(bl.current->contents);
-    for (int i = 0; i < delta; i++) {
-        if (char_at_point() == '\n') {
-            delta = i;
-            break;
-        }
-    }
-    point_move(delta);
+    Location loc = {
+        .pos = pos + delta
+    };
+    point_set(loc);
 }
 
 
