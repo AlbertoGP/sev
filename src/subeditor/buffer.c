@@ -421,7 +421,7 @@ void insert_char(Buffer *buf, char c) {
     if (c == '\n') {
         buf->num_lines++;
         buf->cur_line++;
-        buf->col_saved = buf->col = 0;
+        buf->col_saved = buf->col = 1;
     } else {
         buf->col_saved = ++(buf->col);
     }

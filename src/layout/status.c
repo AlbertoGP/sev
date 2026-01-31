@@ -2,14 +2,6 @@
 #include "../subeditor/buffer.h"
 #include "pane.h"
 
-static void Spacer() {
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {
-                .width = CLAY_SIZING_GROW(0)
-    }}}) {}
-}
-
 #define BAR_STRINGS_MAX 256
 static char *bar_strings[BAR_STRINGS_MAX];
 static int bar_strings_count = 0;
@@ -59,7 +51,9 @@ void StatusBar(AppState *state, Pane *pane) {
             .fontSize = 14,
             .textColor = textColor,
         }));
-        Spacer();
+        CLAY_AUTO_ID({
+            .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) }}
+        }) {}
         CLAY_TEXT(pointPos, CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
             .fontSize = 14,
