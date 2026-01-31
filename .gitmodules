@@ -7,3 +7,6 @@
 [submodule "vendored/chibi-scheme"]
 	path = vendored/chibi-scheme
 	url = https://github.com/ashinn/chibi-scheme.git
+[submodule "vendored/SDL_image"]
+	path = vendored/SDL_image
+	url = https://github.com/libsdl-org/SDL_image

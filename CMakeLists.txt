@@ -55,12 +55,16 @@ if(EMSCRIPTEN)
 
     # Add vendored SDL libraries
     add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
+    set(SDLIMAGE_VENDORED ON CACHE BOOL "" FORCE)
+    set(SDLIMAGE_AVIF OFF CACHE BOOL "" FORCE)  # dav1d doesn't support WASM
+    add_subdirectory(vendored/SDL_image EXCLUDE_FROM_ALL)
     set(SDLTTF_VENDORED ON CACHE BOOL "" FORCE)
     add_subdirectory(vendored/SDL_ttf EXCLUDE_FROM_ALL)
 
     # Explicitly propagate include directories
     target_include_directories(app PUBLIC
         vendored/SDL/include
+        vendored/SDL_image/include
         vendored/SDL_ttf/include
     )
     
@@ -99,6 +103,7 @@ if(EMSCRIPTEN)
     # Link the libraries
     target_link_libraries(app PRIVATE
         SDL3::SDL3-static
+        SDL3_image::SDL3_image-static
         SDL3_ttf::SDL3_ttf-static
         chibi::libchibi-scheme
     )
@@ -117,9 +122,10 @@ else()
 
     # Use system SDL3 packages
     find_package(SDL3 REQUIRED)
+    find_package(SDL3_image REQUIRED)
     find_package(SDL3_ttf REQUIRED)
 
-    target_link_libraries(app PUBLIC SDL3::SDL3 SDL3_ttf::SDL3_ttf)
+    target_link_libraries(app PUBLIC SDL3::SDL3 SDL3_image:SDL3_image SDL3_ttf::SDL3_ttf)
 
     add_subdirectory(vendored/chibi-scheme)
     target_link_libraries(app PRIVATE chibi::libchibi-scheme)

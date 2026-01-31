@@ -5,12 +5,12 @@
 #include "clay/renderer.h"
 #include "keyevent.h"
 
-enum FontID {
+typedef enum FontID {
     FONT_NORMAL,
     FONT_BOLD,
     FONT_ITALIC,
     FONT_COUNT
-};
+} FontID;
 
 typedef struct ColorSet {
     Clay_Color background;
@@ -25,6 +25,13 @@ typedef enum Theme {
     THEME_DARK,
     THEME_LIGHT
 } Theme;
+
+typedef enum CursorType {
+    CURSOR_SOLID,
+    CURSOR_HOLLOW,
+    CURSOR_THIN,
+    CURSOR_UNDER
+} CursorType;
 
 typedef struct {
     struct Keymap *global_map;
@@ -45,6 +52,7 @@ typedef struct AppState {
     ColorSet colors_delta;
     int color_frames;
     Theme theme;
+    CursorType cursor;
     bool needs_redraw;
     bool needs_extra_frame;
     bool animating;

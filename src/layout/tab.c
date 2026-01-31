@@ -220,13 +220,9 @@ static void HandleClickTab(Clay_ElementId elementId, Clay_PointerData pointerInf
     }
 }
 
-void OpenTabs(AppState *state, Tab *t);
+static void OpenTabs(AppState *state);
 
 void TabBar(AppState *state) {
-    Tab *t = tl.list;
-    // TODO: extract to a state variable toggle-able from Scheme.
-    // if (!t || !t->next) return;  // Hide tab bar if only one tab.
-    if (!t) return;                 // Show tab bar if only one tab.
     CLAY(CLAY_ID("Tab Bar"), {
         .layout = {
             .sizing = { .width = CLAY_SIZING_GROW(0) },
@@ -238,15 +234,19 @@ void TabBar(AppState *state) {
     }) {
         CLAY(CLAY_ID("App Icon"), {
             .layout = {
-                .sizing = { .width = 28, .height = 28 }
+                .sizing = { .width = 24, .height = 24 },
             },
-            .image = icon
+            .image = icon,
         }) {}
-        OpenTabs(state, t);
+        OpenTabs(state);
     }
 }
 
-void OpenTabs(AppState *state, Tab *t) {
+void OpenTabs(AppState *state) {
+    Tab *t = tl.list;
+    // TODO: extract to a state variable toggle-able from Scheme.
+    // if (!t || !t->next) return;  // Hide tab bar if only one tab.
+    if (!t) return;                 // Show tab bar if only one tab.
     for (int i = 1; t != NULL; t = t->next, i++) {
         Clay_String tab_name = {
             .chars = t->name,

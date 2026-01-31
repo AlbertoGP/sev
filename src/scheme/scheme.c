@@ -331,6 +331,14 @@ static sexp scm_line_table_print(sexp ctx, sexp self, sexp n) {
     return SEXP_VOID;
 }
 
+static sexp scm_toggle_cursor(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    G->cursor++;
+    G->cursor %= 4;
+
+    return SEXP_VOID;
+}
+
 void scheme_init(AppState *state) {
     G = state;
     sexp_scheme_init();
@@ -409,6 +417,7 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "eval-buffer", 0, scm_eval_buffer);
     sexp_define_foreign(ctx, env, "clay-debug", 0, scm_clay_debug);
     sexp_define_foreign(ctx, env, "line-table-print", 0, scm_line_table_print);
+    sexp_define_foreign(ctx, env, "toggle-cursor", 0, scm_toggle_cursor);
 
     #ifdef __EMSCRIPTEN__
     #define INIT_SCRIPT_PATH "/resources/init.scm"

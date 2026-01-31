@@ -122,6 +122,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         .cursor = { 198, 160, 246, 255 }
     };
 
+    state->cursor = CURSOR_SOLID;
+
     state->needs_redraw = true;
     state->needs_extra_frame = true;
     state->animating = false;

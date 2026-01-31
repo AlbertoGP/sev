@@ -1,4 +1,5 @@
 #include "pane.h"
+#include "cursor.h"
 #include "vline.h"
 #include "status.h"
 #include "tab.h"
@@ -406,32 +407,8 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                     }) {
                         // Render cursor as floating element (doesn't affect text layout)
                         if (cursor_on_line && pane->content.active) {
-                            static char point_char[1];
-                            point_char[0] = char_at_point() ? char_at_point() : ' ';
-                            Clay_String point_str = {
-                                .chars = point_char,
-                                .length = 1,
-                                .isStaticallyAllocated = true
-                            };
-                            CLAY(CLAY_IDI_LOCAL("Cursor", (int32_t)i), {
-                                .floating = {
-                                    .attachTo = CLAY_ATTACH_TO_PARENT,
-                                    .offset = { .x = cursor_offset, .y = 0 }
-                                },
-                                .layout = {
-                                    .sizing = {
-                                        .width = CLAY_SIZING_FIT(2),
-                                        .height = CLAY_SIZING_FIXED(line_height)
-                                    }
-                                },
-                                .backgroundColor = state->colors.cursor
-                            }) {
-                                CLAY_TEXT(point_str, CLAY_TEXT_CONFIG({
-                                    .fontId = font_id,
-                                    .fontSize = font_size,
-                                    .textColor = state->colors.background,
-                                }));
-                            }
+                            Cursor(state, (int32_t)i, cursor_offset, line_height,
+                                   font_id, font_size);
                         }
 
                         // Render entire line as single text element
