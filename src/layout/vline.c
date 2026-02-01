@@ -37,6 +37,10 @@ VLineCache vline_cache_create(void) {
     if (cache.lines) {
         cache.cap = MIN_CACHE_SIZE;
     }
+    cache.index = calloc(MIN_CACHE_SIZE, sizeof(LogicalLineIndex));
+    if (cache.index) {
+        cache.index_cap = MIN_CACHE_SIZE;
+    }
     cache.full_rebuild = true;
     return cache;
 }
@@ -46,8 +50,14 @@ void vline_cache_destroy(VLineCache *cache) {
         free(cache->lines);
         cache->lines = NULL;
     }
+    if (cache->index) {
+        free(cache->index);
+        cache->index = NULL;
+    }
     cache->count = 0;
     cache->cap = 0;
+    cache->index_count = 0;
+    cache->index_cap = 0;
 }
 
 // Grow cache capacity using doubling strategy.
@@ -67,6 +77,51 @@ static bool vline_cache_grow(VLineCache *cache, size_t needed) {
     return true;
 }
 
+// Shrink cache if underutilized.
+static void vline_cache_shrink(VLineCache *cache) {
+    if (cache->count >= cache->cap / 4) return;
+
+    size_t new_cap = cache->cap / 2;
+    if (new_cap < MIN_CACHE_SIZE) new_cap = MIN_CACHE_SIZE;
+    if (new_cap >= cache->cap || new_cap < cache->count) return;
+
+    VisualLine *new_lines = realloc(cache->lines, new_cap * sizeof(VisualLine));
+    if (!new_lines) return;
+    cache->lines = new_lines;
+    cache->cap = new_cap;
+}
+
+// Grow index capacity.
+static bool index_grow(VLineCache *cache, size_t needed) {
+    if (cache->index_cap >= needed) return true;
+
+    size_t new_cap = cache->index_cap ? cache->index_cap : MIN_CACHE_SIZE;
+    while (new_cap < needed) {
+        new_cap *= 2;
+    }
+
+    LogicalLineIndex *new_index = realloc(cache->index, new_cap * sizeof(LogicalLineIndex));
+    if (!new_index) return false;
+
+    cache->index = new_index;
+    cache->index_cap = new_cap;
+    return true;
+}
+
+// Shrink index if underutilized.
+static void index_shrink(VLineCache *cache) {
+    if (cache->index_count >= cache->index_cap / 4) return;
+
+    size_t new_cap = cache->index_cap / 2;
+    if (new_cap < MIN_CACHE_SIZE) new_cap = MIN_CACHE_SIZE;
+    if (new_cap >= cache->index_cap || new_cap < cache->index_count) return;
+
+    LogicalLineIndex *new_index = realloc(cache->index, new_cap * sizeof(LogicalLineIndex));
+    if (!new_index) return;
+    cache->index = new_index;
+    cache->index_cap = new_cap;
+}
+
 // Append a visual line to the cache.
 static bool vline_append(VLineCache *cache, VisualLine vline) {
     if (cache->count >= cache->cap) {
@@ -84,12 +139,14 @@ static bool is_word_boundary(char c) {
 }
 
 // Wrap a single logical line into visual lines.
-// Returns the number of visual lines produced.
+// Appends to cache->lines starting at vline_start_out, returns count added.
+// Also records index entry at cache->index[cache->index_count].
 static size_t wrap_logical_line(VLineCache *cache,
                                 Clay_SDL3RendererData *renderer,
                                 uint16_t font_id, uint16_t font_size,
                                 const char *buf_text, const Line *line,
                                 float max_width) {
+    size_t vline_start = cache->count;
     size_t start = line->start;
     size_t end = line->end;
     uint16_t visual_index = 0;
@@ -108,7 +165,7 @@ static size_t wrap_logical_line(VLineCache *cache,
         if (vline_append(cache, vline)) {
             lines_added++;
         }
-        return lines_added;
+        goto record_index;
     }
 
     size_t line_start = start;
@@ -171,7 +228,42 @@ static size_t wrap_logical_line(VLineCache *cache,
         line_start = line_end;
     }
 
+record_index:
+    // Record index entry
+    if (index_grow(cache, cache->index_count + 1)) {
+        cache->index[cache->index_count++] = (LogicalLineIndex){
+            .line_id = line->line_id,
+            .version = line->version,
+            .vline_start = vline_start,
+            .vline_count = lines_added
+        };
+    }
+
     return lines_added;
+}
+
+// Find old index entry by line_id. Returns NULL if not found.
+// Uses hint as starting position for scan.
+static const LogicalLineIndex *find_old_index(const LogicalLineIndex *old_index,
+                                               size_t old_count, uint64_t line_id,
+                                               size_t hint) {
+    if (!old_index || old_count == 0) return NULL;
+
+    // Try hint position first
+    if (hint < old_count && old_index[hint].line_id == line_id) {
+        return &old_index[hint];
+    }
+
+    // Scan from hint forward, then backward
+    for (size_t off = 1; off < old_count; off++) {
+        if (hint + off < old_count && old_index[hint + off].line_id == line_id) {
+            return &old_index[hint + off];
+        }
+        if (off <= hint && old_index[hint - off].line_id == line_id) {
+            return &old_index[hint - off];
+        }
+    }
+    return NULL;
 }
 
 void vline_rebuild(VLineCache *cache, struct Buffer *buf,
@@ -179,37 +271,105 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
                    float pane_width, uint16_t font_id, uint16_t font_size) {
     if (!cache || !buf || !renderer) return;
 
-    // Check if we need a full rebuild
-    bool needs_rebuild = cache->full_rebuild ||
-                         cache->pane_width != pane_width ||
-                         cache->font_id != font_id ||
-                         cache->font_size != font_size;
+    // Check if we need a full rebuild (cache key changed)
+    bool full_rebuild = cache->full_rebuild ||
+                        cache->pane_width != pane_width ||
+                        cache->font_id != font_id ||
+                        cache->font_size != font_size;
 
-    if (!needs_rebuild) {
-        // TODO: incremental rebuild by checking line versions
-        // For now, always rebuild
-        needs_rebuild = true;
-    }
-
-    if (!needs_rebuild) return;
-
-    // Reset cache
-    cache->count = 0;
     cache->pane_width = pane_width;
     cache->font_id = font_id;
     cache->font_size = font_size;
     cache->full_rebuild = false;
 
-    // Get buffer text and line table
     const char *text = buffer_text(buf);
     const LineTable *lt = buffer_get_line_table(buf);
     if (!lt || !lt->lines) return;
 
-    // Wrap each logical line
-    for (size_t i = 0; i < lt->count; i++) {
-        wrap_logical_line(cache, renderer, font_id, font_size,
-                          text, &lt->lines[i], pane_width);
+    if (full_rebuild) {
+        // Full rebuild: reset and re-wrap everything
+        cache->count = 0;
+        cache->index_count = 0;
+
+        for (size_t i = 0; i < lt->count; i++) {
+            wrap_logical_line(cache, renderer, font_id, font_size,
+                              text, &lt->lines[i], pane_width);
+        }
+    } else {
+        // Incremental rebuild: check line versions, copy valid entries
+        // Save old arrays
+        VisualLine *old_lines = cache->lines;
+        size_t old_cap = cache->cap;
+        LogicalLineIndex *old_index = cache->index;
+        size_t old_index_count = cache->index_count;
+        size_t old_index_cap = cache->index_cap;
+
+        // Allocate new arrays
+        cache->lines = calloc(MIN_CACHE_SIZE, sizeof(VisualLine));
+        cache->cap = cache->lines ? MIN_CACHE_SIZE : 0;
+        cache->count = 0;
+        cache->index = calloc(MIN_CACHE_SIZE, sizeof(LogicalLineIndex));
+        cache->index_cap = cache->index ? MIN_CACHE_SIZE : 0;
+        cache->index_count = 0;
+
+        if (!cache->lines || !cache->index) {
+            // Allocation failed, restore old and do full rebuild
+            free(cache->lines);
+            free(cache->index);
+            cache->lines = old_lines;
+            cache->cap = old_cap;
+            cache->index = old_index;
+            cache->index_cap = old_index_cap;
+            cache->full_rebuild = true;
+            vline_rebuild(cache, buf, renderer, pane_width, font_id, font_size);
+            return;
+        }
+
+        for (size_t i = 0; i < lt->count; i++) {
+            const Line *line = &lt->lines[i];
+            const LogicalLineIndex *old_entry = find_old_index(old_index, old_index_count,
+                                                                line->line_id, i);
+
+            if (old_entry && old_entry->version == line->version) {
+                // Version matches - copy visual lines from old cache
+                // Need to adjust byte_start/byte_end since line positions may have shifted
+                size_t copy_count = old_entry->vline_count;
+                if (vline_cache_grow(cache, cache->count + copy_count) &&
+                    index_grow(cache, cache->index_count + 1)) {
+
+                    size_t new_vline_start = cache->count;
+                    // Calculate offset between old and new line positions
+                    VisualLine *first_old = &old_lines[old_entry->vline_start];
+                    ptrdiff_t offset = (ptrdiff_t)line->start - (ptrdiff_t)first_old->byte_start;
+
+                    for (size_t j = 0; j < copy_count; j++) {
+                        VisualLine vl = old_lines[old_entry->vline_start + j];
+                        vl.byte_start = (size_t)((ptrdiff_t)vl.byte_start + offset);
+                        vl.byte_end = (size_t)((ptrdiff_t)vl.byte_end + offset);
+                        cache->lines[cache->count++] = vl;
+                    }
+                    cache->index[cache->index_count++] = (LogicalLineIndex){
+                        .line_id = line->line_id,
+                        .version = line->version,
+                        .vline_start = new_vline_start,
+                        .vline_count = copy_count
+                    };
+                }
+            } else {
+                // Version mismatch or not found - re-wrap
+                wrap_logical_line(cache, renderer, font_id, font_size,
+                                  text, line, pane_width);
+            }
+        }
+
+        // Free old arrays
+        free(old_lines);
+        free(old_index);
     }
+
+    // Shrink if underutilized
+    vline_cache_shrink(cache);
+    index_shrink(cache);
 }
 
 void vline_scroll_to_cursor(VLineCache *cache, size_t byte_pos, size_t visible_count) {

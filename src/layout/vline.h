@@ -18,11 +18,24 @@ typedef struct VisualLine {
     float measured_width;   // cached width in pixels
 } VisualLine;
 
+// Index entry mapping logical line to its visual line range.
+typedef struct LogicalLineIndex {
+    uint64_t line_id;       // from Line.line_id
+    uint64_t version;       // from Line.version
+    size_t vline_start;     // first vline index for this logical line
+    size_t vline_count;     // how many vlines this logical line produces
+} LogicalLineIndex;
+
 // Cache of visual lines for a pane.
 typedef struct VLineCache {
     VisualLine *lines;      // array of visual lines
     size_t count;           // number of visual lines
     size_t cap;             // allocated capacity
+
+    // Index mapping logical lines to visual line ranges
+    LogicalLineIndex *index;
+    size_t index_count;
+    size_t index_cap;
 
     // Cache key (full invalidation if changed)
     float pane_width;
