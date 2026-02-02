@@ -90,6 +90,62 @@ static sexp scm_prev_line(sexp ctx, sexp self, sexp n) {
     return SEXP_VOID;
 }
 
+static sexp scm_forward_char(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    message_clear();
+    size_t point = point_get(buffer_get_current()).pos;
+    size_t chars = get_char_count(buffer_get_current());
+    if (point == chars)
+        message_send("End of buffer");
+    point_move(1);
+    return SEXP_VOID;
+}
+
+static sexp scm_backward_char(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    message_clear();
+    size_t point = point_get(buffer_get_current()).pos;
+    if (point == 0)
+        message_send("Beginning of buffer");
+    point_move(-1);
+    return SEXP_VOID;
+}
+
+static sexp scm_newline(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    insert_char(buffer_get_current(), '\n');
+    message_clear();
+    return SEXP_VOID;
+}
+
+static sexp scm_insert_tab(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    insert_char(buffer_get_current(), '\t');
+    message_clear();
+    return SEXP_VOID;
+}
+
+static sexp scm_delete_backward_char(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    size_t point = point_get(buffer_get_current()).pos;
+    message_clear();
+    if (point == 0)
+        message_send("Beginning of buffer");
+    delete_chars(buffer_get_current(), 1);
+    return SEXP_VOID;
+}
+
+static sexp scm_delete_forward_char(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    size_t point = point_get(buffer_get_current()).pos;
+    size_t chars = get_char_count(buffer_get_current());
+    message_clear();
+    if (point >= chars)
+        message_send("End of buffer");
+    delete_chars(buffer_get_current(), -1);
+    return SEXP_VOID;
+}
+
 static sexp scm_make_keymap(sexp ctx, sexp self, sexp n) {
     Keymap *km = keymap_create();
     if (!km) {
@@ -113,10 +169,15 @@ static sexp scm_toggle_theme(sexp ctx, sexp self, sexp n) {
 }
 
 static sexp scm_set_key(sexp ctx, sexp self, sexp n,
-                    sexp skeymap, sexp skeystr, sexp scommand) {
+                        sexp skeymap, sexp skeystr, sexp scommand) {
     Keymap *km = sexp_cpointer_value(skeymap);
     if (!km) {
         return sexp_user_exception(ctx, self, "null keymap pointer", skeymap);
+    }
+
+    if (!sexp_symbolp(scommand)) {
+        return sexp_user_exception(ctx, self,
+            "command must be a symbol", scommand);
     }
 
     const char *keystr = sexp_string_data(skeystr);
@@ -125,21 +186,19 @@ static sexp scm_set_key(sexp ctx, sexp self, sexp n,
     if (key_count < 1) {
         return sexp_user_exception(ctx, self, "invalid key sequence", skeystr);
     }
-    
+
     Binding binding = {
         .type = BINDING_COMMAND,
-        .command = (Command){
-            .type = COMMAND_SCHEME,
-            .scheme_proc = scommand
-        }
+        .command_sym = scommand
     };
-    // After creating/modifying a binding with a scheme_proc:
-    sexp_preserve_object(ctx, binding.command.scheme_proc);
+
+    sexp_preserve_object(ctx, binding.command_sym);
 
     keymap_bind_sequence(km, seq, key_count, binding);
-    
+
     return SEXP_VOID;
 }
+
 
 static sexp scm_char_at_point(sexp ctx, sexp self, sexp n) {
     printf("point: %c\n", char_at_point());
@@ -333,6 +392,10 @@ static sexp scm_toggle_cursor(sexp ctx, sexp self, sexp n) {
     return SEXP_VOID;
 }
 
+static sexp scm_prefix_arg(sexp ctx, sexp self, sexp n) {
+    return SEXP_FALSE;  // TODO: integrate with C-u handling
+}
+
 void scheme_init(AppState *state) {
     G = state;
     sexp_scheme_init();
@@ -384,7 +447,7 @@ void scheme_init(AppState *state) {
     // Register foreign functions
     sexp_define_foreign(ctx, env, "quit", 0, scm_quit);
     sexp_define_foreign(ctx, env, "make-keymap", 0, scm_make_keymap);
-    sexp_define_foreign(ctx, env, "set-key!", 3, scm_set_key);
+    sexp_define_foreign(ctx, env, "%set-key!", 3, scm_set_key);
     sexp_define_foreign(ctx, env, "insert-char", 1, scm_insert_char);
     sexp_define_foreign(ctx, env, "self-insert", 0, scm_self_insert);
     sexp_define_foreign(ctx, env, "delete-char", 1, scm_delete_char);
@@ -392,6 +455,12 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "move-point-by-line", 1, scm_point_move_by_line);
     sexp_define_foreign(ctx, env, "next-line", 0, scm_next_line);
     sexp_define_foreign(ctx, env, "prev-line", 0, scm_prev_line);
+    sexp_define_foreign(ctx, env, "forward-char", 0, scm_forward_char);
+    sexp_define_foreign(ctx, env, "backward-char", 0, scm_backward_char);
+    sexp_define_foreign(ctx, env, "newline", 0, scm_newline);
+    sexp_define_foreign(ctx, env, "insert-tab", 0, scm_insert_tab);
+    sexp_define_foreign(ctx, env, "delete-backward-char", 0, scm_delete_backward_char);
+    sexp_define_foreign(ctx, env, "delete-forward-char", 0, scm_delete_forward_char);
     sexp_define_foreign(ctx, env, "set-column", 1, scm_set_column);
     sexp_define_foreign(ctx, env, "toggle-theme", 0, scm_toggle_theme);
     sexp_define_foreign(ctx, env, "char-at-point", 0, scm_char_at_point);
@@ -411,18 +480,41 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "eval-buffer", 0, scm_eval_buffer);
     sexp_define_foreign(ctx, env, "clay-debug", 0, scm_clay_debug);
     sexp_define_foreign(ctx, env, "toggle-cursor", 0, scm_toggle_cursor);
+    sexp_define_foreign(ctx, env, "prefix-arg", 0, scm_prefix_arg);
 
     #ifdef __EMSCRIPTEN__
-    #define INIT_SCRIPT_PATH "/resources/init.scm"
+    #define RESOURCES_PATH "/resources/"
     #else
     char* basePath = (char*)SDL_GetBasePath();
-    char initScriptPath[1024];
-    snprintf(initScriptPath, sizeof(initScriptPath), "%sresources/init.scm", basePath);
-    #define INIT_SCRIPT_PATH initScriptPath
+    char resourcesPath[1024];
+    snprintf(resourcesPath, sizeof(resourcesPath), "%sresources/", basePath);
+    #define RESOURCES_PATH resourcesPath
     #endif
-    
-    sexp result = sexp_load(ctx, sexp_c_string(ctx, INIT_SCRIPT_PATH, -1), env);
+
+    // Load command.scm first (provides infrastructure for init.scm)
+    char commandScriptPath[1024];
+    snprintf(commandScriptPath, sizeof(commandScriptPath), "%scommand.scm", RESOURCES_PATH);
+    sexp result = sexp_load(ctx, sexp_c_string(ctx, commandScriptPath, -1), env);
     if (sexp_exceptionp(result)) {
         sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
     }
+
+    // Load init.scm
+    char initScriptPath[1024];
+    snprintf(initScriptPath, sizeof(initScriptPath), "%sinit.scm", RESOURCES_PATH);
+    result = sexp_load(ctx, sexp_c_string(ctx, initScriptPath, -1), env);
+    if (sexp_exceptionp(result)) {
+        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+    }
+
+    // Get call-interactively procedure (defined in command.scm)
+    state->chibi.call_interactively = sexp_env_ref(
+        ctx, env,
+        sexp_intern(ctx, "call-interactively", -1),
+        SEXP_FALSE
+    );
+    if (state->chibi.call_interactively == SEXP_FALSE) {
+        fprintf(stderr, "ERROR: call-interactively not found\n");
+    }
+    sexp_preserve_object(ctx, state->chibi.call_interactively);
 }

@@ -21,16 +21,17 @@ typedef enum {
 typedef struct {
     CommandType type;
     union {
-        void (*c_fn)(AppState *);
+        void (*c_fn)(AppState *, sexp args);
         sexp scheme_proc;
     };
+    sexp interactive_spec;
 } Command;
 
 // Key binding payload struct. Can either point to a command, or a new keymap.
 typedef struct {
     BindingType type;
     union {
-        Command command;   // C or Scheme wrapper.
+        sexp command_sym;   // Scheme symbol
         struct Keymap *keymap; // Pointer to new keymap the next key will be looked up in.
     };
 } Binding;
@@ -53,12 +54,6 @@ Keymap *keymap_create(void);
 
 // Initialise global keymap state.
 bool init_input(AppState *state);
-// Associate a given character key with a binding in the specified keymap.
-void keymap_bind_char(Keymap *km, uint32_t codepoint, void (*fn)(AppState *));
-// Associate a given Ctrl-prefixed key with a binding in the specified keymap.
-void keymap_bind_ctrl(Keymap *km, uint32_t codepoint, void (*fn)(AppState *));
-// Associate a keymap redirect with a Ctrl-prefied binding in the specified keymap.
-void keymap_bind_ctrl_prefix(Keymap *km, uint32_t codepoint, Keymap *submap);
 // Handle a key event via its appropriate binding (if one exists).
 void key_dispatch(AppState *state, const KeyEvent *ev);
 

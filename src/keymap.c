@@ -4,6 +4,7 @@
 #include <chibi/eval.h>
 #include "keymap.h"
 #include "keyevent.h"
+#include "subeditor/message.h"
 
 KeyEvent last_event;
 
@@ -49,57 +50,6 @@ static bool keymap_add(Keymap *km, KeyEvent key, Binding binding) {
     return true;
 }
 
-void keymap_bind_char(Keymap *km, uint32_t codepoint, void (*fn)(AppState *)) {
-    KeyEvent key = {
-        .type = KEYEVENT_CHAR,
-        .mods = MOD_NONE,
-        .codepoint = codepoint,
-    };
-
-    Binding binding = {
-        .type = BINDING_COMMAND,
-        .command = {
-            .type = COMMAND_C,
-            .c_fn = fn,
-        },
-    };
-
-    keymap_add(km, key, binding);
-}
-
-void keymap_bind_ctrl(Keymap *km, uint32_t codepoint, void (*fn)(AppState *)) {
-    KeyEvent key = {
-        .type = KEYEVENT_CHAR,
-        .mods = MOD_CTRL,
-        .codepoint = codepoint,
-    };
-
-    Binding binding = {
-        .type = BINDING_COMMAND,
-        .command = {
-            .type = COMMAND_C,
-            .c_fn = fn,
-        },
-    };
-
-    keymap_add(km, key, binding);
-}
-
-void keymap_bind_ctrl_prefix(Keymap *km, uint32_t codepoint, Keymap *submap) {
-    KeyEvent key = {
-        .type = KEYEVENT_CHAR,
-        .mods = MOD_CTRL,
-        .codepoint = (uint32_t)codepoint,
-    };
-
-    Binding binding = {
-        .type = BINDING_KEYMAP,
-        .keymap = submap,
-    };
-
-    keymap_add(km, key, binding);
-}
-
 static Binding *keymap_lookup(Keymap *km, const KeyEvent *ev) {
     if (!km) return NULL;
     for (size_t i = 0; i < km->count; i++) {
@@ -110,14 +60,17 @@ static Binding *keymap_lookup(Keymap *km, const KeyEvent *ev) {
 }
 
 static void execute_command(AppState *state, Binding *b) {
-    Command *cmd = &b->command;
+    sexp ctx = state->chibi.ctx;
 
-    if (cmd->type == COMMAND_C) {
-        cmd->c_fn(state);
-    } else {
-        sexp_apply(state->chibi.ctx,
-                   cmd->scheme_proc,
-                   SEXP_NULL);
+    // Call Scheme: (call-interactively sym)
+    sexp result = sexp_apply(
+        ctx,
+        state->chibi.call_interactively,
+        sexp_list1(ctx, b->command_sym)
+    );
+
+    if (sexp_exceptionp(result)) {
+        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
     }
 }
 
@@ -135,9 +88,11 @@ void key_dispatch(AppState *state, const KeyEvent *ev) {
     if (!b) {
         reset_key_state(state);
         // minibuffer_message("Undefined key");
-        printf("Undefined key:\n\tcodepoint: %c\n\tmods: %d\n",
-               last_event.codepoint,
+        char message[128];
+        snprintf(message, 128, "Undefined key: codepoint: %c mods: %d",
+               last_event.keycode,
                last_event.mods);
+        message_send(message);
         // if (ev->type == KEYEVENT_CHAR)
         //     insert_char(ev->codepoint);
         return;

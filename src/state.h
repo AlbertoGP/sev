@@ -42,6 +42,7 @@ typedef struct {
 typedef struct {
     sexp ctx;
     sexp env;
+    sexp call_interactively;
 } Chibi;
 
 typedef struct AppState {

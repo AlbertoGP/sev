@@ -11,7 +11,8 @@ static void MessageArea(AppState *state) {
                 .height = CLAY_SIZING_FIT(25)
             },
             .padding = { .left = 10, .right = 10 }
-        }
+        },
+        .clip = CLAY_CLIP_TO_NONE
     }){
         CLAY_TEXT(message_string, CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
