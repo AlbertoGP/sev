@@ -386,14 +386,6 @@ static sexp scm_clay_debug(sexp ctx, sexp self, sexp n) {
     return SEXP_VOID;
 }
 
-static sexp scm_toggle_cursor(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-    G->cursor++;
-    G->cursor %= 4;
-
-    return SEXP_VOID;
-}
-
 static sexp scm_set_cursor(sexp ctx, sexp self, sexp n, sexp type) {
     G->needs_redraw = true;
     G->cursor = sexp_unbox_fixnum(type);
@@ -667,7 +659,6 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "pane-h-split-decrease", 0, scm_pane_h_split_decrease);
     sexp_define_foreign(ctx, env, "eval-buffer", 0, scm_eval_buffer);
     sexp_define_foreign(ctx, env, "clay-debug", 0, scm_clay_debug);
-    sexp_define_foreign(ctx, env, "toggle-cursor", 0, scm_toggle_cursor);
     sexp_define_foreign(ctx, env, "%set-cursor!", 1, scm_set_cursor);
     sexp_define_foreign(ctx, env, "prefix-arg", 0, scm_prefix_arg);
     sexp_define_foreign(ctx, env, "%set-keymap-default!", 2, scm_set_keymap_default);
