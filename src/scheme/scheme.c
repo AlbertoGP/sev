@@ -1,6 +1,8 @@
 #include "scheme.h"
 #include "../keymap.h"
 #include "../subeditor/buffer.h"
+#include "../subeditor/mode.h"
+#include "../subeditor/var.h"
 #include "../theme.h"
 #include "../layout/tab.h"
 #include "../subeditor/message.h"
@@ -396,6 +398,156 @@ static sexp scm_prefix_arg(sexp ctx, sexp self, sexp n) {
     return SEXP_FALSE;  // TODO: integrate with C-u handling
 }
 
+// Mode primitives
+
+// (%register-mode name type keymap) -> mode-ptr or #f
+// type: 'major or 'minor
+static sexp scm_register_mode(sexp ctx, sexp self, sexp n,
+                              sexp sname, sexp stype, sexp skeymap) {
+    if (!sexp_symbolp(sname)) {
+        return sexp_user_exception(ctx, self, "name must be a symbol", sname);
+    }
+    if (!sexp_symbolp(stype)) {
+        return sexp_user_exception(ctx, self, "type must be 'major or 'minor", stype);
+    }
+
+    const char *name = sexp_string_data(sexp_symbol_to_string(ctx, sname));
+    const char *type_str = sexp_string_data(sexp_symbol_to_string(ctx, stype));
+
+    ModeType type;
+    if (strcmp(type_str, "major") == 0) {
+        type = MODE_MAJOR;
+    } else if (strcmp(type_str, "minor") == 0) {
+        type = MODE_MINOR;
+    } else {
+        return sexp_user_exception(ctx, self, "type must be 'major or 'minor", stype);
+    }
+
+    Keymap *km = NULL;
+    if (sexp_cpointerp(skeymap)) {
+        km = sexp_cpointer_value(skeymap);
+    }
+
+    Mode *mode = mode_create(name, type, km);
+    if (!mode) return SEXP_FALSE;
+
+    if (!mode_register(mode)) {
+        free((void *)mode->name);
+        free(mode);
+        return SEXP_FALSE;
+    }
+
+    return sexp_make_cpointer(ctx, SEXP_CPOINTER, mode, SEXP_FALSE, 0);
+}
+
+// (%set-major-mode name) -> #t or #f
+static sexp scm_set_major_mode(sexp ctx, sexp self, sexp n, sexp sname) {
+    if (!sexp_symbolp(sname)) {
+        return sexp_user_exception(ctx, self, "name must be a symbol", sname);
+    }
+
+    const char *name = sexp_string_data(sexp_symbol_to_string(ctx, sname));
+    Mode *mode = mode_lookup(name, MODE_MAJOR);
+    if (!mode) return SEXP_FALSE;
+
+    buffer_set_major_mode(buffer_get_current(), mode);
+    return SEXP_TRUE;
+}
+
+// (%enable-minor-mode name) -> #t or #f
+static sexp scm_enable_minor_mode(sexp ctx, sexp self, sexp n, sexp sname) {
+    if (!sexp_symbolp(sname)) {
+        return sexp_user_exception(ctx, self, "name must be a symbol", sname);
+    }
+
+    const char *name = sexp_string_data(sexp_symbol_to_string(ctx, sname));
+    Mode *mode = mode_lookup(name, MODE_MINOR);
+    if (!mode) return SEXP_FALSE;
+
+    buffer_enable_minor_mode(buffer_get_current(), mode);
+    return SEXP_TRUE;
+}
+
+// (%disable-minor-mode name) -> #t or #f
+static sexp scm_disable_minor_mode(sexp ctx, sexp self, sexp n, sexp sname) {
+    if (!sexp_symbolp(sname)) {
+        return sexp_user_exception(ctx, self, "name must be a symbol", sname);
+    }
+
+    const char *name = sexp_string_data(sexp_symbol_to_string(ctx, sname));
+    Mode *mode = mode_lookup(name, MODE_MINOR);
+    if (!mode) return SEXP_FALSE;
+
+    buffer_disable_minor_mode(buffer_get_current(), mode);
+    return SEXP_TRUE;
+}
+
+// (%buffer-major-mode) -> symbol or #f
+static sexp scm_buffer_major_mode(sexp ctx, sexp self, sexp n) {
+    Mode *mode = buffer_get_major_mode(buffer_get_current());
+    if (!mode) return SEXP_FALSE;
+
+    return sexp_intern(ctx, mode->name, -1);
+}
+
+// (%buffer-minor-modes) -> list of symbols
+static sexp scm_buffer_minor_modes(sexp ctx, sexp self, sexp n) {
+    ModeList *minors = buffer_get_minor_modes(buffer_get_current());
+    if (!minors) return SEXP_NULL;
+
+    sexp result = SEXP_NULL;
+    sexp_gc_var1(sym);
+    sexp_gc_preserve1(ctx, sym);
+
+    // Build list in reverse (so head of ModeList is head of result list)
+    for (ModeListNode *node = minors->head; node; node = node->next) {
+        sym = sexp_intern(ctx, node->mode->name, -1);
+        result = sexp_cons(ctx, sym, result);
+    }
+
+    // Reverse to maintain order
+    sexp reversed = SEXP_NULL;
+    while (sexp_pairp(result)) {
+        sexp tmp = sexp_cdr(result);
+        sexp_cdr(result) = reversed;
+        reversed = result;
+        result = tmp;
+    }
+
+    sexp_gc_release1(ctx);
+    return reversed;
+}
+
+// Variable primitives
+
+// (%setq-local name val) -> val
+static sexp scm_set_local(sexp ctx, sexp self, sexp n, sexp sname, sexp sval) {
+    if (!sexp_symbolp(sname)) {
+        return sexp_user_exception(ctx, self, "name must be a symbol", sname);
+    }
+
+    const char *name = sexp_string_data(sexp_symbol_to_string(ctx, sname));
+    VarTable *locals = buffer_get_locals(buffer_get_current());
+    if (!locals) return SEXP_FALSE;
+
+    sexp_preserve_object(ctx, sval);
+    vartable_set(locals, name, sval);
+    return sval;
+}
+
+// (%getq-local name default) -> value or default
+static sexp scm_get_local(sexp ctx, sexp self, sexp n, sexp sname, sexp sdefault) {
+    if (!sexp_symbolp(sname)) {
+        return sexp_user_exception(ctx, self, "name must be a symbol", sname);
+    }
+
+    const char *name = sexp_string_data(sexp_symbol_to_string(ctx, sname));
+    VarTable *locals = buffer_get_locals(buffer_get_current());
+    if (!locals) return sdefault;
+
+    return vartable_get(locals, name, sdefault);
+}
+
 void scheme_init(AppState *state) {
     G = state;
     sexp_scheme_init();
@@ -482,12 +634,24 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "toggle-cursor", 0, scm_toggle_cursor);
     sexp_define_foreign(ctx, env, "prefix-arg", 0, scm_prefix_arg);
 
+    // Mode primitives
+    sexp_define_foreign(ctx, env, "%register-mode", 3, scm_register_mode);
+    sexp_define_foreign(ctx, env, "%set-major-mode", 1, scm_set_major_mode);
+    sexp_define_foreign(ctx, env, "%enable-minor-mode", 1, scm_enable_minor_mode);
+    sexp_define_foreign(ctx, env, "%disable-minor-mode", 1, scm_disable_minor_mode);
+    sexp_define_foreign(ctx, env, "%buffer-major-mode", 0, scm_buffer_major_mode);
+    sexp_define_foreign(ctx, env, "%buffer-minor-modes", 0, scm_buffer_minor_modes);
+
+    // Variable primitives
+    sexp_define_foreign(ctx, env, "%set-local!", 2, scm_set_local);
+    sexp_define_foreign(ctx, env, "%get-local", 2, scm_get_local);
+
     #ifdef __EMSCRIPTEN__
     #define RESOURCES_PATH "/resources/"
     #else
     char* basePath = (char*)SDL_GetBasePath();
     char resourcesPath[1024];
-    snprintf(resourcesPath, sizeof(resourcesPath), "%sresources/", basePath);
+    snprintf(resourcesPath, sizeof(resourcesPath), "%sscheme/", basePath);
     #define RESOURCES_PATH resourcesPath
     #endif
 
@@ -495,6 +659,14 @@ void scheme_init(AppState *state) {
     char commandScriptPath[1024];
     snprintf(commandScriptPath, sizeof(commandScriptPath), "%scommand.scm", RESOURCES_PATH);
     sexp result = sexp_load(ctx, sexp_c_string(ctx, commandScriptPath, -1), env);
+    if (sexp_exceptionp(result)) {
+        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+    }
+
+    // Load mode.scm (mode system wrappers)
+    char modeScriptPath[1024];
+    snprintf(modeScriptPath, sizeof(modeScriptPath), "%smode.scm", RESOURCES_PATH);
+    result = sexp_load(ctx, sexp_c_string(ctx, modeScriptPath, -1), env);
     if (sexp_exceptionp(result)) {
         sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
     }

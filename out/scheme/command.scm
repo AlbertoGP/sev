@@ -33,7 +33,7 @@
               (and doc (eq? k (doc-kind doc)))))
           (hash-table-keys *doc-table*)))
 
-(define (list-functions) (begin (list-by-kind 'function) (list-by-kind 'command)))
+(define (list-functions) (list-by-kind 'function))
 (define (list-variables) (list-by-kind 'variable))
 
 ;; Interactive command API

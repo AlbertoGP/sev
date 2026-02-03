@@ -4,6 +4,8 @@
 #include <chibi/eval.h>
 #include "keymap.h"
 #include "keyevent.h"
+#include "subeditor/buffer.h"
+#include "subeditor/mode.h"
 #include "subeditor/message.h"
 
 KeyEvent last_event;
@@ -50,13 +52,40 @@ static bool keymap_add(Keymap *km, KeyEvent key, Binding binding) {
     return true;
 }
 
-static Binding *keymap_lookup(Keymap *km, const KeyEvent *ev) {
+Binding *keymap_lookup(Keymap *km, const KeyEvent *ev) {
     if (!km) return NULL;
     for (size_t i = 0; i < km->count; i++) {
         if (keyevent_equal(&km->entries[i].key, ev))
             return &km->entries[i].binding;
     }
     return NULL;
+}
+
+Binding *keymap_lookup_chain(AppState *state, const KeyEvent *ev) {
+    Buffer *buf = buffer_get_current();
+    Binding *b;
+
+    // 1. Minor mode keymaps (head-first = most-recently-enabled)
+    ModeList *minors = buffer_get_minor_modes(buf);
+    if (minors) {
+        for (ModeListNode *n = minors->head; n; n = n->next) {
+            if (n->mode->keymap && (b = keymap_lookup(n->mode->keymap, ev)))
+                return b;
+        }
+    }
+
+    // 2. Buffer-local keymap
+    Keymap *local = buffer_get_local_map(buf);
+    if (local && (b = keymap_lookup(local, ev)))
+        return b;
+
+    // 3. Major mode keymap
+    Mode *major = buffer_get_major_mode(buf);
+    if (major && major->keymap && (b = keymap_lookup(major->keymap, ev)))
+        return b;
+
+    // 4. Global keymap
+    return keymap_lookup(state->input.global_map, ev);
 }
 
 static void execute_command(AppState *state, Binding *b) {
@@ -83,18 +112,23 @@ void key_dispatch(AppState *state, const KeyEvent *ev) {
 
     last_event = *ev;
 
-    Binding *b = keymap_lookup(state->input.current_map, ev);
+    Binding *b;
+
+    // If mid-prefix-sequence, continue in current_map only
+    if (state->input.current_map != state->input.global_map) {
+        b = keymap_lookup(state->input.current_map, ev);
+    } else {
+        // Start of sequence: use full chain lookup
+        b = keymap_lookup_chain(state, ev);
+    }
 
     if (!b) {
         reset_key_state(state);
-        // minibuffer_message("Undefined key");
         char message[128];
         snprintf(message, 128, "Undefined key: codepoint: %c mods: %d",
                last_event.keycode,
                last_event.mods);
         message_send(message);
-        // if (ev->type == KEYEVENT_CHAR)
-        //     insert_char(ev->codepoint);
         return;
     }
 

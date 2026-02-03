@@ -17,6 +17,7 @@ Clay_String message_string = {
 void message_clear(void) {
     for (int i = 0; i < MAX_MESSAGE_LENGTH; i++)
         message_buf[i] = 0;
+    message_string.length = 0;
 }
 
 void message_send(const char* message) {

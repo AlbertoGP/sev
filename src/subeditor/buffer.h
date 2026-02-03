@@ -188,3 +188,26 @@ int buf_size(Buffer *buf);
 
 // Returns a pointer to the buffer's LineTable for read-only access.
 const LineTable *buffer_get_line_table(Buffer *buf);
+
+// Mode operations
+
+// Set the major mode for a buffer (replaces existing)
+void buffer_set_major_mode(Buffer *buf, Mode *mode);
+// Get the major mode for a buffer
+Mode *buffer_get_major_mode(Buffer *buf);
+// Enable a minor mode in a buffer (prepends to list)
+void buffer_enable_minor_mode(Buffer *buf, Mode *mode);
+// Disable a minor mode in a buffer
+void buffer_disable_minor_mode(Buffer *buf, Mode *mode);
+// Check if a minor mode is enabled in a buffer
+bool buffer_has_minor_mode(Buffer *buf, const char *name);
+// Get the minor mode list for a buffer
+ModeList *buffer_get_minor_modes(Buffer *buf);
+// Get the buffer-local keymap
+Keymap *buffer_get_local_map(Buffer *buf);
+// Set the buffer-local keymap
+void buffer_set_local_map(Buffer *buf, Keymap *km);
+
+// Buffer-local variable operations
+#include "var.h"
+VarTable *buffer_get_locals(Buffer *buf);

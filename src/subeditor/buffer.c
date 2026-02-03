@@ -13,6 +13,7 @@
 #include "line.h"
 #include "mark.h"
 #include "mode.h"
+#include "var.h"
 
 typedef struct {
     struct timespec mtime;
@@ -39,7 +40,11 @@ typedef struct Buffer {
     int col_saved;
 
     Mark *marks;
-    Mode *modes;
+
+    Keymap *local_map;
+    VarTable locals;
+    ModeList minor_modes;
+    Mode *major_mode;
 
     GapBuf *contents;
     char file_name[FILE_NAME_MAX];
@@ -86,10 +91,8 @@ static void buffer_destroy(Buffer *buf) {
         mark_delete_all(buf->marks);
         buf->marks = NULL;
     }
-    if (buf->modes) {
-        mode_delete_all(buf->modes);
-        buf->modes = NULL;
-    }
+    modelist_destroy(&buf->minor_modes);
+    vartable_destroy(&buf->locals);
     if (buf->contents) {
         gb_free(buf->contents);
         buf->contents = NULL;
@@ -128,6 +131,9 @@ Buffer *buffer_create(const char *name) {
     buf->cur_line = 1;
     buf->num_lines = 1;
     buf->col_saved = buf->col = 1;
+
+    vartable_init(&buf->locals);
+    modelist_init(&buf->minor_modes);
 
     buf->lt = line_table_create();
     if (!buf->lt.lines) {
@@ -543,4 +549,77 @@ int buf_size(Buffer *buf) {
 const LineTable *buffer_get_line_table(Buffer *buf) {
     if (!buf) return NULL;
     return &buf->lt;
+}
+
+void buffer_set_major_mode(Buffer *buf, Mode *mode) {
+    if (!buf || !mode || mode->type != MODE_MAJOR) return;
+    buf->major_mode = mode;
+}
+
+Mode *buffer_get_major_mode(Buffer *buf) {
+    if (!buf) return NULL;
+    return buf->major_mode;
+}
+
+void buffer_enable_minor_mode(Buffer *buf, Mode *mode) {
+    if (!buf || !mode || mode->type != MODE_MINOR) return;
+
+    // Check if already enabled
+    for (ModeListNode *n = buf->minor_modes.head; n; n = n->next) {
+        if (n->mode == mode) return;
+    }
+
+    // Prepend to list (most-recently-enabled first)
+    ModeListNode *node = malloc(sizeof(ModeListNode));
+    if (!node) return;
+
+    node->mode = mode;
+    node->next = buf->minor_modes.head;
+    buf->minor_modes.head = node;
+    buf->minor_modes.count++;
+}
+
+void buffer_disable_minor_mode(Buffer *buf, Mode *mode) {
+    if (!buf || !mode) return;
+
+    ModeListNode **pp = &buf->minor_modes.head;
+    while (*pp) {
+        if ((*pp)->mode == mode) {
+            ModeListNode *to_free = *pp;
+            *pp = (*pp)->next;
+            free(to_free);
+            buf->minor_modes.count--;
+            return;
+        }
+        pp = &(*pp)->next;
+    }
+}
+
+bool buffer_has_minor_mode(Buffer *buf, const char *name) {
+    if (!buf || !name) return false;
+
+    for (ModeListNode *n = buf->minor_modes.head; n; n = n->next) {
+        if (strcmp(n->mode->name, name) == 0) return true;
+    }
+    return false;
+}
+
+ModeList *buffer_get_minor_modes(Buffer *buf) {
+    if (!buf) return NULL;
+    return &buf->minor_modes;
+}
+
+Keymap *buffer_get_local_map(Buffer *buf) {
+    if (!buf) return NULL;
+    return buf->local_map;
+}
+
+void buffer_set_local_map(Buffer *buf, Keymap *km) {
+    if (!buf) return;
+    buf->local_map = km;
+}
+
+VarTable *buffer_get_locals(Buffer *buf) {
+    if (!buf) return NULL;
+    return &buf->locals;
 }
