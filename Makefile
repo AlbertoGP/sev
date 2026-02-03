@@ -5,7 +5,8 @@ build:
 	gcc ./src/*.c ./src/clay/*.c ./src/layout/*.c ./src/scheme/*.c ./src/subeditor/*.c -o ./out/sev -lSDL3 -lSDL3_image -lSDL3_ttf -lchibi-scheme \
 		&& cp ./scheme/init.scm ./out/scheme/init.scm \
 		&& cp ./scheme/command.scm ./out/scheme/command.scm \
-		&& cp ./scheme/mode.scm ./out/scheme/mode.scm
+		&& cp ./scheme/mode.scm ./out/scheme/mode.scm \
+		&& cp ./scheme/evil.scm ./out/scheme/evil.scm
 
 # Debug build with AddressSanitizer
 debug: build-debug run

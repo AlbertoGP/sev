@@ -394,8 +394,44 @@ static sexp scm_toggle_cursor(sexp ctx, sexp self, sexp n) {
     return SEXP_VOID;
 }
 
+static sexp scm_set_cursor(sexp ctx, sexp self, sexp n, sexp type) {
+    G->needs_redraw = true;
+    G->cursor = sexp_unbox_fixnum(type);
+
+    return SEXP_VOID;
+}
+
 static sexp scm_prefix_arg(sexp ctx, sexp self, sexp n) {
     return SEXP_FALSE;  // TODO: integrate with C-u handling
+}
+
+// (%set-keymap-default! keymap command-sym) -> #t
+static sexp scm_set_keymap_default(sexp ctx, sexp self, sexp n,
+                                   sexp skeymap, sexp scommand) {
+    Keymap *km = sexp_cpointer_value(skeymap);
+    if (!km) return sexp_user_exception(ctx, self, "null keymap", skeymap);
+    if (!sexp_symbolp(scommand))
+        return sexp_user_exception(ctx, self, "command must be symbol", scommand);
+
+    if (!km->default_binding)
+        km->default_binding = malloc(sizeof(Binding));
+    km->default_binding->type = BINDING_COMMAND;
+    km->default_binding->command_sym = scommand;
+    sexp_preserve_object(ctx, scommand);
+    return SEXP_TRUE;
+}
+
+// (ignore) - do nothing
+static sexp scm_ignore(sexp ctx, sexp self, sexp n) {
+    return SEXP_VOID;
+}
+
+// (%buffer-has-minor-mode? name) -> #t or #f
+static sexp scm_buffer_has_minor_mode(sexp ctx, sexp self, sexp n, sexp sname) {
+    if (!sexp_symbolp(sname))
+        return sexp_user_exception(ctx, self, "name must be symbol", sname);
+    const char *name = sexp_string_data(sexp_symbol_to_string(ctx, sname));
+    return buffer_has_minor_mode(buffer_get_current(), name) ? SEXP_TRUE : SEXP_FALSE;
 }
 
 // Mode primitives
@@ -632,7 +668,11 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "eval-buffer", 0, scm_eval_buffer);
     sexp_define_foreign(ctx, env, "clay-debug", 0, scm_clay_debug);
     sexp_define_foreign(ctx, env, "toggle-cursor", 0, scm_toggle_cursor);
+    sexp_define_foreign(ctx, env, "%set-cursor!", 1, scm_set_cursor);
     sexp_define_foreign(ctx, env, "prefix-arg", 0, scm_prefix_arg);
+    sexp_define_foreign(ctx, env, "%set-keymap-default!", 2, scm_set_keymap_default);
+    sexp_define_foreign(ctx, env, "ignore", 0, scm_ignore);
+    sexp_define_foreign(ctx, env, "%buffer-has-minor-mode?", 1, scm_buffer_has_minor_mode);
 
     // Mode primitives
     sexp_define_foreign(ctx, env, "%register-mode", 3, scm_register_mode);
@@ -667,6 +707,14 @@ void scheme_init(AppState *state) {
     char modeScriptPath[1024];
     snprintf(modeScriptPath, sizeof(modeScriptPath), "%smode.scm", RESOURCES_PATH);
     result = sexp_load(ctx, sexp_c_string(ctx, modeScriptPath, -1), env);
+    if (sexp_exceptionp(result)) {
+        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+    }
+
+    // Load evil.scm (vim-like modal editing)
+    char evilScriptPath[1024];
+    snprintf(evilScriptPath, sizeof(evilScriptPath), "%sevil.scm", RESOURCES_PATH);
+    result = sexp_load(ctx, sexp_c_string(ctx, evilScriptPath, -1), env);
     if (sexp_exceptionp(result)) {
         sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
     }

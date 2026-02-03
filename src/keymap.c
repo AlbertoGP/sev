@@ -58,7 +58,7 @@ Binding *keymap_lookup(Keymap *km, const KeyEvent *ev) {
         if (keyevent_equal(&km->entries[i].key, ev))
             return &km->entries[i].binding;
     }
-    return NULL;
+    return km->default_binding;
 }
 
 Binding *keymap_lookup_chain(AppState *state, const KeyEvent *ev) {

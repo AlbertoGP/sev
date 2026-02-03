@@ -47,6 +47,7 @@ typedef struct Keymap {
     KeymapEntry *entries;
     size_t count;
     size_t cap;
+    Binding *default_binding;  // catch-all for unbound keys
 } Keymap;
 
 // Creates a new, empty keymap and returns a pointer to it.
