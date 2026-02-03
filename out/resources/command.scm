@@ -1,19 +1,40 @@
 ;;; command.scm - Self-documenting command infrastructure
 ;;; Emacs-like docstrings, interactive commands, and introspection
 
-(import (srfi 69))
+(import (srfi 1) (srfi 9) (srfi 69))
+
+;; Documentation record type
+(define-record-type <doc>
+  (make-doc kind text)
+  doc?
+  (kind doc-kind)
+  (text doc-text))
 
 ;; Storage tables
-(define *doc-table* (make-hash-table eq?))           ; sym -> docstring
+(define *doc-table* (make-hash-table eq?))           ; sym -> <doc>
 (define *interactive-table* (make-hash-table eq?))   ; sym -> spec
 (define *key-bindings-table* (make-hash-table eq?))  ; sym -> (list "C-x" ...)
 
 ;; Documentation API
-(define (set-doc! sym doc)
-  (hash-table-set! *doc-table* sym doc))
+(define (set-doc! sym kind text)
+  (hash-table-set! *doc-table* sym (make-doc kind text)))
 
 (define (get-doc sym)
   (hash-table-ref/default *doc-table* sym #f))
+
+(define (get-doc-text sym)
+  (let ((doc (get-doc sym)))
+    (and doc (doc-text doc))))
+
+;; Query by kind
+(define (list-by-kind k)
+  (filter (lambda (sym)
+            (let ((doc (get-doc sym)))
+              (and doc (eq? k (doc-kind doc)))))
+          (hash-table-keys *doc-table*)))
+
+(define (list-functions) (begin (list-by-kind 'function) (list-by-kind 'command)))
+(define (list-variables) (list-by-kind 'variable))
 
 ;; Interactive command API
 (define (make-interactive! sym spec)
@@ -54,8 +75,7 @@
       (else (proc)))))
 
 ;; Introspection
-(define (list-commands)
-  (hash-table-keys *interactive-table*))
+(define (list-commands) (list-by-kind 'command))
 
 (define (describe-function sym)
   (let ((doc (get-doc sym))
@@ -65,4 +85,5 @@
       (cons 'name sym)
       (cons 'interactive? int?)
       (cons 'keys keys)
-      (cons 'doc (or doc "")))))
+      (cons 'kind (and doc (doc-kind doc)))
+      (cons 'doc (if doc (doc-text doc) "")))))
