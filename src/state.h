@@ -13,15 +13,6 @@ typedef enum FontID {
     FONT_COUNT
 } FontID;
 
-typedef struct ColorSet {
-    Clay_Color background;
-    Clay_Color foreground;
-    Clay_Color bar;
-    Clay_Color text;
-    Clay_Color textFaded;
-    Clay_Color cursor;
-} ColorSet;
-
 typedef enum Theme {
     THEME_DARK,
     THEME_LIGHT
@@ -46,13 +37,22 @@ typedef struct {
     sexp call_interactively;
 } Chibi;
 
+typedef struct CachedRoles {
+    sexp ui_bg, bar_bg, mode_normal, mode_insert;
+    sexp tab_bar, tab_active, tab_hover, tab_inactive;
+    sexp text_primary, text_faded, cursor_normal, cursor_insert;
+} CachedRoles;
+
+typedef struct UIState {
+    sexp current_theme;     // symbol, e.g. 'gruvbox-dark
+    VarTable role_table;    // role-symbol -> palette-index OR color
+    VarTable palette_table; // palette-symbol -> Color
+    CachedRoles roles;      // pre-interned role symbols
+} UIState;
+
 typedef struct AppState {
     SDL_Window *window;
     Clay_SDL3RendererData rendererData;
-    ColorSet colors;
-    ColorSet colors_target;
-    ColorSet colors_delta;
-    int color_frames;
     Theme theme;
     CursorType cursor;
     bool needs_redraw;
@@ -61,6 +61,7 @@ typedef struct AppState {
     Uint64 last_frame_ns;
     bool debug_open;
     Chibi chibi;
-    InputState input;
     VarTable globals;
+    UIState ui;
+    InputState input;
 } AppState;

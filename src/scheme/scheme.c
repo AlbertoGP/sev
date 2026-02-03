@@ -3,7 +3,6 @@
 #include "../subeditor/buffer.h"
 #include "../subeditor/mode.h"
 #include "../subeditor/var.h"
-#include "../theme.h"
 #include "../layout/tab.h"
 #include "../subeditor/message.h"
 #include <SDL3/SDL_events.h>
@@ -159,15 +158,6 @@ static sexp scm_make_keymap(sexp ctx, sexp self, sexp n) {
         SEXP_FALSE,
         0);
     return result;
-}
-
-static sexp scm_toggle_theme(sexp ctx, sexp self, sexp n) {
-    toggle_theme(G);
-
-    char message[100];
-    sprintf(message, "Theme set to %s mode", G->theme == THEME_DARK ? "dark" : "light");
-    message_send(message);
-    return SEXP_VOID;
 }
 
 static sexp scm_set_key(sexp ctx, sexp self, sexp n,
@@ -549,53 +539,84 @@ static sexp scm_buffer_minor_modes(sexp ctx, sexp self, sexp n) {
 // Variable primitives
 
 // (%setq-local name val) -> val
-static sexp scm_set_local(sexp ctx, sexp self, sexp n, sexp sname, sexp sval) {
-    if (!sexp_symbolp(sname)) {
-        return sexp_user_exception(ctx, self, "name must be a symbol", sname);
+static sexp scm_set_local(sexp ctx, sexp self, sexp n, sexp key, sexp sval) {
+    if (!sexp_symbolp(key)) {
+        return sexp_user_exception(ctx, self, "name must be a symbol", key);
     }
 
-    const char *name = sexp_string_data(sexp_symbol_to_string(ctx, sname));
     VarTable *locals = buffer_get_locals(buffer_get_current());
     if (!locals) return SEXP_FALSE;
 
     sexp_preserve_object(ctx, sval);
-    vartable_set(locals, name, sval);
+    vartable_set(locals, key, sval);
     return sval;
 }
 
 // (%getq-local name default) -> value or default
-static sexp scm_get_local(sexp ctx, sexp self, sexp n, sexp sname, sexp sdefault) {
-    if (!sexp_symbolp(sname)) {
-        return sexp_user_exception(ctx, self, "name must be a symbol", sname);
+static sexp scm_get_local(sexp ctx, sexp self, sexp n, sexp key, sexp sdefault) {
+    if (!sexp_symbolp(key)) {
+        return sexp_user_exception(ctx, self, "name must be a symbol", key);
     }
 
-    const char *name = sexp_string_data(sexp_symbol_to_string(ctx, sname));
     VarTable *locals = buffer_get_locals(buffer_get_current());
     if (!locals) return sdefault;
 
-    return vartable_get(locals, name, sdefault);
+    return vartable_get(locals, key, sdefault);
 }
 
 // (%set-global! name val) -> val
-static sexp scm_set_global(sexp ctx, sexp self, sexp n, sexp sname, sexp sval) {
-    if (!sexp_symbolp(sname)) {
-        return sexp_user_exception(ctx, self, "name must be a symbol", sname);
+static sexp scm_set_global(sexp ctx, sexp self, sexp n, sexp key, sexp sval) {
+    if (!sexp_symbolp(key)) {
+        return sexp_user_exception(ctx, self, "name must be a symbol", key);
     }
 
-    const char *name = sexp_string_data(sexp_symbol_to_string(ctx, sname));
     sexp_preserve_object(ctx, sval);
-    vartable_set(&G->globals, name, sval);
+    vartable_set(&G->globals, key, sval);
     return sval;
 }
 
 // (%get-global name default) -> value or default
-static sexp scm_get_global(sexp ctx, sexp self, sexp n, sexp sname, sexp sdefault) {
-    if (!sexp_symbolp(sname)) {
-        return sexp_user_exception(ctx, self, "name must be a symbol", sname);
+static sexp scm_get_global(sexp ctx, sexp self, sexp n, sexp key, sexp sdefault) {
+    if (!sexp_symbolp(key)) {
+        return sexp_user_exception(ctx, self, "name must be a symbol", key);
     }
 
-    const char *name = sexp_string_data(sexp_symbol_to_string(ctx, sname));
-    return vartable_get(&G->globals, name, sdefault);
+    return vartable_get(&G->globals, key, sdefault);
+}
+
+static sexp scm_set_palette(sexp ctx, sexp self, sexp n, sexp key, sexp hexstr) {
+    if (!sexp_symbolp(key)) {
+        return sexp_user_exception(ctx, self, "name must be a symbol", key);
+    }
+
+    sexp_preserve_object(ctx, hexstr);
+    vartable_set(&G->ui.palette_table, key, hexstr);
+    return hexstr;
+}
+
+static sexp scm_set_role(sexp ctx, sexp self, sexp n, sexp role, sexp palette_key) {
+    if (!sexp_symbolp(role)) {
+        return sexp_user_exception(ctx, self, "name must be a symbol", role);
+    }
+    if (!sexp_symbolp(palette_key)) {
+        return sexp_user_exception(ctx, self, "name must be a symbol", palette_key);
+    }
+
+    sexp_preserve_object(ctx, palette_key);
+    vartable_set(&G->ui.role_table, role, palette_key);
+    return palette_key;
+}
+
+static sexp scm_clear_palette(sexp ctx, sexp self, sexp n) {
+    vartable_destroy(&G->ui.palette_table);
+    vartable_init(&G->ui.palette_table);
+    return SEXP_VOID;
+}
+
+static sexp scm_clear_roles(sexp ctx, sexp self, sexp n) {
+    vartable_destroy(&G->ui.role_table);
+    vartable_init(&G->ui.role_table);
+    return SEXP_VOID;
 }
 
 static sexp scm_message_send(sexp ctx, sexp self, sexp n, sexp message) {
@@ -684,7 +705,6 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "delete-backward-char", 0, scm_delete_backward_char);
     sexp_define_foreign(ctx, env, "delete-forward-char", 0, scm_delete_forward_char);
     sexp_define_foreign(ctx, env, "set-column", 1, scm_set_column);
-    sexp_define_foreign(ctx, env, "toggle-theme", 0, scm_toggle_theme);
     sexp_define_foreign(ctx, env, "char-at-point", 0, scm_char_at_point);
     sexp_define_foreign(ctx, env, "tab-next", 0, scm_tab_next);
     sexp_define_foreign(ctx, env, "tab-prev", 0, scm_tab_prev);
@@ -720,6 +740,10 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "%get-local", 2, scm_get_local);
     sexp_define_foreign(ctx, env, "%set-global!", 2, scm_set_global);
     sexp_define_foreign(ctx, env, "%get-global", 2, scm_get_global);
+    sexp_define_foreign(ctx, env, "%set-palette!", 2, scm_set_palette);
+    sexp_define_foreign(ctx, env, "%set-role!", 2, scm_set_role);
+    sexp_define_foreign(ctx, env, "%clear-palette!", 0, scm_clear_palette);
+    sexp_define_foreign(ctx, env, "%clear-roles!", 0, scm_clear_roles);
 
     #ifdef __EMSCRIPTEN__
     #define RESOURCES_PATH "/resources/"
@@ -754,6 +778,14 @@ void scheme_init(AppState *state) {
         sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
     }
 
+    // Load theme.scm (sets up theming and semantic UI roles)
+    char themeScriptPath[1024];
+    snprintf(themeScriptPath, sizeof(themeScriptPath), "%stheme.scm", RESOURCES_PATH);
+    result = sexp_load(ctx, sexp_c_string(ctx, themeScriptPath, -1), env);
+    if (sexp_exceptionp(result)) {
+        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+    }
+
     // Load init.scm
     char initScriptPath[1024];
     snprintf(initScriptPath, sizeof(initScriptPath), "%sinit.scm", RESOURCES_PATH);
@@ -761,6 +793,27 @@ void scheme_init(AppState *state) {
     if (sexp_exceptionp(result)) {
         sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
     }
+
+    // Cache role symbols for fast lookup
+    #define INTERN_ROLE(field, name) do { \
+        state->ui.roles.field = sexp_intern(ctx, name, -1); \
+        sexp_preserve_object(ctx, state->ui.roles.field); \
+    } while(0)
+
+    INTERN_ROLE(ui_bg, "ui.bg");
+    INTERN_ROLE(bar_bg, "bar.bg");
+    INTERN_ROLE(mode_normal, "mode.normal");
+    INTERN_ROLE(mode_insert, "mode.insert");
+    INTERN_ROLE(tab_bar, "tab.bar");
+    INTERN_ROLE(tab_active, "tab.active");
+    INTERN_ROLE(tab_hover, "tab.hover");
+    INTERN_ROLE(tab_inactive, "tab.inactive");
+    INTERN_ROLE(text_primary, "text.primary");
+    INTERN_ROLE(text_faded, "text.faded");
+    INTERN_ROLE(cursor_normal, "cursor.normal");
+    INTERN_ROLE(cursor_insert, "cursor.insert");
+
+    #undef INTERN_ROLE
 
     // Get call-interactively procedure (defined in command.scm)
     state->chibi.call_interactively = sexp_env_ref(

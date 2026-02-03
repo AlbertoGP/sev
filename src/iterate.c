@@ -4,7 +4,6 @@
 #include "layout/pane.h"
 #include "layout/status.h"
 #include "state.h"
-#include "theme.h"
 
 /* Track callback rate mode to avoid redundant hint changes */
 static bool callback_rate_animating = false;
@@ -47,10 +46,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     }
 #endif
     state->last_frame_ns = SDL_GetTicksNS();
-
-    if (state->color_frames) {
-        add_color_delta(state);
-    }
 
     /* Draw to the screen */
     SDL_SetRenderDrawColor(state->rendererData.renderer, 0, 0, 0, 255);

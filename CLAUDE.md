@@ -62,7 +62,7 @@ Chibi Scheme provides extensibility. C primitives exposed include:
 
 - Text operations: `insert-char`, `insert-string`, `delete-char`, `move-point`
 - Buffer/mark operations
-- UI: `toggle-theme`, `quit`
+- UI: `quit`
 - Keymap: `make-keymap`, `set-key!`
 
 Keybindings configured in `resources/init.scm`.

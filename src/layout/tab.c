@@ -1,5 +1,6 @@
 #include "tab.h"
 #include "pane.h"
+#include "theme.h"
 #include <stdlib.h>
 #include <string.h>
 #include <SDL3_image/SDL_image.h>
@@ -197,13 +198,17 @@ static bool CloseButton(AppState *state, Tab *t) {
             }
         },
         .cornerRadius = CLAY_CORNER_RADIUS(8),
-        .backgroundColor = Clay_Hovered() ? state->colors.bar : (Clay_Color){0, 0, 0, 0}
+        .backgroundColor = Clay_Hovered()
+            ? ui_resolve_color(state, state->ui.roles.bar_bg)
+            : (Clay_Color){0, 0, 0, 0}
     }) {
         Clay_OnHover(HandleCloseTab, t);
         CLAY_TEXT(CLAY_STRING("×"), CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
             .fontSize = 20,
-            .textColor = tl.current == t ? state->colors.text : state->colors.textFaded,
+            .textColor = tl.current == t
+                ? ui_resolve_color(state, state->ui.roles.text_primary)
+                : ui_resolve_color(state, state->ui.roles.text_faded),
             .textAlignment = CLAY_TEXT_ALIGN_CENTER,
         }));
         hovered = Clay_Hovered();
@@ -230,7 +235,7 @@ void TabBar(AppState *state) {
             .childGap = 5,
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
         },
-        .backgroundColor = state->colors.foreground,
+        .backgroundColor = ui_resolve_color(state, state->ui.roles.tab_bar),
     }) {
         CLAY(CLAY_ID("App Icon"), {
             .layout = {
@@ -262,10 +267,10 @@ void OpenTabs(AppState *state) {
             },
             .cornerRadius = CLAY_CORNER_RADIUS(5),
             .backgroundColor = tl.current == t
-                ? state-> colors.background
+                ? ui_resolve_color(state, state->ui.roles.tab_active)
                 : Clay_Hovered()
-                    ? state->colors.background
-                    : state->colors.foreground,
+                    ? ui_resolve_color(state, state->ui.roles.tab_hover)
+                    : ui_resolve_color(state, state->ui.roles.tab_inactive),
         }) {
             CLAY_AUTO_ID({
                 .layout = {
@@ -279,7 +284,9 @@ void OpenTabs(AppState *state) {
                 CLAY_TEXT(tab_name, CLAY_TEXT_CONFIG({
                     .fontId = FONT_NORMAL,
                     .fontSize = 14,
-                    .textColor = tl.current == t ? state->colors.text : state->colors.textFaded
+                    .textColor = tl.current == t
+                        ? ui_resolve_color(state, state->ui.roles.text_primary)
+                        : ui_resolve_color(state, state->ui.roles.text_faded)
                 }));
             }
             bool block = CloseButton(state, t);

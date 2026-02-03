@@ -113,15 +113,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
-    state->colors = (ColorSet){
-        .background = { 36, 39, 58, 255 },
-        .foreground = { 30, 32, 48, 255 },
-        .bar = { 54, 58, 79, 255 },
-        .text = { 202, 211, 245, 255 },
-        .textFaded = { 91, 96, 120, 255 },
-        .cursor = { 198, 160, 246, 255 }
-    };
-
     state->cursor = CURSOR_SOLID;
 
     state->needs_redraw = true;

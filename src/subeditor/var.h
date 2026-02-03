@@ -6,7 +6,7 @@
 #include <chibi/sexp.h>
 
 typedef struct VarEntry {
-    const char *name;
+    sexp key;
     sexp value;
     struct VarEntry *next;
 } VarEntry;
@@ -22,11 +22,11 @@ void vartable_init(VarTable *vt);
 void vartable_destroy(VarTable *vt);
 
 // Get a variable's value, or return default_val if not found
-sexp vartable_get(VarTable *vt, const char *name, sexp default_val);
+sexp vartable_get(VarTable *vt, sexp key, sexp default_val);
 
 // Set a variable's value (creates entry if needed)
 // The name string is copied internally
-void vartable_set(VarTable *vt, const char *name, sexp value);
+void vartable_set(VarTable *vt, sexp key, sexp value);
 
 // Get string value from sexp (symbol or string), returns default if not string-like
 const char *sexp_to_cstring(sexp ctx, sexp val, const char *default_val);

@@ -6,7 +6,8 @@ build:
 		&& cp ./scheme/init.scm ./out/scheme/init.scm \
 		&& cp ./scheme/command.scm ./out/scheme/command.scm \
 		&& cp ./scheme/mode.scm ./out/scheme/mode.scm \
-		&& cp ./scheme/evil.scm ./out/scheme/evil.scm
+		&& cp ./scheme/evil.scm ./out/scheme/evil.scm \
+		&& cp ./scheme/theme.scm ./out/scheme/theme.scm
 
 # Debug build with AddressSanitizer
 debug: build-debug run

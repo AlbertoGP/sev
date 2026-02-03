@@ -1,4 +1,5 @@
 #include "cursor.h"
+#include "theme.h"
 #include "../subeditor/buffer.h"
 
 void Cursor(AppState *state, int32_t index,
@@ -17,6 +18,8 @@ void Cursor(AppState *state, int32_t index,
     };
     point_char[0] = char_at_point() ? char_at_point() : ' ';
 
+    Clay_Color cursorColor = ui_get_cursor_color(state);
+
     Clay_ElementDeclaration cursorData = {
         .floating = {
             .attachTo = CLAY_ATTACH_TO_PARENT,
@@ -31,20 +34,20 @@ void Cursor(AppState *state, int32_t index,
                 .height = CLAY_SIZING_FIXED(height)
             }
         },
-        .backgroundColor =  state->colors.cursor,
+        .backgroundColor =  cursorColor,
     };
 
     static Clay_TextElementConfig textConfig = {0};
     textConfig.fontId = font_id;
     textConfig.fontSize = font_size;
-    textConfig.textColor = state->colors.background;
+    textConfig.textColor = ui_resolve_color(state, state->ui.roles.ui_bg);
 
     switch (state->cursor) {
     case CURSOR_HOLLOW:
         cursorData.backgroundColor = (Clay_Color){0};
         cursorData.border = (Clay_BorderElementConfig){
                 .width = CLAY_BORDER_ALL(1),
-                .color = state->colors.cursor
+                .color = ui_get_cursor_color(state)
         };
         textConfig.textColor = (Clay_Color){0};
         break;

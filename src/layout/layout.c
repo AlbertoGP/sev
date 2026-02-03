@@ -1,5 +1,6 @@
 #include "../state.h"
 #include "tab.h"
+#include "theme.h"
 
 extern Clay_String message_string;
 
@@ -17,7 +18,7 @@ static void MessageArea(AppState *state) {
         CLAY_TEXT(message_string, CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
             .fontSize = 14,
-            .textColor = state->colors.text,
+            .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
         }));
     }
 }
@@ -35,7 +36,7 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
             .sizing = layoutExpand,
         },
-        .backgroundColor = state->colors.background
+        .backgroundColor = ui_resolve_color(state, state->ui.roles.ui_bg)
     }) {
         TabBar(state);
         CLAY(CLAY_ID_LOCAL("Tab Content"), {

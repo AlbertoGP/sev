@@ -3,7 +3,6 @@
 
 ;; Named commands use symbols for reverse lookup
 (set-key! global-keymap "C-q" 'quit)
-(set-key! global-keymap "C-x t" 'toggle-theme)
 (set-key! global-keymap "C-e" 'eval-buffer)
 (set-key! global-keymap "SPC" 'self-insert)
 (set-key! global-keymap "RET" 'newline)
@@ -126,7 +125,6 @@
 
 ;;; Documentation for C primitives
 (set-doc! 'quit 'command "Exit the editor.")
-(set-doc! 'toggle-theme 'command "Toggle between dark and light themes.")
 (set-doc! 'self-insert 'command "Insert the character that invoked this command.")
 (set-doc! 'eval-buffer 'command "Evaluate the current buffer as Scheme code.")
 (set-doc! 'next-line 'command "Move point to the next line.")
@@ -154,11 +152,9 @@
 (set-doc! 'pane-v-split-increase 'command "Increase vertical split size.")
 (set-doc! 'pane-v-split-decrease 'command "Decrease vertical split size.")
 (set-doc! 'clay-debug 'command "Toggle Clay debug mode.")
-(set-doc! 'toggle-cursor 'command "Cycle through cursor styles.")
 
 ;;; Mark commands as interactive
 (make-interactive! 'quit "")
-(make-interactive! 'toggle-theme "")
 (make-interactive! 'self-insert "")
 (make-interactive! 'eval-buffer "")
 (make-interactive! 'next-line "")
@@ -183,4 +179,3 @@
 (make-interactive! 'pane-v-split-increase "")
 (make-interactive! 'pane-v-split-decrease "")
 (make-interactive! 'clay-debug "")
-(make-interactive! 'toggle-cursor "")

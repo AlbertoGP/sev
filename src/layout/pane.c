@@ -3,6 +3,7 @@
 #include "vline.h"
 #include "status.h"
 #include "tab.h"
+#include "theme.h"
 #include <stdlib.h>
 
 // Recursively free resources allocated for a pane sub-tree.
@@ -421,7 +422,7 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                             CLAY_TEXT(text, CLAY_TEXT_CONFIG({
                                 .fontId = font_id,
                                 .fontSize = font_size,
-                                .textColor = state->colors.text,
+                                .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
                             }));
                         }
                     }
@@ -441,7 +442,7 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                         CLAY_TEXT_CONFIG({
                             .fontId = FONT_NORMAL,
                             .fontSize = 16,
-                            .textColor = state->colors.textFaded,
+                            .textColor = ui_resolve_color(state, state->ui.roles.text_faded),
                             .textAlignment = CLAY_TEXT_ALIGN_CENTER
                         }));
                 }

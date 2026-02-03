@@ -1,6 +1,7 @@
 #include "../state.h"
 #include "../subeditor/buffer.h"
 #include "pane.h"
+#include "theme.h"
 
 #define BAR_STRINGS_MAX 256
 static char *bar_strings[BAR_STRINGS_MAX];
@@ -22,11 +23,12 @@ void bar_strings_push(char *p) {
 void StatusBar(AppState *state, Pane *pane) {
     bool active = pane->content.active;
     Buffer *buf = pane->content.buffer;
+    sexp mode_symbol = sexp_intern(state->chibi.ctx, "mode-name", -1);
     
     const char* modeStr = sexp_to_cstring(
         state->chibi.ctx,
         vartable_get(buffer_get_locals(buf),
-                     "mode-name",
+                     mode_symbol,
                      sexp_c_string(state->chibi.ctx, "ERROR", -1)),
         "ERROR");
     Clay_String modeName = {
@@ -46,16 +48,18 @@ void StatusBar(AppState *state, Pane *pane) {
          .chars = pos,
          .length = strlen(pos),
     };
-    Clay_Color textColor = active ? state->colors.text : state->colors.textFaded;
+    Clay_Color textColor = active
+        ? ui_resolve_color(state, state->ui.roles.text_primary)
+        : ui_resolve_color(state, state->ui.roles.text_faded);
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {
                 .width = CLAY_SIZING_GROW(0),
             },
-            .padding = { .right = 10 },
-            .childGap = 5
+            .padding = { .right = 10, .left = pane->content.active ? 0 : 10 },
+            .childGap = 10
         },
-        .backgroundColor = state->colors.bar,
+        .backgroundColor = ui_resolve_color(state, state->ui.roles.bar_bg),
         .clip = {
             .horizontal = true
         }
@@ -65,12 +69,12 @@ void StatusBar(AppState *state, Pane *pane) {
                 .layout = {
                     .padding = { .left = 10, .right = 10 }
                 },
-                .backgroundColor = state->colors.cursor
+                .backgroundColor = ui_get_mode_color(state)
             }){
                 CLAY_TEXT(modeName, CLAY_TEXT_CONFIG({
                     .fontId = FONT_BOLD,
                     .fontSize = 14,
-                    .textColor = state->colors.background,
+                    .textColor = ui_resolve_color(state, state->ui.roles.ui_bg),
                 }));
             }
         }
