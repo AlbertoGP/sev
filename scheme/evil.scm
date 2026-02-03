@@ -43,11 +43,15 @@
 (define (evil-insert)
   (disable-minor-mode 'evil-normal-mode)
   (enable-minor-mode 'evil-insert-mode)
+  (set-local! 'mode-name "INSERT")
+  (message "-- INSERT --")
   (set-cursor! 'thin))
 
 (define (evil-normal)
   (disable-minor-mode 'evil-insert-mode)
   (enable-minor-mode 'evil-normal-mode)
+  (set-local! 'mode-name "NORMAL")
+  (message-clear)
   (set-cursor! 'solid))
 
 (set-doc! 'evil-insert 'command "Enter insert mode.")
@@ -68,3 +72,6 @@
 
 (set-doc! 'evil-mode 'command "Enable vim-like modal editing.")
 (make-interactive! 'evil-mode "")
+
+(evil-mode)
+(evil-normal)

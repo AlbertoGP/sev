@@ -576,6 +576,46 @@ static sexp scm_get_local(sexp ctx, sexp self, sexp n, sexp sname, sexp sdefault
     return vartable_get(locals, name, sdefault);
 }
 
+// (%set-global! name val) -> val
+static sexp scm_set_global(sexp ctx, sexp self, sexp n, sexp sname, sexp sval) {
+    if (!sexp_symbolp(sname)) {
+        return sexp_user_exception(ctx, self, "name must be a symbol", sname);
+    }
+
+    const char *name = sexp_string_data(sexp_symbol_to_string(ctx, sname));
+    sexp_preserve_object(ctx, sval);
+    vartable_set(&G->globals, name, sval);
+    return sval;
+}
+
+// (%get-global name default) -> value or default
+static sexp scm_get_global(sexp ctx, sexp self, sexp n, sexp sname, sexp sdefault) {
+    if (!sexp_symbolp(sname)) {
+        return sexp_user_exception(ctx, self, "name must be a symbol", sname);
+    }
+
+    const char *name = sexp_string_data(sexp_symbol_to_string(ctx, sname));
+    return vartable_get(&G->globals, name, sdefault);
+}
+
+static sexp scm_message_send(sexp ctx, sexp self, sexp n, sexp message) {
+    G->needs_redraw = true;
+
+    if (sexp_stringp(message)) {
+        message_send(sexp_string_data(message));
+        return SEXP_VOID;
+    } else {
+        return sexp_type_exception(ctx, self, SEXP_STRING, message);
+    }
+}
+
+static sexp scm_message_clear(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+
+    message_clear();
+    return SEXP_VOID;
+}
+
 void scheme_init(AppState *state) {
     G = state;
     sexp_scheme_init();
@@ -626,6 +666,8 @@ void scheme_init(AppState *state) {
     
     // Register foreign functions
     sexp_define_foreign(ctx, env, "quit", 0, scm_quit);
+    sexp_define_foreign(ctx, env, "message", 1, scm_message_send);
+    sexp_define_foreign(ctx, env, "message-clear", 0, scm_message_clear);
     sexp_define_foreign(ctx, env, "make-keymap", 0, scm_make_keymap);
     sexp_define_foreign(ctx, env, "%set-key!", 3, scm_set_key);
     sexp_define_foreign(ctx, env, "insert-char", 1, scm_insert_char);
@@ -676,6 +718,8 @@ void scheme_init(AppState *state) {
     // Variable primitives
     sexp_define_foreign(ctx, env, "%set-local!", 2, scm_set_local);
     sexp_define_foreign(ctx, env, "%get-local", 2, scm_get_local);
+    sexp_define_foreign(ctx, env, "%set-global!", 2, scm_set_global);
+    sexp_define_foreign(ctx, env, "%get-global", 2, scm_get_global);
 
     #ifdef __EMSCRIPTEN__
     #define RESOURCES_PATH "/resources/"

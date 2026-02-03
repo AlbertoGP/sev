@@ -2,7 +2,6 @@
 ;;; Note: command.scm is loaded by C before this file
 
 ;; Named commands use symbols for reverse lookup
-(set-key! global-keymap "ESC" 'toggle-cursor)
 (set-key! global-keymap "C-q" 'quit)
 (set-key! global-keymap "C-x t" 'toggle-theme)
 (set-key! global-keymap "C-e" 'eval-buffer)

@@ -22,6 +22,19 @@ void bar_strings_push(char *p) {
 void StatusBar(AppState *state, Pane *pane) {
     bool active = pane->content.active;
     Buffer *buf = pane->content.buffer;
+    
+    const char* modeStr = sexp_to_cstring(
+        state->chibi.ctx,
+        vartable_get(buffer_get_locals(buf),
+                     "mode-name",
+                     sexp_c_string(state->chibi.ctx, "ERROR", -1)),
+        "ERROR");
+    Clay_String modeName = {
+        .chars = modeStr,
+        .length = strlen(modeStr),
+        .isStaticallyAllocated = true
+    };
+
     Clay_String bufName = {
          .chars = buffer_get_name(buf),
          .length = strlen(buffer_get_name(buf)),
@@ -39,13 +52,28 @@ void StatusBar(AppState *state, Pane *pane) {
             .sizing = {
                 .width = CLAY_SIZING_GROW(0),
             },
-            .padding = { .left = 10, .right = 10 }
+            .padding = { .right = 10 },
+            .childGap = 5
         },
         .backgroundColor = state->colors.bar,
         .clip = {
             .horizontal = true
         }
     }) {
+        if (pane->content.active) {
+            CLAY(CLAY_ID("Mode Name"), {
+                .layout = {
+                    .padding = { .left = 10, .right = 10 }
+                },
+                .backgroundColor = state->colors.cursor
+            }){
+                CLAY_TEXT(modeName, CLAY_TEXT_CONFIG({
+                    .fontId = FONT_BOLD,
+                    .fontSize = 14,
+                    .textColor = state->colors.background,
+                }));
+            }
+        }
         CLAY_TEXT(bufName, CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
             .fontSize = 14,

@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <chibi/eval.h>
 #include "var.h"
 
 void vartable_init(VarTable *vt) {
@@ -45,4 +46,12 @@ void vartable_set(VarTable *vt, const char *name, sexp value) {
     e->value = value;
     e->next = vt->entries;
     vt->entries = e;
+}
+
+const char *sexp_to_cstring(sexp ctx, sexp val, const char *default_val) {
+    if (sexp_stringp(val))
+        return sexp_string_data(val);
+    if (sexp_symbolp(val))
+        return sexp_string_data(sexp_symbol_to_string(ctx, val));
+    return default_val;
 }

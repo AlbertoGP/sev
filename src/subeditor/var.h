@@ -27,3 +27,6 @@ sexp vartable_get(VarTable *vt, const char *name, sexp default_val);
 // Set a variable's value (creates entry if needed)
 // The name string is copied internally
 void vartable_set(VarTable *vt, const char *name, sexp value);
+
+// Get string value from sexp (symbol or string), returns default if not string-like
+const char *sexp_to_cstring(sexp ctx, sexp val, const char *default_val);

@@ -4,6 +4,7 @@
 #include <chibi/eval.h>
 #include "clay/renderer.h"
 #include "keyevent.h"
+#include "subeditor/var.h"
 
 typedef enum FontID {
     FONT_NORMAL,
@@ -61,4 +62,5 @@ typedef struct AppState {
     bool debug_open;
     Chibi chibi;
     InputState input;
+    VarTable globals;
 } AppState;

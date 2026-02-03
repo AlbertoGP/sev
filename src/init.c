@@ -68,8 +68,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     // snprintf(fontPathRegular, sizeof(fontPathRegular), "%sresources/VictorMono-Regular.ttf", basePath);
     // snprintf(fontPathBold, sizeof(fontPathBold), "%sresources/VictorMono-Bold.ttf", basePath);
     // snprintf(fontPathItalic, sizeof(fontPathItalic), "%sresources/VictorMono-Italic.ttf", basePath);
-    snprintf(fontPathRegular, sizeof(fontPathRegular), "%sresources/JetBrainsMono.ttf", basePath);
-    snprintf(fontPathBold, sizeof(fontPathBold), "%sresources/JetBrainsMono.ttf", basePath);
+    snprintf(fontPathRegular, sizeof(fontPathRegular), "%sresources/JetBrainsMono-Regular.ttf", basePath);
+    snprintf(fontPathBold, sizeof(fontPathBold), "%sresources/JetBrainsMono-SemiBold.ttf", basePath);
     snprintf(fontPathItalic, sizeof(fontPathItalic), "%sresources/JetBrainsMono-Italic.ttf", basePath);
     #define FONT_PATH_REGULAR fontPathRegular
     #define FONT_PATH_BOLD fontPathBold
@@ -86,7 +86,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     }
     
     TTF_SetFontStyle(font_normal, TTF_STYLE_NORMAL);
-    TTF_SetFontStyle(font_bold,   TTF_STYLE_BOLD);
+    TTF_SetFontStyle(font_bold,   TTF_STYLE_NORMAL);
     TTF_SetFontStyle(font_italic, TTF_STYLE_ITALIC);
     
     state->rendererData.fonts[FONT_NORMAL] = font_normal;
@@ -132,7 +132,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     /* Start in event-driven mode; iterate.c switches to 60fps during animations */
     SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, "waitevent");
 
+    vartable_init(&state->globals);
+
     scheme_init(state);
-    
+
     return SDL_APP_CONTINUE;
 }
