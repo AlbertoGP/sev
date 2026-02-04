@@ -229,18 +229,24 @@ static sexp scm_tab_prev(sexp ctx, sexp self, sexp n) {
 static sexp scm_reset_global_scale(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     reset_scale(G);
+
+    message_send("reset-global-scale");
     return SEXP_VOID;
 }
 
 static sexp scm_increase_global_scale(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     increase_scale(G);
+
+    message_send("increase-global-scale");
     return SEXP_VOID;
 }
 
 static sexp scm_decrease_global_scale(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     decrease_scale(G);
+
+    message_send("decrease-global-scale");
     return SEXP_VOID;
 }
 
@@ -807,10 +813,17 @@ void scheme_init(AppState *state) {
 
     INTERN_ROLE(ui_bg, "ui.bg");
     INTERN_ROLE(bar_bg, "bar.bg");
+    INTERN_ROLE(bar_text_active, "bar.text.active");
     INTERN_ROLE(mode_normal, "mode.normal");
     INTERN_ROLE(mode_insert, "mode.insert");
+    INTERN_ROLE(mode_replace, "mode.replace");
+    INTERN_ROLE(mode_select, "mode.select");
+    INTERN_ROLE(mode_command, "mode.command");
     INTERN_ROLE(label_normal, "label.normal");
     INTERN_ROLE(label_insert, "label.insert");
+    INTERN_ROLE(label_replace, "label.replace");
+    INTERN_ROLE(label_select, "label.select");
+    INTERN_ROLE(label_command, "label.command");
     INTERN_ROLE(tab_bar, "tab.bar");
     INTERN_ROLE(tab_active, "tab.active");
     INTERN_ROLE(tab_hover, "tab.hover");
@@ -819,6 +832,9 @@ void scheme_init(AppState *state) {
     INTERN_ROLE(text_faded, "text.faded");
     INTERN_ROLE(cursor_normal, "cursor.normal");
     INTERN_ROLE(cursor_insert, "cursor.insert");
+    INTERN_ROLE(cursor_replace, "cursor.replace");
+    INTERN_ROLE(cursor_select, "cursor.select");
+    INTERN_ROLE(cursor_command, "cursor.command");
 
     #undef INTERN_ROLE
 

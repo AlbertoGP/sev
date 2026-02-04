@@ -35,6 +35,9 @@ bool status_bar_icons_init(AppState *state) {
     #ifdef __EMSCRIPTEN__
     #define NORMAL_PATH "/resources/icon-normal.png"
     #define INSERT_PATH "/resources/icon-insert.png"
+    #define REPLACE_PATH "/resources/icon-replace.png"
+    #define SELECT_PATH "/resources/icon-select.png"
+    #define COMMAND_PATH "/resources/icon-command.png"
     #else
     char* basePath = (char*)SDL_GetBasePath();
     char normal_path[1024];
@@ -43,6 +46,15 @@ bool status_bar_icons_init(AppState *state) {
     char insert_path[1024];
     snprintf(insert_path, sizeof(insert_path), "%sresources/icon-insert.png", basePath);
     #define INSERT_PATH insert_path
+    char replace_path[1024];
+    snprintf(replace_path, sizeof(replace_path), "%sresources/icon-replace.png", basePath);
+    #define REPLACE_PATH replace_path
+    char select_path[1024];
+    snprintf(select_path, sizeof(select_path), "%sresources/icon-select.png", basePath);
+    #define SELECT_PATH select_path
+    char command_path[1024];
+    snprintf(command_path, sizeof(command_path), "%sresources/icon-command.png", basePath);
+    #define COMMAND_PATH command_path
     #endif
     if (!icon_normal)
         icon_normal = IMG_LoadTexture(state->rendererData.renderer, NORMAL_PATH);
@@ -50,6 +62,15 @@ bool status_bar_icons_init(AppState *state) {
     if (!icon_insert)
         icon_insert = IMG_LoadTexture(state->rendererData.renderer, INSERT_PATH);
     if (!icon_insert) return false;
+    if (!icon_replace)
+        icon_replace = IMG_LoadTexture(state->rendererData.renderer, REPLACE_PATH);
+    if (!icon_replace) return false;
+    if (!icon_select)
+        icon_select = IMG_LoadTexture(state->rendererData.renderer, SELECT_PATH);
+    if (!icon_select) return false;
+    if (!icon_command)
+        icon_command = IMG_LoadTexture(state->rendererData.renderer, COMMAND_PATH);
+    if (!icon_command) return false;
 
     return true;
 }
@@ -59,6 +80,12 @@ void update_icon_colors(AppState *state) {
     SDL_SetTextureColorMod(icon_normal, normal.r, normal.g, normal.b);
     Clay_Color insert = ui_resolve_color(state, state->ui.roles.label_insert);
     SDL_SetTextureColorMod(icon_insert, insert.r, insert.g, insert.b);
+    Clay_Color replace = ui_resolve_color(state, state->ui.roles.label_replace);
+    SDL_SetTextureColorMod(icon_replace, replace.r, replace.g, replace.b);
+    Clay_Color select = ui_resolve_color(state, state->ui.roles.label_select);
+    SDL_SetTextureColorMod(icon_select, select.r, select.g, select.b);
+    Clay_Color command = ui_resolve_color(state, state->ui.roles.label_command);
+    SDL_SetTextureColorMod(icon_command, command.r, command.g, command.b);
 }
 
 static SDL_Texture *get_mode_icon(AppState* state) {
@@ -66,13 +93,27 @@ static SDL_Texture *get_mode_icon(AppState* state) {
         return icon_normal;
     if (buffer_has_minor_mode(buffer_get_current(), "evil-insert-mode"))
         return icon_insert;
-    // if (buffer_has_minor_mode(buffer_get_current(), "evil-select-mode") ||
-    //     buffer_has_minor_mode(buffer_get_current(), "evil-select-line-mode") ||
-    //     buffer_has_minor_mode(buffer_get_current(), "evil-select-rect-mode"))
-    //     return CURSOR_HOLLOW;
-    // if (buffer_has_minor_mode(buffer_get_current(), "evil-replace-mode"))
-    //     return CURSOR_UNDER;
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-replace-mode"))
+        return icon_replace;
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-select-mode"))
+        return icon_select;
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-command-mode"))
+        return icon_command;
     return NULL;
+}
+
+static Clay_Color get_label_color(AppState* state) {
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-normal-mode"))
+        return ui_resolve_color(state, state->ui.roles.label_normal);
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-insert-mode"))
+        return ui_resolve_color(state, state->ui.roles.label_insert);
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-replace-mode"))
+        return ui_resolve_color(state, state->ui.roles.label_replace);
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-select-mode"))
+        return ui_resolve_color(state, state->ui.roles.label_select);
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-command-mode"))
+        return ui_resolve_color(state, state->ui.roles.label_command);
+    return (Clay_Color){255, 0, 255, 255};
 }
 
 void StatusBar(AppState *state, Pane *pane) {
@@ -104,7 +145,7 @@ void StatusBar(AppState *state, Pane *pane) {
          .length = strlen(pos),
     };
     Clay_Color textColor = active
-        ? ui_resolve_color(state, state->ui.roles.text_primary)
+        ? ui_resolve_color(state, state->ui.roles.bar_text_active)
         : ui_resolve_color(state, state->ui.roles.text_faded);
     CLAY_AUTO_ID({
         .layout = {
@@ -152,7 +193,7 @@ void StatusBar(AppState *state, Pane *pane) {
                 CLAY_TEXT(modeName, CLAY_TEXT_CONFIG({
                     .fontId = FONT_BOLD,
                     .fontSize = 14.0 * state->ui.scale_factor,
-                    .textColor = ui_resolve_color(state, state->ui.roles.ui_bg),
+                    .textColor = get_label_color(state),
                 }));
             }
         }

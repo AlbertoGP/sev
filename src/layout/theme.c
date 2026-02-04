@@ -64,10 +64,17 @@ Clay_Color ui_get_cursor_color(AppState *G) {
 }
 
 Clay_Color ui_get_mode_color(AppState *G) {
-    sexp role = is_evil_insert_mode()
-        ? G->ui.roles.mode_insert
-        : G->ui.roles.mode_normal;
-    return ui_resolve_color(G, role);
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-normal-mode"))
+        return ui_resolve_color(G, G->ui.roles.mode_normal);
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-insert-mode"))
+        return ui_resolve_color(G, G->ui.roles.mode_insert);
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-replace-mode"))
+        return ui_resolve_color(G, G->ui.roles.mode_replace);
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-select-mode"))
+        return ui_resolve_color(G, G->ui.roles.mode_select);
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-command-mode"))
+        return ui_resolve_color(G, G->ui.roles.mode_command);
+    return (Clay_Color){255, 0, 255, 255};
 }
 
 CursorType get_cursor_type(void) {

@@ -2,6 +2,8 @@
 #include "theme.h"
 #include "../subeditor/buffer.h"
 
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+
 void Cursor(AppState *state, int32_t index,
             float offset, int height,
             FontID font_id, uint16_t font_size ) {
@@ -30,7 +32,7 @@ void Cursor(AppState *state, int32_t index,
         },
         .layout = {
             .sizing = {
-                .width = CLAY_SIZING_FIT(2),
+                .width = CLAY_SIZING_FIT(MAX(1, 2 * state->ui.scale_factor)),
                 .height = CLAY_SIZING_FIXED(height)
             }
         },
@@ -48,14 +50,14 @@ void Cursor(AppState *state, int32_t index,
     case CURSOR_HOLLOW:
         cursorData.backgroundColor = (Clay_Color){0};
         cursorData.border = (Clay_BorderElementConfig){
-                .width = CLAY_BORDER_ALL(1),
+                .width = CLAY_BORDER_ALL(MAX(1, state->ui.scale_factor)),
                 .color = ui_get_cursor_color(state)
         };
         textConfig.textColor = (Clay_Color){0};
         break;
     case CURSOR_UNDER:
         cursorData.floating.offset.y = height - 2;
-        cursorData.layout.sizing.height = CLAY_SIZING_FIXED(2);
+        cursorData.layout.sizing.height = CLAY_SIZING_FIXED(MAX(1, 2 * state->ui.scale_factor));
         break;
     default:
         break;
