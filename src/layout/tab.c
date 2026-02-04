@@ -190,15 +190,15 @@ static bool CloseButton(AppState *state, Tab *t) {
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {
-                .width = CLAY_SIZING_FIXED(16),
-                .height = CLAY_SIZING_FIXED(16),
+                .width = CLAY_SIZING_FIXED(16 * state->ui.scale_factor),
+                .height = CLAY_SIZING_FIXED(16 * state->ui.scale_factor),
              },
             .childAlignment = {
                 .x = CLAY_ALIGN_X_CENTER,
                 .y = CLAY_ALIGN_Y_CENTER
             }
         },
-        .cornerRadius = CLAY_CORNER_RADIUS(8),
+        .cornerRadius = CLAY_CORNER_RADIUS(8 * state->ui.scale_factor),
         .backgroundColor = Clay_Hovered()
             ? ui_resolve_color(state, state->ui.roles.bar_bg)
             : (Clay_Color){0, 0, 0, 0}
@@ -206,7 +206,7 @@ static bool CloseButton(AppState *state, Tab *t) {
         Clay_OnHover(HandleCloseTab, t);
         CLAY_TEXT(CLAY_STRING("×"), CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
-            .fontSize = 20,
+            .fontSize = 20.0 * state->ui.scale_factor,
             .textColor = tl.current == t
                 ? ui_resolve_color(state, state->ui.roles.text_primary)
                 : ui_resolve_color(state, state->ui.roles.text_faded),
@@ -232,15 +232,18 @@ void TabBar(AppState *state) {
     CLAY(CLAY_ID("Tab Bar"), {
         .layout = {
             .sizing = { .width = CLAY_SIZING_GROW(0) },
-            .padding = CLAY_PADDING_ALL(5),
-            .childGap = 5,
+            .padding = CLAY_PADDING_ALL(5 * state->ui.scale_factor),
+            .childGap = 5.0 * state->ui.scale_factor,
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
         },
         .backgroundColor = ui_resolve_color(state, state->ui.roles.tab_bar),
     }) {
         CLAY(CLAY_ID("App Icon"), {
             .layout = {
-                .sizing = { .width = 24, .height = 24 },
+                .sizing = {
+                    .width = 24.0 * state->ui.scale_factor,
+                    .height = 24.0 * state->ui.scale_factor
+                },
             },
             .image = icon,
         }) {}
@@ -261,12 +264,15 @@ void OpenTabs(AppState *state) {
         };
         CLAY(CLAY_IDI("Tab", i), {
             .layout = {
-                .padding = { .left = 10, .right = 5 },
+                .padding = {
+                    .left = 10 * state->ui.scale_factor,
+                    .right = 5 * state->ui.scale_factor
+                },
                 .childAlignment = {
                     .y = CLAY_ALIGN_Y_CENTER
                 },
             },
-            .cornerRadius = CLAY_CORNER_RADIUS(5),
+            .cornerRadius = CLAY_CORNER_RADIUS(5 * state->ui.scale_factor),
             .backgroundColor = tl.current == t
                 ? ui_resolve_color(state, state->ui.roles.tab_active)
                 : Clay_Hovered()
@@ -276,15 +282,15 @@ void OpenTabs(AppState *state) {
             CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {
-                        .width = CLAY_SIZING_FIXED(120),
-                        .height = CLAY_SIZING_FIXED(30)
+                        .width = CLAY_SIZING_FIXED(120 * state->ui.scale_factor),
+                        .height = CLAY_SIZING_FIXED(30 * state->ui.scale_factor)
                     },
                     .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
                 }
             }) {
                 CLAY_TEXT(tab_name, CLAY_TEXT_CONFIG({
                     .fontId = FONT_NORMAL,
-                    .fontSize = 14,
+                    .fontSize = 14 * state->ui.scale_factor,
                     .textColor = tl.current == t
                         ? ui_resolve_color(state, state->ui.roles.text_primary)
                         : ui_resolve_color(state, state->ui.roles.text_faded)

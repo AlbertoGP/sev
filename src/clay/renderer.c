@@ -6,104 +6,87 @@
 static int NUM_CIRCLE_SEGMENTS = 16;
 
 //all rendering is performed by a single SDL call, avoiding multiple RenderRect + plumbing choice for circles.
-static void SDL_Clay_RenderFillRoundedRect(Clay_SDL3RendererData *rendererData, const SDL_FRect rect, const float cornerRadius, const Clay_Color _color) {
+static void SDL_Clay_RenderFillRoundedRect(Clay_SDL3RendererData *rendererData, const SDL_FRect rect, const Clay_CornerRadius cornerRadius, const Clay_Color _color) {
     const SDL_FColor color = { _color.r/255, _color.g/255, _color.b/255, _color.a/255 };
 
-    int indexCount = 0, vertexCount = 0;
-
     const float minRadius = SDL_min(rect.w, rect.h) / 2.0f;
-    const float clampedRadius = SDL_min(cornerRadius, minRadius);
 
-    const int numCircleSegments = SDL_max(NUM_CIRCLE_SEGMENTS, (int) clampedRadius * 0.5f);
+    // Clamp each corner radius independently
+    const float rTL = SDL_min(cornerRadius.topLeft, minRadius);
+    const float rTR = SDL_min(cornerRadius.topRight, minRadius);
+    const float rBR = SDL_min(cornerRadius.bottomRight, minRadius);
+    const float rBL = SDL_min(cornerRadius.bottomLeft, minRadius);
 
-    int totalVertices = 4 + (4 * (numCircleSegments * 2)) + 2*4;
-    int totalIndices = 6 + (4 * (numCircleSegments * 3)) + 6*4;
+    // Per-corner segment counts
+    const int segTL = rTL > 0 ? SDL_max(NUM_CIRCLE_SEGMENTS, (int)(rTL * 0.5f)) : 0;
+    const int segTR = rTR > 0 ? SDL_max(NUM_CIRCLE_SEGMENTS, (int)(rTR * 0.5f)) : 0;
+    const int segBR = rBR > 0 ? SDL_max(NUM_CIRCLE_SEGMENTS, (int)(rBR * 0.5f)) : 0;
+    const int segBL = rBL > 0 ? SDL_max(NUM_CIRCLE_SEGMENTS, (int)(rBL * 0.5f)) : 0;
+
+    // Perimeter points: rounded corners get segments+1 points, sharp corners get 1
+    const int perimTL = segTL > 0 ? segTL + 1 : 1;
+    const int perimTR = segTR > 0 ? segTR + 1 : 1;
+    const int perimBR = segBR > 0 ? segBR + 1 : 1;
+    const int perimBL = segBL > 0 ? segBL + 1 : 1;
+    const int perimCount = perimTL + perimTR + perimBR + perimBL;
+
+    // 1 center vertex + perimeter vertices
+    const int totalVertices = 1 + perimCount;
+    // Triangle fan: one triangle per consecutive perimeter pair (wrapping)
+    const int totalIndices = perimCount * 3;
 
     SDL_Vertex vertices[totalVertices];
     int indices[totalIndices];
 
-    //define center rectangle
-    vertices[vertexCount++] = (SDL_Vertex){ {rect.x + clampedRadius, rect.y + clampedRadius}, color, {0, 0} }; //0 center TL
-    vertices[vertexCount++] = (SDL_Vertex){ {rect.x + rect.w - clampedRadius, rect.y + clampedRadius}, color, {1, 0} }; //1 center TR
-    vertices[vertexCount++] = (SDL_Vertex){ {rect.x + rect.w - clampedRadius, rect.y + rect.h - clampedRadius}, color, {1, 1} }; //2 center BR
-    vertices[vertexCount++] = (SDL_Vertex){ {rect.x + clampedRadius, rect.y + rect.h - clampedRadius}, color, {0, 1} }; //3 center BL
+    int vertexCount = 0;
 
-    indices[indexCount++] = 0;
-    indices[indexCount++] = 1;
-    indices[indexCount++] = 3;
-    indices[indexCount++] = 1;
-    indices[indexCount++] = 2;
-    indices[indexCount++] = 3;
+    // Vertex 0: center of rect
+    vertices[vertexCount++] = (SDL_Vertex){ {rect.x + rect.w / 2.0f, rect.y + rect.h / 2.0f}, color, {0.5f, 0.5f} };
 
-    //define rounded corners as triangle fans
-    const float step = (SDL_PI_F/2) / numCircleSegments;
-    for (int i = 0; i < numCircleSegments; i++) {
-        const float angle1 = (float)i * step;
-        const float angle2 = ((float)i + 1.0f) * step;
+    // Corner descriptors: arcCenter, startAngle, radius, segments, sharpPoint
+    const struct {
+        float cx, cy;       // arc center
+        float startAngle;   // start angle in radians
+        float radius;
+        int segments;
+        float sharpX, sharpY; // point if radius == 0
+    } corners[4] = {
+        { rect.x + rTL,          rect.y + rTL,          SDL_PI_F,           rTL, segTL, rect.x,          rect.y },           // TL: π → 3π/2
+        { rect.x + rect.w - rTR, rect.y + rTR,          SDL_PI_F * 1.5f,    rTR, segTR, rect.x + rect.w, rect.y },           // TR: 3π/2 → 2π
+        { rect.x + rect.w - rBR, rect.y + rect.h - rBR, 0.0f,               rBR, segBR, rect.x + rect.w, rect.y + rect.h }, // BR: 0 → π/2
+        { rect.x + rBL,          rect.y + rect.h - rBL, SDL_PI_F * 0.5f,    rBL, segBL, rect.x,          rect.y + rect.h },  // BL: π/2 → π
+    };
 
-        for (int j = 0; j < 4; j++) {  // Iterate over four corners
-            float cx, cy, signX, signY;
-
-            switch (j) {
-                case 0: cx = rect.x + clampedRadius; cy = rect.y + clampedRadius; signX = -1; signY = -1; break; // Top-left
-                case 1: cx = rect.x + rect.w - clampedRadius; cy = rect.y + clampedRadius; signX = 1; signY = -1; break; // Top-right
-                case 2: cx = rect.x + rect.w - clampedRadius; cy = rect.y + rect.h - clampedRadius; signX = 1; signY = 1; break; // Bottom-right
-                case 3: cx = rect.x + clampedRadius; cy = rect.y + rect.h - clampedRadius; signX = -1; signY = 1; break; // Bottom-left
-                default: return;
+    // Emit perimeter vertices clockwise
+    for (int c = 0; c < 4; c++) {
+        if (corners[c].segments == 0) {
+            // Sharp corner: single vertex at the corner point
+            vertices[vertexCount++] = (SDL_Vertex){ {corners[c].sharpX, corners[c].sharpY}, color, {0, 0} };
+        } else {
+            const float step = (SDL_PI_F / 2.0f) / corners[c].segments;
+            for (int i = 0; i <= corners[c].segments; i++) {
+                const float angle = corners[c].startAngle + (float)i * step;
+                vertices[vertexCount++] = (SDL_Vertex){
+                    {corners[c].cx + SDL_cosf(angle) * corners[c].radius,
+                     corners[c].cy + SDL_sinf(angle) * corners[c].radius},
+                    color, {0, 0}
+                };
             }
-
-            vertices[vertexCount++] = (SDL_Vertex){ {cx + SDL_cosf(angle1) * clampedRadius * signX, cy + SDL_sinf(angle1) * clampedRadius * signY}, color, {0, 0} };
-            vertices[vertexCount++] = (SDL_Vertex){ {cx + SDL_cosf(angle2) * clampedRadius * signX, cy + SDL_sinf(angle2) * clampedRadius * signY}, color, {0, 0} };
-
-            indices[indexCount++] = j;  // Connect to corresponding central rectangle vertex
-            indices[indexCount++] = vertexCount - 2;
-            indices[indexCount++] = vertexCount - 1;
         }
     }
 
-    //Define edge rectangles
-    // Top edge
-    vertices[vertexCount++] = (SDL_Vertex){ {rect.x + clampedRadius, rect.y}, color, {0, 0} }; //TL
-    vertices[vertexCount++] = (SDL_Vertex){ {rect.x + rect.w - clampedRadius, rect.y}, color, {1, 0} }; //TR
-
+    // Build triangle fan indices: (0, i, i+1) for each consecutive perimeter pair
+    int indexCount = 0;
+    for (int i = 1; i < perimCount; i++) {
+        indices[indexCount++] = 0;
+        indices[indexCount++] = i;
+        indices[indexCount++] = i + 1;
+    }
+    // Wrap: last perimeter vertex back to first
     indices[indexCount++] = 0;
-    indices[indexCount++] = vertexCount - 2; //TL
-    indices[indexCount++] = vertexCount - 1; //TR
+    indices[indexCount++] = perimCount;
     indices[indexCount++] = 1;
-    indices[indexCount++] = 0;
-    indices[indexCount++] = vertexCount - 1; //TR
-    // Right edge
-    vertices[vertexCount++] = (SDL_Vertex){ {rect.x + rect.w, rect.y + clampedRadius}, color, {1, 0} }; //RT
-    vertices[vertexCount++] = (SDL_Vertex){ {rect.x + rect.w, rect.y + rect.h - clampedRadius}, color, {1, 1} }; //RB
 
-    indices[indexCount++] = 1;
-    indices[indexCount++] = vertexCount - 2; //RT
-    indices[indexCount++] = vertexCount - 1; //RB
-    indices[indexCount++] = 2;
-    indices[indexCount++] = 1;
-    indices[indexCount++] = vertexCount - 1; //RB
-    // Bottom edge
-    vertices[vertexCount++] = (SDL_Vertex){ {rect.x + rect.w - clampedRadius, rect.y + rect.h}, color, {1, 1} }; //BR
-    vertices[vertexCount++] = (SDL_Vertex){ {rect.x + clampedRadius, rect.y + rect.h}, color, {0, 1} }; //BL
-
-    indices[indexCount++] = 2;
-    indices[indexCount++] = vertexCount - 2; //BR
-    indices[indexCount++] = vertexCount - 1; //BL
-    indices[indexCount++] = 3;
-    indices[indexCount++] = 2;
-    indices[indexCount++] = vertexCount - 1; //BL
-    // Left edge
-    vertices[vertexCount++] = (SDL_Vertex){ {rect.x, rect.y + rect.h - clampedRadius}, color, {0, 1} }; //LB
-    vertices[vertexCount++] = (SDL_Vertex){ {rect.x, rect.y + clampedRadius}, color, {0, 0} }; //LT
-
-    indices[indexCount++] = 3;
-    indices[indexCount++] = vertexCount - 2; //LB
-    indices[indexCount++] = vertexCount - 1; //LT
-    indices[indexCount++] = 0;
-    indices[indexCount++] = 3;
-    indices[indexCount++] = vertexCount - 1; //LT
-
-    // Render everything
     SDL_RenderGeometry(rendererData->renderer, NULL, vertices, vertexCount, indices, indexCount);
 }
 
@@ -146,8 +129,9 @@ void SDL_Clay_RenderClayCommands(Clay_SDL3RendererData *rendererData, Clay_Rende
                 Clay_RectangleRenderData *config = &rcmd->renderData.rectangle;
                 SDL_SetRenderDrawBlendMode(rendererData->renderer, SDL_BLENDMODE_BLEND);
                 SDL_SetRenderDrawColor(rendererData->renderer, config->backgroundColor.r, config->backgroundColor.g, config->backgroundColor.b, config->backgroundColor.a);
-                if (config->cornerRadius.topLeft > 0) {
-                    SDL_Clay_RenderFillRoundedRect(rendererData, rect, config->cornerRadius.topLeft, config->backgroundColor);
+                if (config->cornerRadius.topLeft > 0 || config->cornerRadius.topRight > 0 ||
+                    config->cornerRadius.bottomLeft > 0 || config->cornerRadius.bottomRight > 0) {
+                    SDL_Clay_RenderFillRoundedRect(rendererData, rect, config->cornerRadius, config->backgroundColor);
                 } else {
                     SDL_RenderFillRect(rendererData->renderer, &rect);
                 }

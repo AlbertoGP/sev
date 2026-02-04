@@ -37,10 +37,11 @@ typedef struct CachedRoles {
 } CachedRoles;
 
 typedef struct UIState {
-    sexp current_theme;     // symbol, e.g. 'gruvbox-dark
-    VarTable role_table;    // role-symbol -> palette-index OR color
-    VarTable palette_table; // palette-symbol -> Color
-    CachedRoles roles;      // pre-interned role symbols
+    sexp current_theme;       // symbol, e.g. 'gruvbox-dark
+    VarTable role_table;      // role-symbol -> palette-index OR color
+    VarTable palette_table;   // palette-symbol -> Color
+    CachedRoles roles;        // pre-interned role symbols
+    float scale_factor;       // global scaling factor
 } UIState;
 
 typedef struct AppState {
@@ -49,6 +50,7 @@ typedef struct AppState {
     Theme theme;
     bool needs_redraw;
     bool needs_extra_frame;
+    bool scale_change;
     bool animating;
     Uint64 last_frame_ns;
     bool debug_open;

@@ -1,27 +1,7 @@
 #include "../state.h"
+#include "message.h"
 #include "tab.h"
 #include "theme.h"
-
-extern Clay_String message_string;
-
-static void MessageArea(AppState *state) {
-    CLAY(CLAY_ID("Echo Area"), {
-        .layout = {
-            .sizing = {
-                .width = CLAY_SIZING_GROW(0),
-                .height = CLAY_SIZING_FIT(25)
-            },
-            .padding = { .left = 10, .right = 10 }
-        },
-        .clip = CLAY_CLIP_TO_NONE
-    }){
-        CLAY_TEXT(message_string, CLAY_TEXT_CONFIG({
-            .fontId = FONT_NORMAL,
-            .fontSize = 14,
-            .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
-        }));
-    }
-}
 
 Clay_RenderCommandArray create_app_layout(AppState *state) {
     Clay_Sizing layoutExpand = {

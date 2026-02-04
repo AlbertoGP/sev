@@ -58,7 +58,7 @@
  ;; roles
  '((ui.bg         . bg-0)
    (bar.bg        . fg-1)
-   (mode.normal   . mauve)
+   (mode.normal   . blue)
    (mode.insert   . green)
    (tab.bar       . bg-1)
    (tab.active    . bg-0)
@@ -66,8 +66,8 @@
    (tab.inactive  . bg-1)
    (text.primary  . text-0)
    (text.faded    . fg-2)
-   (cursor.normal . mauve)
-   (cursor.insert . green)))
+   (cursor.normal . rosewater)
+   (cursor.insert . rosewater)))
 
 (define-theme
  'catppuccin-macchiato
@@ -148,7 +148,7 @@
  ;; roles
  '((ui.bg         . bg-0)
    (bar.bg        . fg-1)
-   (mode.normal   . mauve)
+   (mode.normal   . blue)
    (mode.insert   . green)
    (tab.bar       . bg-1)
    (tab.active    . bg-0)
@@ -156,8 +156,8 @@
    (tab.inactive  . bg-1)
    (text.primary  . text-0)
    (text.faded    . fg-2)
-   (cursor.normal . mauve)
-   (cursor.insert . green)))
+   (cursor.normal . rosewater)
+   (cursor.insert . rosewater)))
 
 (activate-theme 'catppuccin-macchiato)
 

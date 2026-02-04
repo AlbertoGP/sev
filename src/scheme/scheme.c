@@ -3,8 +3,9 @@
 #include "../subeditor/buffer.h"
 #include "../subeditor/mode.h"
 #include "../subeditor/var.h"
-#include "../layout/tab.h"
 #include "../subeditor/message.h"
+#include "../layout/tab.h"
+#include "../layout/scale.h"
 #include <SDL3/SDL_events.h>
 #include <chibi/eval.h>
 #include <chibi/sexp.h>
@@ -221,6 +222,27 @@ static sexp scm_tab_prev(sexp ctx, sexp self, sexp n) {
     message_clear();
     if (tab_prev())
         message_send("tab-prev");
+    return SEXP_VOID;
+}
+
+static sexp scm_reset_global_scale(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    G->scale_change = true;
+    reset_scale(G);
+    return SEXP_VOID;
+}
+
+static sexp scm_increase_global_scale(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    G->scale_change = true;
+    increase_scale(G);
+    return SEXP_VOID;
+}
+
+static sexp scm_decrease_global_scale(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    G->scale_change = true;
+    decrease_scale(G);
     return SEXP_VOID;
 }
 
@@ -701,6 +723,9 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "char-at-point", 0, scm_char_at_point);
     sexp_define_foreign(ctx, env, "tab-next", 0, scm_tab_next);
     sexp_define_foreign(ctx, env, "tab-prev", 0, scm_tab_prev);
+    sexp_define_foreign(ctx, env, "reset-global-scale", 0, scm_reset_global_scale);
+    sexp_define_foreign(ctx, env, "increase-global-scale", 0, scm_increase_global_scale);
+    sexp_define_foreign(ctx, env, "decrease-global-scale", 0, scm_decrease_global_scale);
     sexp_define_foreign(ctx, env, "split-vertical", 0, scm_split_vertical);
     sexp_define_foreign(ctx, env, "split-horizontal", 0, scm_split_horizontal);
     sexp_define_foreign(ctx, env, "pane-close", 0, scm_pane_close);

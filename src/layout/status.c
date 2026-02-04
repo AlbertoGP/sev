@@ -2,6 +2,7 @@
 #include "../subeditor/buffer.h"
 #include "pane.h"
 #include "theme.h"
+#include <SDL3_image/SDL_image.h>
 
 #define BAR_STRINGS_MAX 256
 static char *bar_strings[BAR_STRINGS_MAX];
@@ -56,8 +57,11 @@ void StatusBar(AppState *state, Pane *pane) {
             .sizing = {
                 .width = CLAY_SIZING_GROW(0),
             },
-            .padding = { .right = 10, .left = pane->content.active ? 0 : 10 },
-            .childGap = 10,
+            .padding = {
+                 .right = 10.0 * state->ui.scale_factor,
+                 .left = pane->content.active ? 0 : 10.0 * state->ui.scale_factor
+            },
+            .childGap = 10.0 * state->ui.scale_factor,
         },
         .backgroundColor = ui_resolve_color(state, state->ui.roles.bar_bg),
         .clip = {
@@ -67,20 +71,27 @@ void StatusBar(AppState *state, Pane *pane) {
         if (pane->content.active) {
             CLAY(CLAY_ID("Mode Name"), {
                 .layout = {
-                    .padding = { .left = 14, .right = 14 },
+                    .padding = {
+                        .left = 10.0 * state->ui.scale_factor,
+                        .right = 14.0 * state->ui.scale_factor
+                    },
                 },
+                .cornerRadius = {
+                    .topRight = 8.0 * state->ui.scale_factor,
+                    .bottomRight = 8.0 * state->ui.scale_factor
+                 },
                 .backgroundColor = ui_get_mode_color(state)
             }){
                 CLAY_TEXT(modeName, CLAY_TEXT_CONFIG({
                     .fontId = FONT_BOLD,
-                    .fontSize = 14,
+                    .fontSize = 14.0 * state->ui.scale_factor,
                     .textColor = ui_resolve_color(state, state->ui.roles.ui_bg),
                 }));
             }
         }
         CLAY_TEXT(bufName, CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
-            .fontSize = 14,
+            .fontSize = 14.0 * state->ui.scale_factor,
             .textColor = textColor,
         }));
         CLAY_AUTO_ID({
@@ -88,7 +99,7 @@ void StatusBar(AppState *state, Pane *pane) {
         }) {}
         CLAY_TEXT(pointPos, CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
-            .fontSize = 14,
+            .fontSize = 14.0 * state->ui.scale_factor,
             .textColor = textColor,
         }));
     }
