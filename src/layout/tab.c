@@ -236,6 +236,7 @@ void TabBar(AppState *state) {
             .childGap = 5.0 * state->ui.scale_factor,
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
         },
+        .clip = { .horizontal = true },
         .backgroundColor = ui_resolve_color(state, state->ui.roles.tab_bar),
     }) {
         CLAY(CLAY_ID("App Icon"), {

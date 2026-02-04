@@ -31,7 +31,9 @@ typedef struct {
 } Chibi;
 
 typedef struct CachedRoles {
-    sexp ui_bg, bar_bg, mode_normal, mode_insert;
+    sexp ui_bg, bar_bg;
+    sexp mode_normal, mode_insert;
+    sexp label_normal, label_insert;
     sexp tab_bar, tab_active, tab_hover, tab_inactive;
     sexp text_primary, text_faded, cursor_normal, cursor_insert;
 } CachedRoles;
@@ -50,7 +52,6 @@ typedef struct AppState {
     Theme theme;
     bool needs_redraw;
     bool needs_extra_frame;
-    bool scale_change;
     bool animating;
     Uint64 last_frame_ns;
     bool debug_open;

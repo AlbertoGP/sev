@@ -65,7 +65,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     /* Reset dirty flag */
     state->needs_redraw = false;
     state->needs_extra_frame = false;
-    state->scale_change = false;
 
     return SDL_APP_CONTINUE;
 }

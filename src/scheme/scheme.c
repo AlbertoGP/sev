@@ -6,6 +6,7 @@
 #include "../subeditor/message.h"
 #include "../layout/tab.h"
 #include "../layout/scale.h"
+#include "../layout/status.h"
 #include <SDL3/SDL_events.h>
 #include <chibi/eval.h>
 #include <chibi/sexp.h>
@@ -227,21 +228,18 @@ static sexp scm_tab_prev(sexp ctx, sexp self, sexp n) {
 
 static sexp scm_reset_global_scale(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
-    G->scale_change = true;
     reset_scale(G);
     return SEXP_VOID;
 }
 
 static sexp scm_increase_global_scale(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
-    G->scale_change = true;
     increase_scale(G);
     return SEXP_VOID;
 }
 
 static sexp scm_decrease_global_scale(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
-    G->scale_change = true;
     decrease_scale(G);
     return SEXP_VOID;
 }
@@ -599,6 +597,11 @@ static sexp scm_get_global(sexp ctx, sexp self, sexp n, sexp key, sexp sdefault)
     return vartable_get(&G->globals, key, sdefault);
 }
 
+static sexp scm_update_icon_colors(sexp ctx, sexp self, sexp n) {
+    update_icon_colors(G);
+    return SEXP_VOID;
+}
+
 static sexp scm_set_palette(sexp ctx, sexp self, sexp n, sexp key, sexp hexstr) {
     if (!sexp_symbolp(key)) {
         return sexp_user_exception(ctx, self, "name must be a symbol", key);
@@ -758,6 +761,7 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "%set-global!", 2, scm_set_global);
     sexp_define_foreign(ctx, env, "%get-global", 2, scm_get_global);
     sexp_define_foreign(ctx, env, "%set-palette!", 2, scm_set_palette);
+    sexp_define_foreign(ctx, env, "%update-icon-colors!", 0, scm_update_icon_colors);
     sexp_define_foreign(ctx, env, "%set-role!", 2, scm_set_role);
     sexp_define_foreign(ctx, env, "%clear-palette!", 0, scm_clear_palette);
     sexp_define_foreign(ctx, env, "%clear-roles!", 0, scm_clear_roles);
@@ -794,6 +798,30 @@ void scheme_init(AppState *state) {
     if (sexp_exceptionp(result)) {
         sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
     }
+    
+    // Cache role symbols for fast lookup
+    #define INTERN_ROLE(field, name) do { \
+        state->ui.roles.field = sexp_intern(ctx, name, -1); \
+        sexp_preserve_object(ctx, state->ui.roles.field); \
+    } while(0)
+
+    INTERN_ROLE(ui_bg, "ui.bg");
+    INTERN_ROLE(bar_bg, "bar.bg");
+    INTERN_ROLE(mode_normal, "mode.normal");
+    INTERN_ROLE(mode_insert, "mode.insert");
+    INTERN_ROLE(label_normal, "label.normal");
+    INTERN_ROLE(label_insert, "label.insert");
+    INTERN_ROLE(tab_bar, "tab.bar");
+    INTERN_ROLE(tab_active, "tab.active");
+    INTERN_ROLE(tab_hover, "tab.hover");
+    INTERN_ROLE(tab_inactive, "tab.inactive");
+    INTERN_ROLE(text_primary, "text.primary");
+    INTERN_ROLE(text_faded, "text.faded");
+    INTERN_ROLE(cursor_normal, "cursor.normal");
+    INTERN_ROLE(cursor_insert, "cursor.insert");
+
+    #undef INTERN_ROLE
+
 
     // Load theme.scm (sets up theming and semantic UI roles)
     char themeScriptPath[1024];
@@ -810,27 +838,6 @@ void scheme_init(AppState *state) {
     if (sexp_exceptionp(result)) {
         sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
     }
-
-    // Cache role symbols for fast lookup
-    #define INTERN_ROLE(field, name) do { \
-        state->ui.roles.field = sexp_intern(ctx, name, -1); \
-        sexp_preserve_object(ctx, state->ui.roles.field); \
-    } while(0)
-
-    INTERN_ROLE(ui_bg, "ui.bg");
-    INTERN_ROLE(bar_bg, "bar.bg");
-    INTERN_ROLE(mode_normal, "mode.normal");
-    INTERN_ROLE(mode_insert, "mode.insert");
-    INTERN_ROLE(tab_bar, "tab.bar");
-    INTERN_ROLE(tab_active, "tab.active");
-    INTERN_ROLE(tab_hover, "tab.hover");
-    INTERN_ROLE(tab_inactive, "tab.inactive");
-    INTERN_ROLE(text_primary, "text.primary");
-    INTERN_ROLE(text_faded, "text.faded");
-    INTERN_ROLE(cursor_normal, "cursor.normal");
-    INTERN_ROLE(cursor_insert, "cursor.insert");
-
-    #undef INTERN_ROLE
 
     // Get call-interactively procedure (defined in command.scm)
     state->chibi.call_interactively = sexp_env_ref(

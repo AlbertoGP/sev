@@ -22,7 +22,8 @@
                 (%set-role! (car r) (cdr r)))
               roles)
 
-    (set! *current-theme* name)))
+    (set! *current-theme* name)
+    (%update-icon-colors!)))
 
 (define-theme
  'catppuccin-mocha
@@ -60,6 +61,8 @@
    (bar.bg        . fg-1)
    (mode.normal   . blue)
    (mode.insert   . green)
+   (label.normal  . bg-0)
+   (label.insert  . bg-0)
    (tab.bar       . bg-1)
    (tab.active    . bg-0)
    (tab.hover     . bg-0)
@@ -105,6 +108,8 @@
    (bar.bg        . fg-1)
    (mode.normal   . blue)
    (mode.insert   . green)
+   (label.normal  . bg-0)
+   (label.insert  . bg-0)
    (tab.bar       . bg-1)
    (tab.active    . bg-0)
    (tab.hover     . bg-0)
@@ -150,6 +155,8 @@
    (bar.bg        . fg-1)
    (mode.normal   . blue)
    (mode.insert   . green)
+   (label.normal  . bg-0)
+   (label.insert  . bg-0)
    (tab.bar       . bg-1)
    (tab.active    . bg-0)
    (tab.hover     . bg-0)

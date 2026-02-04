@@ -114,6 +114,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
+    if (!status_bar_icons_init(state)) {
+        fprintf(stderr, "Failed to load status bar icons.");
+        return SDL_APP_FAILURE;
+    }
+
     state->needs_redraw = true;
     state->needs_extra_frame = true;
     state->animating = false;

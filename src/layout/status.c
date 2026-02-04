@@ -2,6 +2,7 @@
 #include "../subeditor/buffer.h"
 #include "pane.h"
 #include "theme.h"
+#include <SDL3/SDL_render.h>
 #include <SDL3_image/SDL_image.h>
 
 #define BAR_STRINGS_MAX 256
@@ -19,6 +20,59 @@ void bar_strings_push(char *p) {
     if (bar_strings_count < BAR_STRINGS_MAX) {
         bar_strings[bar_strings_count++] = p;
     }
+}
+
+static SDL_Window *window;
+static SDL_Texture *icon_normal;
+static SDL_Texture *icon_insert;
+static SDL_Texture *icon_replace;
+static SDL_Texture *icon_select;
+static SDL_Texture *icon_command;
+
+bool status_bar_icons_init(AppState *state) {
+    window = state->window;
+
+    #ifdef __EMSCRIPTEN__
+    #define NORMAL_PATH "/resources/icon-normal.png"
+    #define INSERT_PATH "/resources/icon-insert.png"
+    #else
+    char* basePath = (char*)SDL_GetBasePath();
+    char normal_path[1024];
+    snprintf(normal_path, sizeof(normal_path), "%sresources/icon-normal.png", basePath);
+    #define NORMAL_PATH normal_path
+    char insert_path[1024];
+    snprintf(insert_path, sizeof(insert_path), "%sresources/icon-insert.png", basePath);
+    #define INSERT_PATH insert_path
+    #endif
+    if (!icon_normal)
+        icon_normal = IMG_LoadTexture(state->rendererData.renderer, NORMAL_PATH);
+    if (!icon_normal) return false;
+    if (!icon_insert)
+        icon_insert = IMG_LoadTexture(state->rendererData.renderer, INSERT_PATH);
+    if (!icon_insert) return false;
+
+    return true;
+}
+
+void update_icon_colors(AppState *state) {
+    Clay_Color normal = ui_resolve_color(state, state->ui.roles.label_normal);
+    SDL_SetTextureColorMod(icon_normal, normal.r, normal.g, normal.b);
+    Clay_Color insert = ui_resolve_color(state, state->ui.roles.label_insert);
+    SDL_SetTextureColorMod(icon_insert, insert.r, insert.g, insert.b);
+}
+
+static SDL_Texture *get_mode_icon(AppState* state) {
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-normal-mode"))
+        return icon_normal;
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-insert-mode"))
+        return icon_insert;
+    // if (buffer_has_minor_mode(buffer_get_current(), "evil-select-mode") ||
+    //     buffer_has_minor_mode(buffer_get_current(), "evil-select-line-mode") ||
+    //     buffer_has_minor_mode(buffer_get_current(), "evil-select-rect-mode"))
+    //     return CURSOR_HOLLOW;
+    // if (buffer_has_minor_mode(buffer_get_current(), "evil-replace-mode"))
+    //     return CURSOR_UNDER;
+    return NULL;
 }
 
 void StatusBar(AppState *state, Pane *pane) {
@@ -72,9 +126,13 @@ void StatusBar(AppState *state, Pane *pane) {
             CLAY(CLAY_ID("Mode Name"), {
                 .layout = {
                     .padding = {
-                        .left = 10.0 * state->ui.scale_factor,
+                        .left = 8.0 * state->ui.scale_factor,
                         .right = 14.0 * state->ui.scale_factor
                     },
+                    .childAlignment = {
+                        .y = CLAY_ALIGN_Y_CENTER
+                    },
+                    .childGap = 4.0 * state->ui.scale_factor
                 },
                 .cornerRadius = {
                     .topRight = 8.0 * state->ui.scale_factor,
@@ -82,6 +140,15 @@ void StatusBar(AppState *state, Pane *pane) {
                  },
                 .backgroundColor = ui_get_mode_color(state)
             }){
+                CLAY(CLAY_ID("Mode Icon"), {
+                    .layout = {
+                        .sizing = {
+                            .width = 16.0 * state->ui.scale_factor,
+                            .height = 16.0 * state->ui.scale_factor
+                        },
+                    },
+                    .image = get_mode_icon(state),
+                }) {}
                 CLAY_TEXT(modeName, CLAY_TEXT_CONFIG({
                     .fontId = FONT_BOLD,
                     .fontSize = 14.0 * state->ui.scale_factor,
