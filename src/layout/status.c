@@ -57,7 +57,7 @@ void StatusBar(AppState *state, Pane *pane) {
                 .width = CLAY_SIZING_GROW(0),
             },
             .padding = { .right = 10, .left = pane->content.active ? 0 : 10 },
-            .childGap = 10
+            .childGap = 10,
         },
         .backgroundColor = ui_resolve_color(state, state->ui.roles.bar_bg),
         .clip = {
@@ -67,7 +67,7 @@ void StatusBar(AppState *state, Pane *pane) {
         if (pane->content.active) {
             CLAY(CLAY_ID("Mode Name"), {
                 .layout = {
-                    .padding = { .left = 10, .right = 10 }
+                    .padding = { .left = 14, .right = 14 },
                 },
                 .backgroundColor = ui_get_mode_color(state)
             }){

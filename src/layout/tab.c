@@ -29,7 +29,8 @@ bool tab_list_init(AppState *state) {
     snprintf(iconPath, sizeof(iconPath), "%sresources/tab-icon.png", basePath);
     #define ICON_PATH iconPath
     #endif
-    icon = IMG_LoadTexture(state->rendererData.renderer, ICON_PATH);
+    if (!icon)
+        icon = IMG_LoadTexture(state->rendererData.renderer, ICON_PATH);
     if (!icon) return false;
 
     if (!buffer_get_current()) return false;

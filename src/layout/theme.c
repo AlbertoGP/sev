@@ -69,3 +69,17 @@ Clay_Color ui_get_mode_color(AppState *G) {
         : G->ui.roles.mode_normal;
     return ui_resolve_color(G, role);
 }
+
+CursorType get_cursor_type(void) {
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-normal-mode"))
+        return CURSOR_SOLID;
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-insert-mode"))
+        return CURSOR_THIN;
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-select-mode") ||
+        buffer_has_minor_mode(buffer_get_current(), "evil-select-line-mode") ||
+        buffer_has_minor_mode(buffer_get_current(), "evil-select-rect-mode"))
+        return CURSOR_HOLLOW;
+    if (buffer_has_minor_mode(buffer_get_current(), "evil-replace-mode"))
+        return CURSOR_UNDER;
+    return CURSOR_SOLID;
+}

@@ -42,7 +42,9 @@ void Cursor(AppState *state, int32_t index,
     textConfig.fontSize = font_size;
     textConfig.textColor = ui_resolve_color(state, state->ui.roles.ui_bg);
 
-    switch (state->cursor) {
+    CursorType cursor = get_cursor_type();
+
+    switch (cursor) {
     case CURSOR_HOLLOW:
         cursorData.backgroundColor = (Clay_Color){0};
         cursorData.border = (Clay_BorderElementConfig){
@@ -60,7 +62,7 @@ void Cursor(AppState *state, int32_t index,
     };
 
     CLAY(CLAY_IDI_LOCAL("Cursor", index), cursorData) {
-        if (!(state->cursor == CURSOR_THIN))
-            CLAY_TEXT(state->cursor == CURSOR_SOLID ? point_str : gap_str, &textConfig);
+        if (cursor != CURSOR_THIN)
+            CLAY_TEXT(cursor == CURSOR_SOLID ? point_str : gap_str, &textConfig);
     }
 }
