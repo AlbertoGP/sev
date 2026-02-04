@@ -113,8 +113,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
-    state->cursor = CURSOR_SOLID;
-
     state->needs_redraw = true;
     state->needs_extra_frame = true;
     state->animating = false;

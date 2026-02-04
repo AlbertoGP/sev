@@ -48,27 +48,18 @@
 (define-minor-mode 'evil-normal-mode evil-normal-map)
 (define-minor-mode 'evil-insert-mode evil-insert-map)
 
-(define (set-cursor! type)
-  (cond ((eq? type 'solid)  (%set-cursor! 0))
-        ((eq? type 'hollow) (%set-cursor! 1))
-        ((eq? type 'thin)   (%set-cursor! 2))
-        ((eq? type 'under)  (%set-cursor! 3))
-        (else (error "unknown cursor type" type))))
-
 ;; State transitions
 (define (evil-insert)
   (disable-minor-mode 'evil-normal-mode)
   (enable-minor-mode 'evil-insert-mode)
   (set-local! 'mode-name "INSERT")
-  (message "-- INSERT --")
-  (set-cursor! 'thin))
+  (message "-- INSERT --"))
 
 (define (evil-normal)
   (disable-minor-mode 'evil-insert-mode)
   (enable-minor-mode 'evil-normal-mode)
   (set-local! 'mode-name "NORMAL")
-  (message-clear)
-  (set-cursor! 'solid))
+  (message-clear))
 
 (set-doc! 'evil-insert 'command "Enter insert mode.")
 (set-doc! 'evil-normal 'command "Return to normal mode.")

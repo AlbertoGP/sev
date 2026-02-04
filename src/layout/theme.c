@@ -1,4 +1,4 @@
-#include "../state.h"
+#include "theme.h"
 #include "../subeditor/buffer.h"
 #include <chibi/sexp.h>
 #include <stdio.h>

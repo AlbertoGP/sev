@@ -18,13 +18,6 @@ typedef enum Theme {
     THEME_LIGHT
 } Theme;
 
-typedef enum CursorType {
-    CURSOR_SOLID,
-    CURSOR_HOLLOW,
-    CURSOR_THIN,
-    CURSOR_UNDER
-} CursorType;
-
 typedef struct {
     struct Keymap *global_map;
     struct Keymap *current_map;
@@ -54,7 +47,6 @@ typedef struct AppState {
     SDL_Window *window;
     Clay_SDL3RendererData rendererData;
     Theme theme;
-    CursorType cursor;
     bool needs_redraw;
     bool needs_extra_frame;
     bool animating;
