@@ -19,11 +19,16 @@ set(SRC_FILES
     src/layout/mode_icon.c
     src/layout/tab.c
     src/layout/vline.c
+    src/layout/message.c
+    src/layout/cursor.c
+    src/layout/theme.c
     src/subeditor/buffer.c
     src/subeditor/gap.c
     src/subeditor/line.c
     src/subeditor/mark.c
     src/subeditor/message.c
+    src/subeditor/mode.c
+    src/subeditor/var.c
     src/scheme/scheme.c
 )
 
@@ -46,9 +51,11 @@ if(EMSCRIPTEN)
     # Set output suffix to .html
     set_target_properties(app PROPERTIES SUFFIX ".html")
 
-    # Preload resources folder and chibi-scheme lib (required for standard env)
+    # Preload resources, scheme, and chibi-scheme lib (required for standard env)
+    # Note: scheme files go to /resources/ to match RESOURCES_PATH in scheme.c
     set(EMCC_ASSETS
         "--preload-file ${CMAKE_SOURCE_DIR}/resources@/resources"
+        "--preload-file ${CMAKE_SOURCE_DIR}/scheme@/resources"
         "--preload-file ${CMAKE_SOURCE_DIR}/vendored/chibi-scheme/lib@/lib"
     )
     list(JOIN EMCC_ASSETS " " EMCC_ASSETS_STR)
@@ -94,7 +101,11 @@ if(EMSCRIPTEN)
     endif()
 
     set(CHIBI_BOOTSTRAP_EXECUTABLE "${CMAKE_BINARY_DIR}/native-chibi/chibi-scheme-bootstrap" CACHE FILEPATH "" FORCE)
-    
+
+    # Force static build so modules are embedded (required for WASM)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    set(EMBED_MODULES ON CACHE BOOL "" FORCE)
+
     add_subdirectory(
         vendored/chibi-scheme
         ${CMAKE_BINARY_DIR}/chibi-build
@@ -115,10 +126,12 @@ else()
     # ------------------------------------------------------------
     message(STATUS "Configuring for desktop build")
 
-    # Copy resources folder for desktop builds
+    # Copy resources and scheme folders for desktop builds
     add_custom_command(TARGET app POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/resources $<TARGET_FILE_DIR:app>/resources
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/scheme $<TARGET_FILE_DIR:app>/scheme
     )
 
     # Use system SDL3 packages
@@ -126,9 +139,7 @@ else()
     find_package(SDL3_image REQUIRED)
     find_package(SDL3_ttf REQUIRED)
 
-    target_link_libraries(app PUBLIC SDL3::SDL3 SDL3_image:SDL3_image SDL3_ttf::SDL3_ttf)
-
-    add_subdirectory(vendored/chibi-scheme)
-    target_link_libraries(app PRIVATE chibi::libchibi-scheme)
+    # Use system chibi-scheme (has correct module paths configured)
+    target_link_libraries(app PUBLIC SDL3::SDL3 SDL3_image::SDL3_image SDL3_ttf::SDL3_ttf chibi-scheme)
 
 endif()
