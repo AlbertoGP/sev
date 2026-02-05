@@ -77,7 +77,10 @@
    (text.primary    . text-0)
    (text.faded      . fg-2)
    (cursor.normal   . rosewater)
-   (cursor.insert   . rosewater)))
+   (cursor.insert   . rosewater)
+   (cursor.replace  . rosewater)
+   (cursor.select   . rosewater)
+   (cursor.command  . rosewater)))
 
 (define-theme
  'catppuccin-macchiato
@@ -131,7 +134,10 @@
    (text.primary    . text-0)
    (text.faded      . fg-2)
    (cursor.normal   . rosewater)
-   (cursor.insert   . rosewater)))
+   (cursor.insert   . rosewater)
+   (cursor.replace  . rosewater)
+   (cursor.select   . rosewater)
+   (cursor.command  . rosewater)))
 
 (define-theme
  'catppuccin-latte
@@ -185,7 +191,10 @@
    (text.primary    . text-0)
    (text.faded      . fg-2)
    (cursor.normal   . rosewater)
-   (cursor.insert   . rosewater)))
+   (cursor.insert   . rosewater)
+   (cursor.replace  . rosewater)
+   (cursor.select   . rosewater)
+   (cursor.command  . rosewater)))
 
 (activate-theme 'catppuccin-macchiato)
 
