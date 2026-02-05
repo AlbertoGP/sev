@@ -1,4 +1,4 @@
-#include "layout/status.h"
+#include "layout/mode_icon.h"
 #include "layout/tab.h"
 #define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL_main.h>
@@ -114,11 +114,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
-    if (!status_bar_icons_init(state)) {
-        fprintf(stderr, "Failed to load status bar icons.");
-        return SDL_APP_FAILURE;
-    }
-
     state->needs_redraw = true;
     state->needs_extra_frame = true;
     state->animating = false;
@@ -131,6 +126,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     vartable_init(&state->globals);
 
     scheme_init(state);
+
+    if (!mode_icons_load_textures(state->rendererData.renderer)) {
+        fprintf(stderr, "Failed to load mode icon textures.");
+        return SDL_APP_FAILURE;
+    }
 
     return SDL_APP_CONTINUE;
 }

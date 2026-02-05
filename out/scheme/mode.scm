@@ -41,5 +41,16 @@
   (let ((default (if (pair? args) (car args) #f)))
     (%get-local name default)))
 
+;; Register a mode icon with full control over theme roles and cursor type.
+;; Used by evil.scm for per-mode colors.
+(define (register-mode-icon/full mode-name filename
+                                 role-bg role-label role-cursor cursor-type)
+  (%register-mode-icon! mode-name filename role-bg role-label role-cursor cursor-type))
+
+;; Simple API for custom modes — uses mode.normal/label.normal/cursor.normal defaults.
+(define (register-mode-icon mode-name filename cursor-type)
+  (%register-mode-icon! mode-name filename
+                        'mode.normal 'label.normal 'cursor.normal cursor-type))
+
 ;; Define fundamental-mode as the default major mode
 (define-major-mode 'fundamental-mode)
