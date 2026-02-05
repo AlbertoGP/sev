@@ -164,6 +164,11 @@ Buffer *buffer_create(const char *name) {
         buf->prev = list;
     }
 
+    // Enable evil-normal-mode if registered (no-op before scheme_init)
+    Mode *evil = mode_lookup("evil-normal-mode", MODE_MINOR);
+    if (evil)
+        buffer_enable_minor_mode(buf, evil);
+
     return buf;
 }
 

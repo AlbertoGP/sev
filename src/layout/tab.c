@@ -201,7 +201,7 @@ static bool CloseButton(AppState *state, Tab *t) {
         .cornerRadius = CLAY_CORNER_RADIUS(8 * state->ui.scale_factor),
         .backgroundColor = Clay_Hovered()
             ? ui_resolve_color(state, state->ui.roles.bar_bg)
-            : (Clay_Color){0, 0, 0, 0}
+            : (Clay_Color){0}
     }) {
         Clay_OnHover(HandleCloseTab, t);
         CLAY_TEXT(CLAY_STRING("×"), CLAY_TEXT_CONFIG({

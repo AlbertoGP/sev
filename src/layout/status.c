@@ -4,6 +4,7 @@
 #include "theme.h"
 #include "mode_icon.h"
 #include <SDL3/SDL_render.h>
+#include <chibi/sexp.h>
 
 #define BAR_STRINGS_MAX 256
 static char *bar_strings[BAR_STRINGS_MAX];
@@ -74,7 +75,8 @@ void StatusBar(AppState *state, Pane *pane) {
             ModeIconEntry *icon = mode_icon_for_current_buffer();
             Clay_Color mode_bg = icon
                 ? ui_resolve_color(state, icon->role_mode_bg)
-                : (Clay_Color){255, 0, 255, 255};
+                : ui_resolve_color(state,
+                      sexp_intern(state->chibi.ctx, "mode.normal", -1));
             Clay_Color label_color = icon
                 ? ui_resolve_color(state, icon->role_label)
                 : (Clay_Color){255, 0, 255, 255};
@@ -95,15 +97,17 @@ void StatusBar(AppState *state, Pane *pane) {
                  },
                 .backgroundColor = mode_bg
             }){
-                CLAY(CLAY_ID("Mode Icon"), {
-                    .layout = {
-                        .sizing = {
-                            .width = 16.0 * state->ui.scale_factor,
-                            .height = 16.0 * state->ui.scale_factor
+                if (icon) {
+                    CLAY(CLAY_ID("Mode Icon"), {
+                        .layout = {
+                            .sizing = {
+                                .width = 16.0 * state->ui.scale_factor,
+                                .height = 16.0 * state->ui.scale_factor
+                            },
                         },
-                    },
-                    .image = icon ? icon->texture : NULL,
-                }) {}
+                        .image = icon->texture
+                    }) {}
+                }
                 CLAY_TEXT(modeName, CLAY_TEXT_CONFIG({
                     .fontId = FONT_BOLD,
                     .fontSize = 14.0 * state->ui.scale_factor,
