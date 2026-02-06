@@ -208,6 +208,27 @@ static sexp scm_set_column(sexp ctx, sexp self, sexp n, sexp column) {
     return SEXP_VOID;
 }
 
+static sexp scm_point_to_line_start(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    point_to_line_start(buffer_get_current());
+
+    return SEXP_VOID;
+}
+
+static sexp scm_point_to_line_end(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    point_to_line_end(buffer_get_current());
+
+    return SEXP_VOID;
+}
+
+static sexp scm_skip_whitespace(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    while (char_at_point() == ' ' || char_at_point() == '\t')
+        point_move(1);
+    return SEXP_VOID;
+}
+
 static sexp scm_tab_next(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
 
@@ -770,6 +791,10 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "insert-tab", 0, scm_insert_tab);
     sexp_define_foreign(ctx, env, "delete-backward-char", 0, scm_delete_backward_char);
     sexp_define_foreign(ctx, env, "delete-forward-char", 0, scm_delete_forward_char);
+    sexp_define_foreign(ctx, env, "set-column", 1, scm_set_column);
+    sexp_define_foreign(ctx, env, "line-start", 0, scm_point_to_line_start);
+    sexp_define_foreign(ctx, env, "line-end", 0, scm_point_to_line_end);
+    sexp_define_foreign(ctx, env, "skip-whitespace", 0, scm_skip_whitespace);
     sexp_define_foreign(ctx, env, "set-column", 1, scm_set_column);
     sexp_define_foreign(ctx, env, "char-at-point", 0, scm_char_at_point);
     sexp_define_foreign(ctx, env, "tab-next", 0, scm_tab_next);

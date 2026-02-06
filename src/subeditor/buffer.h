@@ -179,6 +179,10 @@ int get_column(Buffer *buf);
 // If round is true, the point is "rounded up" to the next available column.
 // If round is false, the point is "rounded down".
 void set_column(int column, bool round);
+// Sets point to first column in current line.
+void point_to_line_start(Buffer *buf);
+// Sets point to final column in current line.
+void point_to_line_end(Buffer *buf);
 
 char *buffer_text(Buffer *buf);
 char char_at_point(void);

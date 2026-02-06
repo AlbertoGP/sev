@@ -507,6 +507,7 @@ int get_column(Buffer *buf) {
         return buf->col = (int)(pos + 1 - buf->lt.lines[line_index].start);
     }
 }
+
 void set_column(int column, bool round) {
     Buffer *buf = bl.current;
     if (buf->col == column) return;
@@ -525,6 +526,20 @@ void set_column(int column, bool round) {
         .pos = pos + delta
     };
     point_set(loc);
+}
+
+void point_to_line_start(Buffer *buf) {
+    size_t pos = point_get(buf).pos;
+    LineTable lt = buf->lt;
+    size_t line_index = line_index_at(&lt, pos);
+    point_set((Location){.pos = buf->lt.lines[line_index].start});
+}
+
+void point_to_line_end(Buffer *buf) {
+    size_t pos = point_get(buf).pos;
+    LineTable lt = buf->lt;
+    size_t line_index = line_index_at(&lt, pos);
+    point_set((Location){.pos = buf->lt.lines[line_index].end});
 }
 
 char *buffer_text(Buffer *buf) {
