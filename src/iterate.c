@@ -1,8 +1,8 @@
 #include <SDL3/SDL.h>
 
-#include "layout/layout.h"
-#include "layout/pane.h"
-#include "layout/status.h"
+#include "display/layout.h"
+#include "display/pane.h"
+#include "display/status.h"
 #include "state.h"
 
 /* Track callback rate mode to avoid redundant hint changes */

@@ -14,15 +14,15 @@ set(SRC_FILES
     src/command/keyboard.c
     src/command/keymap.c
     src/command/scheme.c
-    src/layout/layout.c
-    src/layout/pane.c
-    src/layout/status.c
-    src/layout/mode_icon.c
-    src/layout/tab.c
-    src/layout/vline.c
-    src/layout/message.c
-    src/layout/cursor.c
-    src/layout/theme.c
+    src/display/layout.c
+    src/display/pane.c
+    src/display/status.c
+    src/display/mode_icon.c
+    src/display/tab.c
+    src/display/vline.c
+    src/display/message.c
+    src/display/cursor.c
+    src/display/theme.c
     src/text/buffer.c
     src/text/gap.c
     src/text/line.c

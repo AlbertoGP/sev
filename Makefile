@@ -2,7 +2,7 @@
 compile: build run
 
 build:
-	gcc ./src/*.c ./src/clay/*.c ./src/layout/*.c ./src/command/*.c ./src/text/*.c -o ./out/sev -lSDL3 -lSDL3_image -lSDL3_ttf -lchibi-scheme \
+	gcc ./src/*.c ./src/clay/*.c ./src/display/*.c ./src/command/*.c ./src/text/*.c -o ./out/sev -lSDL3 -lSDL3_image -lSDL3_ttf -lchibi-scheme \
 		&& cp ./scheme/init.scm ./out/scheme/init.scm \
 		&& cp ./scheme/command.scm ./out/scheme/command.scm \
 		&& cp ./scheme/mode.scm ./out/scheme/mode.scm \
@@ -14,7 +14,7 @@ debug: build-debug run
 
 build-debug:
 	gcc -fsanitize=address -g -O0 -fno-omit-frame-pointer -Wall -Wextra \
-	    ./src/*.c ./src/clay/*.c ./src/layout/*.c ./src/command/*.c ./src/text/*.c \
+	    ./src/*.c ./src/clay/*.c ./src/command/*.c ./src/display/*.c ./src/text/*.c \
 	    -o ./out/sev \
 	    -fsanitize=address -lSDL3 -lSDL3_ttf -lchibi-scheme
 

@@ -4,9 +4,9 @@
 #include "../text/mode.h"
 #include "../text/var.h"
 #include "../text/message.h"
-#include "../layout/tab.h"
-#include "../layout/scale.h"
-#include "../layout/mode_icon.h"
+#include "../display/tab.h"
+#include "../display/scale.h"
+#include "../display/mode_icon.h"
 #include <SDL3/SDL_events.h>
 #include <chibi/eval.h>
 #include <chibi/sexp.h>

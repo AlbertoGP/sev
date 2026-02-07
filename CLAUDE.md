@@ -67,7 +67,7 @@ Chibi Scheme provides extensibility. C primitives exposed include:
 
 Keybindings configured in `resources/init.scm`.
 
-### UI Rendering (`src/clay/`, `src/layout/`)
+### UI Rendering (`src/clay/`, `src/display/`)
 
 Clay immediate-mode UI with SDL3 renderer backend. Layout defined in `layout.c` with:
 

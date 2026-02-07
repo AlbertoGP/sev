@@ -1,5 +1,5 @@
-#include "layout/mode_icon.h"
-#include "layout/tab.h"
+#include "display/mode_icon.h"
+#include "display/tab.h"
 #define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL.h>

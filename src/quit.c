@@ -1,6 +1,6 @@
 #include <SDL3/SDL.h>
 
-#include "layout/tab.h"
+#include "display/tab.h"
 #include "state.h"
 #include "text/buffer.h"
 #include "text/var.h"
