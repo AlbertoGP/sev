@@ -13,22 +13,22 @@ set(SRC_FILES
     src/clay/init.c
     src/command/keyboard.c
     src/command/keymap.c
+    src/command/mode.c
     src/command/scheme.c
+    src/display/cursor.c
     src/display/layout.c
+    src/display/message.c
+    src/display/mode_icon.c
     src/display/pane.c
     src/display/status.c
-    src/display/mode_icon.c
     src/display/tab.c
-    src/display/vline.c
-    src/display/message.c
-    src/display/cursor.c
     src/display/theme.c
+    src/display/vline.c
     src/text/buffer.c
     src/text/gap.c
     src/text/line.c
     src/text/mark.c
     src/text/message.c
-    src/text/mode.c
     src/text/var.c
 )
 

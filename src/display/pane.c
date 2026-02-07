@@ -88,7 +88,7 @@ static void usurp_parent(Pane *pane, Pane *parent) {
 
 // Descend into pane tree, preferring the side closest to the given direction.
 // E.g., DIR_UP prefers top/left children, DIR_DOWN prefers bottom/right.
-static void descend_pane_tree(Pane *pane, Direction from_dir) {
+static void descend_pane_tree(Pane *pane) {
     while (pane->type != PANE_CONTENT) {
         pane = pane_first_child(pane);
     }
@@ -107,7 +107,7 @@ void pane_close(void) {
     }
     Pane *sibling = pane_get_sibling(pane);
     pane->content.active = false;
-    descend_pane_tree(sibling, DIR_DOWN);
+    descend_pane_tree(sibling);
     usurp_parent(sibling, parent);
     free(pane);
 }
@@ -225,7 +225,7 @@ bool pane_navigate(Direction dir) {
             if (is_second == from_second) {
                 Pane *target = from_second ? pane_first_child(parent) : pane_second_child(parent);
                 pane_get_active()->content.active = false;
-                descend_pane_tree(target, dir);
+                descend_pane_tree(target);
                 sync_active_buffer();
                 return true;
             }
@@ -453,7 +453,7 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
 }
 
 static void VSplitPane(AppState *state, Pane *pane, int32_t index, float width, float height) {
-    CLAY(CLAY_ID_LOCAL("VSplitPane"), {
+    CLAY(CLAY_IDI_LOCAL("VSplitPane", index), {
         .layout = {
             .layoutDirection = CLAY_LEFT_TO_RIGHT,
             .sizing = {
@@ -469,7 +469,7 @@ static void VSplitPane(AppState *state, Pane *pane, int32_t index, float width, 
 }
 
 static void HSplitPane(AppState *state, Pane *pane, int32_t index, float width, float height) {
-    CLAY(CLAY_ID_LOCAL("HSplitPane"), {
+    CLAY(CLAY_IDI_LOCAL("HSplitPane", index), {
         .layout = {
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
             .sizing = {

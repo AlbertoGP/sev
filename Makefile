@@ -2,7 +2,7 @@
 compile: build run
 
 build:
-	gcc ./src/*.c ./src/clay/*.c ./src/display/*.c ./src/command/*.c ./src/text/*.c -o ./out/sev -lSDL3 -lSDL3_image -lSDL3_ttf -lchibi-scheme \
+	gcc -Wall -Wextra ./src/*.c ./src/clay/*.c ./src/command/*.c ./src/display/*.c ./src/text/*.c -o ./out/sev -lSDL3 -lSDL3_image -lSDL3_ttf -lchibi-scheme \
 		&& cp ./scheme/init.scm ./out/scheme/init.scm \
 		&& cp ./scheme/command.scm ./out/scheme/command.scm \
 		&& cp ./scheme/mode.scm ./out/scheme/mode.scm \

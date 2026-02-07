@@ -120,7 +120,7 @@ SDL_Rect currentClippingRectangle;
 
 void SDL_Clay_RenderClayCommands(Clay_SDL3RendererData *rendererData, Clay_RenderCommandArray *rcommands)
 {
-    for (size_t i = 0; i < rcommands->length; i++) {
+    for (int32_t i = 0; i < rcommands->length; i++) {
         Clay_RenderCommand *rcmd = Clay_RenderCommandArray_Get(rcommands, i);
         const Clay_BoundingBox bounding_box = rcmd->boundingBox;
         const SDL_FRect rect = { (int)bounding_box.x, (int)bounding_box.y, (int)bounding_box.width, (int)bounding_box.height };

@@ -287,10 +287,10 @@ bool point_move(int count) {
     if (!count) return true;
     else if (count > 0) {
         size_t remaining = get_char_count(bl.current) - point;
-        if (count > remaining) {
-            count = remaining;
+        if (count > (int)remaining) {
+            count = (int)remaining;
         }
-        for (size_t i = 0; i < count; i++) {
+        for (int i = 0; i < count; i++) {
             if (char_from_point(i) == '\n') {
                 bl.current->cur_line++;
                 bl.current->col = 0;
@@ -300,8 +300,8 @@ bool point_move(int count) {
         }
     } else {
         if (point == 0) return true;
-        if (count < -point)
-            count = -point;
+        if (count < -(int)point)
+            count = -(int)point;
         for (int i = 0; i > count; i--) {
             if (char_from_point(i - 1) == '\n') {
                 bl.current->cur_line--;
@@ -447,7 +447,6 @@ void replace_char(char c);
 void replace_string(char *string);
 
 bool delete_chars(Buffer *buf, int count) {
-    Buffer *b = bl.current;
     if (!buf) return false;
 
     int point = point_get(buf).pos;
@@ -513,7 +512,7 @@ void set_column(int column, bool round) {
     size_t pos = point_get(buf).pos;
     LineTable lt = buf->lt;
     size_t line_index = line_index_at(&lt, pos);
-    size_t last_col = lt.lines[line_index].end - lt.lines[line_index].start;
+    int last_col = (int)(lt.lines[line_index].end - lt.lines[line_index].start);
 
     if (column > last_col)
         column = last_col;

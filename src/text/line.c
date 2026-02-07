@@ -42,7 +42,6 @@ size_t line_index_at(const LineTable *lt, size_t pos) {
     }
 
     size_t idx = lo - 1;
-    if (idx < 0) idx = 0;
     if (idx >= lt->count) idx = lt->count - 1;
     return idx;
 }
@@ -110,7 +109,7 @@ bool line_insert_char(LineTable *lt, size_t pos, char ch) {
         current_line->version++;
 
         // Update start/end indices for all subsequent lines
-        for (int i = line_number + 1; i < lt->count; i++) {
+        for (size_t i = line_number + 1; i < lt->count; i++) {
             lt->lines[i].start++;
             lt->lines[i].end++;
         }
@@ -133,7 +132,7 @@ bool line_insert_char(LineTable *lt, size_t pos, char ch) {
     current_line->version++;
 
     // Update start/end indices for all subsequent lines
-    for (int i = line_number + 2; i < lt->count; i++) {
+    for (size_t i = line_number + 2; i < lt->count; i++) {
         lt->lines[i].start++;
         lt->lines[i].end++;
     }
@@ -151,7 +150,7 @@ void line_backspace_char(LineTable *lt, size_t pos, char ch) {
         current_line->version++;
 
         // Update the start/end indices of all subsequent lines
-        for (int i = line_number + 1; i < lt->count; i++) {
+        for (size_t i = line_number + 1; i < lt->count; i++) {
             lt->lines[i].start--;
             lt->lines[i].end--;
         }
@@ -177,7 +176,7 @@ void line_backspace_char(LineTable *lt, size_t pos, char ch) {
     }
 
     // Update the start/end indices of all subsequent lines
-    for (int i = line_number; i < lt->count; i++) {
+    for (size_t i = line_number; i < lt->count; i++) {
         lt->lines[i].start--;
         lt->lines[i].end--;
     }
@@ -193,7 +192,7 @@ void line_delete_char(LineTable *lt, size_t pos, char ch) {
         current_line->version++;
 
         // Update the start/end indices of all subsequent lines
-        for (int i = line_number + 1; i < lt->count; i++) {
+        for (size_t i = line_number + 1; i < lt->count; i++) {
             lt->lines[i].start--;
             lt->lines[i].end--;
         }
@@ -219,7 +218,7 @@ void line_delete_char(LineTable *lt, size_t pos, char ch) {
     }
 
     // Update the start/end indices of all subsequent lines
-    for (int i = line_number + 1; i < lt->count; i++) {
+    for (size_t i = line_number + 1; i < lt->count; i++) {
         lt->lines[i].start--;
         lt->lines[i].end--;
     }

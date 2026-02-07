@@ -27,7 +27,7 @@ bool init_input(AppState *state) {
 }
 
 static bool keymap_add(Keymap *km, KeyEvent key, Binding binding) {
-    for (int i = 0; i < km->count; i++) {
+    for (size_t i = 0; i < km->count; i++) {
         if (keyevent_equal(&km->entries[i].key, &key)) {
             km->entries[i].binding = binding; // overwrite
             return true;
