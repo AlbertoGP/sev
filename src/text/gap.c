@@ -1,6 +1,5 @@
 // Gap buffer implementation
 
-#include <stdbool.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>

@@ -1,6 +1,5 @@
 #include "pane.h"
 #include "cursor.h"
-#include "vline.h"
 #include "status.h"
 #include "tab.h"
 #include "theme.h"

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "../keymap.h"
+#include "../command/keymap.h"
 
 typedef enum {
     MODE_MAJOR,

@@ -4,7 +4,7 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_keycode.h>
-#include "state.h"
+#include "../state.h"
 
 // Dispatch on text character (utf-8) input.
 void handle_text_input(AppState *app, const SDL_TextInputEvent *text);

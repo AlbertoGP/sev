@@ -1,7 +1,7 @@
 #include <SDL3/SDL.h>
 #include "state.h"
 
-#include "keyboard.h"
+#include "command/keyboard.h"
 
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {

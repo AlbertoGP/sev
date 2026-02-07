@@ -1,5 +1,5 @@
 #include "scheme.h"
-#include "../keymap.h"
+#include "../command/keymap.h"
 #include "../text/buffer.h"
 #include "../text/mode.h"
 #include "../text/var.h"

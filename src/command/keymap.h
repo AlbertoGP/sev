@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "state.h"
+#include "../state.h"
 #include "keyevent.h"
 
 // Type tag for Binding payload union.

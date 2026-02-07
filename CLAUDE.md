@@ -49,14 +49,14 @@ The app uses SDL3's main callbacks pattern (no `main()` function):
 - **line.c** - Logical line tracking for rendering and navigation
 - **mark.c** - Mark/region system for selections
 
-### Input System (`src/keyboard.c`, `src/keymap.c`)
+### Input System (`src/command/keyboard.c`, `src/command/keymap.c`)
 
 - `KeyEvent` represents either character input (`KEYEVENT_CHAR`) or special keys (`KEYEVENT_SPECIAL`)
 - Keymaps form a hierarchy supporting prefix keys (e.g., `C-x` opens a prefix keymap)
 - Bindings map to C functions, Scheme procedures, or nested keymaps
 - `key_dispatch()` looks up and executes the appropriate command
 
-### Scheme Integration (`src/scheme/scheme.c`)
+### Scheme Integration (`src/command/scheme.c`)
 
 Chibi Scheme provides extensibility. C primitives exposed include:
 
@@ -78,7 +78,6 @@ Clay immediate-mode UI with SDL3 renderer backend. Layout defined in `layout.c` 
 ## Key Patterns
 
 - **Dirty flag**: `state->needs_redraw` controls when to re-render
-- **Color transitions**: 15-frame animations between color schemes via `colors_delta`
 - **Key parsing**: `parse_key_sequence()` handles Emacs-style notation ("C-x", "M-f", "SPC", "RET")
 
 ## Dependencies

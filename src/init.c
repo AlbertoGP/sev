@@ -10,9 +10,9 @@
 #include "state.h"
 
 #include "text/buffer.h"
-#include "keymap.h"
 
-#include "scheme/scheme.h"
+#include "command/keymap.h"
+#include "command/scheme.h"
 
 #include <stdio.h>
 

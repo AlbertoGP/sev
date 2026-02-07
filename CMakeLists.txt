@@ -9,10 +9,11 @@ set(SRC_FILES
     src/iterate.c
     src/event.c
     src/quit.c
-    src/keyboard.c
-    src/keymap.c
     src/clay/renderer.c
     src/clay/init.c
+    src/command/keyboard.c
+    src/command/keymap.c
+    src/command/scheme.c
     src/layout/layout.c
     src/layout/pane.c
     src/layout/status.c
@@ -29,7 +30,6 @@ set(SRC_FILES
     src/text/message.c
     src/text/mode.c
     src/text/var.c
-    src/scheme/scheme.c
 )
 
 # Create executable

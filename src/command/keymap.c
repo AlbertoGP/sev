@@ -3,10 +3,9 @@
 #include <assert.h>
 #include <chibi/eval.h>
 #include "keymap.h"
-#include "keyevent.h"
-#include "text/buffer.h"
-#include "text/mode.h"
-#include "text/message.h"
+#include "../text/buffer.h"
+#include "../text/mode.h"
+#include "../text/message.h"
 
 KeyEvent last_event;
 

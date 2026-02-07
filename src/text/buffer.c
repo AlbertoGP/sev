@@ -10,9 +10,6 @@
 
 #include "buffer.h"
 #include "gap.h"
-#include "line.h"
-#include "mark.h"
-#include "mode.h"
 #include "var.h"
 
 typedef struct {
