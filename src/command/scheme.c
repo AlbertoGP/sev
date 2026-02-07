@@ -252,7 +252,9 @@ static sexp scm_reset_global_scale(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     reset_scale(G);
 
-    message_send("reset-global-scale");
+    char message[64];
+    snprintf(message, 64, "reset-global-scale -> %.2f", G->ui.scale_factor);
+    message_send(message);
     return SEXP_VOID;
 }
 
@@ -260,7 +262,9 @@ static sexp scm_increase_global_scale(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     increase_scale(G);
 
-    message_send("increase-global-scale");
+    char message[64];
+    snprintf(message, 64, "increase-global-scale -> %.2f", G->ui.scale_factor);
+    message_send(message);
     return SEXP_VOID;
 }
 
@@ -268,7 +272,9 @@ static sexp scm_decrease_global_scale(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     decrease_scale(G);
 
-    message_send("decrease-global-scale");
+    char message[64];
+    snprintf(message, 64, "decrease-global-scale -> %.2f", G->ui.scale_factor);
+    message_send(message);
     return SEXP_VOID;
 }
 

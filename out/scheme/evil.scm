@@ -33,7 +33,7 @@
 (set-doc! 'append-line 'command "Set the cursor to the final column on the current line and enter insert mode.")
 (define (join-line) (begin (line-end) (delete-forward-char)))
 (make-interactive! 'join-line "")
-(set-doc! 'join-line 'command "Deletes newline character between current and subsequent line.")
+(set-doc! 'join-line 'command "Delete newline character between the current and subsequent line.")
 
 ;; Normal mode bindings
 (set-key! evil-normal-map "C-q" 'quit)
