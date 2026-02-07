@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "../state.h"
 #include "pane.h"
+#include "../state.h"
 
 // Clay component for pane status bar
 void StatusBar(AppState *state, Pane *pane);

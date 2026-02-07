@@ -1,9 +1,10 @@
-#include "pane.h"
+#include <stdlib.h>
+
 #include "cursor.h"
+#include "pane.h"
 #include "status.h"
 #include "tab.h"
 #include "theme.h"
-#include <stdlib.h>
 
 // Recursively free resources allocated for a pane sub-tree.
 void pane_destroy(Pane *pane) {

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <stdbool.h>
+
 #include "pane.h"
 
 #define TAB_NAME_MAX 256

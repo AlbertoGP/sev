@@ -1,7 +1,7 @@
-#include "../state.h"
 #include "message.h"
 #include "tab.h"
 #include "theme.h"
+#include "../state.h"
 
 Clay_RenderCommandArray create_app_layout(AppState *state) {
     Clay_Sizing layoutExpand = {

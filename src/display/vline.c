@@ -1,11 +1,12 @@
 // Visual line cache implementation.
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "vline.h"
 #include "../text/buffer.h"
 #include "../text/line.h"
 #include "../clay/renderer.h"
-#include <stdlib.h>
-#include <string.h>
 
 #define MIN_CACHE_SIZE 16
 #define TAB_WIDTH 4

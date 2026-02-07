@@ -1,7 +1,8 @@
 #pragma once
 
-#include "clay.h"
 #include <SDL3_ttf/SDL_ttf.h>
+
+#include "clay.h"
 
 typedef struct {
     SDL_Renderer *renderer;

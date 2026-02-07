@@ -4,9 +4,10 @@
 #pragma once
 
 #include <stdbool.h>
+
+#include "vline.h"
 #include "../state.h"
 #include "../text/buffer.h"
-#include "vline.h"
 
 typedef enum {
     DIR_UP,

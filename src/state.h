@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL.h>
 #include <chibi/eval.h>
+
 #include "clay/renderer.h"
 #include "command/keyevent.h"
 #include "text/var.h"

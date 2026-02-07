@@ -1,7 +1,8 @@
-#include "line.h"
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "line.h"
 
 #define MIN_TABLE_SIZE 8
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))

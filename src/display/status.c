@@ -1,10 +1,11 @@
-#include "../state.h"
-#include "../text/buffer.h"
-#include "pane.h"
-#include "theme.h"
-#include "mode_icon.h"
 #include <SDL3/SDL_render.h>
 #include <chibi/sexp.h>
+
+#include "mode_icon.h"
+#include "pane.h"
+#include "theme.h"
+#include "../state.h"
+#include "../text/buffer.h"
 
 #define BAR_STRINGS_MAX 256
 static char *bar_strings[BAR_STRINGS_MAX];

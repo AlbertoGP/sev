@@ -1,22 +1,18 @@
-#include "display/mode_icon.h"
-#include "display/tab.h"
+#include <stdio.h>
+
 #define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
-
-#include "clay/init.h"
+#include <chibi/eval.h>
 
 #include "state.h"
-
-#include "text/buffer.h"
-
+#include "clay/init.h"
 #include "command/keymap.h"
 #include "command/scheme.h"
-
-#include <stdio.h>
-
-#include <chibi/eval.h>
+#include "display/mode_icon.h"
+#include "display/tab.h"
+#include "text/buffer.h"
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {

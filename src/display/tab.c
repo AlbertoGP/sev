@@ -1,9 +1,11 @@
-#include "tab.h"
-#include "pane.h"
-#include "theme.h"
 #include <stdlib.h>
 #include <string.h>
+
 #include <SDL3_image/SDL_image.h>
+
+#include "pane.h"
+#include "tab.h"
+#include "theme.h"
 
 static TabList tl;
 static SDL_Window *window;

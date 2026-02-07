@@ -3,11 +3,12 @@
 
 #pragma once
 
-#include "location.h"
-#include "mark.h"
-#include "mode.h"
-#include "line.h"
 #include <stddef.h>
+
+#include "mark.h"
+#include "line.h"
+#include "location.h"
+#include "../command/mode.h"
 
 typedef struct Buffer Buffer;
 

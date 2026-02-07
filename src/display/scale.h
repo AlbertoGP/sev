@@ -1,7 +1,8 @@
 #pragma once
 
-#include "../state.h"
 #include <chibi/sexp.h>
+
+#include "../state.h"
 
 // void update_icons(void);
 

@@ -1,9 +1,9 @@
 #include <SDL3/SDL.h>
 
+#include "state.h"
 #include "display/layout.h"
 #include "display/pane.h"
 #include "display/status.h"
-#include "state.h"
 
 /* Track callback rate mode to avoid redundant hint changes */
 static bool callback_rate_animating = false;

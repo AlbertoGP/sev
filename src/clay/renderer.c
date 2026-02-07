@@ -1,5 +1,6 @@
-#include "renderer.h"
 #include <SDL3_image/SDL_image.h>
+
+#include "renderer.h"
 
 /* Global for convenience. Even in 4K this is enough for smooth curves (low radius or rect size coupled with
  * no AA or low resolution might make it appear as jagged curves) */

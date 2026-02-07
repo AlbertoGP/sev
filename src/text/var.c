@@ -1,7 +1,9 @@
 // Buffer-local variables implementation
 
 #include <stdlib.h>
+
 #include <chibi/eval.h>
+
 #include "var.h"
 
 void vartable_init(VarTable *vt) {

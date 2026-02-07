@@ -3,10 +3,11 @@
 
 #pragma once
 
-#include "../state.h"
-#include "theme.h"
 #include <SDL3/SDL_render.h>
 #include <chibi/sexp.h>
+
+#include "theme.h"
+#include "../state.h"
 
 #define MODE_ICON_MAX 32
 

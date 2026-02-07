@@ -1,9 +1,11 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <chibi/sexp.h>
+
 #include "theme.h"
 #include "mode_icon.h"
-#include <chibi/sexp.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 
 Clay_Color hex_to_rgba(const char* str) {
     int r, g, b, a;

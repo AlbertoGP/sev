@@ -1,8 +1,10 @@
+#include <stdio.h>
+#include <string.h>
+
+#include <SDL3_image/SDL_image.h>
+
 #include "mode_icon.h"
 #include "../text/buffer.h"
-#include <SDL3_image/SDL_image.h>
-#include <string.h>
-#include <stdio.h>
 
 static ModeIconEntry entries[MODE_ICON_MAX];
 static int entry_count = 0;

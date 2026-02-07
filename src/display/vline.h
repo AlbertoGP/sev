@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
 #include "../clay/renderer.h"
 
 // A single visual line (one row of wrapped text on screen).

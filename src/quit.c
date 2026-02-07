@@ -1,7 +1,7 @@
 #include <SDL3/SDL.h>
 
-#include "display/tab.h"
 #include "state.h"
+#include "display/tab.h"
 #include "text/buffer.h"
 #include "text/var.h"
 
