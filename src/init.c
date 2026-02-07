@@ -9,7 +9,7 @@
 
 #include "state.h"
 
-#include "subeditor/buffer.h"
+#include "text/buffer.h"
 #include "keymap.h"
 
 #include "scheme/scheme.h"

@@ -1,8 +1,8 @@
 // Visual line cache implementation.
 
 #include "vline.h"
-#include "../subeditor/buffer.h"
-#include "../subeditor/line.h"
+#include "../text/buffer.h"
+#include "../text/line.h"
 #include "../clay/renderer.h"
 #include <stdlib.h>
 #include <string.h>

@@ -42,7 +42,7 @@ The app uses SDL3's main callbacks pattern (no `main()` function):
 
 `AppState` struct holds all application state: window, renderer, colors, theme, Scheme context, input state. Passed through SDL3 callbacks via `void *appstate`.
 
-### Text Model (`src/subeditor/`)
+### Text Model (`src/text/`)
 
 - **gap.c** - Gap buffer data structure for efficient text editing at cursor
 - **buffer.c** - Buffer list management, text manipulation API (insert, delete, movement)

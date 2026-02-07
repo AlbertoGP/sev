@@ -22,13 +22,13 @@ set(SRC_FILES
     src/layout/message.c
     src/layout/cursor.c
     src/layout/theme.c
-    src/subeditor/buffer.c
-    src/subeditor/gap.c
-    src/subeditor/line.c
-    src/subeditor/mark.c
-    src/subeditor/message.c
-    src/subeditor/mode.c
-    src/subeditor/var.c
+    src/text/buffer.c
+    src/text/gap.c
+    src/text/line.c
+    src/text/mark.c
+    src/text/message.c
+    src/text/mode.c
+    src/text/var.c
     src/scheme/scheme.c
 )
 

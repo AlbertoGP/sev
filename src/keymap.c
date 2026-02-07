@@ -4,9 +4,9 @@
 #include <chibi/eval.h>
 #include "keymap.h"
 #include "keyevent.h"
-#include "subeditor/buffer.h"
-#include "subeditor/mode.h"
-#include "subeditor/message.h"
+#include "text/buffer.h"
+#include "text/mode.h"
+#include "text/message.h"
 
 KeyEvent last_event;
 

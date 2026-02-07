@@ -1,6 +1,6 @@
 #include "cursor.h"
 #include "theme.h"
-#include "../subeditor/buffer.h"
+#include "../text/buffer.h"
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 

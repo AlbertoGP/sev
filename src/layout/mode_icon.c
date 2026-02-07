@@ -1,5 +1,5 @@
 #include "mode_icon.h"
-#include "../subeditor/buffer.h"
+#include "../text/buffer.h"
 #include <SDL3_image/SDL_image.h>
 #include <string.h>
 #include <stdio.h>

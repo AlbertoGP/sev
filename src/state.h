@@ -4,7 +4,7 @@
 #include <chibi/eval.h>
 #include "clay/renderer.h"
 #include "keyevent.h"
-#include "subeditor/var.h"
+#include "text/var.h"
 
 typedef enum FontID {
     FONT_NORMAL,

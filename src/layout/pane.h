@@ -5,7 +5,7 @@
 
 #include <stdbool.h>
 #include "../state.h"
-#include "../subeditor/buffer.h"
+#include "../text/buffer.h"
 #include "vline.h"
 
 typedef enum {

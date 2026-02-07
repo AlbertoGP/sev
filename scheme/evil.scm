@@ -15,16 +15,22 @@
 
 (define (line-start-skip-whitespace) (begin (line-start) (skip-whitespace)))
 (make-interactive! 'line-start-skip-whitespace "")
+(set-doc! 'line-start-skip-whitespace 'command "Set cursor to first non-blank character on current line.")
 (define (open-line-below) (begin (line-end) (newline) (evil-insert)))
 (make-interactive! 'open-line-below "")
+(set-doc! 'open-line-below 'command "Create a new empty line below current line, move to it and enter insert mode.")
 (define (open-line-above) (begin (line-start) (newline) (prev-line) (evil-insert)))
 (make-interactive! 'open-line-above "")
+(set-doc! 'open-line-above 'command "Create a new empty line above current line, move to it and enter insert mode.")
 (define (insert-at-start) (begin (line-start-skip-whitespace) (evil-insert)))
 (make-interactive! 'insert-at-start "")
+(set-doc! 'insert-at-start 'command "Set cursor to first non-blank character on current line and enter insert mode.")
 (define (append-char) (begin (forward-char) (evil-insert)))
 (make-interactive! 'append-char "")
+(set-doc! 'append-char 'command "Enter insert mode after the character currently under the cursor.")
 (define (append-line) (begin (line-end) (evil-insert)))
 (make-interactive! 'append-line "")
+(set-doc! 'append-line 'command "Set the cursor to the final column on the current line and enter insert mode.")
 
 ;; Normal mode bindings
 (set-key! evil-normal-map "C-q" 'quit)

@@ -1,5 +1,5 @@
 #include "../state.h"
-#include "../subeditor/buffer.h"
+#include "../text/buffer.h"
 #include "pane.h"
 #include "theme.h"
 #include "mode_icon.h"

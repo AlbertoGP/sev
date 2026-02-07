@@ -2,8 +2,8 @@
 
 #include "layout/tab.h"
 #include "state.h"
-#include "subeditor/buffer.h"
-#include "subeditor/var.h"
+#include "text/buffer.h"
+#include "text/var.h"
 
 /* This function runs once at shutdown. */
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
