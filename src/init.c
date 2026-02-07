@@ -54,9 +54,12 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     }
 
     #ifdef __EMSCRIPTEN__
-    #define FONT_PATH_REGULAR "/resources/VictorMono-Regular.ttf"
-    #define FONT_PATH_BOLD "/resources/VictorMono-Bold.ttf"
-    #define FONT_PATH_ITALIC "/resources/VictorMono-Italic.ttf"
+    // #define FONT_PATH_REGULAR "/resources/VictorMono-Regular.ttf"
+    // #define FONT_PATH_BOLD "/resources/VictorMono-Bold.ttf"
+    // #define FONT_PATH_ITALIC "/resources/VictorMono-Italic.ttf"
+    #define FONT_PATH_REGULAR "/resources/JetBrainsMono-Regular.ttf"
+    #define FONT_PATH_BOLD "/resources/JetBrainsMono-SemiBold.ttf"
+    #define FONT_PATH_ITALIC "/resources/resources/JetBrainsMono-Italic.ttf"
     #else
     char* basePath = (char*)SDL_GetBasePath();
     char fontPathRegular[1024];
