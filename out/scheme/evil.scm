@@ -31,6 +31,9 @@
 (define (append-line) (begin (line-end) (evil-insert)))
 (make-interactive! 'append-line "")
 (set-doc! 'append-line 'command "Set the cursor to the final column on the current line and enter insert mode.")
+(define (join-line) (begin (line-end) (delete-forward-char)))
+(make-interactive! 'join-line "")
+(set-doc! 'join-line 'command "Deletes newline character between current and subsequent line.")
 
 ;; Normal mode bindings
 (set-key! evil-normal-map "C-q" 'quit)
@@ -52,6 +55,7 @@
 (set-key! evil-normal-map "A" 'append-line)
 (set-key! evil-normal-map "o" 'open-line-below)
 (set-key! evil-normal-map "O" 'open-line-above)
+(set-key! evil-normal-map "J" 'join-line)
 (set-key! evil-normal-map "R" 'evil-replace)
 (set-key! evil-normal-map "v" 'evil-select)
 (set-key! evil-normal-map ":" 'evil-command)
