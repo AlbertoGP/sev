@@ -24,6 +24,9 @@ typedef struct {
     Tab *current;
 } TabList;
 
+// Update the colour of the cross icons. Call whenever theme is changed.
+void update_tab_cross_colors(AppState *state);
+
 // Initialise tab list.
 bool tab_list_init(AppState *state);
 // Free up resources allocated to tab list.

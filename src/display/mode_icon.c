@@ -5,6 +5,7 @@
 
 #include "mode_icon.h"
 #include "../text/buffer.h"
+#include "tab.h"
 
 static ModeIconEntry entries[MODE_ICON_MAX];
 static int entry_count = 0;
@@ -66,6 +67,7 @@ void mode_icons_update_colors(AppState *state) {
         Clay_Color c = ui_resolve_color(state, e->role_label);
         SDL_SetTextureColorMod(e->texture, c.r, c.g, c.b);
     }
+    update_tab_cross_colors(state);
 }
 
 ModeIconEntry *mode_icon_for_current_buffer(void) {

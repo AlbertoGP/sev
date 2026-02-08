@@ -10,11 +10,20 @@
 static TabList tl;
 static SDL_Window *window;
 static SDL_Texture *icon;
+static SDL_Texture *cross_icon;
+static SDL_Texture *cross_icon_inactive;
 
 static void update_window_title(void) {
     char buf[TAB_NAME_MAX];
     snprintf(buf, TAB_NAME_MAX, "%s - sev", tl.current->name);
     SDL_SetWindowTitle(window, buf);
+}
+
+void update_tab_cross_colors(AppState *state) {
+    Clay_Color c = ui_resolve_color(state, state->ui.roles.text_primary);
+    SDL_SetTextureColorMod(cross_icon, c.r, c.g, c.b);
+    c = ui_resolve_color(state, state->ui.roles.text_faded);
+    SDL_SetTextureColorMod(cross_icon_inactive, c.r, c.g, c.b);
 }
 
 bool tab_list_init(AppState *state) {
@@ -25,15 +34,25 @@ bool tab_list_init(AppState *state) {
 
     #ifdef __EMSCRIPTEN__
     #define ICON_PATH "/resources/tab-icon.png"
+    #define CROSS_PATH "/resources/icon-close.png"
     #else
     char* basePath = (char*)SDL_GetBasePath();
     char iconPath[1024];
     snprintf(iconPath, sizeof(iconPath), "%sresources/tab-icon.png", basePath);
     #define ICON_PATH iconPath
+    char crossPath[1024];
+    snprintf(crossPath, sizeof(crossPath), "%sresources/icon-close.png", basePath);
+    #define CROSS_PATH crossPath
     #endif
     if (!icon)
         icon = IMG_LoadTexture(state->rendererData.renderer, ICON_PATH);
     if (!icon) return false;
+    if (!cross_icon)
+        cross_icon = IMG_LoadTexture(state->rendererData.renderer, CROSS_PATH);
+    if (!cross_icon) return false;
+    if (!cross_icon_inactive)
+        cross_icon_inactive = IMG_LoadTexture(state->rendererData.renderer, CROSS_PATH);
+    if (!cross_icon_inactive) return false;
 
     if (!buffer_get_current()) return false;
 
@@ -200,20 +219,33 @@ static bool CloseButton(AppState *state, Tab *t) {
                 .y = CLAY_ALIGN_Y_CENTER
             }
         },
+        .floating = {
+            .attachTo = CLAY_ATTACH_TO_PARENT,
+            .attachPoints = {
+                 .element = CLAY_ATTACH_POINT_RIGHT_CENTER,
+                 .parent = CLAY_ATTACH_POINT_RIGHT_CENTER
+            },
+            .offset = { .x = -5 * state->ui.scale_factor },
+            .pointerCaptureMode = CLAY_POINTER_CAPTURE_MODE_PASSTHROUGH
+        },
         .cornerRadius = CLAY_CORNER_RADIUS(8 * state->ui.scale_factor),
         .backgroundColor = Clay_Hovered()
             ? ui_resolve_color(state, state->ui.roles.bar_bg)
             : (Clay_Color){0}
     }) {
+        SDL_Texture *icon = tl.current == t ? cross_icon : cross_icon_inactive;
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {
+                    .width = 8.0 * state->ui.scale_factor,
+                    .height = 8.0 * state->ui.scale_factor
+                }
+            },
+            .image = {
+                .imageData = icon
+            },
+        }){}
         Clay_OnHover(HandleCloseTab, t);
-        CLAY_TEXT(CLAY_STRING("×"), CLAY_TEXT_CONFIG({
-            .fontId = FONT_NORMAL,
-            .fontSize = 20.0 * state->ui.scale_factor,
-            .textColor = tl.current == t
-                ? ui_resolve_color(state, state->ui.roles.text_primary)
-                : ui_resolve_color(state, state->ui.roles.text_faded),
-            .textAlignment = CLAY_TEXT_ALIGN_CENTER,
-        }));
         hovered = Clay_Hovered();
     }
     return hovered;
@@ -259,6 +291,9 @@ void OpenTabs(AppState *state) {
     // TODO: extract to a state variable toggle-able from Scheme.
     // if (!t || !t->next) return;  // Hide tab bar if only one tab.
     if (!t) return;                 // Show tab bar if only one tab.
+    float cr = 5 * state->ui.scale_factor;
+    Clay_Color active_color = ui_resolve_color(state, state->ui.roles.tab_active) ;
+
     for (int i = 1; t != NULL; t = t->next, i++) {
         Clay_String tab_name = {
             .chars = t->name,
@@ -268,26 +303,28 @@ void OpenTabs(AppState *state) {
         CLAY(CLAY_IDI("Tab", i), {
             .layout = {
                 .padding = {
-                    .left = 10 * state->ui.scale_factor,
-                    .right = 5 * state->ui.scale_factor
+                    .left = 2 * cr,
+                    .right = cr,
+                    .top = 0, .bottom = 0
                 },
                 .childAlignment = {
                     .y = CLAY_ALIGN_Y_CENTER
                 },
             },
-            .cornerRadius = CLAY_CORNER_RADIUS(5 * state->ui.scale_factor),
+            .cornerRadius = CLAY_CORNER_RADIUS(cr),
             .backgroundColor = tl.current == t
-                ? ui_resolve_color(state, state->ui.roles.tab_active)
+                ? active_color
                 : Clay_Hovered()
                     ? ui_resolve_color(state, state->ui.roles.tab_hover)
                     : ui_resolve_color(state, state->ui.roles.tab_inactive),
         }) {
+            // floating filler to join tab to content area
             if (tl.current == t) {
                 CLAY_AUTO_ID({
                     .layout = {
                         .sizing = {
                             .width = CLAY_SIZING_PERCENT(1),
-                            .height = CLAY_SIZING_FIXED(10 * state->ui.scale_factor)
+                            .height = CLAY_SIZING_FIXED(2 * cr)
                         },
                     },
                     .floating = {
@@ -297,17 +334,56 @@ void OpenTabs(AppState *state) {
                              .element = CLAY_ATTACH_POINT_CENTER_TOP
                         },
                         .offset = {
-                            .y = -5 * state->ui.scale_factor
+                            .y = -cr
                         }
                     },
-                    .backgroundColor = ui_resolve_color(state, state->ui.roles.tab_active),
-                }) {}
+                    .backgroundColor = active_color,
+                }) {
+                    Clay_Color tab_color = active_color;
+                    CLAY_AUTO_ID({
+                        .layout = {
+                            .sizing = {
+                                .width = CLAY_SIZING_FIXED(2 * cr),
+                                .height = CLAY_SIZING_FIXED(2 * cr)
+                            },
+                        },
+                        .floating = {
+                            .attachTo = CLAY_ATTACH_TO_PARENT,
+                            .attachPoints = {
+                                .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM,
+                                .element = CLAY_ATTACH_POINT_RIGHT_BOTTOM
+                            },
+                        },
+                        .backgroundColor = tab_color,
+                        .custom = { .customData = (void *)(uintptr_t)CUSTOM_RENDER_CONCAVE_LEFT },
+                    }) {}
+                    CLAY_AUTO_ID({
+                        .layout = {
+                            .sizing = {
+                                .width = CLAY_SIZING_FIXED(2 * cr),
+                                .height = CLAY_SIZING_FIXED(2 * cr)
+                            },
+                        },
+                        .floating = {
+                            .attachTo = CLAY_ATTACH_TO_PARENT,
+                            .attachPoints = {
+                                .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM,
+                                .element = CLAY_ATTACH_POINT_LEFT_BOTTOM
+                            },
+                        },
+                        .backgroundColor = tab_color,
+                        .custom = { .customData = (void *)(uintptr_t)CUSTOM_RENDER_CONCAVE_RIGHT },
+                    }) {}
+                }
             }
+            Clay_Color c = tl.current == t
+                ? ui_resolve_color(state, state->ui.roles.text_primary)
+                : ui_resolve_color(state, state->ui.roles.text_faded);
             CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {
-                        .width = CLAY_SIZING_FIXED(120 * state->ui.scale_factor),
-                        .height = CLAY_SIZING_FIXED(30 * state->ui.scale_factor)
+                        .width = CLAY_SIZING_FIXED(136 * state->ui.scale_factor),
+                        .height = CLAY_SIZING_FIXED(25 * state->ui.scale_factor)
                     },
                     .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
                 }
@@ -315,9 +391,7 @@ void OpenTabs(AppState *state) {
                 CLAY_TEXT(tab_name, CLAY_TEXT_CONFIG({
                     .fontId = FONT_NORMAL,
                     .fontSize = 14 * state->ui.scale_factor,
-                    .textColor = tl.current == t
-                        ? ui_resolve_color(state, state->ui.roles.text_primary)
-                        : ui_resolve_color(state, state->ui.roles.text_faded)
+                    .textColor = c
                 }));
             }
             bool block_click = CloseButton(state, t);

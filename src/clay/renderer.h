@@ -10,4 +10,9 @@ typedef struct {
     TTF_Font **fonts;
 } Clay_SDL3RendererData;
 
+typedef enum {
+    CUSTOM_RENDER_CONCAVE_LEFT = 1,
+    CUSTOM_RENDER_CONCAVE_RIGHT,
+} CustomRenderType;
+
 void SDL_Clay_RenderClayCommands(Clay_SDL3RendererData *rendererData, Clay_RenderCommandArray *rcommands);

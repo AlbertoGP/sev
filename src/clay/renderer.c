@@ -116,6 +116,69 @@ static void SDL_Clay_RenderArc(Clay_SDL3RendererData *rendererData, const SDL_FP
     }
 }
 
+static void SDL_Clay_RenderConcaveFan(Clay_SDL3RendererData *rendererData, const SDL_FRect rect, const Clay_Color _color, CustomRenderType side) {
+    const SDL_FColor color = { _color.r/255, _color.g/255, _color.b/255, _color.a/255 };
+    const float R = rect.w;
+    const float overlap = 1.0f;
+
+    const int segments = SDL_max(NUM_CIRCLE_SEGMENTS, (int)(R * 0.5f));
+
+    // fan center + overlap vertex + (segments+1) arc points
+    SDL_Vertex vertices[segments + 3];
+    int indices[(segments + 1) * 3];
+
+    float cx, cy; // arc center
+    float startAngle, endAngle;
+    int vertexCount = 0;
+
+    if (side == CUSTOM_RENDER_CONCAVE_LEFT) {
+        cx = rect.x;  cy = rect.y;
+        startAngle = 0;
+        endAngle = SDL_PI_F / 2.0f;
+
+        // Fan center: bottom-right, extended 1px into parent
+        vertices[vertexCount++] = (SDL_Vertex){ {rect.x + R + overlap, rect.y + R}, color, {0, 0} };
+        // Overlap vertex: top-right, extended 1px into parent
+        vertices[vertexCount++] = (SDL_Vertex){ {rect.x + R + overlap, rect.y}, color, {0, 0} };
+        // Arc points
+        const float step = (endAngle - startAngle) / segments;
+        for (int i = 0; i <= segments; i++) {
+            const float angle = startAngle + (float)i * step;
+            vertices[vertexCount++] = (SDL_Vertex){
+                {cx + SDL_cosf(angle) * R, cy + SDL_sinf(angle) * R},
+                color, {0, 0}
+            };
+        }
+    } else {
+        cx = rect.x + R;  cy = rect.y;
+        startAngle = SDL_PI_F / 2.0f;
+        endAngle = SDL_PI_F;
+
+        // Fan center: bottom-left, extended 1px into parent
+        vertices[vertexCount++] = (SDL_Vertex){ {rect.x - overlap, rect.y + R}, color, {0, 0} };
+        // Arc points
+        const float step = (endAngle - startAngle) / segments;
+        for (int i = 0; i <= segments; i++) {
+            const float angle = startAngle + (float)i * step;
+            vertices[vertexCount++] = (SDL_Vertex){
+                {cx + SDL_cosf(angle) * R, cy + SDL_sinf(angle) * R},
+                color, {0, 0}
+            };
+        }
+        // Overlap vertex: top-left, extended 1px into parent
+        vertices[vertexCount++] = (SDL_Vertex){ {rect.x - overlap, rect.y}, color, {0, 0} };
+    }
+
+    int indexCount = 0;
+    for (int i = 1; i < vertexCount - 1; i++) {
+        indices[indexCount++] = 0;
+        indices[indexCount++] = i;
+        indices[indexCount++] = i + 1;
+    }
+
+    SDL_RenderGeometry(rendererData->renderer, NULL, vertices, vertexCount, indices, indexCount);
+}
+
 SDL_Rect currentClippingRectangle;
 
 void SDL_Clay_RenderClayCommands(Clay_SDL3RendererData *rendererData, Clay_RenderCommandArray *rcommands)
@@ -233,6 +296,19 @@ void SDL_Clay_RenderClayCommands(Clay_SDL3RendererData *rendererData, Clay_Rende
                 SDL_RenderTexture(rendererData->renderer, texture, NULL, &dest);
                 break;
             }
+            case CLAY_RENDER_COMMAND_TYPE_CUSTOM: {
+                Clay_CustomRenderData *config = &rcmd->renderData.custom;
+                CustomRenderType type = (CustomRenderType)(uintptr_t)config->customData;
+                switch (type) {
+                    case CUSTOM_RENDER_CONCAVE_LEFT:
+                    case CUSTOM_RENDER_CONCAVE_RIGHT:
+                        SDL_SetRenderDrawBlendMode(rendererData->renderer, SDL_BLENDMODE_BLEND);
+                        SDL_Clay_RenderConcaveFan(rendererData, rect, config->backgroundColor, type);
+                        break;
+                    default:
+                        SDL_Log("Unknown custom render type: %d", type);
+                }
+            } break;
             default:
                 SDL_Log("Unknown render command type: %d", rcmd->commandType);
         }
