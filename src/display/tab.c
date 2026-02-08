@@ -282,6 +282,27 @@ void OpenTabs(AppState *state) {
                     ? ui_resolve_color(state, state->ui.roles.tab_hover)
                     : ui_resolve_color(state, state->ui.roles.tab_inactive),
         }) {
+            if (tl.current == t) {
+                CLAY_AUTO_ID({
+                    .layout = {
+                        .sizing = {
+                            .width = CLAY_SIZING_PERCENT(1),
+                            .height = CLAY_SIZING_FIXED(10 * state->ui.scale_factor)
+                        },
+                    },
+                    .floating = {
+                        .attachTo = CLAY_ATTACH_TO_PARENT,
+                        .attachPoints = {
+                             .parent = CLAY_ATTACH_POINT_CENTER_BOTTOM,
+                             .element = CLAY_ATTACH_POINT_CENTER_TOP
+                        },
+                        .offset = {
+                            .y = -5 * state->ui.scale_factor
+                        }
+                    },
+                    .backgroundColor = ui_resolve_color(state, state->ui.roles.tab_active),
+                }) {}
+            }
             CLAY_AUTO_ID({
                 .layout = {
                     .sizing = {
@@ -299,8 +320,8 @@ void OpenTabs(AppState *state) {
                         : ui_resolve_color(state, state->ui.roles.text_faded)
                 }));
             }
-            bool block = CloseButton(state, t);
-            Clay_OnHover(block ? NULL : HandleClickTab, t);
+            bool block_click = CloseButton(state, t);
+            Clay_OnHover(block_click ? NULL : HandleClickTab, t);
         }
     }
 }
