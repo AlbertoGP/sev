@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <stdbool.h>
+
 #include "location.h"
 
 typedef struct Mark Mark;

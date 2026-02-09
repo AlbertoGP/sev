@@ -5,6 +5,7 @@
 
 #include "icon.h"
 #include "theme.h"
+#include "../command/scheme_internal.h"
 
 static IconEntry entries[ICON_MAX];
 static int entry_count = 0;
@@ -106,4 +107,33 @@ void icons_update_colors(AppState *state) {
         Clay_Color c = ui_resolve_color(state, e->color_role);
         SDL_SetTextureColorMod(e->texture, c.r, c.g, c.b);
     }
+}
+
+// --- Scheme bindings ---
+
+sexp scm_update_icon_colors(sexp ctx, sexp self, sexp n) {
+    icons_update_colors(G);
+    return SEXP_VOID;
+}
+
+// (%register-icon! name filename color-role)
+sexp scm_register_icon(sexp ctx, sexp self, sexp n,
+                       sexp sname, sexp sfilename, sexp scolor_role) {
+    if (!sexp_symbolp(sname))
+        return sexp_user_exception(ctx, self, "name must be a symbol", sname);
+    if (!sexp_stringp(sfilename))
+        return sexp_user_exception(ctx, self, "filename must be a string", sfilename);
+    if (!sexp_symbolp(scolor_role))
+        return sexp_user_exception(ctx, self, "color-role must be a symbol", scolor_role);
+
+    const char *name = sexp_string_data(sexp_symbol_to_string(ctx, sname));
+    const char *filename = sexp_string_data(sfilename);
+
+    sexp color_role = sexp_intern(ctx, sexp_string_data(sexp_symbol_to_string(ctx, scolor_role)), -1);
+    sexp_preserve_object(ctx, color_role);
+
+    if (!icon_register(name, filename, color_role))
+        return SEXP_FALSE;
+
+    return SEXP_TRUE;
 }

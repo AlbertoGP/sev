@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "../clay/clay.h"
+#include "../command/scheme_internal.h"
 
 #define MAX_MESSAGE_LENGTH 2048
 static char message_buf[MAX_MESSAGE_LENGTH];
@@ -25,4 +26,24 @@ void message_send(const char* message) {
     message_clear();
     strncat(message_buf, message, MAX_MESSAGE_LENGTH - 1);
     message_string.length = strlen(message_buf);
+}
+
+// --- Scheme bindings ---
+
+sexp scm_message_send(sexp ctx, sexp self, sexp n, sexp message) {
+    G->needs_redraw = true;
+
+    if (sexp_stringp(message)) {
+        message_send(sexp_string_data(message));
+        return SEXP_VOID;
+    } else {
+        return sexp_type_exception(ctx, self, SEXP_STRING, message);
+    }
+}
+
+sexp scm_message_clear(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+
+    message_clear();
+    return SEXP_VOID;
 }

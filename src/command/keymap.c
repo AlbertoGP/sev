@@ -301,3 +301,65 @@ void keymap_bind_sequence(Keymap *km, KeyEvent *seq, int n, Binding final) {
     keymap_add(km, seq[n - 1], final);
 }
 
+// --- Scheme bindings ---
+
+sexp scm_make_keymap(sexp ctx, sexp self, sexp n) {
+    Keymap *km = keymap_create();
+    if (!km) {
+        return SEXP_VOID;
+    }
+    sexp result = sexp_make_cpointer(ctx,
+        SEXP_CPOINTER,
+        km,
+        SEXP_FALSE,
+        0);
+    return result;
+}
+
+sexp scm_set_key(sexp ctx, sexp self, sexp n,
+                 sexp skeymap, sexp skeystr, sexp scommand) {
+    Keymap *km = sexp_cpointer_value(skeymap);
+    if (!km) {
+        return sexp_user_exception(ctx, self, "null keymap pointer", skeymap);
+    }
+
+    if (!sexp_symbolp(scommand)) {
+        return sexp_user_exception(ctx, self,
+            "command must be a symbol", scommand);
+    }
+
+    const char *keystr = sexp_string_data(skeystr);
+    KeyEvent seq[8];
+    int key_count = parse_key_sequence(keystr, seq);
+    if (key_count < 1) {
+        return sexp_user_exception(ctx, self, "invalid key sequence", skeystr);
+    }
+
+    Binding binding = {
+        .type = BINDING_COMMAND,
+        .command_sym = scommand
+    };
+
+    sexp_preserve_object(ctx, binding.command_sym);
+
+    keymap_bind_sequence(km, seq, key_count, binding);
+
+    return SEXP_VOID;
+}
+
+// (%set-keymap-default! keymap command-sym) -> #t
+sexp scm_set_keymap_default(sexp ctx, sexp self, sexp n,
+                            sexp skeymap, sexp scommand) {
+    Keymap *km = sexp_cpointer_value(skeymap);
+    if (!km) return sexp_user_exception(ctx, self, "null keymap", skeymap);
+    if (!sexp_symbolp(scommand))
+        return sexp_user_exception(ctx, self, "command must be symbol", scommand);
+
+    if (!km->default_binding)
+        km->default_binding = malloc(sizeof(Binding));
+    km->default_binding->type = BINDING_COMMAND;
+    km->default_binding->command_sym = scommand;
+    sexp_preserve_object(ctx, scommand);
+    return SEXP_TRUE;
+}
+

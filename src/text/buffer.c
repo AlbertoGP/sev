@@ -10,7 +10,11 @@
 
 #include "buffer.h"
 #include "gap.h"
+#include "message.h"
 #include "var.h"
+#include "../command/scheme_internal.h"
+
+extern KeyEvent last_event;
 
 typedef struct {
     struct timespec mtime;
@@ -649,4 +653,137 @@ void buffer_set_local_map(Buffer *buf, Keymap *km) {
 VarTable *buffer_get_locals(Buffer *buf) {
     if (!buf) return NULL;
     return &buf->locals;
+}
+
+// --- Scheme bindings ---
+
+sexp scm_insert_char(sexp ctx, sexp self, sexp n, sexp ch) {
+    G->needs_redraw = true;
+    sexp_assert_type(ctx, sexp_charp, SEXP_CHAR, ch);
+    insert_char(buffer_get_current(), sexp_unbox_character(ch));
+
+    message_clear();
+    return SEXP_VOID;
+}
+
+sexp scm_self_insert(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    KeyEvent last = last_event;
+
+    if (last.type != KEYEVENT_CHAR) return SEXP_VOID;
+    insert_char(buffer_get_current(), last.codepoint);
+
+    message_clear();
+    return SEXP_VOID;
+}
+
+sexp scm_delete_char(sexp ctx, sexp self, sexp n, sexp count) {
+    G->needs_redraw = true;
+
+    int count_unboxed = sexp_unbox_fixnum(count);
+    size_t point = point_get(buffer_get_current()).pos;
+    size_t chars = get_char_count(buffer_get_current());
+
+    message_clear();
+    if (count_unboxed > (int)point)
+        message_send("Beginning of buffer");
+    if (count_unboxed < 0 && -count_unboxed > (int)(chars - point))
+        message_send("End of buffer");
+
+    delete_chars(buffer_get_current(), sexp_unbox_fixnum(count));
+    return SEXP_VOID;
+}
+
+sexp scm_point_move(sexp ctx, sexp self, sexp n, sexp count) {
+    G->needs_redraw = true;
+
+    int count_unboxed = sexp_unbox_fixnum(count);
+    size_t point = point_get(buffer_get_current()).pos;
+    size_t chars = get_char_count(buffer_get_current());
+
+    message_clear();
+    if (count_unboxed < 0 && -count_unboxed > (int)point)
+        message_send("Beginning of buffer");
+    if (count_unboxed > (int)(chars - point))
+        message_send("End of buffer");
+
+    point_move(sexp_unbox_fixnum(count));
+    return SEXP_VOID;
+}
+
+sexp scm_point_move_by_line(sexp ctx, sexp self, sexp n, sexp count) {
+    G->needs_redraw = true;
+    point_move_by_line(sexp_unbox_fixnum(count));
+    return SEXP_VOID;
+}
+
+SCM_CMD(scm_next_line,           point_move_by_line(1))
+SCM_CMD(scm_prev_line,           point_move_by_line(-1))
+
+sexp scm_forward_char(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    message_clear();
+    size_t point = point_get(buffer_get_current()).pos;
+    size_t chars = get_char_count(buffer_get_current());
+    if (point == chars)
+        message_send("End of buffer");
+    point_move(1);
+    return SEXP_VOID;
+}
+
+sexp scm_backward_char(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    message_clear();
+    size_t point = point_get(buffer_get_current()).pos;
+    if (point == 0)
+        message_send("Beginning of buffer");
+    point_move(-1);
+    return SEXP_VOID;
+}
+
+SCM_CMD(scm_newline,             (insert_char(buffer_get_current(), '\n'), message_clear()))
+SCM_CMD(scm_insert_tab,          (insert_char(buffer_get_current(), '\t'), message_clear()))
+
+SCM_CMD(scm_point_to_line_start, point_to_line_start(buffer_get_current()))
+SCM_CMD(scm_point_to_line_end,   point_to_line_end(buffer_get_current()))
+
+sexp scm_delete_backward_char(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    size_t point = point_get(buffer_get_current()).pos;
+    message_clear();
+    if (point == 0)
+        message_send("Beginning of buffer");
+    delete_chars(buffer_get_current(), 1);
+    return SEXP_VOID;
+}
+
+sexp scm_delete_forward_char(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    size_t point = point_get(buffer_get_current()).pos;
+    size_t chars = get_char_count(buffer_get_current());
+    message_clear();
+    if (point >= chars)
+        message_send("End of buffer");
+    delete_chars(buffer_get_current(), -1);
+    return SEXP_VOID;
+}
+
+sexp scm_skip_whitespace(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    while (char_at_point() == ' ' || char_at_point() == '\t')
+        point_move(1);
+    return SEXP_VOID;
+}
+
+sexp scm_set_column(sexp ctx, sexp self, sexp n, sexp column) {
+    G->needs_redraw = true;
+    set_column(sexp_unbox_fixnum(column), false);
+
+    return SEXP_VOID;
+}
+
+sexp scm_char_at_point(sexp ctx, sexp self, sexp n) {
+    printf("point: %c\n", char_at_point());
+
+    return SEXP_VOID;
 }

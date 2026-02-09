@@ -4,6 +4,7 @@
 
 #include <chibi/eval.h>
 
+#include "buffer.h"
 #include "var.h"
 
 void vartable_init(VarTable *vt) {
@@ -52,4 +53,32 @@ const char *sexp_to_cstring(sexp ctx, sexp val, const char *default_val) {
     if (sexp_symbolp(val))
         return sexp_string_data(sexp_symbol_to_string(ctx, val));
     return default_val;
+}
+
+// --- Scheme bindings ---
+
+// (%setq-local name val) -> val
+sexp scm_set_local(sexp ctx, sexp self, sexp n, sexp key, sexp sval) {
+    if (!sexp_symbolp(key)) {
+        return sexp_user_exception(ctx, self, "name must be a symbol", key);
+    }
+
+    VarTable *locals = buffer_get_locals(buffer_get_current());
+    if (!locals) return SEXP_FALSE;
+
+    sexp_preserve_object(ctx, sval);
+    vartable_set(locals, key, sval);
+    return sval;
+}
+
+// (%getq-local name default) -> value or default
+sexp scm_get_local(sexp ctx, sexp self, sexp n, sexp key, sexp sdefault) {
+    if (!sexp_symbolp(key)) {
+        return sexp_user_exception(ctx, self, "name must be a symbol", key);
+    }
+
+    VarTable *locals = buffer_get_locals(buffer_get_current());
+    if (!locals) return sdefault;
+
+    return vartable_get(locals, key, sdefault);
 }

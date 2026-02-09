@@ -5,6 +5,8 @@
 #include "pane.h"
 #include "tab.h"
 #include "theme.h"
+#include "../command/scheme_internal.h"
+#include "../text/message.h"
 
 static TabList tl;
 static SDL_Window *window;
@@ -384,4 +386,20 @@ void TabContent(AppState *state) {
     }
 
     PaneContent(state, t->contents, 1, 0, 0);
+}
+
+// --- Scheme bindings ---
+
+sexp scm_tab_next(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    message_clear();
+    if (tab_next()) message_send("tab-next");
+    return SEXP_VOID;
+}
+
+sexp scm_tab_prev(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    message_clear();
+    if (tab_prev()) message_send("tab-prev");
+    return SEXP_VOID;
 }

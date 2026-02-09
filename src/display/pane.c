@@ -5,6 +5,8 @@
 #include "status.h"
 #include "tab.h"
 #include "theme.h"
+#include "../command/scheme_internal.h"
+#include "../text/message.h"
 
 // Recursively free resources allocated for a pane sub-tree.
 void pane_destroy(Pane *pane) {
@@ -488,4 +490,93 @@ void PaneContent(AppState *state, Pane *pane, int32_t index, float width, float 
     if (pane->type == PANE_V_SPLIT) VSplitPane(state, pane, index, width, height);
     if (pane->type == PANE_H_SPLIT) HSplitPane(state, pane, index, width, height);
     if (pane->type == PANE_CONTENT) BufferPane(state, pane, index, width, height);
+}
+
+// --- Scheme bindings ---
+
+sexp scm_pane_navigate_up(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    message_clear();
+    if (pane_navigate_up()) message_send("pane-navigate-up");
+    return SEXP_VOID;
+}
+
+sexp scm_pane_navigate_down(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    message_clear();
+    if (pane_navigate_down()) message_send("pane-navigate-down");
+    return SEXP_VOID;
+}
+
+sexp scm_pane_navigate_left(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    message_clear();
+    if (pane_navigate_left()) message_send("pane-navigate-left");
+    return SEXP_VOID;
+}
+
+sexp scm_pane_navigate_right(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    message_clear();
+    if (pane_navigate_right()) message_send("pane-navigate-right");
+    return SEXP_VOID;
+}
+
+sexp scm_pane_v_split_increase(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    G->needs_extra_frame = true;
+    message_clear();
+    if (pane_v_split_increase()) message_send("pane-v-split-increase");
+    return SEXP_VOID;
+}
+
+sexp scm_pane_v_split_decrease(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    G->needs_extra_frame = true;
+    message_clear();
+    if (pane_v_split_decrease()) message_send("pane-v-split-decrease");
+    return SEXP_VOID;
+}
+
+sexp scm_pane_h_split_increase(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    G->needs_extra_frame = true;
+    message_clear();
+    if (pane_h_split_increase()) message_send("pane-h-split-increase");
+    return SEXP_VOID;
+}
+
+sexp scm_pane_h_split_decrease(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    G->needs_extra_frame = true;
+    message_clear();
+    if (pane_h_split_decrease()) message_send("pane-h-split-decrease");
+    return SEXP_VOID;
+}
+
+sexp scm_split_vertical(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    G->needs_extra_frame = true;
+    pane_split_vertical(pane_get_active());
+
+    message_send("split-vertical");
+    return SEXP_VOID;
+}
+
+sexp scm_split_horizontal(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    G->needs_extra_frame = true;
+    pane_split_horizontal(pane_get_active());
+
+    message_send("split-horizontal");
+    return SEXP_VOID;
+}
+
+sexp scm_pane_close(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    G->needs_extra_frame = true;
+    pane_close();
+
+    message_send("pane-close");
+    return SEXP_VOID;
 }
