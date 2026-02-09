@@ -200,10 +200,9 @@ static bool CloseButton(AppState *state, Tab *t) {
             ? ui_resolve_color(state, state->ui.roles.bar_bg)
             : (Clay_Color){0}
     }) {
-        IconEntry *ie = tl.current == t
-            ? icon_lookup("tab-close-active")
-            : icon_lookup("tab-close-inactive");
-        SDL_Texture *icon = ie ? ie->texture : NULL;
+        SDL_Texture *icon = tl.current == t
+            ? icon_get("tab-close-active", state, 8, 8)
+            : icon_get("tab-close-inactive", state, 8, 8);
         CLAY_AUTO_ID({
             .layout = {
                 .sizing = {
@@ -243,7 +242,7 @@ void TabBar(AppState *state) {
         .clip = { .horizontal = true },
         .backgroundColor = ui_resolve_color(state, state->ui.roles.tab_bar),
     }) {
-        IconEntry *app_icon = icon_lookup("tab-icon");
+        SDL_Texture *app_tex = icon_get("tab-icon", state, 24, 24);
         CLAY(CLAY_ID("App Icon"), {
             .layout = {
                 .sizing = {
@@ -251,7 +250,7 @@ void TabBar(AppState *state) {
                     .height = 24.0 * state->ui.scale_factor
                 },
             },
-            .image = app_icon ? app_icon->texture : NULL,
+            .image = app_tex,
         }) {}
         OpenTabs(state);
     }

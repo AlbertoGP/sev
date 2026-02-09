@@ -4,6 +4,6 @@
   (%register-icon! name filename color-role))
 
 ;; Tab bar icons
-(register-icon 'tab-close-active "icon-close.png" 'text.primary)
-(register-icon 'tab-close-inactive "icon-close.png" 'text.faded)
-(register-icon 'tab-icon "tab-icon.png" 'text.primary)
+(register-icon 'tab-close-active "icon-close.svg" 'text.primary)
+(register-icon 'tab-close-inactive "icon-close.svg" 'text.faded)
+(register-icon 'tab-icon "tab-icon.svg" 'text.primary)

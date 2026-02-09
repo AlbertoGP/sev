@@ -100,7 +100,7 @@ void StatusBar(AppState *state, Pane *pane) {
                 .backgroundColor = mode_bg
             }){
                 if (icon) {
-                    IconEntry *ie = icon_lookup(icon->icon_name);
+                    SDL_Texture *tex = icon_get(icon->icon_name, state, 16, 16);
                     CLAY(CLAY_ID("Mode Icon"), {
                         .layout = {
                             .sizing = {
@@ -108,7 +108,7 @@ void StatusBar(AppState *state, Pane *pane) {
                                 .height = 16.0 * state->ui.scale_factor
                             },
                         },
-                        .image = ie ? ie->texture : NULL
+                        .image = tex
                     }) {}
                 }
                 CLAY_TEXT(modeName, CLAY_TEXT_CONFIG({

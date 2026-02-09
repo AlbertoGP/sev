@@ -126,10 +126,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     scheme_init(state);
 
-    if (!icons_load_textures(state->rendererData.renderer)) {
-        fprintf(stderr, "Failed to load icon textures.");
-        return SDL_APP_FAILURE;
-    }
+    icons_stash_renderer(state->rendererData.renderer);
     icons_update_colors(state);
 
     return SDL_APP_CONTINUE;

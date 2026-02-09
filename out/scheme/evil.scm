@@ -107,15 +107,15 @@
 (define-minor-mode 'evil-command-mode evil-command-map)
 
 ;; Register mode icons
-(register-mode-icon/full 'evil-normal-mode  "icon-normal.png"
+(register-mode-icon/full 'evil-normal-mode  "icon-normal.svg"
                          'mode.normal  'label.normal  'cursor.normal  'solid)
-(register-mode-icon/full 'evil-insert-mode  "icon-insert.png"
+(register-mode-icon/full 'evil-insert-mode  "icon-insert.svg"
                          'mode.insert  'label.insert  'cursor.insert  'thin)
-(register-mode-icon/full 'evil-replace-mode "icon-replace.png"
+(register-mode-icon/full 'evil-replace-mode "icon-replace.svg"
                          'mode.replace 'label.replace 'cursor.replace 'under)
-(register-mode-icon/full 'evil-select-mode  "icon-select.png"
+(register-mode-icon/full 'evil-select-mode  "icon-select.svg"
                          'mode.select  'label.select  'cursor.select  'hollow)
-(register-mode-icon/full 'evil-command-mode "icon-command.png"
+(register-mode-icon/full 'evil-command-mode "icon-command.svg"
                          'mode.command 'label.command 'cursor.command  'solid)
 
 ;; State transitions
