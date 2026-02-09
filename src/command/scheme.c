@@ -83,17 +83,15 @@ static sexp scm_point_move_by_line(sexp ctx, sexp self, sexp n, sexp count) {
     return SEXP_VOID;
 }
 
-static sexp scm_next_line(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-    point_move_by_line(1);
-    return SEXP_VOID;
-}
+#define SCM_CMD(cname, action) \
+    static sexp cname(sexp ctx, sexp self, sexp n) { \
+        G->needs_redraw = true; \
+        action; \
+        return SEXP_VOID; \
+    }
 
-static sexp scm_prev_line(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-    point_move_by_line(-1);
-    return SEXP_VOID;
-}
+SCM_CMD(scm_next_line,           point_move_by_line(1))
+SCM_CMD(scm_prev_line,           point_move_by_line(-1))
 
 static sexp scm_forward_char(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
@@ -116,19 +114,8 @@ static sexp scm_backward_char(sexp ctx, sexp self, sexp n) {
     return SEXP_VOID;
 }
 
-static sexp scm_newline(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-    insert_char(buffer_get_current(), '\n');
-    message_clear();
-    return SEXP_VOID;
-}
-
-static sexp scm_insert_tab(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-    insert_char(buffer_get_current(), '\t');
-    message_clear();
-    return SEXP_VOID;
-}
+SCM_CMD(scm_newline,             (insert_char(buffer_get_current(), '\n'), message_clear()))
+SCM_CMD(scm_insert_tab,          (insert_char(buffer_get_current(), '\t'), message_clear()))
 
 static sexp scm_delete_backward_char(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
@@ -210,19 +197,8 @@ static sexp scm_set_column(sexp ctx, sexp self, sexp n, sexp column) {
     return SEXP_VOID;
 }
 
-static sexp scm_point_to_line_start(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-    point_to_line_start(buffer_get_current());
-
-    return SEXP_VOID;
-}
-
-static sexp scm_point_to_line_end(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-    point_to_line_end(buffer_get_current());
-
-    return SEXP_VOID;
-}
+SCM_CMD(scm_point_to_line_start, point_to_line_start(buffer_get_current()))
+SCM_CMD(scm_point_to_line_end,   point_to_line_end(buffer_get_current()))
 
 static sexp scm_skip_whitespace(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
@@ -231,86 +207,51 @@ static sexp scm_skip_whitespace(sexp ctx, sexp self, sexp n) {
     return SEXP_VOID;
 }
 
-static sexp scm_tab_next(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
+#define SCM_PANE_NAV(cname, func, msg) \
+    static sexp cname(sexp ctx, sexp self, sexp n) { \
+        G->needs_redraw = true; \
+        message_clear(); \
+        if (func()) message_send(msg); \
+        return SEXP_VOID; \
+    }
 
-    message_clear();
-    if (tab_next())
-        message_send("tab-next");
-    return SEXP_VOID;
-}
+SCM_PANE_NAV(scm_tab_next, tab_next, "tab-next")
+SCM_PANE_NAV(scm_tab_prev, tab_prev, "tab-prev")
+SCM_PANE_NAV(scm_pane_navigate_up,    pane_navigate_up,    "pane-navigate-up")
+SCM_PANE_NAV(scm_pane_navigate_down,  pane_navigate_down,  "pane-navigate-down")
+SCM_PANE_NAV(scm_pane_navigate_left,  pane_navigate_left,  "pane-navigate-left")
+SCM_PANE_NAV(scm_pane_navigate_right, pane_navigate_right, "pane-navigate-right")
 
-static sexp scm_tab_prev(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
+#define SCM_GLOBAL_SCALE(cname, func, label) \
+    static sexp cname(sexp ctx, sexp self, sexp n) { \
+        G->needs_redraw = true; \
+        func(G); \
+        message_send(label); \
+        return SEXP_VOID; \
+    }
 
-    message_clear();
-    if (tab_prev())
-        message_send("tab-prev");
-    return SEXP_VOID;
-}
-
-static sexp scm_reset_global_scale(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-    reset_scale(G);
-
-    char message[64];
-    snprintf(message, 64, "reset-global-scale -> %.2f", G->ui.scale_factor);
-    message_send(message);
-    return SEXP_VOID;
-}
-
-static sexp scm_increase_global_scale(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-    increase_scale(G);
-
-    char message[64];
-    snprintf(message, 64, "increase-global-scale -> %.2f", G->ui.scale_factor);
-    message_send(message);
-    return SEXP_VOID;
-}
-
-static sexp scm_decrease_global_scale(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-    decrease_scale(G);
-
-    char message[64];
-    snprintf(message, 64, "decrease-global-scale -> %.2f", G->ui.scale_factor);
-    message_send(message);
-    return SEXP_VOID;
-}
+SCM_GLOBAL_SCALE(scm_reset_global_scale,    reset_scale,    "reset-global-scale")
+SCM_GLOBAL_SCALE(scm_increase_global_scale, increase_scale, "increase-global-scale")
+SCM_GLOBAL_SCALE(scm_decrease_global_scale, decrease_scale, "decrease-global-scale")
 
 static sexp scm_reset_buffer_scale(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     reset_buffer_scale(G, buffer_get_current());
 
-    char message[64];
-    snprintf(message, 64, "reset-buffer-scale -> %.2f",
-             buffer_get_scale(buffer_get_current()));
-    message_send(message);
+    message_send("reset-buffer-scale");
     return SEXP_VOID;
 }
 
-static sexp scm_increase_buffer_scale(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-    increase_buffer_scale(buffer_get_current());
+#define SCM_BUFFER_SCALE(cname, func, label) \
+    static sexp cname(sexp ctx, sexp self, sexp n) { \
+        G->needs_redraw = true; \
+        func(buffer_get_current()); \
+        message_send(label); \
+        return SEXP_VOID; \
+    }
 
-    char message[64];
-    snprintf(message, 64, "increase-buffer-scale -> %.2f",
-             buffer_get_scale(buffer_get_current()));
-    message_send(message);
-    return SEXP_VOID;
-}
-
-static sexp scm_decrease_buffer_scale(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-    decrease_buffer_scale(buffer_get_current());
-
-    char message[64];
-    snprintf(message, 64, "decrease-buffer-scale -> %.2f",
-             buffer_get_scale(buffer_get_current()));
-    message_send(message);
-    return SEXP_VOID;
-}
+SCM_BUFFER_SCALE(scm_increase_buffer_scale, increase_buffer_scale, "increase-buffer-scale")
+SCM_BUFFER_SCALE(scm_decrease_buffer_scale, decrease_buffer_scale, "decrease-buffer-scale")
 
 static sexp scm_split_vertical(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
@@ -339,81 +280,19 @@ static sexp scm_pane_close(sexp ctx, sexp self, sexp n) {
     return SEXP_VOID;
 }
 
-static sexp scm_pane_navigate_up(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
+#define SCM_PANE_RESIZE(cname, func, msg) \
+    static sexp cname(sexp ctx, sexp self, sexp n) { \
+        G->needs_redraw = true; \
+        G->needs_extra_frame = true; \
+        message_clear(); \
+        if (func()) message_send(msg); \
+        return SEXP_VOID; \
+    }
 
-    message_clear();
-    if (pane_navigate_up())
-        message_send("pane-navigate-up");
-    return SEXP_VOID;
-}
-
-static sexp scm_pane_navigate_down(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-
-    message_clear();
-    if (pane_navigate_down())
-        message_send("pane-navigate-down");
-    return SEXP_VOID;
-}
-
-static sexp scm_pane_navigate_left(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-
-    message_clear();
-    if (pane_navigate_left())
-        message_send("pane-navigate-left");
-    return SEXP_VOID;
-}
-
-static sexp scm_pane_navigate_right(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-    
-    message_clear();
-    if (pane_navigate_right())
-        message_send("pane-navigate-right");
-    return SEXP_VOID;
-}
-
-static sexp scm_pane_v_split_increase(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-    G->needs_extra_frame = true;
-
-    message_clear();
-    if (pane_v_split_increase())
-        message_send("pane-v-split-increase");
-    return SEXP_VOID;
-}
-
-static sexp scm_pane_v_split_decrease(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-    G->needs_extra_frame = true;
-
-    message_clear();
-    if (pane_v_split_decrease())
-        message_send("pane-v-split-decrease");
-    return SEXP_VOID;
-}
-
-static sexp scm_pane_h_split_increase(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-    G->needs_extra_frame = true;
-
-    message_clear();
-    if (pane_h_split_increase())
-        message_send("pane-h-split-increase");
-    return SEXP_VOID;
-}
-
-static sexp scm_pane_h_split_decrease(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
-    G->needs_extra_frame = true;
-
-    message_clear();
-    if (pane_h_split_decrease())
-        message_send("pane-h-split-decrease");
-    return SEXP_VOID;
-}
+SCM_PANE_RESIZE(scm_pane_v_split_increase, pane_v_split_increase, "pane-v-split-increase")
+SCM_PANE_RESIZE(scm_pane_v_split_decrease, pane_v_split_decrease, "pane-v-split-decrease")
+SCM_PANE_RESIZE(scm_pane_h_split_increase, pane_h_split_increase, "pane-h-split-increase")
+SCM_PANE_RESIZE(scm_pane_h_split_decrease, pane_h_split_decrease, "pane-h-split-decrease")
 
 static sexp scm_eval_buffer(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
@@ -814,76 +693,78 @@ void scheme_init(AppState *state) {
                     global_km);
     
     sexp_gc_release1(ctx);
+
+    #define SDEF(a, b, c) sexp_define_foreign(ctx, env, a, b, c)
     
     // Register foreign functions
-    sexp_define_foreign(ctx, env, "quit", 0, scm_quit);
-    sexp_define_foreign(ctx, env, "message", 1, scm_message_send);
-    sexp_define_foreign(ctx, env, "message-clear", 0, scm_message_clear);
-    sexp_define_foreign(ctx, env, "make-keymap", 0, scm_make_keymap);
-    sexp_define_foreign(ctx, env, "%set-key!", 3, scm_set_key);
-    sexp_define_foreign(ctx, env, "insert-char", 1, scm_insert_char);
-    sexp_define_foreign(ctx, env, "self-insert", 0, scm_self_insert);
-    sexp_define_foreign(ctx, env, "delete-char", 1, scm_delete_char);
-    sexp_define_foreign(ctx, env, "move-point", 1, scm_point_move);
-    sexp_define_foreign(ctx, env, "move-point-by-line", 1, scm_point_move_by_line);
-    sexp_define_foreign(ctx, env, "next-line", 0, scm_next_line);
-    sexp_define_foreign(ctx, env, "prev-line", 0, scm_prev_line);
-    sexp_define_foreign(ctx, env, "forward-char", 0, scm_forward_char);
-    sexp_define_foreign(ctx, env, "backward-char", 0, scm_backward_char);
-    sexp_define_foreign(ctx, env, "newline", 0, scm_newline);
-    sexp_define_foreign(ctx, env, "insert-tab", 0, scm_insert_tab);
-    sexp_define_foreign(ctx, env, "delete-backward-char", 0, scm_delete_backward_char);
-    sexp_define_foreign(ctx, env, "delete-forward-char", 0, scm_delete_forward_char);
-    sexp_define_foreign(ctx, env, "set-column", 1, scm_set_column);
-    sexp_define_foreign(ctx, env, "line-start", 0, scm_point_to_line_start);
-    sexp_define_foreign(ctx, env, "line-end", 0, scm_point_to_line_end);
-    sexp_define_foreign(ctx, env, "skip-whitespace", 0, scm_skip_whitespace);
-    sexp_define_foreign(ctx, env, "set-column", 1, scm_set_column);
-    sexp_define_foreign(ctx, env, "char-at-point", 0, scm_char_at_point);
-    sexp_define_foreign(ctx, env, "tab-next", 0, scm_tab_next);
-    sexp_define_foreign(ctx, env, "tab-prev", 0, scm_tab_prev);
-    sexp_define_foreign(ctx, env, "reset-global-scale", 0, scm_reset_global_scale);
-    sexp_define_foreign(ctx, env, "increase-global-scale", 0, scm_increase_global_scale);
-    sexp_define_foreign(ctx, env, "decrease-global-scale", 0, scm_decrease_global_scale);
-    sexp_define_foreign(ctx, env, "reset-buffer-scale", 0, scm_reset_buffer_scale);
-    sexp_define_foreign(ctx, env, "increase-buffer-scale", 0, scm_increase_buffer_scale);
-    sexp_define_foreign(ctx, env, "decrease-buffer-scale", 0, scm_decrease_buffer_scale);
-    sexp_define_foreign(ctx, env, "split-vertical", 0, scm_split_vertical);
-    sexp_define_foreign(ctx, env, "split-horizontal", 0, scm_split_horizontal);
-    sexp_define_foreign(ctx, env, "pane-close", 0, scm_pane_close);
-    sexp_define_foreign(ctx, env, "pane-navigate-up", 0, scm_pane_navigate_up);
-    sexp_define_foreign(ctx, env, "pane-navigate-down", 0, scm_pane_navigate_down);
-    sexp_define_foreign(ctx, env, "pane-navigate-left", 0, scm_pane_navigate_left);
-    sexp_define_foreign(ctx, env, "pane-navigate-right", 0, scm_pane_navigate_right);
-    sexp_define_foreign(ctx, env, "pane-v-split-increase", 0, scm_pane_v_split_increase);
-    sexp_define_foreign(ctx, env, "pane-v-split-decrease", 0, scm_pane_v_split_decrease);
-    sexp_define_foreign(ctx, env, "pane-h-split-increase", 0, scm_pane_h_split_increase);
-    sexp_define_foreign(ctx, env, "pane-h-split-decrease", 0, scm_pane_h_split_decrease);
-    sexp_define_foreign(ctx, env, "eval-buffer", 0, scm_eval_buffer);
-    sexp_define_foreign(ctx, env, "clay-debug", 0, scm_clay_debug);
-    sexp_define_foreign(ctx, env, "prefix-arg", 0, scm_prefix_arg);
-    sexp_define_foreign(ctx, env, "%set-keymap-default!", 2, scm_set_keymap_default);
-    sexp_define_foreign(ctx, env, "ignore", 0, scm_ignore);
-    sexp_define_foreign(ctx, env, "%buffer-has-minor-mode?", 1, scm_buffer_has_minor_mode);
+    SDEF("quit", 0, scm_quit);
+    SDEF("message", 1, scm_message_send);
+    SDEF("message-clear", 0, scm_message_clear);
+    SDEF("make-keymap", 0, scm_make_keymap);
+    SDEF("%set-key!", 3, scm_set_key);
+    SDEF("insert-char", 1, scm_insert_char);
+    SDEF("self-insert", 0, scm_self_insert);
+    SDEF("delete-char", 1, scm_delete_char);
+    SDEF("move-point", 1, scm_point_move);
+    SDEF("move-point-by-line", 1, scm_point_move_by_line);
+    SDEF("next-line", 0, scm_next_line);
+    SDEF("prev-line", 0, scm_prev_line);
+    SDEF("forward-char", 0, scm_forward_char);
+    SDEF("backward-char", 0, scm_backward_char);
+    SDEF("newline", 0, scm_newline);
+    SDEF("insert-tab", 0, scm_insert_tab);
+    SDEF("delete-backward-char", 0, scm_delete_backward_char);
+    SDEF("delete-forward-char", 0, scm_delete_forward_char);
+    SDEF("set-column", 1, scm_set_column);
+    SDEF("line-start", 0, scm_point_to_line_start);
+    SDEF("line-end", 0, scm_point_to_line_end);
+    SDEF("skip-whitespace", 0, scm_skip_whitespace);
+    SDEF("set-column", 1, scm_set_column);
+    SDEF("char-at-point", 0, scm_char_at_point);
+    SDEF("tab-next", 0, scm_tab_next);
+    SDEF("tab-prev", 0, scm_tab_prev);
+    SDEF("reset-global-scale", 0, scm_reset_global_scale);
+    SDEF("increase-global-scale", 0, scm_increase_global_scale);
+    SDEF("decrease-global-scale", 0, scm_decrease_global_scale);
+    SDEF("reset-buffer-scale", 0, scm_reset_buffer_scale);
+    SDEF("increase-buffer-scale", 0, scm_increase_buffer_scale);
+    SDEF("decrease-buffer-scale", 0, scm_decrease_buffer_scale);
+    SDEF("split-vertical", 0, scm_split_vertical);
+    SDEF("split-horizontal", 0, scm_split_horizontal);
+    SDEF("pane-close", 0, scm_pane_close);
+    SDEF("pane-navigate-up", 0, scm_pane_navigate_up);
+    SDEF("pane-navigate-down", 0, scm_pane_navigate_down);
+    SDEF("pane-navigate-left", 0, scm_pane_navigate_left);
+    SDEF("pane-navigate-right", 0, scm_pane_navigate_right);
+    SDEF("pane-v-split-increase", 0, scm_pane_v_split_increase);
+    SDEF("pane-v-split-decrease", 0, scm_pane_v_split_decrease);
+    SDEF("pane-h-split-increase", 0, scm_pane_h_split_increase);
+    SDEF("pane-h-split-decrease", 0, scm_pane_h_split_decrease);
+    SDEF("eval-buffer", 0, scm_eval_buffer);
+    SDEF("clay-debug", 0, scm_clay_debug);
+    SDEF("prefix-arg", 0, scm_prefix_arg);
+    SDEF("%set-keymap-default!", 2, scm_set_keymap_default);
+    SDEF("ignore", 0, scm_ignore);
+    SDEF("%buffer-has-minor-mode?", 1, scm_buffer_has_minor_mode);
 
     // Mode primitives
-    sexp_define_foreign(ctx, env, "%register-mode", 3, scm_register_mode);
-    sexp_define_foreign(ctx, env, "%set-major-mode", 1, scm_set_major_mode);
-    sexp_define_foreign(ctx, env, "%enable-minor-mode", 1, scm_enable_minor_mode);
-    sexp_define_foreign(ctx, env, "%disable-minor-mode", 1, scm_disable_minor_mode);
-    sexp_define_foreign(ctx, env, "%buffer-major-mode", 0, scm_buffer_major_mode);
-    sexp_define_foreign(ctx, env, "%buffer-minor-modes", 0, scm_buffer_minor_modes);
+    SDEF("%register-mode", 3, scm_register_mode);
+    SDEF("%set-major-mode", 1, scm_set_major_mode);
+    SDEF("%enable-minor-mode", 1, scm_enable_minor_mode);
+    SDEF("%disable-minor-mode", 1, scm_disable_minor_mode);
+    SDEF("%buffer-major-mode", 0, scm_buffer_major_mode);
+    SDEF("%buffer-minor-modes", 0, scm_buffer_minor_modes);
 
     // Variable primitives
-    sexp_define_foreign(ctx, env, "%set-local!", 2, scm_set_local);
-    sexp_define_foreign(ctx, env, "%get-local", 2, scm_get_local);
-    sexp_define_foreign(ctx, env, "%set-palette!", 2, scm_set_palette);
-    sexp_define_foreign(ctx, env, "%update-icon-colors!", 0, scm_update_icon_colors);
-    sexp_define_foreign(ctx, env, "%register-icon!", 3, scm_register_icon);
-    sexp_define_foreign(ctx, env, "%register-mode-icon!", 6, scm_register_mode_icon);
-    sexp_define_foreign(ctx, env, "%set-role!", 2, scm_set_role);
-    sexp_define_foreign(ctx, env, "%clear-palette!", 0, scm_clear_palette);
-    sexp_define_foreign(ctx, env, "%clear-roles!", 0, scm_clear_roles);
+    SDEF("%set-local!", 2, scm_set_local);
+    SDEF("%get-local", 2, scm_get_local);
+    SDEF("%set-palette!", 2, scm_set_palette);
+    SDEF("%update-icon-colors!", 0, scm_update_icon_colors);
+    SDEF("%register-icon!", 3, scm_register_icon);
+    SDEF("%register-mode-icon!", 6, scm_register_mode_icon);
+    SDEF("%set-role!", 2, scm_set_role);
+    SDEF("%clear-palette!", 0, scm_clear_palette);
+    SDEF("%clear-roles!", 0, scm_clear_roles);
 
     #ifdef __EMSCRIPTEN__
     #define RESOURCES_PATH "/resources/"
@@ -894,38 +775,20 @@ void scheme_init(AppState *state) {
     #define RESOURCES_PATH resourcesPath
     #endif
 
-    // Load command.scm first (provides infrastructure for init.scm)
-    char commandScriptPath[1024];
-    snprintf(commandScriptPath, sizeof(commandScriptPath), "%scommand.scm", RESOURCES_PATH);
-    sexp result = sexp_load(ctx, sexp_c_string(ctx, commandScriptPath, -1), env);
-    if (sexp_exceptionp(result)) {
-        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
-    }
+    #define LOAD_SCRIPT(name) do { \
+        char path_[1024]; \
+        snprintf(path_, sizeof(path_), "%s" name ".scm", RESOURCES_PATH); \
+        result = sexp_load(ctx, sexp_c_string(ctx, path_, -1), env); \
+        if (sexp_exceptionp(result)) \
+            sexp_print_exception(ctx, result, sexp_current_error_port(ctx)); \
+    } while(0)
 
-    // Load mode.scm (mode system wrappers)
-    char modeScriptPath[1024];
-    snprintf(modeScriptPath, sizeof(modeScriptPath), "%smode.scm", RESOURCES_PATH);
-    result = sexp_load(ctx, sexp_c_string(ctx, modeScriptPath, -1), env);
-    if (sexp_exceptionp(result)) {
-        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
-    }
+    sexp result;
+    LOAD_SCRIPT("command");
+    LOAD_SCRIPT("mode");
+    LOAD_SCRIPT("icon");
+    LOAD_SCRIPT("evil");
 
-    // Load icon.scm (icon registry wrappers + tab icon registrations)
-    char iconScriptPath[1024];
-    snprintf(iconScriptPath, sizeof(iconScriptPath), "%sicon.scm", RESOURCES_PATH);
-    result = sexp_load(ctx, sexp_c_string(ctx, iconScriptPath, -1), env);
-    if (sexp_exceptionp(result)) {
-        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
-    }
-
-    // Load evil.scm (vim-like modal editing)
-    char evilScriptPath[1024];
-    snprintf(evilScriptPath, sizeof(evilScriptPath), "%sevil.scm", RESOURCES_PATH);
-    result = sexp_load(ctx, sexp_c_string(ctx, evilScriptPath, -1), env);
-    if (sexp_exceptionp(result)) {
-        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
-    }
-    
     // Cache role symbols for fast lookup
     #define INTERN_ROLE(field, name) do { \
         state->ui.roles.field = sexp_intern(ctx, name, -1); \
@@ -944,22 +807,10 @@ void scheme_init(AppState *state) {
 
     #undef INTERN_ROLE
 
+    LOAD_SCRIPT("theme");
+    LOAD_SCRIPT("init");
 
-    // Load theme.scm (sets up theming and semantic UI roles)
-    char themeScriptPath[1024];
-    snprintf(themeScriptPath, sizeof(themeScriptPath), "%stheme.scm", RESOURCES_PATH);
-    result = sexp_load(ctx, sexp_c_string(ctx, themeScriptPath, -1), env);
-    if (sexp_exceptionp(result)) {
-        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
-    }
-
-    // Load init.scm
-    char initScriptPath[1024];
-    snprintf(initScriptPath, sizeof(initScriptPath), "%sinit.scm", RESOURCES_PATH);
-    result = sexp_load(ctx, sexp_c_string(ctx, initScriptPath, -1), env);
-    if (sexp_exceptionp(result)) {
-        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
-    }
+    #undef LOAD_SCRIPT
 
     // Get call-interactively procedure (defined in command.scm)
     state->chibi.call_interactively = sexp_env_ref(

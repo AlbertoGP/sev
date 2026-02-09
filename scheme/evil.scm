@@ -1,7 +1,6 @@
 ;;; evil.scm - Vim-like modal editing
 
-(set-doc! 'ignore 'command "Do nothing.")
-(make-interactive! 'ignore "")
+(defcommand ignore "Do nothing.")
 
 ;; Keymaps
 (define evil-normal-map (make-keymap))
@@ -13,27 +12,27 @@
 ;; Normal mode: ignore unbound keys (no self-insert)
 (%set-keymap-default! evil-normal-map 'ignore)
 
-(define (line-start-skip-whitespace) (begin (line-start) (skip-whitespace)))
-(make-interactive! 'line-start-skip-whitespace "")
-(set-doc! 'line-start-skip-whitespace 'command "Set cursor to first non-blank character on current line.")
-(define (open-line-below) (begin (line-end) (newline) (evil-insert)))
-(make-interactive! 'open-line-below "")
-(set-doc! 'open-line-below 'command "Create a new empty line below current line, move to it and enter insert mode.")
-(define (open-line-above) (begin (line-start) (newline) (prev-line) (evil-insert)))
-(make-interactive! 'open-line-above "")
-(set-doc! 'open-line-above 'command "Create a new empty line above current line, move to it and enter insert mode.")
-(define (insert-at-start) (begin (line-start-skip-whitespace) (evil-insert)))
-(make-interactive! 'insert-at-start "")
-(set-doc! 'insert-at-start 'command "Set cursor to first non-blank character on current line and enter insert mode.")
-(define (append-char) (begin (forward-char) (evil-insert)))
-(make-interactive! 'append-char "")
-(set-doc! 'append-char 'command "Enter insert mode after the character currently under the cursor.")
-(define (append-line) (begin (line-end) (evil-insert)))
-(make-interactive! 'append-line "")
-(set-doc! 'append-line 'command "Set the cursor to the final column on the current line and enter insert mode.")
-(define (join-line) (begin (line-end) (delete-forward-char)))
-(make-interactive! 'join-line "")
-(set-doc! 'join-line 'command "Delete newline character between the current and subsequent line.")
+(defcommand (line-start-skip-whitespace)
+  "Set cursor to first non-blank character on current line."
+  (line-start) (skip-whitespace))
+(defcommand (open-line-below)
+  "Create a new empty line below current line, move to it and enter insert mode."
+  (line-end) (newline) (evil-insert))
+(defcommand (open-line-above)
+  "Create a new empty line above current line, move to it and enter insert mode."
+  (line-start) (newline) (prev-line) (evil-insert))
+(defcommand (insert-at-start)
+  "Set cursor to first non-blank character on current line and enter insert mode."
+  (line-start-skip-whitespace) (evil-insert))
+(defcommand (append-char)
+  "Enter insert mode after the character currently under the cursor."
+  (forward-char) (evil-insert))
+(defcommand (append-line)
+  "Set the cursor to the final column on the current line and enter insert mode."
+  (line-end) (evil-insert))
+(defcommand (join-line)
+  "Delete newline character between the current and subsequent line."
+  (line-end) (delete-forward-char))
 
 ;; Normal mode bindings
 (set-key! evil-normal-map "C-q" 'quit)
@@ -164,16 +163,11 @@
   (set-local! 'mode-name "COMMAND")
   (message-clear))
 
-(set-doc! 'evil-normal 'command "Return to normal mode.")
-(set-doc! 'evil-insert 'command "Enter insert mode.")
-(set-doc! 'evil-replace 'command "Enter replace mode.")
-(set-doc! 'evil-select 'command "Enter select select mode.")
-(set-doc! 'evil-command 'command "Enter command mode.")
-(make-interactive! 'evil-normal "")
-(make-interactive! 'evil-insert "")
-(make-interactive! 'evil-replace "")
-(make-interactive! 'evil-select "")
-(make-interactive! 'evil-command "")
+(defcommand evil-normal "Return to normal mode.")
+(defcommand evil-insert "Enter insert mode.")
+(defcommand evil-replace "Enter replace mode.")
+(defcommand evil-select "Enter select mode.")
+(defcommand evil-command "Enter command mode.")
 
 ;; Query function for UI
 (define (evil-state)
@@ -186,8 +180,7 @@
 (define (evil-mode)
   (enable-minor-mode 'evil-normal-mode))
 
-(set-doc! 'evil-mode 'command "Enable vim-like modal editing.")
-(make-interactive! 'evil-mode "")
+(defcommand evil-mode "Enable vim-like modal editing.")
 
 (evil-mode)
 (evil-normal)
