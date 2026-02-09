@@ -13,6 +13,7 @@
 #include "message.h"
 #include "var.h"
 #include "../command/scheme_internal.h"
+#include "../display/scale.h"
 
 extern KeyEvent last_event;
 
@@ -168,8 +169,16 @@ Buffer *buffer_create(const char *name) {
 
     // Enable evil-normal-mode if registered (no-op before scheme_init)
     Mode *evil = mode_lookup("evil-normal-mode", MODE_MINOR);
-    if (evil)
+    if (evil) {
         buffer_enable_minor_mode(buf, evil);
+        sexp ctx = G->chibi.ctx;
+        sexp key = sexp_intern(ctx, "mode-name", -1);
+        sexp val = sexp_c_string(ctx, "NORMAL", -1);
+        sexp_preserve_object(ctx, val);
+        vartable_set(&buf->locals, key, val);
+    }
+
+    reset_buffer_scale(G, buf);
 
     return buf;
 }
