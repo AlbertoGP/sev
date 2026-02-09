@@ -63,16 +63,26 @@
     (else
      (%set-key! keymap keystr cmd))))
 
+;; S-expression interactive spec resolution
+(define (resolve-arg-form form)
+  (case (car form)
+    ((prefix)
+     (if (pair? (cdr form))
+         (list (or (prefix-arg) (cadr form)))
+         (list (prefix-arg))))
+    (else
+     (error "Unknown interactive spec" form))))
+
+(define (resolve-interactive-spec spec)
+  (apply append (map resolve-arg-form spec)))
+
 ;; call-interactively - invoke command with args based on interactive spec
 (define (call-interactively sym)
   (let ((proc (eval sym))
         (spec (interactive-spec sym)))
-    (cond
-      ((not spec) (proc))
-      ((equal? spec "") (proc))
-      ((equal? spec "p") (proc (prefix-arg)))
-      ((equal? spec "P") (proc (or (prefix-arg) 1)))
-      (else (proc)))))
+    (if (or (not spec) (null? spec))
+        (proc)
+        (apply proc (resolve-interactive-spec spec)))))
 
 ;; Introspection
 (define (list-commands) (list-by-kind 'command))
@@ -87,3 +97,29 @@
       (cons 'keys keys)
       (cons 'kind (and doc (doc-kind doc)))
       (cons 'doc (if doc (doc-text doc) "")))))
+
+;; defcommand macro - declare commands concisely
+(define-syntax defcommand
+  (syntax-rules (interactive)
+    ;; Scheme command with interactive spec and body
+    ((defcommand (name args ...) docstring (interactive specs ...) body ...)
+     (begin
+       (define (name args ...) body ...)
+       (set-doc! 'name 'command docstring)
+       (make-interactive! 'name '(specs ...))))
+    ;; Scheme command with body, no interactive spec
+    ((defcommand (name args ...) docstring body ...)
+     (begin
+       (define (name args ...) body ...)
+       (set-doc! 'name 'command docstring)
+       (make-interactive! 'name '())))
+    ;; C primitive with interactive spec, no body
+    ((defcommand name docstring (interactive specs ...))
+     (begin
+       (set-doc! 'name 'command docstring)
+       (make-interactive! 'name '(specs ...))))
+    ;; C primitive, no interactive spec, no body
+    ((defcommand name docstring)
+     (begin
+       (set-doc! 'name 'command docstring)
+       (make-interactive! 'name '())))))
