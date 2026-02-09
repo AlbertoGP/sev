@@ -252,6 +252,7 @@ void scheme_init(AppState *state) {
     LOAD_SCRIPT("command");
     LOAD_SCRIPT("mode");
     LOAD_SCRIPT("icon");
+    LOAD_SCRIPT("built-in");
     LOAD_SCRIPT("evil");
 
     // Cache role symbols for fast lookup
