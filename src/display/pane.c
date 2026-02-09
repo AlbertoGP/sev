@@ -329,7 +329,7 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
     size_t point = point_get(buf).pos;
 
     const uint16_t font_id = FONT_NORMAL;
-    const uint16_t font_size = 16 * state->ui.scale_factor;
+    const uint16_t font_size = 15 * state->ui.scale_factor * buffer_get_scale(buf);
     const float padding = 24.0f * state->ui.scale_factor;
 
     CLAY(CLAY_IDI_LOCAL("BufferPane", index), {

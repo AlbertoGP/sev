@@ -42,6 +42,10 @@ bool buffer_set_name(const char *name);
 char *buffer_get_name(Buffer *buf);
 // Returns a pointer to buffer matching name.
 Buffer *buffer_get_by_name(const char *name);
+// Gets the scaling factor of text in the buffer
+float buffer_get_scale(Buffer *buf);
+// Sets the scaling factor of text in the buffer
+bool buffer_set_scale(Buffer *buf, float new_value);
 
 // Sets the point to the specified location in the current buffer.
 bool point_set(Location loc);

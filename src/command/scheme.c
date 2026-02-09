@@ -278,6 +278,39 @@ static sexp scm_decrease_global_scale(sexp ctx, sexp self, sexp n) {
     return SEXP_VOID;
 }
 
+static sexp scm_reset_buffer_scale(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    reset_buffer_scale(G, buffer_get_current());
+
+    char message[64];
+    snprintf(message, 64, "reset-buffer-scale -> %.2f",
+             buffer_get_scale(buffer_get_current()));
+    message_send(message);
+    return SEXP_VOID;
+}
+
+static sexp scm_increase_buffer_scale(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    increase_buffer_scale(buffer_get_current());
+
+    char message[64];
+    snprintf(message, 64, "increase-buffer-scale -> %.2f",
+             buffer_get_scale(buffer_get_current()));
+    message_send(message);
+    return SEXP_VOID;
+}
+
+static sexp scm_decrease_buffer_scale(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    decrease_buffer_scale(buffer_get_current());
+
+    char message[64];
+    snprintf(message, 64, "decrease-buffer-scale -> %.2f",
+             buffer_get_scale(buffer_get_current()));
+    message_send(message);
+    return SEXP_VOID;
+}
+
 static sexp scm_split_vertical(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     G->needs_extra_frame = true;
@@ -809,6 +842,9 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "reset-global-scale", 0, scm_reset_global_scale);
     sexp_define_foreign(ctx, env, "increase-global-scale", 0, scm_increase_global_scale);
     sexp_define_foreign(ctx, env, "decrease-global-scale", 0, scm_decrease_global_scale);
+    sexp_define_foreign(ctx, env, "reset-buffer-scale", 0, scm_reset_buffer_scale);
+    sexp_define_foreign(ctx, env, "increase-buffer-scale", 0, scm_increase_buffer_scale);
+    sexp_define_foreign(ctx, env, "decrease-buffer-scale", 0, scm_decrease_buffer_scale);
     sexp_define_foreign(ctx, env, "split-vertical", 0, scm_split_vertical);
     sexp_define_foreign(ctx, env, "split-horizontal", 0, scm_split_horizontal);
     sexp_define_foreign(ctx, env, "pane-close", 0, scm_pane_close);
