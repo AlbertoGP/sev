@@ -204,3 +204,8 @@
 (make-interactive! 'pane-v-split-increase "")
 (make-interactive! 'pane-v-split-decrease "")
 (make-interactive! 'clay-debug "")
+
+
+(reset-buffer-scale)
+(reset-global-scale)
+(message-clear)

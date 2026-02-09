@@ -191,4 +191,3 @@
 
 (evil-mode)
 (evil-normal)
-(reset-buffer-scale)
