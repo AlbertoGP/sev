@@ -56,7 +56,6 @@ typedef struct AppState {
     Uint64 last_frame_ns;
     bool debug_open;
     Chibi chibi;
-    VarTable globals;
     UIState ui;
     InputState input;
 } AppState;

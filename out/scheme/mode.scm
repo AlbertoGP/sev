@@ -32,15 +32,6 @@
 (define (buffer-minor-modes)
   (%buffer-minor-modes))
 
-;; Set a global variable
-(define (set-global! name val)
-  (%set-global! name val))
-
-;; Get a global variable with a default
-(define (get-global name . args)
-  (let ((default (if (pair? args) (car args) #f)))
-    (%get-global name default)))
-
 ;; Set a buffer-local variable
 (define (set-local! name val)
   (%set-local! name val))

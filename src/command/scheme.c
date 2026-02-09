@@ -645,26 +645,6 @@ static sexp scm_get_local(sexp ctx, sexp self, sexp n, sexp key, sexp sdefault) 
     return vartable_get(locals, key, sdefault);
 }
 
-// (%set-global! name val) -> val
-static sexp scm_set_global(sexp ctx, sexp self, sexp n, sexp key, sexp sval) {
-    if (!sexp_symbolp(key)) {
-        return sexp_user_exception(ctx, self, "name must be a symbol", key);
-    }
-
-    sexp_preserve_object(ctx, sval);
-    vartable_set(&G->globals, key, sval);
-    return sval;
-}
-
-// (%get-global name default) -> value or default
-static sexp scm_get_global(sexp ctx, sexp self, sexp n, sexp key, sexp sdefault) {
-    if (!sexp_symbolp(key)) {
-        return sexp_user_exception(ctx, self, "name must be a symbol", key);
-    }
-
-    return vartable_get(&G->globals, key, sdefault);
-}
-
 static sexp scm_update_icon_colors(sexp ctx, sexp self, sexp n) {
     icons_update_colors(G);
     return SEXP_VOID;
@@ -897,8 +877,6 @@ void scheme_init(AppState *state) {
     // Variable primitives
     sexp_define_foreign(ctx, env, "%set-local!", 2, scm_set_local);
     sexp_define_foreign(ctx, env, "%get-local", 2, scm_get_local);
-    sexp_define_foreign(ctx, env, "%set-global!", 2, scm_set_global);
-    sexp_define_foreign(ctx, env, "%get-global", 2, scm_get_global);
     sexp_define_foreign(ctx, env, "%set-palette!", 2, scm_set_palette);
     sexp_define_foreign(ctx, env, "%update-icon-colors!", 0, scm_update_icon_colors);
     sexp_define_foreign(ctx, env, "%register-icon!", 3, scm_register_icon);

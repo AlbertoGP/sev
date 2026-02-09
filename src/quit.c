@@ -3,7 +3,6 @@
 #include "state.h"
 #include "display/tab.h"
 #include "text/buffer.h"
-#include "text/var.h"
 
 /* This function runs once at shutdown. */
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
@@ -17,8 +16,6 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     AppState *state = appstate;
 
     if (state) {
-        vartable_destroy(&state->globals);
-
         if (state->rendererData.renderer)
             SDL_DestroyRenderer(state->rendererData.renderer);
 
