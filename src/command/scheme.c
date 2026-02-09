@@ -10,6 +10,7 @@
 #include "../text/message.h"
 #include "../display/tab.h"
 #include "../display/scale.h"
+#include "../display/icon.h"
 #include "../display/mode_icon.h"
 
 static AppState *G;   // global app state for commands
@@ -665,8 +666,30 @@ static sexp scm_get_global(sexp ctx, sexp self, sexp n, sexp key, sexp sdefault)
 }
 
 static sexp scm_update_icon_colors(sexp ctx, sexp self, sexp n) {
-    mode_icons_update_colors(G);
+    icons_update_colors(G);
     return SEXP_VOID;
+}
+
+// (%register-icon! name filename color-role)
+static sexp scm_register_icon(sexp ctx, sexp self, sexp n,
+                               sexp sname, sexp sfilename, sexp scolor_role) {
+    if (!sexp_symbolp(sname))
+        return sexp_user_exception(ctx, self, "name must be a symbol", sname);
+    if (!sexp_stringp(sfilename))
+        return sexp_user_exception(ctx, self, "filename must be a string", sfilename);
+    if (!sexp_symbolp(scolor_role))
+        return sexp_user_exception(ctx, self, "color-role must be a symbol", scolor_role);
+
+    const char *name = sexp_string_data(sexp_symbol_to_string(ctx, sname));
+    const char *filename = sexp_string_data(sfilename);
+
+    sexp color_role = sexp_intern(ctx, sexp_string_data(sexp_symbol_to_string(ctx, scolor_role)), -1);
+    sexp_preserve_object(ctx, color_role);
+
+    if (!icon_register(name, filename, color_role))
+        return SEXP_FALSE;
+
+    return SEXP_TRUE;
 }
 
 // (%register-mode-icon! mode-name filename role-bg role-label role-cursor cursor-type-sym)
@@ -878,6 +901,7 @@ void scheme_init(AppState *state) {
     sexp_define_foreign(ctx, env, "%get-global", 2, scm_get_global);
     sexp_define_foreign(ctx, env, "%set-palette!", 2, scm_set_palette);
     sexp_define_foreign(ctx, env, "%update-icon-colors!", 0, scm_update_icon_colors);
+    sexp_define_foreign(ctx, env, "%register-icon!", 3, scm_register_icon);
     sexp_define_foreign(ctx, env, "%register-mode-icon!", 6, scm_register_mode_icon);
     sexp_define_foreign(ctx, env, "%set-role!", 2, scm_set_role);
     sexp_define_foreign(ctx, env, "%clear-palette!", 0, scm_clear_palette);
@@ -904,6 +928,14 @@ void scheme_init(AppState *state) {
     char modeScriptPath[1024];
     snprintf(modeScriptPath, sizeof(modeScriptPath), "%smode.scm", RESOURCES_PATH);
     result = sexp_load(ctx, sexp_c_string(ctx, modeScriptPath, -1), env);
+    if (sexp_exceptionp(result)) {
+        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+    }
+
+    // Load icon.scm (icon registry wrappers + tab icon registrations)
+    char iconScriptPath[1024];
+    snprintf(iconScriptPath, sizeof(iconScriptPath), "%sicon.scm", RESOURCES_PATH);
+    result = sexp_load(ctx, sexp_c_string(ctx, iconScriptPath, -1), env);
     if (sexp_exceptionp(result)) {
         sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
     }

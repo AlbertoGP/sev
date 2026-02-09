@@ -10,7 +10,7 @@
 #include "clay/init.h"
 #include "command/keymap.h"
 #include "command/scheme.h"
-#include "display/mode_icon.h"
+#include "display/icon.h"
 #include "display/tab.h"
 #include "text/buffer.h"
 
@@ -126,11 +126,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     scheme_init(state);
 
-    if (!mode_icons_load_textures(state->rendererData.renderer)) {
-        fprintf(stderr, "Failed to load mode icon textures.");
+    if (!icons_load_textures(state->rendererData.renderer)) {
+        fprintf(stderr, "Failed to load icon textures.");
         return SDL_APP_FAILURE;
     }
-    mode_icons_update_colors(state);
+    icons_update_colors(state);
 
     return SDL_APP_CONTINUE;
 }

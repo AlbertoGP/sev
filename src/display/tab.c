@@ -1,17 +1,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <SDL3_image/SDL_image.h>
-
+#include "icon.h"
 #include "pane.h"
 #include "tab.h"
 #include "theme.h"
 
 static TabList tl;
 static SDL_Window *window;
-static SDL_Texture *icon;
-static SDL_Texture *cross_icon;
-static SDL_Texture *cross_icon_inactive;
 
 static void update_window_title(void) {
     char buf[TAB_NAME_MAX];
@@ -19,40 +15,11 @@ static void update_window_title(void) {
     SDL_SetWindowTitle(window, buf);
 }
 
-void update_tab_cross_colors(AppState *state) {
-    Clay_Color c = ui_resolve_color(state, state->ui.roles.text_primary);
-    SDL_SetTextureColorMod(cross_icon, c.r, c.g, c.b);
-    c = ui_resolve_color(state, state->ui.roles.text_faded);
-    SDL_SetTextureColorMod(cross_icon_inactive, c.r, c.g, c.b);
-}
-
 bool tab_list_init(AppState *state) {
     tl.list = NULL;
     tl.current = NULL;
 
     window = state->window;
-
-    #ifdef __EMSCRIPTEN__
-    #define ICON_PATH "/resources/tab-icon.png"
-    #define CROSS_PATH "/resources/icon-close.png"
-    #else
-    char* basePath = (char*)SDL_GetBasePath();
-    char iconPath[1024];
-    snprintf(iconPath, sizeof(iconPath), "%sresources/tab-icon.png", basePath);
-    #define ICON_PATH iconPath
-    char crossPath[1024];
-    snprintf(crossPath, sizeof(crossPath), "%sresources/icon-close.png", basePath);
-    #define CROSS_PATH crossPath
-    #endif
-    if (!icon)
-        icon = IMG_LoadTexture(state->rendererData.renderer, ICON_PATH);
-    if (!icon) return false;
-    if (!cross_icon)
-        cross_icon = IMG_LoadTexture(state->rendererData.renderer, CROSS_PATH);
-    if (!cross_icon) return false;
-    if (!cross_icon_inactive)
-        cross_icon_inactive = IMG_LoadTexture(state->rendererData.renderer, CROSS_PATH);
-    if (!cross_icon_inactive) return false;
 
     if (!buffer_get_current()) return false;
 
@@ -233,7 +200,10 @@ static bool CloseButton(AppState *state, Tab *t) {
             ? ui_resolve_color(state, state->ui.roles.bar_bg)
             : (Clay_Color){0}
     }) {
-        SDL_Texture *icon = tl.current == t ? cross_icon : cross_icon_inactive;
+        IconEntry *ie = tl.current == t
+            ? icon_lookup("tab-close-active")
+            : icon_lookup("tab-close-inactive");
+        SDL_Texture *icon = ie ? ie->texture : NULL;
         CLAY_AUTO_ID({
             .layout = {
                 .sizing = {
@@ -273,6 +243,7 @@ void TabBar(AppState *state) {
         .clip = { .horizontal = true },
         .backgroundColor = ui_resolve_color(state, state->ui.roles.tab_bar),
     }) {
+        IconEntry *app_icon = icon_lookup("tab-icon");
         CLAY(CLAY_ID("App Icon"), {
             .layout = {
                 .sizing = {
@@ -280,7 +251,7 @@ void TabBar(AppState *state) {
                     .height = 24.0 * state->ui.scale_factor
                 },
             },
-            .image = icon,
+            .image = app_icon ? app_icon->texture : NULL,
         }) {}
         OpenTabs(state);
     }

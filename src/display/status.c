@@ -1,6 +1,7 @@
 #include <SDL3/SDL_render.h>
 #include <chibi/sexp.h>
 
+#include "icon.h"
 #include "mode_icon.h"
 #include "pane.h"
 #include "theme.h"
@@ -99,6 +100,7 @@ void StatusBar(AppState *state, Pane *pane) {
                 .backgroundColor = mode_bg
             }){
                 if (icon) {
+                    IconEntry *ie = icon_lookup(icon->icon_name);
                     CLAY(CLAY_ID("Mode Icon"), {
                         .layout = {
                             .sizing = {
@@ -106,7 +108,7 @@ void StatusBar(AppState *state, Pane *pane) {
                                 .height = 16.0 * state->ui.scale_factor
                             },
                         },
-                        .image = icon->texture
+                        .image = ie ? ie->texture : NULL
                     }) {}
                 }
                 CLAY_TEXT(modeName, CLAY_TEXT_CONFIG({

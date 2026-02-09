@@ -6,6 +6,7 @@ build:
 		&& cp ./scheme/init.scm ./out/scheme/init.scm \
 		&& cp ./scheme/command.scm ./out/scheme/command.scm \
 		&& cp ./scheme/mode.scm ./out/scheme/mode.scm \
+		&& cp ./scheme/icon.scm ./out/scheme/icon.scm \
 		&& cp ./scheme/evil.scm ./out/scheme/evil.scm \
 		&& cp ./scheme/theme.scm ./out/scheme/theme.scm
 
