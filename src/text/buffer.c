@@ -538,8 +538,8 @@ void set_column(int column, bool round) {
     size_t line_index = line_index_at(&lt, pos);
     int last_col = (int)(lt.lines[line_index].end - lt.lines[line_index].start);
 
-    if (column > last_col)
-        column = last_col;
+    if (column > last_col + 1)
+        column = last_col + 1;
 
     int delta = column - buf->col;
     Location loc = {
