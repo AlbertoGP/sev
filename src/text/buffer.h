@@ -217,6 +217,10 @@ Keymap *buffer_get_local_map(Buffer *buf);
 // Set the buffer-local keymap
 void buffer_set_local_map(Buffer *buf, Keymap *km);
 
+// Mark list accessors
+Mark *buffer_get_marks(Buffer *buf);
+void  buffer_set_marks(Buffer *buf, Mark *marks);
+
 // Buffer-local variable operations
 #include "var.h"
 VarTable *buffer_get_locals(Buffer *buf);

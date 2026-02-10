@@ -659,6 +659,16 @@ void buffer_set_local_map(Buffer *buf, Keymap *km) {
     buf->local_map = km;
 }
 
+Mark *buffer_get_marks(Buffer *buf) {
+    if (!buf) return NULL;
+    return buf->marks;
+}
+
+void buffer_set_marks(Buffer *buf, Mark *marks) {
+    if (!buf) return;
+    buf->marks = marks;
+}
+
 VarTable *buffer_get_locals(Buffer *buf) {
     if (!buf) return NULL;
     return &buf->locals;
