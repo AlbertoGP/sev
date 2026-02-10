@@ -26,6 +26,7 @@ The end user of `sev` is the application developer, who has direct access to the
 
 A couple of features are also on the roadmap for `sev` beyond standard text editing capabilities:
 
+- I'd like `sev` to support collaborative text editing sessions ASAP. [Eg-walker](https://arxiv.org/pdf/2409.14252) is a fairly recent algorithm and looks very exciting.
 - I'm keen to explore [alternative ways of displaying text](https://arxiv.org/pdf/2008.06030) that make better use of modern monitors and typography.
 - As an admirer of [Obsidian](https://obsidian.md/), Emacs's [Org Mode](https://orgmode.org/) and the original idea of [hypermedia](https://en.wikipedia.org/wiki/Hypermedia) that gave us the World Wide Web, I'd like to build some wiki-like capabilities directly into the editor. Possibly via directives that are usable anywhere recognisable as inside a code comment in text buffers (or anywhere if the buffer holds non-code text like Markdown).
 
