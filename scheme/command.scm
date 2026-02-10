@@ -123,3 +123,19 @@
      (begin
        (set-doc! 'name 'command docstring)
        (make-interactive! 'name '())))))
+
+;; defvar macro - declare documented variables concisely
+(define-syntax defvar
+  (syntax-rules ()
+    ((defvar name docstring value)
+     (begin
+       (define name value)
+       (set-doc! 'name 'variable docstring)))))
+
+;; defun macro - declare documented functions concisely
+(define-syntax defun
+  (syntax-rules ()
+    ((defun (name args ...) docstring body ...)
+     (begin
+       (define (name args ...) body ...)
+       (set-doc! 'name 'function docstring)))))

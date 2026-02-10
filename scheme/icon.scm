@@ -8,7 +8,5 @@
 (register-icon 'tab-close-inactive "icon-close.svg" 'text.faded)
 (register-icon 'tab-icon "tab-icon.svg" 'text.primary)
 
-(define default-scale 1.0)
-(set-doc! 'default-scale 'variable "Default scaling factor for app UI.")
-(define default-buffer-scale 1.0)
-(set-doc! 'default-buffer-scale 'variable "Default scaling factor for buffer text.")
+(defvar default-scale "Default scaling factor for app UI." 1.0)
+(defvar default-buffer-scale "Default scaling factor for buffer text." 1.0)
