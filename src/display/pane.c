@@ -495,8 +495,9 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                                         .fontId = font_id,
                                         .fontSize = font_size,
                                         .textColor = ui_resolve_color(state,
-                                            is_current ? state->ui.roles.text_primary
-                                                       : state->ui.roles.text_faded),
+                                            is_current && pane->content.active
+                                                ? state->ui.roles.text_primary
+                                                : state->ui.roles.text_faded),
                                     }));
                                 }
                             }
