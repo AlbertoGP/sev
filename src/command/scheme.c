@@ -138,6 +138,10 @@ void scheme_init(AppState *state) {
 
     sexp_load_standard_ports(ctx, env, stdin, stdout, stderr, 0);
 
+    // Import (scheme base) for when, unless, guard, etc.
+    // Exclude bindings already provided by sexp_load_standard_env to avoid warnings.
+    sexp_eval_string(ctx, "(import (except (scheme base) equal? let-syntax letrec-syntax))", -1, env);
+
     state->chibi.ctx = ctx;
     state->chibi.env = env;
 

@@ -54,3 +54,17 @@
 
 ;; Define fundamental-mode as the default major mode
 (define-major-mode 'fundamental-mode)
+
+;; Line number display
+(define-minor-mode 'display-line-numbers-mode)
+
+(defun (display-line-numbers-mode enable)
+  "Toggle display of line numbers in the current buffer."
+  (if enable
+    (begin
+      (enable-minor-mode 'display-line-numbers-mode)
+      (when (not (get-local 'display-line-numbers-type))
+        (set-local! 'display-line-numbers-type #t)))
+    (begin
+      (disable-minor-mode 'display-line-numbers-mode)
+      (set-local! 'display-line-numbers-type #f))))

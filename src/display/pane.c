@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 
 #include "cursor.h"
 #include "pane.h"
@@ -6,6 +7,7 @@
 #include "tab.h"
 #include "theme.h"
 #include "../command/scheme_internal.h"
+#include "../text/line.h"
 #include "../text/message.h"
 
 // Recursively free resources allocated for a pane sub-tree.
@@ -358,10 +360,41 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                 float text_width = box.width - (2 * padding);
                 float text_height = box.height;
 
+                // Get font early (needed for gutter width measurement)
+                TTF_Font *font = state->rendererData.fonts[font_id];
+                TTF_SetFontSize(font, font_size);
+
+                // Check display-line-numbers-type buffer-local variable
+                sexp lnum_sym = sexp_intern(state->chibi.ctx, "display-line-numbers-type", -1);
+                sexp lnum_val = vartable_get(buffer_get_locals(buf), lnum_sym, SEXP_FALSE);
+                // 0=off, 1=absolute, 2=relative, 3=visual
+                int line_num_type = 0;
+                if (lnum_val == SEXP_TRUE) line_num_type = 1;
+                else if (sexp_symbolp(lnum_val)) {
+                    const char *s = sexp_string_data(sexp_symbol_to_string(state->chibi.ctx, lnum_val));
+                    if (strcmp(s, "relative") == 0) line_num_type = 2;
+                    else if (strcmp(s, "visual") == 0) line_num_type = 3;
+                }
+
+                // Calculate gutter width for line numbers
+                const LineTable *lt = buffer_get_line_table(buf);
+                float gutter_width = 0;
+                if (line_num_type) {
+                    char num_buf[20];
+                    int ndigits = snprintf(num_buf, sizeof(num_buf), "%zu", lt->count);
+                    if (ndigits < 3) ndigits = 3; // minimum 3 chars wide
+                    memset(num_buf, '0', ndigits);
+                    num_buf[ndigits] = '\0';
+                    int w = 0, h = 0;
+                    TTF_GetStringSize(font, num_buf, ndigits, &w, &h);
+                    gutter_width = (float)w + 16.0f * state->ui.scale_factor;
+                }
+
                 // Rebuild visual line cache
                 VLineCache *cache = &pane->content.vline_cache;
+                float wrap_width = text_width - gutter_width;
                 vline_rebuild(cache, buf, &state->rendererData,
-                              text_width, font_id, font_size);
+                              wrap_width, font_id, font_size);
 
                 // Calculate visible lines
                 int line_height = vline_get_line_height(&state->rendererData,
@@ -376,9 +409,20 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                 size_t end_vline = cache->top_vline + visible_count;
                 if (end_vline > cache->count) end_vline = cache->count;
 
-                // Get font for cursor offset measurement
-                TTF_Font *font = state->rendererData.fonts[font_id];
-                TTF_SetFontSize(font, font_size);
+                // Cursor's logical line (for relative mode + current line highlight)
+                size_t cursor_logical_line = 0;
+                if (line_num_type)
+                    cursor_logical_line = line_index_at(lt, point);
+
+                // Allocate line number string buffer
+                #define LNUM_STR_LEN 12
+                char *lnum_strs = NULL;
+                if (line_num_type) {
+                    size_t num_visible = end_vline - cache->top_vline;
+                    lnum_strs = malloc(num_visible * LNUM_STR_LEN);
+                    if (pane_strings_count < PANE_STRINGS_MAX)
+                        pane_strings[pane_strings_count++] = lnum_strs;
+                }
 
                 for (size_t i = cache->top_vline; i < end_vline; i++) {
                     VisualLine *vl = &cache->lines[i];
@@ -406,12 +450,62 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                                 .width = CLAY_SIZING_GROW(0),
                                 .height = CLAY_SIZING_FIXED(line_height)
                             },
+                            .layoutDirection = line_num_type ? CLAY_LEFT_TO_RIGHT : CLAY_TOP_TO_BOTTOM,
                         }
                     }) {
+                        // Render line number gutter
+                        if (line_num_type && lnum_strs) {
+                            size_t str_idx = i - cache->top_vline;
+                            char *str = lnum_strs + str_idx * LNUM_STR_LEN;
+                            size_t slen = 0;
+                            bool show_number = true;
+
+                            if (line_num_type == 3) { // visual
+                                slen = snprintf(str, LNUM_STR_LEN, "%zu", i - cache->top_vline + 1);
+                            } else if (vl->visual_index > 0) {
+                                show_number = false; // wrapped continuation
+                            } else {
+                                size_t logical = line_index_at(lt, vl->byte_start);
+                                if (line_num_type == 1) { // absolute
+                                    slen = snprintf(str, LNUM_STR_LEN, "%zu", logical + 1);
+                                } else { // relative
+                                    size_t rel = (logical > cursor_logical_line)
+                                        ? logical - cursor_logical_line
+                                        : cursor_logical_line - logical;
+                                    slen = snprintf(str, LNUM_STR_LEN, "%zu", rel == 0 ? logical + 1 : rel);
+                                }
+                            }
+
+                            float gutter_pad = 8.0f * state->ui.scale_factor;
+                            CLAY(CLAY_IDI_LOCAL("LineNum", (int32_t)i), {
+                                .layout = {
+                                    .sizing = {
+                                        .width = CLAY_SIZING_FIXED(gutter_width),
+                                        .height = CLAY_SIZING_FIXED(line_height)
+                                    },
+                                    .padding = { .left = gutter_pad, .right = gutter_pad },
+                                    .childAlignment = { .x = CLAY_ALIGN_X_RIGHT },
+                                },
+                            }) {
+                                if (show_number && slen > 0) {
+                                    bool is_current = (line_num_type != 3) &&
+                                        (line_index_at(lt, vl->byte_start) == cursor_logical_line);
+                                    Clay_String numStr = { .chars = str, .length = slen };
+                                    CLAY_TEXT(numStr, CLAY_TEXT_CONFIG({
+                                        .fontId = font_id,
+                                        .fontSize = font_size,
+                                        .textColor = ui_resolve_color(state,
+                                            is_current ? state->ui.roles.text_primary
+                                                       : state->ui.roles.text_faded),
+                                    }));
+                                }
+                            }
+                        }
+
                         // Render cursor as floating element (doesn't affect text layout)
                         if (cursor_on_line && pane->content.active) {
-                            Cursor(state, (int32_t)i, cursor_offset, line_height,
-                                   font_id, font_size);
+                            Cursor(state, (int32_t)i, cursor_offset + gutter_width,
+                                   line_height, font_id, font_size);
                         }
 
                         // Render entire line as single text element
