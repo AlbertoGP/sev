@@ -20,6 +20,8 @@ static struct {
 } render_font_cache[RENDER_FONT_CACHE_SIZE];
 static int render_font_cache_count = 0;
 
+static void flush_text_cache_for_font(uint16_t font_id, float size);
+
 static TTF_Font *get_render_font(Clay_SDL3RendererData *rd, uint16_t font_id, float size) {
     for (int i = 0; i < render_font_cache_count; i++) {
         if (render_font_cache[i].font_id == font_id && render_font_cache[i].size == size)
@@ -32,7 +34,8 @@ static TTF_Font *get_render_font(Clay_SDL3RendererData *rd, uint16_t font_id, fl
     if (render_font_cache_count < RENDER_FONT_CACHE_SIZE) {
         render_font_cache[render_font_cache_count++] = (typeof(render_font_cache[0])){f, font_id, size};
     } else {
-        /* Evict slot 0 (simple policy — these are few and stable) */
+        /* Evict slot 0 — flush dependent text cache entries first */
+        flush_text_cache_for_font(render_font_cache[0].font_id, render_font_cache[0].size);
         TTF_CloseFont(render_font_cache[0].font);
         render_font_cache[0] = (typeof(render_font_cache[0])){f, font_id, size};
     }
@@ -51,6 +54,21 @@ static struct {
     uint16_t  font_id;
     float     font_size;
 } text_cache[TEXT_CACHE_SIZE];
+
+/* Destroy all text cache entries created with a given (font_id, size) pair.
+ * Must be called before TTF_CloseFont to avoid dangling TTF_Text pointers. */
+static void flush_text_cache_for_font(uint16_t font_id, float size) {
+    for (int i = 0; i < TEXT_CACHE_SIZE; i++) {
+        if (text_cache[i].text &&
+            text_cache[i].font_id == font_id &&
+            text_cache[i].font_size == size) {
+            TTF_DestroyText(text_cache[i].text);
+            SDL_free(text_cache[i].str);
+            text_cache[i].text = NULL;
+            text_cache[i].str = NULL;
+        }
+    }
+}
 
 static uint32_t fnv1a(const char *data, int len, uint16_t font_id, float font_size) {
     uint32_t h = 2166136261u;
@@ -77,10 +95,13 @@ static TTF_Text *get_cached_text(Clay_SDL3RendererData *rd, uint16_t font_id, fl
         return text_cache[idx].text;
     }
 
-    /* Miss — evict old entry */
+    /* Miss — evict old entry. NULL the pointers before calling get_render_font,
+     * which may trigger flush_text_cache_for_font and would otherwise double-free. */
     if (text_cache[idx].text) {
         TTF_DestroyText(text_cache[idx].text);
         SDL_free(text_cache[idx].str);
+        text_cache[idx].text = NULL;
+        text_cache[idx].str = NULL;
     }
 
     TTF_Font *font = get_render_font(rd, font_id, font_size);
