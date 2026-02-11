@@ -1,10 +1,113 @@
 #include <SDL3_image/SDL_image.h>
+#include <string.h>
 
 #include "renderer.h"
 
 /* Global for convenience. Even in 4K this is enough for smooth curves (low radius or rect size coupled with
  * no AA or low resolution might make it appear as jagged curves) */
 static int NUM_CIRCLE_SEGMENTS = 16;
+
+/* ── Sized font cache ─────────────────────────────────────────────────
+ * Fonts opened at specific sizes for rendering. Never TTF_SetFontSize'd,
+ * so TTF_Text objects created from them keep their cached layout.
+ */
+#define RENDER_FONT_CACHE_SIZE 8
+
+static struct {
+    TTF_Font *font;
+    uint16_t  font_id;
+    float     size;
+} render_font_cache[RENDER_FONT_CACHE_SIZE];
+static int render_font_cache_count = 0;
+
+static TTF_Font *get_render_font(Clay_SDL3RendererData *rd, uint16_t font_id, float size) {
+    for (int i = 0; i < render_font_cache_count; i++) {
+        if (render_font_cache[i].font_id == font_id && render_font_cache[i].size == size)
+            return render_font_cache[i].font;
+    }
+    /* Miss — open a new font at the exact size */
+    TTF_Font *f = TTF_OpenFont(rd->font_paths[font_id], size);
+    if (!f) return rd->fonts[font_id]; /* fallback */
+
+    if (render_font_cache_count < RENDER_FONT_CACHE_SIZE) {
+        render_font_cache[render_font_cache_count++] = (typeof(render_font_cache[0])){f, font_id, size};
+    } else {
+        /* Evict slot 0 (simple policy — these are few and stable) */
+        TTF_CloseFont(render_font_cache[0].font);
+        render_font_cache[0] = (typeof(render_font_cache[0])){f, font_id, size};
+    }
+    return f;
+}
+
+/* ── TTF_Text cache (direct-mapped, 256 slots) ───────────────────── */
+#define TEXT_CACHE_SIZE 256
+#define TEXT_CACHE_MASK (TEXT_CACHE_SIZE - 1)
+
+static struct {
+    TTF_Text *text;
+    char     *str;
+    uint32_t  hash;
+    int       len;
+    uint16_t  font_id;
+    float     font_size;
+} text_cache[TEXT_CACHE_SIZE];
+
+static uint32_t fnv1a(const char *data, int len, uint16_t font_id, float font_size) {
+    uint32_t h = 2166136261u;
+    for (int i = 0; i < len; i++)
+        h = (h ^ (uint8_t)data[i]) * 16777619u;
+    h = (h ^ font_id) * 16777619u;
+    uint32_t fs;
+    memcpy(&fs, &font_size, sizeof(fs));
+    h = (h ^ fs) * 16777619u;
+    return h;
+}
+
+static TTF_Text *get_cached_text(Clay_SDL3RendererData *rd, uint16_t font_id, float font_size, const char *str, int len) {
+    uint32_t hash = fnv1a(str, len, font_id, font_size);
+    int idx = hash & TEXT_CACHE_MASK;
+
+    /* Hit check */
+    if (text_cache[idx].text &&
+        text_cache[idx].hash == hash &&
+        text_cache[idx].len == len &&
+        text_cache[idx].font_id == font_id &&
+        text_cache[idx].font_size == font_size &&
+        memcmp(text_cache[idx].str, str, len) == 0) {
+        return text_cache[idx].text;
+    }
+
+    /* Miss — evict old entry */
+    if (text_cache[idx].text) {
+        TTF_DestroyText(text_cache[idx].text);
+        SDL_free(text_cache[idx].str);
+    }
+
+    TTF_Font *font = get_render_font(rd, font_id, font_size);
+    TTF_Text *text = TTF_CreateText(rd->textEngine, font, str, len);
+
+    char *str_copy = SDL_malloc(len);
+    memcpy(str_copy, str, len);
+
+    text_cache[idx] = (typeof(text_cache[0])){text, str_copy, hash, len, font_id, font_size};
+    return text;
+}
+
+void SDL_Clay_DestroyTextCache(void) {
+    for (int i = 0; i < TEXT_CACHE_SIZE; i++) {
+        if (text_cache[i].text) {
+            TTF_DestroyText(text_cache[i].text);
+            SDL_free(text_cache[i].str);
+            text_cache[i].text = NULL;
+            text_cache[i].str = NULL;
+        }
+    }
+    for (int i = 0; i < render_font_cache_count; i++) {
+        TTF_CloseFont(render_font_cache[i].font);
+        render_font_cache[i].font = NULL;
+    }
+    render_font_cache_count = 0;
+}
 
 //all rendering is performed by a single SDL call, avoiding multiple RenderRect + plumbing choice for circles.
 static void SDL_Clay_RenderFillRoundedRect(Clay_SDL3RendererData *rendererData, const SDL_FRect rect, const Clay_CornerRadius cornerRadius, const Clay_Color _color) {
@@ -202,12 +305,12 @@ void SDL_Clay_RenderClayCommands(Clay_SDL3RendererData *rendererData, Clay_Rende
             } break;
             case CLAY_RENDER_COMMAND_TYPE_TEXT: {
                 Clay_TextRenderData *config = &rcmd->renderData.text;
-                TTF_Font *font = rendererData->fonts[config->fontId];
-                TTF_SetFontSize(font, config->fontSize);
-                TTF_Text *text = TTF_CreateText(rendererData->textEngine, font, config->stringContents.chars, config->stringContents.length);
-                TTF_SetTextColor(text, config->textColor.r, config->textColor.g, config->textColor.b, config->textColor.a);
-                TTF_DrawRendererText(text, rect.x, rect.y);
-                TTF_DestroyText(text);
+                TTF_Text *text = get_cached_text(rendererData, config->fontId, config->fontSize,
+                                                 config->stringContents.chars, config->stringContents.length);
+                if (text) {
+                    TTF_SetTextColor(text, config->textColor.r, config->textColor.g, config->textColor.b, config->textColor.a);
+                    TTF_DrawRendererText(text, rect.x, rect.y);
+                }
             } break;
             case CLAY_RENDER_COMMAND_TYPE_BORDER: {
                 Clay_BorderRenderData *config = &rcmd->renderData.border;

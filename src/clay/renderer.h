@@ -8,6 +8,7 @@ typedef struct {
     SDL_Renderer *renderer;
     TTF_TextEngine *textEngine;
     TTF_Font **fonts;
+    const char **font_paths;
 } Clay_SDL3RendererData;
 
 typedef enum {
@@ -16,3 +17,4 @@ typedef enum {
 } CustomRenderType;
 
 void SDL_Clay_RenderClayCommands(Clay_SDL3RendererData *rendererData, Clay_RenderCommandArray *rcommands);
+void SDL_Clay_DestroyTextCache(void);

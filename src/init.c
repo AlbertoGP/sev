@@ -93,6 +93,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     state->rendererData.fonts[FONT_BOLD]   = font_bold;
     state->rendererData.fonts[FONT_ITALIC] = font_italic;
 
+    state->rendererData.font_paths = SDL_calloc(FONT_COUNT, sizeof(const char *));
+    state->rendererData.font_paths[FONT_NORMAL] = SDL_strdup(FONT_PATH_REGULAR);
+    state->rendererData.font_paths[FONT_BOLD]   = SDL_strdup(FONT_PATH_BOLD);
+    state->rendererData.font_paths[FONT_ITALIC] = SDL_strdup(FONT_PATH_ITALIC);
+
     if (!clay_init(state)) {
         fprintf(stderr, "Failed to initialise Clay UI.");
         return SDL_APP_FAILURE;
