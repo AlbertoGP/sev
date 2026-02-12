@@ -1,96 +1,61 @@
-#include <stdlib.h>
-
 #include "mark.h"
 #include "buffer.h"
+#include "buffer_type.h"
 
-// Marks are stored in a singly-linked list.
-typedef struct Mark {
-    struct Mark *next;
-    Location location;
-    bool is_fixed;
-} Mark;
-
-Mark *mark_create(bool is_fixed) {
+Mark *mark_get(int c) {
     Buffer *buf = buffer_get_current();
     if (!buf) return NULL;
-    Mark *m = malloc(sizeof(Mark));
-    if (!m) return NULL;
-    m->location = point_get(buf);
-    m->is_fixed = is_fixed;
-    m->next = buffer_get_marks(buf);
-    buffer_set_marks(buf, m);
-    return m;
-}
 
-void mark_delete(Mark *mark) {
-    if (!mark) return;
-    Buffer *buf = buffer_get_current();
-    if (!buf) return;
-    Mark *head = buffer_get_marks(buf);
-    if (head == mark) {
-        buffer_set_marks(buf, mark->next);
-    } else {
-        for (Mark *m = head; m; m = m->next) {
-            if (m->next == mark) {
-                m->next = mark->next;
-                break;
-            }
-        }
+    if ((unsigned)(c) >= 'a' && (unsigned)(c) <= 'z') {
+        return &buf->named_marks[c - 'a'];
     }
-    free(mark);
-}
 
-void mark_delete_all(Mark *mark) {
-    while (mark) {
-        Mark *next = mark->next;
-        free(mark);
-        mark = next;
+    switch (c) {
+    case '<':
+        return &buf->select_start;
+    case '>':
+        return &buf->select_end;
     }
+
+    return NULL;
 }
 
-bool mark_to_point(Mark *mark) {
+bool mark_set(int c, Location loc) {
+    Mark *mark = mark_get(c);
     if (!mark) return false;
-    Buffer *buf = buffer_get_current();
-    if (!buf) return false;
-    mark->location = point_get(buf);
+
+    *mark = loc;
     return true;
+}
+
+bool mark_set_to_point(int c) {
+    return mark_set(c, point_get(buffer_get_current()));
 }
 
 bool point_to_mark(Mark *mark) {
     if (!mark) return false;
-    return point_set(mark->location);
-}
-
-Location mark_get(Mark *mark) {
-    if (!mark) return (Location){0};
-    return mark->location;
-}
-
-bool mark_set(Mark *mark, Location loc) {
-    if (!mark) return false;
-    mark->location = loc;
-    return true;
+    return point_set(*mark);
 }
 
 bool is_point_at_mark(Mark *mark) {
     if (!mark) return false;
     Buffer *buf = buffer_get_current();
     if (!buf) return false;
-    return point_get(buf).pos == mark->location.pos;
+    return point_get(buf).pos == mark->pos;
 }
 
 bool is_point_before_mark(Mark *mark) {
     if (!mark) return false;
     Buffer *buf = buffer_get_current();
     if (!buf) return false;
-    return point_get(buf).pos < mark->location.pos;
+    return point_get(buf).pos < mark->pos;
 }
 
 bool is_point_after_mark(Mark *mark) {
     if (!mark) return false;
     Buffer *buf = buffer_get_current();
     if (!buf) return false;
-    return point_get(buf).pos > mark->location.pos;
+    return point_get(buf).pos > mark->pos;
 }
 
 bool swap_point_and_mark(Mark *mark) {
@@ -98,7 +63,7 @@ bool swap_point_and_mark(Mark *mark) {
     Buffer *buf = buffer_get_current();
     if (!buf) return false;
     Location old_point = point_get(buf);
-    point_set(mark->location);
-    mark->location = old_point;
+    point_set(*mark);
+    *mark = old_point;
     return true;
 }

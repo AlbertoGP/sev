@@ -7,23 +7,24 @@
 
 #include "location.h"
 
-typedef struct Mark Mark;
+// Marks are just a wrapper around locations for now.
+typedef struct Location Mark;
 
-// Creates a new mark of the specified type and returns a pointer to it.
-// The new mark is positioned at the point.
-Mark *mark_create(bool is_fixed);
-// Deletes the specified mark.
-void mark_delete(Mark *mark);
-// Deletes an entire mark list.
-void mark_delete_all(Mark *mark);
+typedef enum SelectMode {
+    SELECT_REGULAR,
+    SELECT_LINE,
+    SELECT_RECTANGLE
+} SelectMode;
+
+// Looks up the specified mark and sets it to the specified location.
+// Returns false if bad mark specified.
+bool mark_set(int c, Location loc);
 // Sets the location of the specified mark to the point.
 bool mark_to_point(Mark *mark);
 // Sets the location of the point to the specified mark.
 bool point_to_mark(Mark *mark);
 // Returns the location of the specified mark.
-Location mark_get(Mark *mark);
-// Moves the specified mark to the current location.
-bool mark_set(Mark *mark, Location loc);
+Mark *mark_get(int c);
 // Returns true if the point is at the specified mark.
 bool is_point_at_mark(Mark *mark);
 // Returns true if the point is before the specified mark.

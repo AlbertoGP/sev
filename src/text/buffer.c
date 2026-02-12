@@ -9,52 +9,15 @@
 #include <time.h>
 
 #include "buffer.h"
+#include "buffer_type.h"
 #include "gap.h"
+#include "mark.h"
 #include "message.h"
 #include "var.h"
 #include "../command/scheme_internal.h"
 #include "../display/scale.h"
 
 extern KeyEvent last_event;
-
-typedef struct {
-    struct timespec mtime;
-} Time;
-
-#define BUFFER_NAME_MAX 256
-#define FILE_NAME_MAX 256
-
-// Stores the data for a text buffer.
-// Part of a doubly-linked list of all buffers.
-typedef struct Buffer {
-    struct Buffer *next;
-    struct Buffer *prev;
-    char name[BUFFER_NAME_MAX];
-
-    Location point;
-    size_t cur_line;
-    size_t num_chars;
-    size_t num_lines;
-
-    LineTable lt;
-
-    int col;
-    int col_saved;
-
-    Mark *marks;
-
-    Keymap *local_map;
-    VarTable locals;
-    ModeList minor_modes;
-    Mode *major_mode;
-
-    float scale_factor;
-
-    GapBuf *contents;
-    char file_name[FILE_NAME_MAX];
-    Time file_time;
-    bool is_modified;
-} Buffer;
 
 typedef struct BufferList {
     Buffer *list;
@@ -91,10 +54,6 @@ static void buffer_destroy(Buffer *buf) {
     if (buf->next)
         buf->next->prev = buf->prev;
 
-    if (buf->marks) {
-        mark_delete_all(buf->marks);
-        buf->marks = NULL;
-    }
     modelist_destroy(&buf->minor_modes);
     vartable_destroy(&buf->locals);
     if (buf->contents) {
@@ -199,11 +158,6 @@ bool buffer_clear(Buffer *buf) {
     if (!new_lt.lines) {
         gb_free(new_gb);
         return false;
-    }
-
-    if (buf->marks) {
-        mark_delete_all(buf->marks);
-        buf->marks = NULL;
     }
 
     gb_free(buf->contents);
@@ -657,16 +611,6 @@ Keymap *buffer_get_local_map(Buffer *buf) {
 void buffer_set_local_map(Buffer *buf, Keymap *km) {
     if (!buf) return;
     buf->local_map = km;
-}
-
-Mark *buffer_get_marks(Buffer *buf) {
-    if (!buf) return NULL;
-    return buf->marks;
-}
-
-void buffer_set_marks(Buffer *buf, Mark *marks) {
-    if (!buf) return;
-    buf->marks = marks;
 }
 
 VarTable *buffer_get_locals(Buffer *buf) {
