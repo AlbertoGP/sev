@@ -59,6 +59,9 @@
 (defcommand (append-line)
   "Set the cursor to the final column on the current line and enter insert mode."
   (line-end) (evil-insert))
+(defcommand (substitute-char)
+  "Delete the character under cursor and enter insert mode."
+  (delete-forward-char) (evil-insert))
 (defcommand (join-line)
   "Delete newline character between the current and subsequent line."
   (line-end) (delete-forward-char))

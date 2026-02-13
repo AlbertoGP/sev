@@ -33,6 +33,7 @@
 (set-key! normal-map "O" 'open-line-above)
 (set-key! normal-map "a" 'append-char)
 (set-key! normal-map "A" 'append-line)
+(set-key! normal-map "s" 'substitute-char)
 (set-key! normal-map "x" 'delete-forward-char)
 (set-key! normal-map "X" 'delete-backward-char)
 (set-key! normal-map "J" 'join-line)
