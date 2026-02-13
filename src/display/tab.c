@@ -31,6 +31,42 @@ bool tab_list_init(AppState *state) {
     tl.current->contents = pane_create();
     pane_set_buffer(tl.current->contents, buffer_get_by_name("*scratch*"));
     tl.current->contents->content.active = true;
+    insert_string(buffer_get_current(),
+"'Twas brillig, and the slithy toves\n"
+"    Did gyre and gimble in the wabe:\n"
+"All mimsy were the borogoves,\n"
+"    And the mome raths outgrabe.\n"
+"\n"
+"\"Beware the Jabberwock, my son!\n"
+"    The jaws that bite, the claws that catch!\n"
+"Beware the Jubjub bird, and shun\n"
+"    The frumious Bandersnatch!\"\n"
+"\n"
+"He took his vorpal sword in hand;\n"
+"    Long time the manxome foe he sought—\n"
+"So rested he by the Tumtum tree\n"
+"    And stood awhile in thought.\n"
+"\n"
+"And, as in uffish thought he stood,\n"
+"    The Jabberwock, with eyes of flame,\n"
+"Came whiffling through the tulgey wood,\n"
+"    And burbled as it came!\n"
+"\n"
+"One, two! One, two! And through and through\n"
+"    The vorpal blade went snicker-snack!\n"
+"He left it dead, and with its head\n"
+"    He went galumphing back.\n"
+"\n"
+"\"And hast thou slain the Jabberwock?\n"
+"    Come to my arms, my beamish boy!\n"
+"O frabjous day! Callooh! Callay!\"\n"
+"    He chortled in his joy.\n"
+"\n"
+"'Twas brillig, and the slithy toves\n"
+"    Did gyre and gimble in the wabe:\n"
+"All mimsy were the borogoves,\n"
+"    And the mome raths outgrabe.");
+    point_set((Location){.pos = 0});
 
     #define NAME_1 "untitled-1"
     Buffer *buf = buffer_create(NAME_1);
