@@ -648,9 +648,22 @@ sexp scm_self_insert(sexp ctx, sexp self, sexp n) {
     KeyEvent last = last_event;
 
     if (last.type != KEYEVENT_CHAR) return SEXP_VOID;
-    insert_char(buffer_get_current(), last.codepoint);
+
+    Buffer *buf = buffer_get_current();
+    if (buf->replace_mode) {
+        char c = char_at_point();
+        if (c != '\0' && c != '\n')
+            delete_chars(buf, -1);
+    }
+    insert_char(buf, last.codepoint);
 
     message_clear();
+    return SEXP_VOID;
+}
+
+sexp scm_set_replace_mode(sexp ctx, sexp self, sexp n, sexp val) {
+    Buffer *buf = buffer_get_current();
+    if (buf) buf->replace_mode = sexp_truep(val);
     return SEXP_VOID;
 }
 

@@ -40,6 +40,7 @@ typedef struct Buffer {
     Mark select_start;
     Mark select_end;
     SelectMode select_mode;
+    bool replace_mode;
 
     Keymap *local_map;
     VarTable locals;

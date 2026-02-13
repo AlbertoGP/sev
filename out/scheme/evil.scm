@@ -34,6 +34,7 @@
 (set-key! normal-map "a" 'append-char)
 (set-key! normal-map "A" 'append-line)
 (set-key! normal-map "s" 'substitute-char)
+(set-key! normal-map "S" 'substitute-line)
 (set-key! normal-map "x" 'delete-forward-char)
 (set-key! normal-map "X" 'delete-backward-char)
 (set-key! normal-map "J" 'join-line)
@@ -130,7 +131,7 @@
 ;; Register modes
 (define-minor-mode 'evil-normal-mode normal-map)
 (define-minor-mode 'evil-insert-mode insert-map)
-(define-minor-mode 'evil-replace-mode replace-map)
+(define-minor-mode 'evil-replace-mode insert-map)
 (define-minor-mode 'evil-select-mode select-map)
 (define-minor-mode 'evil-command-mode command-map)
 
@@ -154,6 +155,7 @@
   (disable-minor-mode 'evil-command-mode)
   (enable-minor-mode 'evil-normal-mode)
   (%select-mode-set! 0)
+  (%set-replace-mode! #f)
   (set-local! 'mode-name "NORMAL")
   (message-clear))
 
@@ -163,6 +165,7 @@
   (disable-minor-mode 'evil-select-mode)
   (disable-minor-mode 'evil-command-mode)
   (enable-minor-mode 'evil-insert-mode)
+  (%set-replace-mode! #f)
   (set-local! 'mode-name "INSERT")
   (message "-- INSERT --"))
 
@@ -172,6 +175,7 @@
   (disable-minor-mode 'evil-select-mode)
   (disable-minor-mode 'evil-command-mode)
   (enable-minor-mode 'evil-replace-mode)
+  (%set-replace-mode! #t)
   (set-local! 'mode-name "REPLACE")
   (message "-- REPLACE --"))
 

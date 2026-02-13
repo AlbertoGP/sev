@@ -190,6 +190,7 @@ void scheme_init(AppState *state) {
     SDEF("skip-whitespace", 0, scm_skip_whitespace);
     SDEF("set-column", 1, scm_set_column);
     SDEF("char-at-point", 0, scm_char_at_point);
+    SDEF("%set-replace-mode!", 1, scm_set_replace_mode);
     SDEF("tab-next", 0, scm_tab_next);
     SDEF("tab-prev", 0, scm_tab_prev);
     SDEF("reset-global-scale", 0, scm_reset_global_scale);

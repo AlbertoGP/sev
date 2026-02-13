@@ -21,6 +21,7 @@ sexp scm_backward_char(sexp ctx, sexp self, sexp n);
 sexp scm_skip_whitespace(sexp ctx, sexp self, sexp n);
 sexp scm_set_column(sexp ctx, sexp self, sexp n, sexp column);
 sexp scm_char_at_point(sexp ctx, sexp self, sexp n);
+sexp scm_set_replace_mode(sexp ctx, sexp self, sexp n, sexp val);
 
 // --- display/pane.c ---
 sexp scm_pane_navigate_up(sexp ctx, sexp self, sexp n);
