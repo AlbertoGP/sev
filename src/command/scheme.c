@@ -235,6 +235,11 @@ void scheme_init(AppState *state) {
     SDEF("%clear-palette!", 0, scm_clear_palette);
     SDEF("%clear-roles!", 0, scm_clear_roles);
 
+    // Mark / selection primitives
+    SDEF("%mark-set-to-point!", 1, scm_mark_set_to_point);
+    SDEF("%select-mode-set!", 1, scm_select_mode_set);
+    SDEF("exchange-point-and-mark", 0, scm_swap_point_and_mark);
+
     #ifdef __EMSCRIPTEN__
     #define RESOURCES_PATH "/resources/"
     #else
@@ -274,6 +279,7 @@ void scheme_init(AppState *state) {
     INTERN_ROLE(tab_inactive, "tab.inactive");
     INTERN_ROLE(text_primary, "text.primary");
     INTERN_ROLE(text_faded, "text.faded");
+    INTERN_ROLE(selection, "selection");
 
     #undef INTERN_ROLE
 

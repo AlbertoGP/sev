@@ -7,6 +7,7 @@
 #include "tab.h"
 #include "theme.h"
 #include "../command/scheme_internal.h"
+#include "../text/buffer_type.h"
 #include "../text/line.h"
 #include "../text/message.h"
 
@@ -507,6 +508,53 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                         if (cursor_on_line && pane->content.active) {
                             Cursor(state, (int32_t)i, cursor_offset + gutter_width,
                                    line_height, font_id, font_size);
+                        }
+
+                        // Render selection highlight as floating element
+                        if (buf->select_mode != SELECT_NONE && pane->content.active) {
+                            size_t sel_a = buf->select_start.pos;
+                            size_t sel_b = point;
+                            size_t sel_min = sel_a < sel_b ? sel_a : sel_b;
+                            size_t sel_max = sel_a > sel_b ? sel_a + 1 : sel_b + 1;
+
+                            if (line_start < sel_max && line_end >= sel_min) {
+                                size_t hl_start = sel_min > line_start ? sel_min : line_start;
+                                size_t hl_end   = sel_max < line_end   ? sel_max : line_end;
+
+                                float sel_x = 0;
+                                if (hl_start > line_start) {
+                                    int w = 0, h = 0;
+                                    TTF_GetStringSize(font, chars + line_start,
+                                                      hl_start - line_start, &w, &h);
+                                    sel_x = (float)w;
+                                }
+                                float sel_w;
+                                if (hl_end > hl_start) {
+                                    int w = 0, h = 0;
+                                    TTF_GetStringSize(font, chars + hl_start,
+                                                      hl_end - hl_start, &w, &h);
+                                    sel_w = (float)w;
+                                } else {
+                                    sel_w = 0;
+                                }
+
+                                if (sel_w > 0) {
+                                    CLAY(CLAY_IDI_LOCAL("Sel", (int32_t)i), {
+                                        .floating = {
+                                            .attachTo = CLAY_ATTACH_TO_PARENT,
+                                            .offset = { .x = sel_x + gutter_width, .y = 0 }
+                                        },
+                                        .layout = {
+                                            .sizing = {
+                                                .width = CLAY_SIZING_FIXED(sel_w),
+                                                .height = CLAY_SIZING_FIXED(line_height)
+                                            }
+                                        },
+                                        .backgroundColor = ui_resolve_color(state,
+                                            state->ui.roles.selection),
+                                    }) {}
+                                }
+                            }
                         }
 
                         // Render entire line as single text element

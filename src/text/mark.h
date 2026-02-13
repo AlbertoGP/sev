@@ -11,6 +11,7 @@
 typedef struct Location Mark;
 
 typedef enum SelectMode {
+    SELECT_NONE = 0,
     SELECT_REGULAR,
     SELECT_LINE,
     SELECT_RECTANGLE
@@ -19,6 +20,8 @@ typedef enum SelectMode {
 // Looks up the specified mark and sets it to the specified location.
 // Returns false if bad mark specified.
 bool mark_set(int c, Location loc);
+// Sets the named mark (by char) to the current point location.
+bool mark_set_to_point(int c);
 // Sets the location of the specified mark to the point.
 bool mark_to_point(Mark *mark);
 // Sets the location of the point to the specified mark.

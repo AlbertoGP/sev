@@ -36,6 +36,7 @@ typedef struct CachedRoles {
     sexp bar_bg, bar_text_active;
     sexp tab_bar, tab_active, tab_hover, tab_inactive;
     sexp text_primary, text_faded;
+    sexp selection;
 } CachedRoles;
 
 typedef struct UIState {

@@ -47,6 +47,10 @@ float buffer_get_scale(Buffer *buf);
 // Sets the scaling factor of text in the buffer
 bool buffer_set_scale(Buffer *buf, float new_value);
 
+// Update the currently saved line number.
+void update_line(Buffer *buf);
+// Save the current column (used for seeking columns when moving by line).
+void save_current_column(Buffer *buf);
 // Sets the point to the specified location in the current buffer.
 bool point_set(Location loc);
 // Moves the point forward (if count is positive) or backward (if negative)

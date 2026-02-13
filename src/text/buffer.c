@@ -257,6 +257,16 @@ bool point_set(Location loc) {
     return true;
 }
 
+void update_line(Buffer *buf) {
+    const LineTable *lt = buffer_get_line_table(buf);
+    size_t line_index = line_index_at(lt, point_get(buf).pos);
+    buf->cur_line = line_index + 1;
+}
+
+void save_current_column(Buffer *buf) {
+    buf->col_saved = get_column(buf);
+}
+
 bool point_move(int count) {
     if (!bl.current) return false;
 
@@ -507,6 +517,8 @@ void point_to_line_start(Buffer *buf) {
     LineTable lt = buf->lt;
     size_t line_index = line_index_at(&lt, pos);
     point_set((Location){.pos = buf->lt.lines[line_index].start});
+    update_line(buf);
+    save_current_column(buf);
 }
 
 void point_to_line_end(Buffer *buf) {
@@ -514,6 +526,8 @@ void point_to_line_end(Buffer *buf) {
     LineTable lt = buf->lt;
     size_t line_index = line_index_at(&lt, pos);
     point_set((Location){.pos = buf->lt.lines[line_index].end});
+    update_line(buf);
+    save_current_column(buf);
 }
 
 char *buffer_text(Buffer *buf) {

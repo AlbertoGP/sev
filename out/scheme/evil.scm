@@ -98,8 +98,25 @@
 
 (set-key! replace-map "ESC" 'evil-normal)
 (set-key! replace-map "C-[" 'evil-normal)
+
+;; Select (visual) mode bindings
+(%set-keymap-default! select-map 'ignore)
 (set-key! select-map "ESC" 'evil-normal)
 (set-key! select-map "C-[" 'evil-normal)
+(set-key! select-map "v"   'evil-normal)
+(set-key! select-map "h"   'backward-char)
+(set-key! select-map "j"   'next-line)
+(set-key! select-map "k"   'prev-line)
+(set-key! select-map "l"   'forward-char)
+(set-key! select-map "LEFT"  'backward-char)
+(set-key! select-map "DOWN"  'next-line)
+(set-key! select-map "UP"    'prev-line)
+(set-key! select-map "RIGHT" 'forward-char)
+(set-key! select-map "0"   'line-start)
+(set-key! select-map "$"   'line-end)
+(set-key! select-map "^"   'line-start-skip-whitespace)
+(set-key! select-map "o"   'exchange-point-and-mark)
+
 (set-key! command-map "ESC" 'evil-normal)
 (set-key! command-map "C-[" 'evil-normal)
 
@@ -129,6 +146,7 @@
   (disable-minor-mode 'evil-select-mode)
   (disable-minor-mode 'evil-command-mode)
   (enable-minor-mode 'evil-normal-mode)
+  (%select-mode-set! 0)
   (set-local! 'mode-name "NORMAL")
   (message-clear))
 
@@ -156,8 +174,10 @@
   (disable-minor-mode 'evil-replace-mode)
   (disable-minor-mode 'evil-command-mode)
   (enable-minor-mode 'evil-select-mode)
+  (%mark-set-to-point! #\<)
+  (%select-mode-set! 1)
   (set-local! 'mode-name "SELECT")
-  (message "-- SELECT --"))
+  (message "-- VISUAL --"))
 
 (define (evil-command)
   (disable-minor-mode 'evil-normal-mode)

@@ -38,6 +38,7 @@
 (defcommand pane-v-split-increase "Increase vertical split size.")
 (defcommand pane-v-split-decrease "Decrease vertical split size.")
 (defcommand clay-debug "Toggle Clay debug mode.")
+(defcommand exchange-point-and-mark "Swap point and selection anchor.")
 
 ;; compound Scheme commands
 (defcommand (line-start-skip-whitespace)
