@@ -517,10 +517,62 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                             size_t sel_min = sel_a < sel_b ? sel_a : sel_b;
                             size_t sel_max = sel_a > sel_b ? sel_a + 1 : sel_b + 1;
 
-                            if (line_start < sel_max && line_end >= sel_min) {
-                                size_t hl_start = sel_min > line_start ? sel_min : line_start;
-                                size_t hl_end   = sel_max < line_end   ? sel_max : line_end;
+                            size_t hl_start = 0, hl_end = 0;
+                            bool do_highlight = false;
 
+                            switch (buf->select_mode) {
+                            case SELECT_REGULAR: {
+                                if (line_start < sel_max && line_end >= sel_min) {
+                                    hl_start = sel_min > line_start ? sel_min : line_start;
+                                    hl_end   = sel_max < line_end   ? sel_max : line_end;
+                                    do_highlight = true;
+                                }
+                                break;
+                            }
+                            case SELECT_LINE: {
+                                size_t line_min = line_index_at(lt, sel_min);
+                                size_t line_max = line_index_at(lt, sel_max > 0 ? sel_max - 1 : 0);
+                                size_t vl_logical = line_index_at(lt, vl->byte_start);
+                                if (vl_logical >= line_min && vl_logical <= line_max) {
+                                    hl_start = line_start;
+                                    hl_end   = line_end;
+                                    do_highlight = true;
+                                }
+                                break;
+                            }
+                            case SELECT_RECTANGLE: {
+                                size_t line_a = line_index_at(lt, sel_a);
+                                size_t line_b = line_index_at(lt, sel_b);
+                                size_t row_min = line_a < line_b ? line_a : line_b;
+                                size_t row_max = line_a > line_b ? line_a : line_b;
+                                size_t col_a = sel_a - lt->lines[line_a].start;
+                                size_t col_b = sel_b - lt->lines[line_b].start;
+                                size_t col_min = col_a < col_b ? col_a : col_b;
+                                size_t col_max = col_a > col_b ? col_a : col_b;
+
+                                size_t vl_logical = line_index_at(lt, vl->byte_start);
+                                if (vl_logical >= row_min && vl_logical <= row_max) {
+                                    size_t log_start = lt->lines[vl_logical].start;
+                                    size_t log_end   = lt->lines[vl_logical].end;
+                                    size_t hs = log_start + col_min;
+                                    size_t he = log_start + col_max + 1;
+                                    if (he > log_end) he = log_end;
+                                    if (hs > log_end) hs = log_end;
+                                    // Clamp to visual line bounds
+                                    if (hs < line_start) hs = line_start;
+                                    if (he > line_end)   he = line_end;
+                                    if (he > hs) {
+                                        hl_start = hs;
+                                        hl_end   = he;
+                                        do_highlight = true;
+                                    }
+                                }
+                                break;
+                            }
+                            default: break;
+                            }
+
+                            if (do_highlight && hl_end > hl_start) {
                                 float sel_x = 0;
                                 if (hl_start > line_start) {
                                     int w = 0, h = 0;
@@ -528,15 +580,10 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                                                       hl_start - line_start, &w, &h);
                                     sel_x = (float)w;
                                 }
-                                float sel_w;
-                                if (hl_end > hl_start) {
-                                    int w = 0, h = 0;
-                                    TTF_GetStringSize(font, chars + hl_start,
-                                                      hl_end - hl_start, &w, &h);
-                                    sel_w = (float)w;
-                                } else {
-                                    sel_w = 0;
-                                }
+                                int sw = 0, sh = 0;
+                                TTF_GetStringSize(font, chars + hl_start,
+                                                  hl_end - hl_start, &sw, &sh);
+                                float sel_w = (float)sw;
 
                                 if (sel_w > 0) {
                                     CLAY(CLAY_IDI_LOCAL("Sel", (int32_t)i), {

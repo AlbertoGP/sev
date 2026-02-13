@@ -90,6 +90,12 @@ sexp scm_select_mode_set(sexp ctx, sexp self, sexp n, sexp mode_int) {
     return SEXP_VOID;
 }
 
+sexp scm_select_mode_get(sexp ctx, sexp self, sexp n) {
+    Buffer *buf = buffer_get_current();
+    if (!buf) return sexp_make_fixnum(0);
+    return sexp_make_fixnum((int)buf->select_mode);
+}
+
 sexp scm_swap_point_and_mark(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     Buffer *buf = buffer_get_current();

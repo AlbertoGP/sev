@@ -238,6 +238,7 @@ void scheme_init(AppState *state) {
     // Mark / selection primitives
     SDEF("%mark-set-to-point!", 1, scm_mark_set_to_point);
     SDEF("%select-mode-set!", 1, scm_select_mode_set);
+    SDEF("%select-mode-get", 0, scm_select_mode_get);
     SDEF("exchange-point-and-mark", 0, scm_swap_point_and_mark);
 
     #ifdef __EMSCRIPTEN__

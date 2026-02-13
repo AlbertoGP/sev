@@ -82,6 +82,7 @@ sexp scm_register_mode_icon(sexp ctx, sexp self, sexp n,
 // --- text/mark.c ---
 sexp scm_mark_set_to_point(sexp ctx, sexp self, sexp n, sexp mark_char);
 sexp scm_select_mode_set(sexp ctx, sexp self, sexp n, sexp mode_int);
+sexp scm_select_mode_get(sexp ctx, sexp self, sexp n);
 sexp scm_swap_point_and_mark(sexp ctx, sexp self, sexp n);
 
 // --- text/message.c ---
