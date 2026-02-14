@@ -66,11 +66,13 @@
    (mode.replace    . red)
    (mode.select     . yellow)
    (mode.command    . peach)
+   (mode.pending    . lavender)
    (label.normal    . fg-0)
    (label.insert    . fg-0)
    (label.replace   . fg-0)
    (label.select    . fg-0)
    (label.command   . fg-0)
+   (label.pending   . fg-0)
    (tab.bar         . bg-1)
    (tab.active      . bg-0)
    (tab.hover       . bg-0)
@@ -82,7 +84,8 @@
    (cursor.insert   . rosewater)
    (cursor.replace  . rosewater)
    (cursor.select   . rosewater)
-   (cursor.command  . rosewater)))
+   (cursor.command  . rosewater)
+   (cursor.pending  . rosewater)))
 
 (define-theme
  'catppuccin-macchiato
@@ -125,11 +128,13 @@
    (mode.replace    . red)
    (mode.select     . yellow)
    (mode.command    . peach)
+   (mode.pending    . lavender)
    (label.normal    . fg-0)
    (label.insert    . fg-0)
    (label.replace   . fg-0)
    (label.select    . fg-0)
    (label.command   . fg-0)
+   (label.pending   . fg-0)
    (tab.bar         . bg-1)
    (tab.active      . bg-0)
    (tab.hover       . bg-0)
@@ -141,7 +146,8 @@
    (cursor.insert   . rosewater)
    (cursor.replace  . rosewater)
    (cursor.select   . rosewater)
-   (cursor.command  . rosewater)))
+   (cursor.command  . rosewater)
+   (cursor.pending  . rosewater)))
 
 (define-theme
  'catppuccin-latte
@@ -184,11 +190,13 @@
    (mode.replace    . red)
    (mode.select     . yellow)
    (mode.command    . peach)
+   (mode.pending    . lavender)
    (label.normal    . bg-0)
    (label.insert    . bg-0)
    (label.replace   . bg-0)
    (label.select    . bg-0)
    (label.command   . bg-0)
+   (label.pending   . bg-0)
    (tab.bar         . bg-1)
    (tab.active      . bg-0)
    (tab.hover       . bg-0)
@@ -200,7 +208,8 @@
    (cursor.insert   . rosewater)
    (cursor.replace  . rosewater)
    (cursor.select   . rosewater)
-   (cursor.command  . rosewater)))
+   (cursor.command  . rosewater)
+   (cursor.pending  . rosewater)))
 
 (activate-theme 'catppuccin-macchiato)
 

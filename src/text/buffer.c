@@ -132,7 +132,7 @@ Buffer *buffer_create(const char *name) {
         buffer_enable_minor_mode(buf, evil);
         sexp ctx = G->chibi.ctx;
         sexp key = sexp_intern(ctx, "mode-name", -1);
-        sexp val = sexp_c_string(ctx, "NORMAL", -1);
+        sexp val = sexp_c_string(ctx, "Normal", -1);
         sexp_preserve_object(ctx, val);
         vartable_set(&buf->locals, key, val);
     }
@@ -773,7 +773,67 @@ sexp scm_set_column(sexp ctx, sexp self, sexp n, sexp column) {
 }
 
 sexp scm_char_at_point(sexp ctx, sexp self, sexp n) {
-    printf("point: %c\n", char_at_point());
+    Buffer *buf = buffer_get_current();
+    if (point_get(buf).pos >= get_char_count(buf))
+        return sexp_make_character(0);
+    return sexp_make_character(char_at_point());
+}
 
+sexp scm_point_get(sexp ctx, sexp self, sexp n) {
+    return sexp_make_fixnum(point_get(buffer_get_current()).pos);
+}
+
+sexp scm_point_set_to(sexp ctx, sexp self, sexp n, sexp pos) {
+    G->needs_redraw = true;
+    Buffer *buf = buffer_get_current();
+    int p = sexp_unbox_fixnum(pos);
+    int num_chars = (int)get_char_count(buf);
+    if (p < 0) p = 0;
+    if (p > num_chars) p = num_chars;
+    point_set((Location){.pos = (size_t)p});
+    update_line(buf);
+    save_current_column(buf);
     return SEXP_VOID;
+}
+
+sexp scm_buffer_length(sexp ctx, sexp self, sexp n) {
+    return sexp_make_fixnum(get_char_count(buffer_get_current()));
+}
+
+sexp scm_delete_range(sexp ctx, sexp self, sexp n, sexp sstart, sexp send) {
+    G->needs_redraw = true;
+    Buffer *buf = buffer_get_current();
+    int start = sexp_unbox_fixnum(sstart);
+    int end = sexp_unbox_fixnum(send);
+    if (start > end) { int t = start; start = end; end = t; }
+    int num_chars = (int)get_char_count(buf);
+    if (start < 0) start = 0;
+    if (end > num_chars) end = num_chars;
+    int count = end - start;
+    if (count <= 0) return SEXP_VOID;
+    // Move point to start, then delete forward one char at a time.
+    // Single-char delete_chars(-1) correctly updates all metadata (line table,
+    // cur_line, num_lines) on each iteration, avoiding the bulk-delete bug
+    // where char_from_point reads stale positions.
+    point_set((Location){.pos = (size_t)start});
+    update_line(buf);
+    for (int i = 0; i < count; i++) {
+        delete_chars(buf, -1);
+    }
+    return SEXP_VOID;
+}
+
+sexp scm_char_at(sexp ctx, sexp self, sexp n, sexp pos) {
+    Buffer *buf = buffer_get_current();
+    int p = sexp_unbox_fixnum(pos);
+    int num_chars = (int)get_char_count(buf);
+    if (p < 0 || p >= num_chars)
+        return sexp_make_character(0);
+    return sexp_make_character((char)buf_char_at(buf, (size_t)p));
+}
+
+sexp scm_last_key_char(sexp ctx, sexp self, sexp n) {
+    if (last_event.type != KEYEVENT_CHAR)
+        return SEXP_FALSE;
+    return sexp_make_character((char)last_event.codepoint);
 }

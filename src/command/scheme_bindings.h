@@ -21,6 +21,12 @@ sexp scm_backward_char(sexp ctx, sexp self, sexp n);
 sexp scm_skip_whitespace(sexp ctx, sexp self, sexp n);
 sexp scm_set_column(sexp ctx, sexp self, sexp n, sexp column);
 sexp scm_char_at_point(sexp ctx, sexp self, sexp n);
+sexp scm_point_get(sexp ctx, sexp self, sexp n);
+sexp scm_point_set_to(sexp ctx, sexp self, sexp n, sexp pos);
+sexp scm_buffer_length(sexp ctx, sexp self, sexp n);
+sexp scm_delete_range(sexp ctx, sexp self, sexp n, sexp sstart, sexp send);
+sexp scm_char_at(sexp ctx, sexp self, sexp n, sexp pos);
+sexp scm_last_key_char(sexp ctx, sexp self, sexp n);
 sexp scm_set_replace_mode(sexp ctx, sexp self, sexp n, sexp val);
 
 // --- display/pane.c ---
