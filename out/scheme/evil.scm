@@ -568,8 +568,14 @@
 
 (register-operator! 'op-change
   (lambda (range)
-    (delete-range (range-start range) (range-end range))
-    (evil-insert)))
+    (let* ((start (range-start range))
+           (end (range-end range))
+           (end (if (and (> end start)
+                         (char=? (char-at (- end 1)) #\newline))
+                    (- end 1)
+                    end)))
+      (delete-range start end)
+      (evil-insert))))
 
 ;;;
 ;;; Motion command wrappers (bound to keys)
@@ -610,8 +616,7 @@
 
 (define (evil-S)
   (evil-enter-operator 'op-change)
-  (evil-enter-operator 'op-change)
-  (open-line-above))
+  (evil-enter-operator 'op-change))
 (defcommand evil-S "Substitute entire line.")
 
 ;;;

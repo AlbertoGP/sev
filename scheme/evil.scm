@@ -568,8 +568,14 @@
 
 (register-operator! 'op-change
   (lambda (range)
-    (delete-range (range-start range) (range-end range))
-    (evil-insert)))
+    (let* ((start (range-start range))
+           (end (range-end range))
+           (end (if (and (> end start)
+                         (char=? (char-at (- end 1)) #\newline))
+                    (- end 1)
+                    end)))
+      (delete-range start end)
+      (evil-insert))))
 
 ;;;
 ;;; Motion command wrappers (bound to keys)
