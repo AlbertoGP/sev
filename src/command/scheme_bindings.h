@@ -28,6 +28,8 @@ sexp scm_delete_range(sexp ctx, sexp self, sexp n, sexp sstart, sexp send);
 sexp scm_char_at(sexp ctx, sexp self, sexp n, sexp pos);
 sexp scm_last_key_char(sexp ctx, sexp self, sexp n);
 sexp scm_set_replace_mode(sexp ctx, sexp self, sexp n, sexp val);
+sexp scm_goto_line(sexp ctx, sexp self, sexp n, sexp line_num);
+sexp scm_line_count(sexp ctx, sexp self, sexp n);
 
 // --- display/pane.c ---
 sexp scm_pane_navigate_up(sexp ctx, sexp self, sexp n);
@@ -91,6 +93,7 @@ sexp scm_mark_set_to_point(sexp ctx, sexp self, sexp n, sexp mark_char);
 sexp scm_select_mode_set(sexp ctx, sexp self, sexp n, sexp mode_int);
 sexp scm_select_mode_get(sexp ctx, sexp self, sexp n);
 sexp scm_swap_point_and_mark(sexp ctx, sexp self, sexp n);
+sexp scm_point_to_named_mark(sexp ctx, sexp self, sexp n, sexp mark_char);
 
 // --- text/message.c ---
 sexp scm_message_send(sexp ctx, sexp self, sexp n, sexp message);

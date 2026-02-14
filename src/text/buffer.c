@@ -837,3 +837,21 @@ sexp scm_last_key_char(sexp ctx, sexp self, sexp n) {
         return SEXP_FALSE;
     return sexp_make_character((char)last_event.codepoint);
 }
+
+sexp scm_goto_line(sexp ctx, sexp self, sexp n, sexp line_num) {
+    G->needs_redraw = true;
+    Buffer *buf = buffer_get_current();
+    int line = sexp_unbox_fixnum(line_num);
+    int total = (int)get_line_count(buf);
+    if (line < 1) line = 1;
+    if (line > total) line = total;
+    const LineTable *lt = buffer_get_line_table(buf);
+    point_set((Location){.pos = lt->lines[line - 1].start});
+    update_line(buf);
+    save_current_column(buf);
+    return SEXP_VOID;
+}
+
+sexp scm_line_count(sexp ctx, sexp self, sexp n) {
+    return sexp_make_fixnum(get_line_count(buffer_get_current()));
+}

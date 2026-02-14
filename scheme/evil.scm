@@ -84,7 +84,8 @@
 (set-key! normal-map "C-S-RIGHT" 'pane-v-split-increase)
 (set-key! normal-map "SPC l n" 'toggle-line-numbers)
 (set-key! normal-map "SPC r n" 'toggle-relative-line-numbers)
-(set-key! normal-map "`" 'clay-debug)
+(set-key! normal-map "g g" 'evil-motion-gg)
+(set-key! normal-map "G" 'evil-motion-G)
 
 (%set-keymap-default! insert-map 'self-insert)
 ;; Insert mode bindings (no default - falls through for self-insert)
@@ -175,10 +176,22 @@
 (set-key! pending-map "7" 'evil-digit-argument)
 (set-key! pending-map "8" 'evil-digit-argument)
 (set-key! pending-map "9" 'evil-digit-argument)
+(set-key! pending-map "g g" 'evil-motion-gg)
+(set-key! pending-map "G" 'evil-motion-G)
 (set-key! pending-map "d" 'evil-op-delete)
 (set-key! pending-map "c" 'evil-op-change)
 (set-key! pending-map "ESC" 'evil-normal)
 (set-key! pending-map "C-[" 'evil-normal)
+
+;; m / ' / ` — bind all 26 letters programmatically
+(do ((i 0 (+ i 1)))
+    ((= i 26))
+  (let ((ch (string (integer->char (+ (char->integer #\a) i)))))
+    (set-key! normal-map  (string-append "m " ch) 'evil-set-mark)
+    (set-key! normal-map  (string-append "' " ch) 'evil-goto-mark-line)
+    (set-key! normal-map  (string-append "` " ch) 'evil-goto-mark-exact)
+    (set-key! pending-map (string-append "' " ch) 'evil-goto-mark-line)
+    (set-key! pending-map (string-append "` " ch) 'evil-goto-mark-exact)))
 
 ;; Register modes
 (define-minor-mode 'evil-normal-mode normal-map)
@@ -418,7 +431,8 @@
         (message-clear))))
 
 ;; Dot repeat
-(define (evil-repeat)
+(defcommand (evil-repeat)
+  "Repeat last operator+motion."
   (when evil-last-op
     (let ((motion-proc (motion-ref evil-last-motion))
           (op-proc (operator-ref evil-last-op)))
@@ -438,27 +452,23 @@
   (set! evil-count #f)
   (message-clear))
 
-(defcommand evil-repeat "Repeat last operator+motion.")
-
 ;; Count accumulation
-(define (evil-digit-argument)
+(defcommand (evil-digit-argument)
+  "Accumulate count prefix."
   (let ((ch (last-key-char)))
     (when (and ch (not (eq? ch #f)))
       (let ((digit (- (char->integer ch) (char->integer #\0))))
         (set! evil-count (+ (* (or evil-count 0) 10) digit))
         (message (string-append (number->string evil-count) "-"))))))
 
-(defcommand evil-digit-argument "Accumulate count prefix.")
-
 ;; 0 key: line-start or append zero to count
-(define (evil-zero)
+(defcommand (evil-zero)
+  "Line start or append zero to count."
   (if evil-count
       (begin
         (set! evil-count (* evil-count 10))
         (message (string-append (number->string evil-count) "-")))
       (evil-execute-motion 'motion-0)))
-
-(defcommand evil-zero "Line start or append zero to count.")
 
 ;;;
 ;;; Motion definitions
@@ -736,6 +746,10 @@
                        (move-point 1) (advance)))))))))
         (loop (+ i 1))))))
 
+;; Goto-line motion
+(register-motion! 'motion-goto-line
+  (lambda (count) (%goto-line count)))
+
 ;; Current line motion (for dd, cc)
 (register-motion! 'current-line
   (lambda (count)
@@ -772,41 +786,64 @@
 ;;; Motion command wrappers (bound to keys)
 ;;;
 
-(define (evil-motion-h) (evil-execute-motion 'motion-h))
-(define (evil-motion-j) (evil-execute-motion 'motion-j))
-(define (evil-motion-k) (evil-execute-motion 'motion-k))
-(define (evil-motion-l) (evil-execute-motion 'motion-l))
-(define (evil-motion-$) (evil-execute-motion 'motion-$))
-(define (evil-motion-^) (evil-execute-motion 'motion-^))
-(define (evil-motion-w) (evil-execute-motion 'motion-w))
-(define (evil-motion-b) (evil-execute-motion 'motion-b))
-(define (evil-motion-e) (evil-execute-motion 'motion-e))
-(define (evil-motion-W) (evil-execute-motion 'motion-W))
-(define (evil-motion-B) (evil-execute-motion 'motion-B))
-(define (evil-motion-E) (evil-execute-motion 'motion-E))
+(defcommand (evil-motion-h) "Move left." (evil-execute-motion 'motion-h))
+(defcommand (evil-motion-j) "Move down." (evil-execute-motion 'motion-j))
+(defcommand (evil-motion-k) "Move up." (evil-execute-motion 'motion-k))
+(defcommand (evil-motion-l) "Move right." (evil-execute-motion 'motion-l))
+(defcommand (evil-motion-$) "Move to end of line." (evil-execute-motion 'motion-$))
+(defcommand (evil-motion-^) "Move to first non-blank." (evil-execute-motion 'motion-^))
+(defcommand (evil-motion-w) "Move forward one word." (evil-execute-motion 'motion-w))
+(defcommand (evil-motion-b) "Move backward one word." (evil-execute-motion 'motion-b))
+(defcommand (evil-motion-e) "Move to end of word." (evil-execute-motion 'motion-e))
+(defcommand (evil-motion-W) "Move forward one WORD." (evil-execute-motion 'motion-W))
+(defcommand (evil-motion-B) "Move backward one WORD." (evil-execute-motion 'motion-B))
+(defcommand (evil-motion-E) "Move to end of WORD." (evil-execute-motion 'motion-E))
 
-(defcommand evil-motion-h "Move left.")
-(defcommand evil-motion-j "Move down.")
-(defcommand evil-motion-k "Move up.")
-(defcommand evil-motion-l "Move right.")
-(defcommand evil-motion-$ "Move to end of line.")
-(defcommand evil-motion-^ "Move to first non-blank.")
-(defcommand evil-motion-w "Move forward one word.")
-(defcommand evil-motion-b "Move backward one word.")
-(defcommand evil-motion-e "Move to end of word.")
-(defcommand evil-motion-W "Move forward one WORD.")
-(defcommand evil-motion-B "Move backward one WORD.")
-(defcommand evil-motion-E "Move to end of WORD.")
+(defcommand (evil-motion-gg)
+  "Go to first line."
+  (evil-execute-motion 'motion-goto-line))
+
+(defcommand (evil-motion-G)
+  "Go to last line."
+  (unless evil-count (set! evil-count (%line-count)))
+  (evil-execute-motion 'motion-goto-line))
+
+(defcommand (evil-set-mark)
+  "Set named mark."
+  (let ((ch (last-key-char)))
+    (when ch
+      (%mark-set-to-point! ch)
+      (message (string-append "Mark set: " (string ch))))))
+
+
+(defcommand (evil-goto-mark-line)
+  "Jump to line of mark."
+  (let ((ch (last-key-char)))
+    (when ch
+      (register-motion! 'motion--mark-line-tmp
+        (lambda (count) (%point-to-mark! ch) (line-start)))
+      (evil-execute-motion 'motion--mark-line-tmp))))
+
+(defcommand (evil-goto-mark-exact)
+  "Jump to exact position of mark."
+  (let ((ch (last-key-char)))
+    (when ch
+      (register-motion! 'motion--mark-exact-tmp
+        (lambda (count) (%point-to-mark! ch)))
+      (evil-execute-motion 'motion--mark-exact-tmp))))
+
 
 ;;;
 ;;; Operator command wrappers (bound to keys)
 ;;;
 
-(define (evil-op-delete) (evil-enter-operator 'op-delete))
-(define (evil-op-change) (evil-enter-operator 'op-change))
+(defcommand (evil-op-delete)
+  "Delete operator."
+  (evil-enter-operator 'op-delete))
 
-(defcommand evil-op-delete "Delete operator.")
-(defcommand evil-op-change "Change operator.")
+(defcommand (evil-op-change)
+  "Change operator."
+  (evil-enter-operator 'op-change))
 
 (defcommand (evil-D)
   "Delete to end of line."
@@ -827,7 +864,8 @@
 ;;; Count-aware x/X
 ;;;
 
-(define (evil-x)
+(defcommand (evil-x)
+  "Delete character(s) forward."
   (let ((count (or evil-count 1)))
     (let ((len (buffer-length))
           (p (point-get)))
@@ -837,7 +875,8 @@
     (set! evil-count #f)
     (message-clear)))
 
-(define (evil-X)
+(defcommand (evil-X)
+  "Delete character(s) backward."
   (let ((count (or evil-count 1)))
     (let ((p (point-get)))
       (let ((actual (min count p)))
@@ -845,9 +884,6 @@
           (delete-range (- p actual) p))))
     (set! evil-count #f)
     (message-clear)))
-
-(defcommand evil-x "Delete character(s) forward.")
-(defcommand evil-X "Delete character(s) backward.")
 
 ;;; Activate
 (evil-mode)

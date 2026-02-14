@@ -247,6 +247,9 @@ void scheme_init(AppState *state) {
     SDEF("%select-mode-set!", 1, scm_select_mode_set);
     SDEF("%select-mode-get", 0, scm_select_mode_get);
     SDEF("exchange-point-and-mark", 0, scm_swap_point_and_mark);
+    SDEF("%point-to-mark!", 1, scm_point_to_named_mark);
+    SDEF("%goto-line", 1, scm_goto_line);
+    SDEF("%line-count", 0, scm_line_count);
 
     #ifdef __EMSCRIPTEN__
     #define RESOURCES_PATH "/resources/"
