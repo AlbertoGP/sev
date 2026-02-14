@@ -29,6 +29,10 @@
 (set-key! normal-map "^" 'evil-motion-^)
 (set-key! normal-map "w" 'evil-motion-w)
 (set-key! normal-map "b" 'evil-motion-b)
+(set-key! normal-map "e" 'evil-motion-e)
+(set-key! normal-map "W" 'evil-motion-W)
+(set-key! normal-map "B" 'evil-motion-B)
+(set-key! normal-map "E" 'evil-motion-E)
 (set-key! normal-map "i" 'evil-insert)
 (set-key! normal-map "I" 'insert-at-start)
 (set-key! normal-map "R" 'evil-replace)
@@ -155,6 +159,10 @@
 (set-key! pending-map "l" 'evil-motion-l)
 (set-key! pending-map "w" 'evil-motion-w)
 (set-key! pending-map "b" 'evil-motion-b)
+(set-key! pending-map "e" 'evil-motion-e)
+(set-key! pending-map "W" 'evil-motion-W)
+(set-key! pending-map "B" 'evil-motion-B)
+(set-key! pending-map "E" 'evil-motion-E)
 (set-key! pending-map "$" 'evil-motion-$)
 (set-key! pending-map "^" 'evil-motion-^)
 (set-key! pending-map "0" 'evil-zero)
@@ -410,7 +418,8 @@
         (message-clear))))
 
 ;; Dot repeat
-(define (evil-repeat)
+(defcommand (evil-repeat)
+  "Repeat last operator."
   (when evil-last-op
     (let ((motion-proc (motion-ref evil-last-motion))
           (op-proc (operator-ref evil-last-op)))
@@ -430,27 +439,23 @@
   (set! evil-count #f)
   (message-clear))
 
-(defcommand evil-repeat "Repeat last operator+motion.")
-
 ;; Count accumulation
-(define (evil-digit-argument)
+(defcommand (evil-digit-argument)
+  "Accumulate count prefix."
   (let ((ch (last-key-char)))
     (when (and ch (not (eq? ch #f)))
       (let ((digit (- (char->integer ch) (char->integer #\0))))
         (set! evil-count (+ (* (or evil-count 0) 10) digit))
         (message (string-append (number->string evil-count) "-"))))))
 
-(defcommand evil-digit-argument "Accumulate count prefix.")
-
 ;; 0 key: line-start or append zero to count
-(define (evil-zero)
+(defcommand (evil-zero)
+  "Line start or append zero to count."
   (if evil-count
       (begin
         (set! evil-count (* evil-count 10))
         (message (string-append (number->string evil-count) "-")))
       (evil-execute-motion 'motion-0)))
-
-(defcommand evil-zero "Line start or append zero to count.")
 
 ;;;
 ;;; Motion definitions
@@ -548,6 +553,186 @@
                          (move-point -1) (skip-punct))))))))))
         (loop (+ i 1))))))
 
+;; End-of-word forward motion
+(register-motion! 'motion-e
+  (lambda (count)
+    (let loop ((i 0))
+      (when (< i count)
+        (let ((len (buffer-length))
+              (p (point-get)))
+          (when (< p (- len 1))
+            ;; Check if we're at the last char of current word-class run
+            (let ((c (char-at p))
+                  (nc (char-at (+ p 1))))
+              (cond
+                ;; On whitespace: skip whitespace, then find end of next run
+                ((evil-whitespace? c)
+                 (let skip-ws ()
+                   (let ((pp (point-get)))
+                     (when (and (< pp (- len 1)) (evil-whitespace? (char-at pp)))
+                       (move-point 1) (skip-ws))))
+                 ;; Now on a non-whitespace char, advance to end of its class
+                 (let ((pp (point-get)))
+                   (when (< pp (- len 1))
+                     (let ((cc (char-at pp)))
+                       (cond
+                         ((evil-word-char? cc)
+                          (let advance ()
+                            (let ((pp2 (point-get)))
+                              (when (and (< pp2 (- len 1)) (evil-word-char? (char-at (+ pp2 1))))
+                                (move-point 1) (advance)))))
+                         ((evil-punctuation? cc)
+                          (let advance ()
+                            (let ((pp2 (point-get)))
+                              (when (and (< pp2 (- len 1)) (evil-punctuation? (char-at (+ pp2 1))))
+                                (move-point 1) (advance))))))))))
+                ;; At end of word-class run: move forward, skip ws, find end of next run
+                ((and (evil-word-char? c)
+                      (or (evil-whitespace? nc) (evil-punctuation? nc)))
+                 (move-point 1)
+                 (let skip-ws ()
+                   (let ((pp (point-get)))
+                     (when (and (< pp (- len 1)) (evil-whitespace? (char-at pp)))
+                       (move-point 1) (skip-ws))))
+                 (let ((pp (point-get)))
+                   (when (< pp (- len 1))
+                     (let ((cc (char-at pp)))
+                       (cond
+                         ((evil-word-char? cc)
+                          (let advance ()
+                            (let ((pp2 (point-get)))
+                              (when (and (< pp2 (- len 1)) (evil-word-char? (char-at (+ pp2 1))))
+                                (move-point 1) (advance)))))
+                         ((evil-punctuation? cc)
+                          (let advance ()
+                            (let ((pp2 (point-get)))
+                              (when (and (< pp2 (- len 1)) (evil-punctuation? (char-at (+ pp2 1))))
+                                (move-point 1) (advance))))))))))
+                ((and (evil-punctuation? c)
+                      (or (evil-whitespace? nc) (evil-word-char? nc)))
+                 (move-point 1)
+                 (let skip-ws ()
+                   (let ((pp (point-get)))
+                     (when (and (< pp (- len 1)) (evil-whitespace? (char-at pp)))
+                       (move-point 1) (skip-ws))))
+                 (let ((pp (point-get)))
+                   (when (< pp (- len 1))
+                     (let ((cc (char-at pp)))
+                       (cond
+                         ((evil-word-char? cc)
+                          (let advance ()
+                            (let ((pp2 (point-get)))
+                              (when (and (< pp2 (- len 1)) (evil-word-char? (char-at (+ pp2 1))))
+                                (move-point 1) (advance)))))
+                         ((evil-punctuation? cc)
+                          (let advance ()
+                            (let ((pp2 (point-get)))
+                              (when (and (< pp2 (- len 1)) (evil-punctuation? (char-at (+ pp2 1))))
+                                (move-point 1) (advance))))))))))
+                ;; In middle of word-class run: advance to end
+                ((evil-word-char? c)
+                 (let advance ()
+                   (let ((pp (point-get)))
+                     (when (and (< pp (- len 1)) (evil-word-char? (char-at (+ pp 1))))
+                       (move-point 1) (advance)))))
+                ((evil-punctuation? c)
+                 (let advance ()
+                   (let ((pp (point-get)))
+                     (when (and (< pp (- len 1)) (evil-punctuation? (char-at (+ pp 1))))
+                       (move-point 1) (advance)))))))))
+        (loop (+ i 1))))))
+
+;; WORD forward motion (whitespace-delimited)
+(register-motion! 'motion-W
+  (lambda (count)
+    (let loop ((i 0))
+      (when (< i count)
+        (let ((len (buffer-length))
+              (p (point-get)))
+          (when (< p len)
+            (let ((c (char-at p)))
+              (cond
+                ;; On non-whitespace: skip non-ws, then skip ws
+                ((not (evil-whitespace? c))
+                 (let skip-nonws ()
+                   (let ((pp (point-get)))
+                     (when (and (< pp len) (not (evil-whitespace? (char-at pp))))
+                       (move-point 1) (skip-nonws))))
+                 (let skip-ws ()
+                   (let ((pp (point-get)))
+                     (when (and (< pp len) (evil-whitespace? (char-at pp)))
+                       (move-point 1) (skip-ws)))))
+                ;; On whitespace: skip ws
+                ((evil-whitespace? c)
+                 (let skip-ws ()
+                   (let ((pp (point-get)))
+                     (when (and (< pp len) (evil-whitespace? (char-at pp)))
+                       (move-point 1) (skip-ws)))))))))
+        (loop (+ i 1))))))
+
+;; WORD backward motion (whitespace-delimited)
+(register-motion! 'motion-B
+  (lambda (count)
+    (let loop ((i 0))
+      (when (< i count)
+        (let ((p (point-get)))
+          (when (> p 0)
+            ;; Move back one char first
+            (move-point -1)
+            ;; Skip whitespace backwards
+            (let skip-ws ()
+              (let ((pp (point-get)))
+                (when (and (> pp 0) (evil-whitespace? (char-at pp)))
+                  (move-point -1) (skip-ws))))
+            ;; Skip non-whitespace backwards
+            (let ((pp (point-get)))
+              (when (and (> pp 0) (not (evil-whitespace? (char-at pp))))
+                (let skip-nonws ()
+                  (let ((pp2 (point-get)))
+                    (when (and (> pp2 0) (not (evil-whitespace? (char-at (- pp2 1)))))
+                      (move-point -1) (skip-nonws))))))))
+        (loop (+ i 1))))))
+
+;; End-of-WORD forward motion (whitespace-delimited)
+(register-motion! 'motion-E
+  (lambda (count)
+    (let loop ((i 0))
+      (when (< i count)
+        (let ((len (buffer-length))
+              (p (point-get)))
+          (when (< p (- len 1))
+            (let ((c (char-at p))
+                  (nc (char-at (+ p 1))))
+              (cond
+                ;; On whitespace: skip ws, then advance to end of non-ws run
+                ((evil-whitespace? c)
+                 (let skip-ws ()
+                   (let ((pp (point-get)))
+                     (when (and (< pp (- len 1)) (evil-whitespace? (char-at pp)))
+                       (move-point 1) (skip-ws))))
+                 (let advance ()
+                   (let ((pp (point-get)))
+                     (when (and (< pp (- len 1)) (not (evil-whitespace? (char-at (+ pp 1)))))
+                       (move-point 1) (advance)))))
+                ;; At end of non-ws run (next is whitespace): move, skip ws, find end
+                ((evil-whitespace? nc)
+                 (move-point 1)
+                 (let skip-ws ()
+                   (let ((pp (point-get)))
+                     (when (and (< pp (- len 1)) (evil-whitespace? (char-at pp)))
+                       (move-point 1) (skip-ws))))
+                 (let advance ()
+                   (let ((pp (point-get)))
+                     (when (and (< pp (- len 1)) (not (evil-whitespace? (char-at (+ pp 1)))))
+                       (move-point 1) (advance)))))
+                ;; In middle of non-ws run: advance to end
+                (else
+                 (let advance ()
+                   (let ((pp (point-get)))
+                     (when (and (< pp (- len 1)) (not (evil-whitespace? (char-at (+ pp 1)))))
+                       (move-point 1) (advance)))))))))
+        (loop (+ i 1))))))
+
 ;; Current line motion (for dd, cc)
 (register-motion! 'current-line
   (lambda (count)
@@ -584,33 +769,25 @@
 ;;; Motion command wrappers (bound to keys)
 ;;;
 
-(define (evil-motion-h) (evil-execute-motion 'motion-h))
-(define (evil-motion-j) (evil-execute-motion 'motion-j))
-(define (evil-motion-k) (evil-execute-motion 'motion-k))
-(define (evil-motion-l) (evil-execute-motion 'motion-l))
-(define (evil-motion-$) (evil-execute-motion 'motion-$))
-(define (evil-motion-^) (evil-execute-motion 'motion-^))
-(define (evil-motion-w) (evil-execute-motion 'motion-w))
-(define (evil-motion-b) (evil-execute-motion 'motion-b))
-
-(defcommand evil-motion-h "Move left.")
-(defcommand evil-motion-j "Move down.")
-(defcommand evil-motion-k "Move up.")
-(defcommand evil-motion-l "Move right.")
-(defcommand evil-motion-$ "Move to end of line.")
-(defcommand evil-motion-^ "Move to first non-blank.")
-(defcommand evil-motion-w "Move forward one word.")
-(defcommand evil-motion-b "Move backward one word.")
+(defcommand (evil-motion-h) "Move left." (evil-execute-motion 'motion-h))
+(defcommand (evil-motion-j) "Move down." (evil-execute-motion 'motion-j))
+(defcommand (evil-motion-k) "Move up." (evil-execute-motion 'motion-k))
+(defcommand (evil-motion-l) "Move right." (evil-execute-motion 'motion-l))
+(defcommand (evil-motion-$) "Move to end of line." (evil-execute-motion 'motion-$))
+(defcommand (evil-motion-^) "Move to first non-blank." (evil-execute-motion 'motion-^))
+(defcommand (evil-motion-w) "Move forward one word." (evil-execute-motion 'motion-w))
+(defcommand (evil-motion-b) "Move backward one word." (evil-execute-motion 'motion-b))
+(defcommand (evil-motion-e) "Move to end of word." (evil-execute-motion 'motion-e))
+(defcommand (evil-motion-W) "Move forward one WORD." (evil-execute-motion 'motion-W))
+(defcommand (evil-motion-B) "Move backward one WORD." (evil-execute-motion 'motion-B))
+(defcommand (evil-motion-E) "Move to end of WORD." (evil-execute-motion 'motion-E))
 
 ;;;
 ;;; Operator command wrappers (bound to keys)
 ;;;
 
-(define (evil-op-delete) (evil-enter-operator 'op-delete))
-(define (evil-op-change) (evil-enter-operator 'op-change))
-
-(defcommand evil-op-delete "Delete operator.")
-(defcommand evil-op-change "Change operator.")
+(defcommand (evil-op-delete) "Delete operator." (evil-enter-operator 'op-delete))
+(defcommand (evil-op-change) "Change operator." (evil-enter-operator 'op-change))
 
 (defcommand (evil-D)
   "Delete to end of line."
@@ -631,7 +808,8 @@
 ;;; Count-aware x/X
 ;;;
 
-(define (evil-x)
+(defcommand (evil-x)
+  "Delete character(s) forward."
   (let ((count (or evil-count 1)))
     (let ((len (buffer-length))
           (p (point-get)))
@@ -641,7 +819,8 @@
     (set! evil-count #f)
     (message-clear)))
 
-(define (evil-X)
+(defcommand (evil-X)
+  "Delete character(s) backward."
   (let ((count (or evil-count 1)))
     (let ((p (point-get)))
       (let ((actual (min count p)))
@@ -650,8 +829,6 @@
     (set! evil-count #f)
     (message-clear)))
 
-(defcommand evil-x "Delete character(s) forward.")
-(defcommand evil-X "Delete character(s) backward.")
 
 ;;; Activate
 (evil-mode)
