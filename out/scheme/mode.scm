@@ -59,7 +59,7 @@
 (define-minor-mode 'display-line-numbers-mode)
 
 (defun (display-line-numbers-mode enable)
-  "Toggle display of line numbers in the current buffer."
+  "Set line number display mode in the current buffer."
   (if enable
     (begin
       (enable-minor-mode 'display-line-numbers-mode)
@@ -68,3 +68,15 @@
     (begin
       (disable-minor-mode 'display-line-numbers-mode)
       (set-local! 'display-line-numbers-type #f))))
+
+(defcommand (toggle-line-numbers)
+  "Toggle display of line numbers in the current buffer."
+  (display-line-numbers-mode
+    (not (get-local 'display-line-numbers-type))))
+
+(defcommand (toggle-relative-line-numbers)
+  "Toggle relative line numbering in the current buffer."
+  (set-local! 'display-line-numbers-type
+    (if (eq? (get-local 'display-line-numbers-type)
+             'relative)
+        #t 'relative)))

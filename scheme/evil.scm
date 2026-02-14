@@ -39,6 +39,7 @@
 (set-key! normal-map "s" 'substitute-char)
 (set-key! normal-map "S" 'evil-S)
 (set-key! normal-map "D" 'evil-D)
+(set-key! normal-map "C" 'evil-C)
 (set-key! normal-map "x" 'evil-x)
 (set-key! normal-map "X" 'evil-X)
 (set-key! normal-map "d" 'evil-op-delete)
@@ -77,6 +78,8 @@
 (set-key! normal-map "C-S-DOWN" 'pane-h-split-increase)
 (set-key! normal-map "C-S-LEFT" 'pane-v-split-decrease)
 (set-key! normal-map "C-S-RIGHT" 'pane-v-split-increase)
+(set-key! normal-map "SPC l n" 'toggle-line-numbers)
+(set-key! normal-map "SPC r n" 'toggle-relative-line-numbers)
 (set-key! normal-map "`" 'clay-debug)
 
 (%set-keymap-default! insert-map 'self-insert)
@@ -192,7 +195,8 @@
                          'mode.pending 'label.pending 'cursor.pending  'under)
 
 ;; State transitions
-(define (evil-normal)
+(defcommand (evil-normal)
+  "Return to normal mode."
   (disable-minor-mode 'evil-insert-mode)
   (disable-minor-mode 'evil-replace-mode)
   (disable-minor-mode 'evil-select-mode)
@@ -205,7 +209,8 @@
   (set-local! 'mode-name "Normal")
   (message-clear))
 
-(define (evil-insert)
+(defcommand (evil-insert)
+  "Enter insert mode."
   (disable-minor-mode 'evil-normal-mode)
   (disable-minor-mode 'evil-replace-mode)
   (disable-minor-mode 'evil-select-mode)
@@ -215,7 +220,8 @@
   (set-local! 'mode-name "Insert")
   (message "-- INSERT --"))
 
-(define (evil-replace)
+(defcommand (evil-replace)
+  "Enter replace mode."
   (disable-minor-mode 'evil-normal-mode)
   (disable-minor-mode 'evil-insert-mode)
   (disable-minor-mode 'evil-select-mode)
@@ -237,22 +243,26 @@
   (set-local! 'mode-name name)
   (message msg))
 
-(define (evil-select)
+(defcommand (evil-select)
+  "Enter select mode."
   (if (and (%buffer-has-minor-mode? 'evil-select-mode) (= (%select-mode-get) 1))
       (evil-normal)
       (enter-visual-submode 1 "Select" "-- SELECT --")))
 
-(define (evil-select-line)
+(defcommand (evil-select-line)
+  "Enter visual line mode."
   (if (and (%buffer-has-minor-mode? 'evil-select-mode) (= (%select-mode-get) 2))
       (evil-normal)
       (enter-visual-submode 2 "Line" "-- SELECT LINE --")))
 
-(define (evil-select-rectangle)
+(defcommand (evil-select-rectangle)
+  "Enter visual block mode."
   (if (and (%buffer-has-minor-mode? 'evil-select-mode) (= (%select-mode-get) 3))
       (evil-normal)
       (enter-visual-submode 3 "Rectangle" "-- SELECT RECTANGLE --")))
 
-(define (evil-command)
+(defcommand (evil-command)
+  "Enter command mode."
   (disable-minor-mode 'evil-normal-mode)
   (disable-minor-mode 'evil-insert-mode)
   (disable-minor-mode 'evil-replace-mode)
@@ -261,13 +271,6 @@
   (set-local! 'mode-name "Command")
   (message-clear))
 
-(defcommand evil-normal "Return to normal mode.")
-(defcommand evil-insert "Enter insert mode.")
-(defcommand evil-replace "Enter replace mode.")
-(defcommand evil-select "Enter select mode.")
-(defcommand evil-select-line "Enter visual line mode.")
-(defcommand evil-select-rectangle "Enter visual block mode.")
-(defcommand evil-command "Enter command mode.")
 
 ;; Query function for UI
 (define (evil-state)
@@ -277,10 +280,10 @@
     (else #f)))
 
 ;; Enable evil mode
-(define (evil-mode)
+(defcommand (evil-mode)
+  "Enable vim-like modal editing."
   (enable-minor-mode 'evil-normal-mode))
 
-(defcommand evil-mode "Enable vim-like modal editing.")
 
 ;;;
 ;;; Evil State Machine
@@ -609,15 +612,20 @@
 (defcommand evil-op-delete "Delete operator.")
 (defcommand evil-op-change "Change operator.")
 
-(define (evil-D)
+(defcommand (evil-D)
+  "Delete to end of line."
   (evil-enter-operator 'op-delete)
   (evil-execute-motion 'motion-$))
-(defcommand evil-D "Delete to end of line.")
 
-(define (evil-S)
+(defcommand (evil-C)
+  "Change to end of line."
+  (evil-enter-operator 'op-change)
+  (evil-execute-motion 'motion-$))
+
+(defcommand (evil-S)
+  "Substitute entire line."
   (evil-enter-operator 'op-change)
   (evil-enter-operator 'op-change))
-(defcommand evil-S "Substitute entire line.")
 
 ;;;
 ;;; Count-aware x/X
