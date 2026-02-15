@@ -219,7 +219,8 @@ void scheme_init(AppState *state) {
     SDEF("eval-buffer", 0, scm_eval_buffer);
     SDEF("clay-debug", 0, scm_clay_debug);
     SDEF("prefix-arg", 0, scm_prefix_arg);
-    SDEF("%set-keymap-default!", 2, scm_set_keymap_default);
+    SDEF("%set-keymap-parent!", 2, scm_set_keymap_parent);
+    SDEF("%set-mode-allows-input!", 2, scm_set_mode_allows_input);
     SDEF("ignore", 0, scm_ignore);
     SDEF("%buffer-has-minor-mode?", 1, scm_buffer_has_minor_mode);
 

@@ -6,11 +6,18 @@
   (let ((keymap (if (pair? args) (car args) #f)))
     (%register-mode name 'major keymap)))
 
-;; Register a minor mode with an optional keymap
+;; Register a minor mode with an optional keymap and allows-input flag
 ;; Returns the mode object or #f on failure
 (define (define-minor-mode name . args)
-  (let ((keymap (if (pair? args) (car args) #f)))
-    (%register-mode name 'minor keymap)))
+  (let ((keymap (if (pair? args) (car args) #f))
+        (allows-input (and (pair? args) (pair? (cdr args)) (cadr args))))
+    (%register-mode name 'minor keymap)
+    (when allows-input
+      (%set-mode-allows-input! name #t))))
+
+;; Set a keymap's parent for inheritance
+(define (set-keymap-parent! keymap parent)
+  (%set-keymap-parent! keymap parent))
 
 ;; Set the major mode of the current buffer
 (define (set-major-mode! name)

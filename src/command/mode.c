@@ -39,6 +39,7 @@ Mode *mode_create(const char *name, ModeType type, Keymap *keymap) {
 
     m->type = type;
     m->keymap = keymap;
+    m->allows_input = false;
     m->next = NULL;
 
     return m;
@@ -216,4 +217,16 @@ sexp scm_buffer_has_minor_mode(sexp ctx, sexp self, sexp n, sexp sname) {
         return sexp_user_exception(ctx, self, "name must be symbol", sname);
     const char *name = sexp_string_data(sexp_symbol_to_string(ctx, sname));
     return buffer_has_minor_mode(buffer_get_current(), name) ? SEXP_TRUE : SEXP_FALSE;
+}
+
+// (%set-mode-allows-input! name val) -> #t or #f
+sexp scm_set_mode_allows_input(sexp ctx, sexp self, sexp n,
+                                sexp sname, sexp sval) {
+    if (!sexp_symbolp(sname))
+        return sexp_user_exception(ctx, self, "name must be symbol", sname);
+    const char *name = sexp_string_data(sexp_symbol_to_string(ctx, sname));
+    Mode *mode = mode_lookup_any(name);
+    if (!mode) return SEXP_FALSE;
+    mode->allows_input = sexp_truep(sval);
+    return SEXP_TRUE;
 }

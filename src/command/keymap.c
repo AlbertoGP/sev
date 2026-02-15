@@ -53,13 +53,25 @@ static bool keymap_add(Keymap *km, KeyEvent key, Binding binding) {
     return true;
 }
 
-Binding *keymap_lookup(Keymap *km, const KeyEvent *ev) {
+// Local-only lookup (no parent chain) — used by keymap_bind_sequence
+// to avoid leaking bindings into parent keymaps.
+static Binding *keymap_lookup_local(Keymap *km, const KeyEvent *ev) {
     if (!km) return NULL;
     for (size_t i = 0; i < km->count; i++) {
         if (keyevent_equal(&km->entries[i].key, ev))
             return &km->entries[i].binding;
     }
-    return km->default_binding;
+    return NULL;
+}
+
+Binding *keymap_lookup(Keymap *km, const KeyEvent *ev) {
+    for (Keymap *cur = km; cur; cur = cur->parent) {
+        for (size_t i = 0; i < cur->count; i++) {
+            if (keyevent_equal(&cur->entries[i].key, ev))
+                return &cur->entries[i].binding;
+        }
+    }
+    return NULL;
 }
 
 Binding *keymap_lookup_chain(AppState *state, const KeyEvent *ev) {
@@ -124,13 +136,31 @@ void key_dispatch(AppState *state, const KeyEvent *ev) {
     }
 
     if (!b) {
+        if (state->input.current_map != state->input.global_map) {
+            // In prefix sequence: invalid continuation is an error
+            reset_key_state(state);
+            char msg[128];
+            snprintf(msg, 128, "Undefined key: codepoint: %c mods: %d",
+                   last_event.keycode,
+                   last_event.mods);
+            message_send(msg);
+            return;
+        }
+        // Top-level unbound key
+        if (ev->type == KEYEVENT_CHAR && ev->mods == MOD_NONE) {
+            Buffer *buf = buffer_get_current();
+            ModeList *minors = buffer_get_minor_modes(buf);
+            if (minors && minors->head && minors->head->mode->allows_input) {
+                static Binding si;
+                si.type = BINDING_COMMAND;
+                si.command_sym = sexp_intern(state->chibi.ctx, "self-insert", -1);
+                execute_command(state, &si);
+                reset_key_state(state);
+                return;
+            }
+        }
         reset_key_state(state);
-        char message[128];
-        snprintf(message, 128, "Undefined key: codepoint: %c mods: %d",
-               last_event.keycode,
-               last_event.mods);
-        message_send(message);
-        return;
+        return;  // silently ignore
     }
 
     if (b->type == BINDING_KEYMAP) {
@@ -280,7 +310,7 @@ int parse_key_sequence(const char *s, KeyEvent *out) {
 
 void keymap_bind_sequence(Keymap *km, KeyEvent *seq, int n, Binding final) {
     for (int i = 0; i < n - 1; i++) {
-        Binding *b = keymap_lookup(km, &seq[i]);
+        Binding *b = keymap_lookup_local(km, &seq[i]);
 
         if (!b || b->type != BINDING_KEYMAP) {
             Keymap *next = keymap_create();
@@ -347,19 +377,13 @@ sexp scm_set_key(sexp ctx, sexp self, sexp n,
     return SEXP_VOID;
 }
 
-// (%set-keymap-default! keymap command-sym) -> #t
-sexp scm_set_keymap_default(sexp ctx, sexp self, sexp n,
-                            sexp skeymap, sexp scommand) {
+// (%set-keymap-parent! keymap parent) -> void
+sexp scm_set_keymap_parent(sexp ctx, sexp self, sexp n,
+                           sexp skeymap, sexp sparent) {
     Keymap *km = sexp_cpointer_value(skeymap);
     if (!km) return sexp_user_exception(ctx, self, "null keymap", skeymap);
-    if (!sexp_symbolp(scommand))
-        return sexp_user_exception(ctx, self, "command must be symbol", scommand);
-
-    if (!km->default_binding)
-        km->default_binding = malloc(sizeof(Binding));
-    km->default_binding->type = BINDING_COMMAND;
-    km->default_binding->command_sym = scommand;
-    sexp_preserve_object(ctx, scommand);
-    return SEXP_TRUE;
+    Keymap *parent = sexp_cpointer_value(sparent);
+    km->parent = parent;
+    return SEXP_VOID;
 }
 

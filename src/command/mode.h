@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <stdbool.h>
 #include "../command/keymap.h"
 
 typedef enum {
@@ -13,6 +14,7 @@ typedef struct Mode {
     const char *name;
     ModeType type;
     Keymap *keymap;
+    bool allows_input;
     struct Mode *next;  // for registry linked list
 } Mode;
 

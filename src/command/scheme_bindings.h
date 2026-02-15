@@ -65,13 +65,15 @@ sexp scm_disable_minor_mode(sexp ctx, sexp self, sexp n, sexp sname);
 sexp scm_buffer_major_mode(sexp ctx, sexp self, sexp n);
 sexp scm_buffer_minor_modes(sexp ctx, sexp self, sexp n);
 sexp scm_buffer_has_minor_mode(sexp ctx, sexp self, sexp n, sexp sname);
+sexp scm_set_mode_allows_input(sexp ctx, sexp self, sexp n,
+                                sexp sname, sexp sval);
 
 // --- command/keymap.c ---
 sexp scm_make_keymap(sexp ctx, sexp self, sexp n);
 sexp scm_set_key(sexp ctx, sexp self, sexp n,
                  sexp skeymap, sexp skeystr, sexp scommand);
-sexp scm_set_keymap_default(sexp ctx, sexp self, sexp n,
-                            sexp skeymap, sexp scommand);
+sexp scm_set_keymap_parent(sexp ctx, sexp self, sexp n,
+                           sexp skeymap, sexp sparent);
 
 // --- text/var.c ---
 sexp scm_set_local(sexp ctx, sexp self, sexp n, sexp key, sexp sval);
