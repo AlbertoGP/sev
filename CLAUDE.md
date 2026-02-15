@@ -44,28 +44,21 @@ The app uses SDL3's main callbacks pattern (no `main()` function):
 
 ### Text Model (`src/text/`)
 
-- **gap.c** - Gap buffer data structure for efficient text editing at cursor
-- **buffer.c** - Buffer list management, text manipulation API (insert, delete, movement)
-- **line.c** - Logical line tracking for rendering and navigation
-- **mark.c** - Mark/region system for selections
+Buffers, marks, logical lines, buffer-local variables.
 
-### Input System (`src/command/keyboard.c`, `src/command/keymap.c`)
+- See `src/text/CLAUDE.md` for subsystem details.
 
-- `KeyEvent` represents either character input (`KEYEVENT_CHAR`) or special keys (`KEYEVENT_SPECIAL`)
-- Keymaps form a hierarchy supporting prefix keys (e.g., `C-x` opens a prefix keymap)
-- Bindings map to C functions, Scheme procedures, or nested keymaps
-- `key_dispatch()` looks up and executes the appropriate command
+### Input + Command Layer (`src/command/`)
 
-### Scheme Integration (`src/command/scheme.c`)
+Input handling and command execution layer. Modes, keymaps and Scheme interpreter init are defined here too.
 
-Chibi Scheme provides extensibility. C primitives exposed include:
+- See `src/command/CLAUDE.md` for subsystem details.
 
-- Text operations: `insert-char`, `insert-string`, `delete-char`, `move-point`
-- Buffer/mark operations
-- UI: `quit`
-- Keymap: `make-keymap`, `set-key!`
+### Scheme Integration (`src/command/scheme.c`, `scheme/`)
 
-Keybindings configured in `resources/init.scm`.
+Chibi Scheme provides extensibility and user scripting.
+
+- See `scheme/CLAUDE.md` for subsystem details.
 
 ### UI Rendering (`src/clay/`, `src/display/`)
 
@@ -73,7 +66,9 @@ Clay immediate-mode UI with SDL3 renderer backend. Layout defined in `layout.c` 
 
 - Editor buffer view (text + cursor visualization)
 - Status bar (buffer name, position, line/column)
-- Animated theme transitions (dark/light)
+
+- See `src/display/CLAUDE.md` for display subsystem details.
+- See `src/clay/CLAUDE.md` for Clay library and renderer backend details.
 
 ## Key Patterns
 
