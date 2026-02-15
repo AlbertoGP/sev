@@ -16,6 +16,7 @@
     evil-visual-delete evil-visual-change
     evil-digit-argument evil-zero evil-repeat
     evil-set-mark evil-goto-mark-line evil-goto-mark-exact
+    evil-motion-f evil-motion-F evil-motion-t evil-motion-T
     open-line-below open-line-above insert-at-start
     append-char append-line substitute-char)
   (include "evil.scm"))

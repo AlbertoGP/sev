@@ -126,6 +126,25 @@
     (set-key! pending-map (string-append "' " ch) 'evil-goto-mark-line)
     (set-key! pending-map (string-append "` " ch) 'evil-goto-mark-exact)))
 
+;; f/F/t/T — bind all printable non-space chars programmatically
+(do ((i 33 (+ i 1)))
+    ((= i 127))
+  (let ((ch (string (integer->char i))))
+    (for-each (lambda (map)
+      (set-key! map (string-append "f " ch) 'evil-motion-f)
+      (set-key! map (string-append "F " ch) 'evil-motion-F)
+      (set-key! map (string-append "t " ch) 'evil-motion-t)
+      (set-key! map (string-append "T " ch) 'evil-motion-T))
+      (list normal-map pending-map select-map))))
+
+;; f/F/t/T — space needs SPC notation
+(for-each (lambda (map)
+  (set-key! map "f SPC" 'evil-motion-f)
+  (set-key! map "F SPC" 'evil-motion-F)
+  (set-key! map "t SPC" 'evil-motion-t)
+  (set-key! map "T SPC" 'evil-motion-T))
+  (list normal-map pending-map select-map))
+
 ;; Register modes (second arg = keymap, third arg = allows-input)
 (define-minor-mode 'evil-normal-mode normal-map)
 (define-minor-mode 'evil-insert-mode insert-map #t)
@@ -765,6 +784,65 @@
         (lambda (count) (%point-to-mark! ch)))
       (evil-execute-motion 'motion--mark-exact-tmp))))
 
+;; f/F/t/T — character seeking (current line only)
+
+(defcommand (evil-motion-f)
+  "Find character forward (on)."
+  (let ((ch (last-key-char)))
+    (when ch
+      (register-motion! 'motion--seek-tmp
+        (lambda (count)
+          (let ((len (buffer-length))
+                (le  (%line-end-position (%position-line (point-get)))))
+            (let loop ((n count) (p (+ (point-get) 1)))
+              (when (<= p le)
+                (if (and (< p len) (char=? (char-at p) ch))
+                    (if (<= n 1) (point-set! p) (loop (- n 1) (+ p 1)))
+                    (loop n (+ p 1))))))))
+      (evil-execute-motion 'motion--seek-tmp))))
+
+(defcommand (evil-motion-F)
+  "Find character backward (on)."
+  (let ((ch (last-key-char)))
+    (when ch
+      (register-motion! 'motion--seek-tmp
+        (lambda (count)
+          (let ((ls (%line-start-position (%position-line (point-get)))))
+            (let loop ((n count) (p (- (point-get) 1)))
+              (when (>= p ls)
+                (if (char=? (char-at p) ch)
+                    (if (<= n 1) (point-set! p) (loop (- n 1) (- p 1)))
+                    (loop n (- p 1))))))))
+      (evil-execute-motion 'motion--seek-tmp))))
+
+(defcommand (evil-motion-t)
+  "Find character forward (before)."
+  (let ((ch (last-key-char)))
+    (when ch
+      (register-motion! 'motion--seek-tmp
+        (lambda (count)
+          (let ((len (buffer-length))
+                (le  (%line-end-position (%position-line (point-get)))))
+            (let loop ((n count) (p (+ (point-get) 1)))
+              (when (<= p le)
+                (if (and (< p len) (char=? (char-at p) ch))
+                    (if (<= n 1) (point-set! (- p 1)) (loop (- n 1) (+ p 1)))
+                    (loop n (+ p 1))))))))
+      (evil-execute-motion 'motion--seek-tmp))))
+
+(defcommand (evil-motion-T)
+  "Find character backward (after)."
+  (let ((ch (last-key-char)))
+    (when ch
+      (register-motion! 'motion--seek-tmp
+        (lambda (count)
+          (let ((ls (%line-start-position (%position-line (point-get)))))
+            (let loop ((n count) (p (- (point-get) 1)))
+              (when (>= p ls)
+                (if (char=? (char-at p) ch)
+                    (if (<= n 1) (point-set! (+ p 1)) (loop (- n 1) (- p 1)))
+                    (loop n (- p 1))))))))
+      (evil-execute-motion 'motion--seek-tmp))))
 
 ;;;
 ;;; Operator command wrappers (bound to keys)
