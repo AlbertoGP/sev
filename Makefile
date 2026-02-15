@@ -3,13 +3,10 @@ compile: build run
 
 build:
 	gcc -Wall -Wextra ./src/*.c ./src/clay/*.c ./src/command/*.c ./src/display/*.c ./src/text/*.c -o ./out/sev -lSDL3 -lSDL3_image -lSDL3_ttf -lchibi-scheme \
-		&& cp ./scheme/built-in.scm ./out/scheme/built-in.scm \
-		&& cp ./scheme/command.scm ./out/scheme/command.scm \
-		&& cp ./scheme/evil.scm ./out/scheme/evil.scm \
-		&& cp ./scheme/icon.scm ./out/scheme/icon.scm \
 		&& cp ./scheme/init.scm ./out/scheme/init.scm \
-		&& cp ./scheme/mode.scm ./out/scheme/mode.scm \
-		&& cp ./scheme/theme.scm ./out/scheme/theme.scm
+		&& mkdir -p ./out/scheme/editor \
+		&& cp ./scheme/editor/*.scm ./out/scheme/editor/ \
+		&& cp ./scheme/editor/*.sld ./out/scheme/editor/
 
 # Debug build with AddressSanitizer
 debug: build-debug run

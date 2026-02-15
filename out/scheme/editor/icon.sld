@@ -1,0 +1,5 @@
+(define-library (editor icon)
+  (import (except (scheme base) newline)
+          (editor primitives) (editor command))
+  (export register-icon default-scale default-buffer-scale)
+  (include "icon.scm"))

@@ -256,6 +256,7 @@ void scheme_init(AppState *state) {
     SDEF("%line-start-position", 1, scm_line_start_position);
     SDEF("%line-end-position", 1, scm_line_end_position);
 
+    // Resolve scheme resource path
     #ifdef __EMSCRIPTEN__
     #define RESOURCES_PATH "/resources/"
     #else
@@ -265,20 +266,61 @@ void scheme_init(AppState *state) {
     #define RESOURCES_PATH resourcesPath
     #endif
 
-    #define LOAD_SCRIPT(name) do { \
-        char path_[1024]; \
-        snprintf(path_, sizeof(path_), "%s" name ".scm", RESOURCES_PATH); \
-        result = sexp_load(ctx, sexp_c_string(ctx, path_, -1), env); \
-        if (sexp_exceptionp(result)) \
-            sexp_print_exception(ctx, result, sexp_current_error_port(ctx)); \
-    } while(0)
+    // Add scheme dir to module search path so Chibi finds editor/*.sld
+    {
+        sexp_gc_var2(dir_str, new_path);
+        sexp_gc_preserve2(ctx, dir_str, new_path);
+        dir_str = sexp_c_string(ctx, RESOURCES_PATH, -1);
+        new_path = sexp_cons(ctx, dir_str, sexp_global(ctx, SEXP_G_MODULE_PATH));
+        sexp_global(ctx, SEXP_G_MODULE_PATH) = new_path;
+        sexp_gc_release2(ctx);
+    }
+
+    // Register (editor primitives) module — makes all C bindings
+    // available to .sld libraries via (import (editor primitives))
+    sexp meta = sexp_global(ctx, SEXP_G_META_ENV);
+    sexp_env_define(ctx, meta, sexp_intern(ctx, "%editor-env", -1), env);
 
     sexp result;
-    LOAD_SCRIPT("command");
-    LOAD_SCRIPT("mode");
-    LOAD_SCRIPT("icon");
-    LOAD_SCRIPT("built-in");
-    LOAD_SCRIPT("evil");
+    result = sexp_eval_string(ctx,
+        "(add-module! '(editor primitives) "
+        "(make-module "
+        "'(quit message message-clear make-keymap %set-key! "
+        "insert-char self-insert delete-char "
+        "move-point move-point-by-line next-line prev-line "
+        "forward-char backward-char newline insert-tab "
+        "delete-backward-char delete-forward-char set-column "
+        "line-start line-end skip-whitespace char-at-point "
+        "point-get point-set! buffer-length delete-range char-at "
+        "last-key-char %set-replace-mode! tab-next tab-prev "
+        "reset-global-scale increase-global-scale decrease-global-scale "
+        "reset-buffer-scale increase-buffer-scale decrease-buffer-scale "
+        "split-vertical split-horizontal pane-close "
+        "pane-navigate-up pane-navigate-down "
+        "pane-navigate-left pane-navigate-right "
+        "pane-v-split-increase pane-v-split-decrease "
+        "pane-h-split-increase pane-h-split-decrease "
+        "eval-buffer clay-debug prefix-arg "
+        "%set-keymap-parent! %set-mode-allows-input! ignore "
+        "%buffer-has-minor-mode? "
+        "%register-mode %set-major-mode "
+        "%enable-minor-mode %disable-minor-mode "
+        "%buffer-major-mode %buffer-minor-modes "
+        "%set-local! %get-local %set-palette! "
+        "%update-icon-colors! %register-icon! "
+        "%register-mode-icon! %set-role! "
+        "%clear-palette! %clear-roles! "
+        "%mark-set-to-point! %select-mode-set! %select-mode-get "
+        "exchange-point-and-mark %point-to-mark! %goto-line "
+        "%line-count %mark-position %position-line "
+        "%line-start-position %line-end-position "
+        "global-keymap eval) "
+        "%editor-env '()))",
+        -1, meta);
+    if (sexp_exceptionp(result)) {
+        fprintf(stderr, "ERROR: failed to register (editor primitives)\n");
+        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+    }
 
     // Cache role symbols for fast lookup
     #define INTERN_ROLE(field, name) do { \
@@ -299,12 +341,20 @@ void scheme_init(AppState *state) {
 
     #undef INTERN_ROLE
 
-    LOAD_SCRIPT("theme");
+    // Load init.scm — its (import ...) forms trigger library loading
+    #define LOAD_SCRIPT(name) do { \
+        char path_[1024]; \
+        snprintf(path_, sizeof(path_), "%s" name ".scm", RESOURCES_PATH); \
+        result = sexp_load(ctx, sexp_c_string(ctx, path_, -1), env); \
+        if (sexp_exceptionp(result)) \
+            sexp_print_exception(ctx, result, sexp_current_error_port(ctx)); \
+    } while(0)
+
     LOAD_SCRIPT("init");
 
     #undef LOAD_SCRIPT
 
-    // Get call-interactively procedure (defined in command.scm)
+    // Get call-interactively procedure (imported from (editor command) by init.scm)
     state->chibi.call_interactively = sexp_env_ref(
         ctx, env,
         sexp_intern(ctx, "call-interactively", -1),

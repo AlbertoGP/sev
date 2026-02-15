@@ -1,0 +1,18 @@
+(define-library (editor built-in)
+  (import (except (scheme base) newline)
+          (editor primitives) (editor command))
+  (export
+    quit self-insert eval-buffer
+    next-line prev-line forward-char backward-char
+    line-start line-end skip-whitespace newline insert-tab
+    delete-backward-char delete-forward-char delete-char insert-char
+    tab-next tab-prev
+    reset-global-scale increase-global-scale decrease-global-scale
+    reset-buffer-scale increase-buffer-scale decrease-buffer-scale
+    split-horizontal split-vertical pane-close
+    pane-navigate-up pane-navigate-down pane-navigate-left pane-navigate-right
+    pane-h-split-increase pane-h-split-decrease
+    pane-v-split-increase pane-v-split-decrease
+    clay-debug exchange-point-and-mark
+    line-start-skip-whitespace join-line)
+  (include "built-in.scm"))

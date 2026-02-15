@@ -1,8 +1,6 @@
 ;;; command.scm - Self-documenting command infrastructure
 ;;; Emacs-like docstrings, interactive commands, and introspection
 
-(import (srfi 1) (srfi 9) (srfi 69))
-
 ;; Documentation record type
 (define-record-type <doc>
   (make-doc kind text)

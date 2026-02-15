@@ -10,7 +10,7 @@ Input handling and command execution. Converts SDL key events into `KeyEvent` st
 - **keyboard.c / keyboard.h** — SDL-to-KeyEvent translation. `handle_text_input()` decodes UTF-8 into char events; `handle_key_down()` normalizes SDL modifiers and maps special keys. Both call `key_dispatch()`. Called from `SDL_AppEvent()` in `event.c`.
 - **keymap.c / keymap.h** — Keymap data structure and dispatch engine. A `Keymap` is a dynamic array of `(KeyEvent → Binding)` entries with a parent pointer for single-inheritance. A `Binding` is either a Scheme symbol (`BINDING_COMMAND`) or a nested keymap (`BINDING_KEYMAP`, for prefix keys). `key_dispatch()` is the main entry point. Also provides `parse_key_sequence()` for Emacs-style key notation (`"C-x"`, `"M-f"`, `"SPC"`).
 - **mode.c / mode.h** — Mode registry. Modes have a name, type (major/minor), keymap, and `allows_input` flag. Two global registries (linked lists) for major and minor modes. Modes are created and registered globally, then enabled per-buffer. Buffer-level mode list management lives in `src/text/buffer.c`.
-- **scheme.c / scheme.h** — Scheme interpreter init. `scheme_init()` creates the Chibi Scheme context, registers ~60 foreign C functions, loads scripts in dependency order (command.scm → mode.scm → icon.scm → built-in.scm → evil.scm → theme.scm → init.scm), interns theme role symbols, and caches `call-interactively`. The `scm_*` binding implementations live in their respective subsystem files, not here.
+- **scheme.c / scheme.h** — Scheme interpreter init. `scheme_init()` creates the Chibi Scheme context, registers ~60 foreign C functions as the `(editor primitives)` synthetic module, adds `scheme/` to the module search path, interns theme role symbols, and loads `init.scm`. The `(import ...)` forms in `init.scm` trigger Chibi's module system to load `editor/*.sld` libraries automatically. Caches `call-interactively` after load. The `scm_*` binding implementations live in their respective subsystem files, not here.
 - **scheme_bindings.h** — Forward declarations of all `scm_*` binding functions across subsystems.
 - **scheme_internal.h** — `SCM_CMD()` macro for simple bindings; provides global `G` pointer.
 
@@ -37,7 +37,7 @@ SDL_AppEvent (event.c)
 - **Parent chain**: single-inheritance; `keymap_lookup()` walks `km → parent → ...` until found or NULL
 - **`allows_input` gates self-insert**: only for unbound plain chars (no modifiers) at top level (not mid-prefix)
 - **Modes are global, enabled per-buffer**: one `Mode` object shared across buffers; `ModeList` per buffer
-- **Script load order matters**: command.scm first (defines `call-interactively`), then dependencies in order
+- **Module dependencies are resolved by Chibi**: `init.scm` imports all `(editor ...)` modules; `.sld` files declare their own imports, so load order is automatic
 
 ## Boundaries
 

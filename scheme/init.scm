@@ -1,5 +1,7 @@
 ;;; init.scm - Editor initialization and keybindings
-;;; Note: command.scm is loaded by C before this file
+
+(import (editor command) (editor mode) (editor icon)
+        (editor built-in) (editor evil) (editor theme))
 
 ;; System/UI bindings in global-keymap (inherited by all mode keymaps via parent)
 (set-key! global-keymap "ESC" 'evil-normal)

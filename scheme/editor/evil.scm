@@ -918,6 +918,29 @@
 (set-key! select-map "g g" 'evil-motion-gg)
 (set-key! select-map "G" 'evil-motion-G)
 
+;;;
+;;; Compound commands (evil-dependent, moved from built-in.scm)
+;;;
+
+(defcommand (open-line-below)
+  "Create a new empty line below current line, move to it and enter insert mode."
+  (line-end) (newline) (evil-insert))
+(defcommand (open-line-above)
+  "Create a new empty line above current line, move to it and enter insert mode."
+  (line-start) (newline) (prev-line) (evil-insert))
+(defcommand (insert-at-start)
+  "Set cursor to first non-blank character on current line and enter insert mode."
+  (line-start) (skip-whitespace) (evil-insert))
+(defcommand (append-char)
+  "Enter insert mode after the character currently under the cursor."
+  (forward-char) (evil-insert))
+(defcommand (append-line)
+  "Set the cursor to the final column on the current line and enter insert mode."
+  (line-end) (evil-insert))
+(defcommand (substitute-char)
+  "Delete the character under cursor and enter insert mode."
+  (delete-forward-char) (evil-insert))
+
 ;;; Activate
 (evil-mode)
 (evil-normal)
