@@ -2,70 +2,17 @@
 
 ## Purpose
 
-Input handling and command execution layer. Converts SDL key events into `KeyEvent` structs, dispatches them through a keymap lookup chain (minor modes → buffer-local → major mode → global), and executes the matched command via Scheme's `call-interactively`. Also owns the mode registry and Scheme interpreter initialization.
+Input handling and command execution. Converts SDL key events into `KeyEvent` structs, dispatches them through a keymap lookup chain, and executes matched commands via Scheme's `call-interactively`. Also owns the mode registry and Scheme interpreter initialization.
 
 ## Files
 
-### keyevent.h — Key Event Types
-- `KeyEvent`: `{ type, mods, union { codepoint, keycode } }`
-- `KeyEventType`: `KEYEVENT_CHAR` (unicode) or `KEYEVENT_SPECIAL` (arrows, F-keys, etc.)
-- `KeyMod` flags: `MOD_CTRL`, `MOD_META`, `MOD_SHIFT`, `MOD_SUPER`
-- `KeySpecial` enum: ESC, RETURN, TAB, BACKSPACE, DELETE, arrows, F1–F24, etc.
-- `keyevent_equal(k1, k2)` — deep comparison for key matching
-
-### keyboard.c / keyboard.h — SDL-to-KeyEvent Translation
-- `handle_text_input(state, event)` — decodes UTF-8 → codepoints, creates `KEYEVENT_CHAR` with `MOD_NONE`, calls `key_dispatch()`
-- `handle_key_down(state, event)` — normalizes SDL modifiers → `KeyMod`, blocks key repeat for text keys, creates `KEYEVENT_SPECIAL` or modified `KEYEVENT_CHAR`, calls `key_dispatch()`
-- Called from `SDL_AppEvent()` in `src/event.c`
-
-### keymap.c / keymap.h — Keymap System and Dispatch
-- `Keymap`: dynamic array of `KeymapEntry { key, binding }` + parent pointer for inheritance
-- `Binding`: either `BINDING_COMMAND` (stores Scheme symbol) or `BINDING_KEYMAP` (nested keymap for prefix keys)
-- `keymap_create()` — allocate empty keymap
-- `keymap_lookup(km, ev)` — search keymap + parent chain for matching key
-- `keymap_lookup_chain(state, ev)` — full lookup: minor modes (head-first) → buffer-local → major mode → global
-- `key_dispatch(state, ev)` — main dispatch entry point:
-  - Mid-prefix: lookup only in `current_map` (no chain)
-  - Otherwise: `keymap_lookup_chain()`
-  - No match + char + no mods + input-allowing mode → `self-insert`
-  - Match + `BINDING_KEYMAP` → enter prefix (set `current_map`)
-  - Match + `BINDING_COMMAND` → `execute_command()` → `sexp_apply(call_interactively, [symbol])`
-- `parse_key_sequence(s, out)` — Emacs-style notation parser (`"C-x"`, `"M-f"`, `"SPC"`, `"RET"`)
-- `keymap_bind_sequence(km, seq, n, binding)` — bind multi-key sequence, creating intermediate keymaps as needed
-- `keymap_add()` — overwrites existing binding for same key, or appends; grows by doubling (initial cap 8)
-
-### mode.c / mode.h — Mode System
-- `Mode`: `{ name, type, keymap, allows_input, next }`
-- `ModeType`: `MODE_MAJOR` or `MODE_MINOR`
-- Two global registries: `g_major_modes`, `g_minor_modes` (linked lists)
-- `mode_create(name, type, keymap)` → allocate mode (not yet registered)
-- `mode_register(mode)` → prepend to registry; rejects duplicate names
-- `mode_lookup(name, type)` / `mode_lookup_any(name)` → linear search
-- `mode_get_fundamental()` → get or create `fundamental-mode`
-- `allows_input` flag: when true, unbound chars trigger `self-insert` (used by insert/replace modes)
-- Buffer mode management lives in `src/text/buffer.c` (`buffer_enable/disable_minor_mode`, etc.)
-- Scheme bindings: `%register-mode`, `%set-major-mode`, `%enable-minor-mode`, `%disable-minor-mode`, `%buffer-major-mode`, `%buffer-minor-modes`, `%buffer-has-minor-mode?`, `%set-mode-allows-input!`
-
-### scheme.c / scheme.h — Scheme Interpreter Init
-- `scheme_init(state)`:
-  1. Init Chibi Scheme context (512MB heap limit)
-  2. Load R7RS standard env + `(scheme base)`
-  3. Bind `global-keymap` as cpointer in Scheme env
-  4. Register ~60 foreign C functions via `sexp_define_foreign()`
-  5. Load scripts in order: command.scm → mode.scm → icon.scm → built-in.scm → evil.scm → theme.scm → init.scm
-  6. Intern and preserve role symbols for fast theme lookups
-  7. Cache `call-interactively` Scheme procedure (preserved from GC)
-- `scheme_eval_file(state, path)` — load and eval a .scm file; prints exceptions to stderr
-- Script load paths: `scheme/` (desktop) or `/resources/` (WASM)
-- Global `AppState *G` set at init for use by all `scm_*` binding functions
-
-### scheme_bindings.h — Forward Declarations
-- Forward-declares all `scm_*` C functions registered as Scheme foreign functions
-- Grouped by subsystem: text ops, movement, queries, pane/tab, modes, marks, theme, icons, scale
-
-### scheme_internal.h — Binding Helpers
-- `SCM_CMD(cname, action)` macro: wraps a C action as a Scheme binding that sets `needs_redraw` and returns `SEXP_VOID`
-- Provides access to global `G` pointer
+- **keyevent.h** — `KeyEvent` type: `KEYEVENT_CHAR` (unicode codepoint) or `KEYEVENT_SPECIAL` (arrows, F-keys, etc.), plus modifier flags (`MOD_CTRL`, `MOD_META`, `MOD_SHIFT`, `MOD_SUPER`).
+- **keyboard.c / keyboard.h** — SDL-to-KeyEvent translation. `handle_text_input()` decodes UTF-8 into char events; `handle_key_down()` normalizes SDL modifiers and maps special keys. Both call `key_dispatch()`. Called from `SDL_AppEvent()` in `event.c`.
+- **keymap.c / keymap.h** — Keymap data structure and dispatch engine. A `Keymap` is a dynamic array of `(KeyEvent → Binding)` entries with a parent pointer for single-inheritance. A `Binding` is either a Scheme symbol (`BINDING_COMMAND`) or a nested keymap (`BINDING_KEYMAP`, for prefix keys). `key_dispatch()` is the main entry point. Also provides `parse_key_sequence()` for Emacs-style key notation (`"C-x"`, `"M-f"`, `"SPC"`).
+- **mode.c / mode.h** — Mode registry. Modes have a name, type (major/minor), keymap, and `allows_input` flag. Two global registries (linked lists) for major and minor modes. Modes are created and registered globally, then enabled per-buffer. Buffer-level mode list management lives in `src/text/buffer.c`.
+- **scheme.c / scheme.h** — Scheme interpreter init. `scheme_init()` creates the Chibi Scheme context, registers ~60 foreign C functions, loads scripts in dependency order (command.scm → mode.scm → icon.scm → built-in.scm → evil.scm → theme.scm → init.scm), interns theme role symbols, and caches `call-interactively`. The `scm_*` binding implementations live in their respective subsystem files, not here.
+- **scheme_bindings.h** — Forward declarations of all `scm_*` binding functions across subsystems.
+- **scheme_internal.h** — `SCM_CMD()` macro for simple bindings; provides global `G` pointer.
 
 ## Key Dispatch Pipeline
 
@@ -83,22 +30,22 @@ SDL_AppEvent (event.c)
 
 ## Key Invariants
 
-- **Bindings store Scheme symbols, not function pointers** — `call-interactively` resolves them at execution time; commands can be redefined at runtime
-- **`call-interactively` must be defined before `scheme_init()` returns** — it's cached and preserved from GC
-- **Prefix key state**: `current_map != global_map` means mid-prefix; only that map is searched (no chain), ESC or invalid key resets
+- **Bindings store Scheme symbols, not function pointers** — resolved at execution time via `call-interactively`; commands can be redefined at runtime
+- **`call-interactively` must exist before `scheme_init()` returns** — cached and GC-preserved
+- **Prefix key state**: `current_map != global_map` means mid-prefix; only that map is searched (no chain); ESC or invalid key resets
 - **Lookup chain priority**: minor modes (most-recently-enabled first) > buffer-local > major mode > global — first match wins
-- **Parent chain is single-inheritance**: `keymap_lookup()` walks `km → km->parent → ...` until found or NULL
-- **`allows_input` gates self-insert**: only checked for unbound plain chars (no modifiers) at top level (not mid-prefix)
-- **Modes are registered globally, enabled per-buffer**: one `Mode` object shared across buffers; `ModeList` in each buffer tracks which are active
-- **Script load order matters**: command.scm first (defines `call-interactively`), then mode/icon/built-in, then evil/theme/init
+- **Parent chain**: single-inheritance; `keymap_lookup()` walks `km → parent → ...` until found or NULL
+- **`allows_input` gates self-insert**: only for unbound plain chars (no modifiers) at top level (not mid-prefix)
+- **Modes are global, enabled per-buffer**: one `Mode` object shared across buffers; `ModeList` per buffer
+- **Script load order matters**: command.scm first (defines `call-interactively`), then dependencies in order
 
 ## Boundaries
 
-- **keyboard.c** translates SDL → `KeyEvent`, never touches text or keymaps directly
+- **keyboard.c** translates SDL → KeyEvent; never touches text or keymaps
 - **keymap.c** dispatches keys and manages bindings; never reads/writes buffer text
 - **mode.c** manages the mode registry; buffer-level mode lists live in `src/text/buffer.c`
-- **scheme.c** initializes interpreter and registers bindings; actual `scm_*` implementations live in their respective subsystem files (`src/text/buffer.c`, `src/display/pane.c`, etc.)
-- **All command execution goes through Scheme** — even C-implemented commands are called via `call-interactively` using their symbol name
+- **scheme.c** initializes and registers; `scm_*` implementations live in their subsystem files
+- **All command execution goes through Scheme** — even C commands are invoked via `call-interactively`
 
 ## Common Modification Workflows
 
@@ -107,19 +54,16 @@ SDL_AppEvent (event.c)
 2. Add forward declaration in `scheme_bindings.h`
 3. Register in `scheme_init()` via `SDEF("scheme-name", arity, scm_function)`
 4. Declare in `scheme/built-in.scm` with `(defcommand name "docstring")`
-5. Bind to key in the appropriate .scm file with `(set-key! keymap "key" 'name)`
+5. Bind to key with `(set-key! keymap "key" 'name)`
 
 ### Adding a new special key
-1. Add variant to `KeySpecial` enum in `keyevent.h`
-2. Add SDL keycode → `KeySpecial` mapping in `sdl_to_keyspecial()` in `keyboard.c`
-3. Add string name in `parse_key_sequence()` in `keymap.c` (for key notation support)
+1. Add variant to `KeySpecial` in `keyevent.h`
+2. Map SDL keycode in `sdl_to_keyspecial()` in `keyboard.c`
+3. Add string name in `parse_key_sequence()` in `keymap.c`
 
-### Adding a new mode from C
-1. Call `mode_create(name, type, keymap)` → `mode_register(mode)`
-2. Usually done from Scheme instead: `(define-minor-mode 'name keymap)` in `scheme/mode.scm`
+### Adding a new mode
+- Usually from Scheme: `(define-minor-mode 'name keymap)` in `scheme/mode.scm`
+- From C: `mode_create()` → `mode_register()`
 
 ### Changing keymap lookup priority
-- Edit `keymap_lookup_chain()` in `keymap.c` — the for-loop over minor modes, then local/major/global checks
-
-### Adding a prefix key binding
-- `(set-key! keymap "C-x C-f" 'find-file)` — `keymap_bind_sequence()` auto-creates intermediate keymaps for `C-x`
+- Edit `keymap_lookup_chain()` in `keymap.c`
