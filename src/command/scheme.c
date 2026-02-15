@@ -251,6 +251,10 @@ void scheme_init(AppState *state) {
     SDEF("%point-to-mark!", 1, scm_point_to_named_mark);
     SDEF("%goto-line", 1, scm_goto_line);
     SDEF("%line-count", 0, scm_line_count);
+    SDEF("%mark-position", 1, scm_mark_position);
+    SDEF("%position-line", 1, scm_position_line);
+    SDEF("%line-start-position", 1, scm_line_start_position);
+    SDEF("%line-end-position", 1, scm_line_end_position);
 
     #ifdef __EMSCRIPTEN__
     #define RESOURCES_PATH "/resources/"

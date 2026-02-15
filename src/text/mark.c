@@ -103,6 +103,14 @@ sexp scm_swap_point_and_mark(sexp ctx, sexp self, sexp n) {
     return SEXP_VOID;
 }
 
+sexp scm_mark_position(sexp ctx, sexp self, sexp n, sexp mark_char) {
+    if (!sexp_charp(mark_char))
+        return sexp_user_exception(ctx, self, "expected char", mark_char);
+    Mark *mark = mark_get((int)sexp_unbox_character(mark_char));
+    if (!mark) return SEXP_FALSE;
+    return sexp_make_fixnum((int)mark->pos);
+}
+
 sexp scm_point_to_named_mark(sexp ctx, sexp self, sexp n, sexp mark_char) {
     G->needs_redraw = true;
     if (!sexp_charp(mark_char))

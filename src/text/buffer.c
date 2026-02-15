@@ -855,3 +855,26 @@ sexp scm_goto_line(sexp ctx, sexp self, sexp n, sexp line_num) {
 sexp scm_line_count(sexp ctx, sexp self, sexp n) {
     return sexp_make_fixnum(get_line_count(buffer_get_current()));
 }
+
+sexp scm_position_line(sexp ctx, sexp self, sexp n, sexp spos) {
+    Buffer *buf = buffer_get_current();
+    size_t pos = sexp_unbox_fixnum(spos);
+    const LineTable *lt = buffer_get_line_table(buf);
+    return sexp_make_fixnum((int)(line_index_at(lt, pos) + 1));
+}
+
+sexp scm_line_start_position(sexp ctx, sexp self, sexp n, sexp sline) {
+    Buffer *buf = buffer_get_current();
+    const LineTable *lt = buffer_get_line_table(buf);
+    size_t idx = sexp_unbox_fixnum(sline) - 1;
+    if (idx >= lt->count) idx = lt->count - 1;
+    return sexp_make_fixnum((int)lt->lines[idx].start);
+}
+
+sexp scm_line_end_position(sexp ctx, sexp self, sexp n, sexp sline) {
+    Buffer *buf = buffer_get_current();
+    const LineTable *lt = buffer_get_line_table(buf);
+    size_t idx = sexp_unbox_fixnum(sline) - 1;
+    if (idx >= lt->count) idx = lt->count - 1;
+    return sexp_make_fixnum((int)lt->lines[idx].end);
+}

@@ -818,6 +818,106 @@
     (set! evil-count #f)
     (message-clear)))
 
+;;;
+;;; Visual mode operators
+;;;
+
+(define (evil-visual-range)
+  (let* ((anchor (%mark-position #\<))
+         (point (point-get))
+         (sel-min (min anchor point))
+         (sel-max (max anchor point))
+         (mode (%select-mode-get)))
+    (case mode
+      ((1) ;; char: inclusive of both ends
+       (make-range sel-min (+ sel-max 1) 'char))
+      ((2) ;; line: expand to full line boundaries
+       (let* ((line-min (%position-line sel-min))
+              (line-max (%position-line sel-max))
+              (start (%line-start-position line-min))
+              (end (%line-end-position line-max))
+              (len (buffer-length))
+              (end (if (and (< end len) (char=? (char-at end) #\newline))
+                       (+ end 1) end)))
+         (make-range start end 'line))))))
+
+(define (evil-rect-apply op)
+  (let* ((anchor (%mark-position #\<))
+         (point (point-get))
+         (line-a (%position-line anchor))
+         (line-b (%position-line point))
+         (row-min (min line-a line-b))
+         (row-max (max line-a line-b))
+         (col-a (- anchor (%line-start-position line-a)))
+         (col-b (- point (%line-start-position line-b)))
+         (col-min (min col-a col-b))
+         (col-max (+ (max col-a col-b) 1)))
+    ;; iterate bottom to top so deletions don't shift lines above
+    (let loop ((line row-max))
+      (when (>= line row-min)
+        (let* ((ls (%line-start-position line))
+               (le (%line-end-position line))
+               (content-end le)
+               (start (+ ls col-min))
+               (end (min (+ ls col-max) content-end)))
+          (when (and (<= start content-end) (> end start))
+            (op start end)))
+        (loop (- line 1))))
+    ;; cursor to upper-left corner
+    (let ((ls (%line-start-position row-min)))
+      (point-set! (min (+ ls col-min)
+                       (%line-end-position row-min))))))
+
+(defcommand (evil-visual-delete)
+  "Delete the visual selection."
+  (let ((mode (%select-mode-get)))
+    (if (= mode 3)
+        ;; rectangle
+        (begin (evil-rect-apply delete-range) (evil-normal))
+        ;; char or line
+        (let ((range (evil-visual-range)))
+          (point-set! (range-start range))
+          (delete-range (range-start range) (range-end range))
+          (evil-normal)))))
+
+(defcommand (evil-visual-change)
+  "Change the visual selection."
+  (let ((mode (%select-mode-get)))
+    (if (= mode 3)
+        ;; rectangle: delete rect, enter insert at upper-left
+        (begin (evil-rect-apply delete-range) (evil-insert))
+        ;; char or line
+        (let ((range (evil-visual-range)))
+          (let* ((start (range-start range))
+                 (end (range-end range))
+                 ;; for line mode: strip trailing newline so we stay on same line
+                 (end (if (and (eq? (range-type range) 'line)
+                               (> end start)
+                               (char=? (char-at (- end 1)) #\newline))
+                          (- end 1) end)))
+            (point-set! start)
+            (delete-range start end)
+            (evil-insert))))))
+
+;; Visual mode operator bindings
+(set-key! select-map "d" 'evil-visual-delete)
+(set-key! select-map "x" 'evil-visual-delete)
+(set-key! select-map "c" 'evil-visual-change)
+(set-key! select-map "s" 'evil-visual-change)
+(set-key! select-map "D" 'evil-visual-delete)
+(set-key! select-map "C" 'evil-visual-change)
+(set-key! select-map "S" 'evil-visual-change)
+
+;; Visual mode motion bindings
+(set-key! select-map "w" 'evil-motion-w)
+(set-key! select-map "b" 'evil-motion-b)
+(set-key! select-map "e" 'evil-motion-e)
+(set-key! select-map "W" 'evil-motion-W)
+(set-key! select-map "B" 'evil-motion-B)
+(set-key! select-map "E" 'evil-motion-E)
+(set-key! select-map "g g" 'evil-motion-gg)
+(set-key! select-map "G" 'evil-motion-G)
+
 ;;; Activate
 (evil-mode)
 (evil-normal)

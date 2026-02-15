@@ -92,10 +92,16 @@ sexp scm_register_mode_icon(sexp ctx, sexp self, sexp n,
 
 // --- text/mark.c ---
 sexp scm_mark_set_to_point(sexp ctx, sexp self, sexp n, sexp mark_char);
+sexp scm_mark_position(sexp ctx, sexp self, sexp n, sexp mark_char);
 sexp scm_select_mode_set(sexp ctx, sexp self, sexp n, sexp mode_int);
 sexp scm_select_mode_get(sexp ctx, sexp self, sexp n);
 sexp scm_swap_point_and_mark(sexp ctx, sexp self, sexp n);
 sexp scm_point_to_named_mark(sexp ctx, sexp self, sexp n, sexp mark_char);
+
+// --- text/buffer.c (line queries) ---
+sexp scm_position_line(sexp ctx, sexp self, sexp n, sexp spos);
+sexp scm_line_start_position(sexp ctx, sexp self, sexp n, sexp sline);
+sexp scm_line_end_position(sexp ctx, sexp self, sexp n, sexp sline);
 
 // --- text/message.c ---
 sexp scm_message_send(sexp ctx, sexp self, sexp n, sexp message);
