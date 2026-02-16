@@ -40,6 +40,7 @@
 (set-key! normal-map "d" 'evil-op-delete)
 (set-key! normal-map "c" 'evil-op-change)
 (set-key! normal-map "." 'evil-repeat)
+(set-key! normal-map "u" 'evil-undo)
 (set-key! normal-map "1" 'evil-digit-argument)
 (set-key! normal-map "2" 'evil-digit-argument)
 (set-key! normal-map "3" 'evil-digit-argument)
@@ -169,6 +170,12 @@
 ;; State transitions
 (defcommand (evil-normal)
   "Return to normal mode."
+  ;; Finalize insert/replace session change
+  (when (%change-active?)
+    (when evil-pending-repeat-info
+      (%change-set-repeat-info! evil-pending-repeat-info))
+    (set! evil-pending-repeat-info #f)
+    (%end-change))
   (disable-minor-mode 'evil-insert-mode)
   (disable-minor-mode 'evil-replace-mode)
   (disable-minor-mode 'evil-select-mode)
@@ -183,6 +190,9 @@
 
 (defcommand (evil-insert)
   "Enter insert mode."
+  (unless (%change-active?)
+    (%begin-change)
+    (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f)))
   (disable-minor-mode 'evil-normal-mode)
   (disable-minor-mode 'evil-replace-mode)
   (disable-minor-mode 'evil-select-mode)
@@ -194,6 +204,9 @@
 
 (defcommand (evil-replace)
   "Enter replace mode."
+  (unless (%change-active?)
+    (%begin-change)
+    (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f)))
   (disable-minor-mode 'evil-normal-mode)
   (disable-minor-mode 'evil-insert-mode)
   (disable-minor-mode 'evil-select-mode)
@@ -275,13 +288,16 @@
 (define evil-op-count #f)           ; count before operator
 (define evil-pending-op #f)         ; operator symbol or #f
 
-;; Repeat state
-(define evil-last-op #f)
-(define evil-last-motion #f)
-(define evil-last-op-count #f)
-(define evil-last-motion-count #f)
-(define evil-last-text-object #f)
-(define evil-last-text-object-kind #f)
+;; Repeat-info record (replaces 6 loose globals)
+(define-record-type <repeat-info>
+  (make-repeat-info op op-count motion motion-count text-object text-object-kind)
+  repeat-info?
+  (op ri-op) (op-count ri-op-count)
+  (motion ri-motion) (motion-count ri-motion-count)
+  (text-object ri-text-object) (text-object-kind ri-text-object-kind))
+
+;; Pending repeat-info (set during operator exec, consumed on insert exit)
+(define evil-pending-repeat-info #f)
 
 ;; Motion registry
 (define *motion-table* (make-hash-table eq?))
@@ -362,26 +378,29 @@
     (when proc
       (if (eq? evil-sm-state 'operator-pending)
           ;; Operator-pending: save point, run motion, build range, apply op
-          (let* ((saved-point (point-get))
+          (let* ((the-op evil-pending-op)
+                 (the-op-count evil-op-count)
+                 (the-motion-count evil-count)
+                 (saved-point (point-get))
                  (eff-count (evil-effective-count))
                  (_ (proc eff-count))
                  (new-point (point-get))
                  (start (min saved-point new-point))
                  (end (max saved-point new-point))
                  (range (make-range start end 'char))
-                 (op-proc (operator-ref evil-pending-op)))
-            ;; Record for repeat
-            (set! evil-last-op evil-pending-op)
-            (set! evil-last-motion motion-sym)
-            (set! evil-last-text-object #f)
-            (set! evil-last-text-object-kind #f)
-            (set! evil-last-op-count evil-op-count)
-            (set! evil-last-motion-count evil-count)
-            ;; Reset state first, then apply operator
-            ;; (operator may change mode, e.g. op-change enters insert)
+                 (op-proc (operator-ref the-op))
+                 (ri (make-repeat-info the-op the-op-count
+                                       motion-sym the-motion-count #f #f)))
             (point-set! saved-point)
             (evil-reset-count)
-            (when op-proc (op-proc range)))
+            (%begin-change)
+            (when op-proc (op-proc range))
+            ;; If operator entered insert mode, defer change end
+            (if (%buffer-has-minor-mode? 'evil-insert-mode)
+                (set! evil-pending-repeat-info ri)
+                (begin
+                  (%change-set-repeat-info! ri)
+                  (%end-change))))
           ;; Normal state: just run motion with count
           (begin
             (proc (or evil-count 1))
@@ -419,16 +438,18 @@
       (let ((range (proc kind (evil-effective-count))))
         (when range
           (if (eq? evil-sm-state 'operator-pending)
-              ;; Operator-pending: record for repeat, apply operator
-              (let ((op-proc (operator-ref evil-pending-op)))
-                (set! evil-last-op evil-pending-op)
-                (set! evil-last-text-object sym)
-                (set! evil-last-text-object-kind kind)
-                (set! evil-last-motion #f)
-                (set! evil-last-op-count evil-op-count)
-                (set! evil-last-motion-count evil-count)
+              ;; Operator-pending: wrap in transaction, apply operator
+              (let ((op-proc (operator-ref evil-pending-op))
+                    (ri (make-repeat-info evil-pending-op evil-op-count
+                                          #f evil-count sym kind)))
                 (evil-reset-count)
-                (when op-proc (op-proc range)))
+                (%begin-change)
+                (when op-proc (op-proc range))
+                (if (%buffer-has-minor-mode? 'evil-insert-mode)
+                    (set! evil-pending-repeat-info ri)
+                    (begin
+                      (%change-set-repeat-info! ri)
+                      (%end-change))))
               ;; Visual mode: set selection
               (when (%buffer-has-minor-mode? 'evil-select-mode)
                 (point-set! (range-start range))
@@ -437,31 +458,56 @@
                 (set! evil-count #f)
                 (message-clear))))))))
 
+;; Undo
+(defcommand (evil-undo)
+  "Undo last change."
+  (%undo))
+
 ;; Dot repeat
 (defcommand (evil-repeat)
-  "Repeat last operator+motion."
-  (when evil-last-op
-    (let ((op-proc (operator-ref evil-last-op)))
-      (when op-proc
-        (let ((eff-count (* (or evil-last-op-count 1)
-                            (or evil-count evil-last-motion-count 1))))
-          (if evil-last-text-object
-              ;; Text object repeat
-              (let* ((to-proc (text-object-ref evil-last-text-object))
-                     (range (and to-proc (to-proc evil-last-text-object-kind eff-count))))
-                (when range (op-proc range)))
-              ;; Motion repeat
-              (let ((motion-proc (motion-ref evil-last-motion)))
-                (when motion-proc
-                  (when (eq? evil-last-motion 'current-line) (line-start))
-                  (let* ((saved-point (point-get))
-                         (_ (motion-proc eff-count))
-                         (new-point (point-get))
-                         (start (min saved-point new-point))
-                         (end (max saved-point new-point))
-                         (range (make-range start end 'char)))
-                    (point-set! saved-point)
-                    (op-proc range)))))))))
+  "Repeat last change."
+  (let ((ri (%change-last-repeat-info))
+        (user-count evil-count))
+    (when (repeat-info? ri)
+      (let ((count (or user-count (ri-op-count ri))))
+        (cond
+          ;; Operator + motion
+          ((ri-motion ri)
+           (let ((mproc (motion-ref (ri-motion ri)))
+                 (op-proc (operator-ref (ri-op ri))))
+             (when (and mproc op-proc)
+               (when (eq? (ri-motion ri) 'current-line) (line-start))
+               (%begin-change)
+               (let* ((eff (* (or count 1) (or (ri-motion-count ri) 1)))
+                      (saved (point-get))
+                      (_ (mproc eff))
+                      (end (point-get))
+                      (start (min saved end))
+                      (end2 (max saved end)))
+                 (point-set! saved)
+                 (op-proc (make-range start end2 'char)))
+               (if (%buffer-has-minor-mode? 'evil-insert-mode)
+                   (set! evil-pending-repeat-info ri)
+                   (begin
+                     (%change-set-repeat-info! ri)
+                     (%end-change))))))
+          ;; Operator + text object
+          ((ri-text-object ri)
+           (let ((tproc (text-object-ref (ri-text-object ri)))
+                 (op-proc (operator-ref (ri-op ri))))
+             (when (and tproc op-proc)
+               (let* ((eff (* (or count 1) (or (ri-motion-count ri) 1)))
+                      (r (tproc (ri-text-object-kind ri) eff)))
+                 (when r
+                   (%begin-change)
+                   (op-proc r)
+                   (if (%buffer-has-minor-mode? 'evil-insert-mode)
+                       (set! evil-pending-repeat-info ri)
+                       (begin
+                         (%change-set-repeat-info! ri)
+                         (%end-change))))))))
+          ;; Insert-only session — no replay yet
+          (else #f)))))
   (set! evil-count #f)
   (message-clear))
 
@@ -1302,21 +1348,29 @@
 (defcommand (evil-x)
   "Delete character(s) forward."
   (let ((count (or evil-count 1)))
+    (%begin-change)
     (let ((len (buffer-length))
           (p (point-get)))
       (let ((actual (min count (- len p))))
         (when (> actual 0)
           (delete-range p (+ p actual)))))
+    (%change-set-repeat-info!
+      (make-repeat-info 'op-delete count 'motion-l 1 #f #f))
+    (%end-change)
     (set! evil-count #f)
     (message-clear)))
 
 (defcommand (evil-X)
   "Delete character(s) backward."
   (let ((count (or evil-count 1)))
+    (%begin-change)
     (let ((p (point-get)))
       (let ((actual (min count p)))
         (when (> actual 0)
           (delete-range (- p actual) p))))
+    (%change-set-repeat-info!
+      (make-repeat-info 'op-delete count 'motion-h 1 #f #f))
+    (%end-change)
     (set! evil-count #f)
     (message-clear)))
 
@@ -1372,18 +1426,19 @@
 
 (defcommand (evil-visual-delete)
   "Delete the visual selection."
+  (%begin-change)
   (let ((mode (%select-mode-get)))
     (if (= mode 3)
-        ;; rectangle
-        (begin (evil-rect-apply delete-range) (evil-normal))
-        ;; char or line
+        (evil-rect-apply delete-range)
         (let ((range (evil-visual-range)))
           (point-set! (range-start range))
-          (delete-range (range-start range) (range-end range))
-          (evil-normal)))))
+          (delete-range (range-start range) (range-end range)))))
+  (%end-change)
+  (evil-normal))
 
 (defcommand (evil-visual-change)
   "Change the visual selection."
+  (%begin-change)
   (let ((mode (%select-mode-get)))
     (if (= mode 3)
         ;; rectangle: delete rect, enter insert at upper-left
@@ -1426,9 +1481,13 @@
 
 (defcommand (open-line-below)
   "Create a new empty line below current line, move to it and enter insert mode."
+  (%begin-change)
+  (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f))
   (line-end) (newline) (evil-insert))
 (defcommand (open-line-above)
   "Create a new empty line above current line, move to it and enter insert mode."
+  (%begin-change)
+  (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f))
   (line-start) (newline) (prev-line) (evil-insert))
 (defcommand (insert-at-start)
   "Set cursor to first non-blank character on current line and enter insert mode."
@@ -1441,6 +1500,8 @@
   (line-end) (evil-insert))
 (defcommand (substitute-char)
   "Delete the character under cursor and enter insert mode."
+  (%begin-change)
+  (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f))
   (delete-forward-char) (evil-insert))
 
 ;;;

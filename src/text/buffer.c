@@ -10,6 +10,7 @@
 
 #include "buffer.h"
 #include "buffer_type.h"
+#include "change.h"
 #include "gap.h"
 #include "mark.h"
 #include "message.h"
@@ -54,6 +55,7 @@ static void buffer_destroy(Buffer *buf) {
     if (buf->next)
         buf->next->prev = buf->prev;
 
+    change_free_all(buf, G ? G->chibi.ctx : NULL);
     modelist_destroy(&buf->minor_modes);
     vartable_destroy(&buf->locals);
     if (buf->contents) {
@@ -414,6 +416,7 @@ bool is_file_changed(void);
 void set_modified(bool is_modified);
 bool get_modified(void);
 void insert_char(Buffer *buf, char c) {
+    size_t pos_before = point_get(buf).pos;
     if (c == '\n') {
         buf->num_lines++;
         buf->cur_line++;
@@ -425,6 +428,7 @@ void insert_char(Buffer *buf, char c) {
     buf->num_chars = gb_used(buf->contents);
     line_insert_char(&buf->lt, point_get(buf).pos, c);
     update_point(buf);
+    change_record_insert(buf, pos_before, &c, 1);
 }
 void insert_string(Buffer *buf, const char *s) {
     while (*s) {
@@ -442,6 +446,14 @@ bool delete_chars(Buffer *buf, int count) {
     if (count > 0) {
         if (count > point)
             count = point;
+        // Record deleted chars before removal (backspace: chars before point)
+        if (!buf->suppress_recording && buf->current_change) {
+            char tmp[1];
+            for (int i = 0; i < count; i++) {
+                tmp[0] = char_from_point(i - count);
+                change_record_delete(buf, point - count, tmp, 1);
+            }
+        }
         for (int i = 0; i < count; i++) {
             char c = char_from_point(i - 1);
             line_backspace_char(&buf->lt, point, c);
@@ -458,6 +470,14 @@ bool delete_chars(Buffer *buf, int count) {
     if (count < 0) {
         if (count < -(int)(gb_back(buf->contents)))
             count = -(int)(gb_back(buf->contents));
+        // Record deleted chars before removal (forward delete: chars after point)
+        if (!buf->suppress_recording && buf->current_change) {
+            char tmp[1];
+            for (int i = 0; i < -count; i++) {
+                tmp[0] = char_from_point(i);
+                change_record_delete(buf, point, tmp, 1);
+            }
+        }
         for (int i = 0; i > count; i--) {
             char c = char_from_point(i);
             line_delete_char(&buf->lt, point, c);
@@ -877,4 +897,52 @@ sexp scm_line_end_position(sexp ctx, sexp self, sexp n, sexp sline) {
     size_t idx = sexp_unbox_fixnum(sline) - 1;
     if (idx >= lt->count) idx = lt->count - 1;
     return sexp_make_fixnum((int)lt->lines[idx].end);
+}
+
+// --- Change / undo bindings ---
+
+sexp scm_begin_change(sexp ctx, sexp self, sexp n) {
+    Buffer *buf = buffer_get_current();
+    if (buf) change_begin(buf);
+    return SEXP_VOID;
+}
+
+sexp scm_end_change(sexp ctx, sexp self, sexp n) {
+    Buffer *buf = buffer_get_current();
+    if (buf) change_end(buf);
+    return SEXP_VOID;
+}
+
+sexp scm_undo(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    Buffer *buf = buffer_get_current();
+    if (!buf || !buf->undo_head) {
+        message_send("No further undo information");
+        return SEXP_VOID;
+    }
+    change_undo(buf, ctx);
+    return SEXP_VOID;
+}
+
+sexp scm_change_active(sexp ctx, sexp self, sexp n) {
+    Buffer *buf = buffer_get_current();
+    if (!buf) return SEXP_FALSE;
+    return buf->current_change ? SEXP_TRUE : SEXP_FALSE;
+}
+
+sexp scm_change_set_repeat_info(sexp ctx, sexp self, sexp n, sexp info) {
+    Buffer *buf = buffer_get_current();
+    if (!buf || !buf->current_change) return SEXP_VOID;
+    if (buf->current_change->repeat_info != SEXP_FALSE) {
+        sexp_release_object(ctx, buf->current_change->repeat_info);
+    }
+    sexp_preserve_object(ctx, info);
+    buf->current_change->repeat_info = info;
+    return SEXP_VOID;
+}
+
+sexp scm_change_last_repeat_info(sexp ctx, sexp self, sexp n) {
+    Buffer *buf = buffer_get_current();
+    if (!buf || !buf->undo_head) return SEXP_FALSE;
+    return buf->undo_head->repeat_info;
 }

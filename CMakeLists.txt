@@ -27,6 +27,7 @@ set(SRC_FILES
     src/display/theme.c
     src/display/vline.c
     src/text/buffer.c
+    src/text/change.c
     src/text/gap.c
     src/text/line.c
     src/text/mark.c

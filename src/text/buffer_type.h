@@ -1,5 +1,6 @@
 #include <time.h>
 
+#include "change.h"
 #include "gap.h"
 #include "line.h"
 #include "location.h"
@@ -53,5 +54,9 @@ typedef struct Buffer {
     char file_name[FILE_NAME_MAX];
     Time file_time;
     bool is_modified;
+
+    Change *undo_head;
+    Change *current_change;
+    int suppress_recording;
 } Buffer;
 

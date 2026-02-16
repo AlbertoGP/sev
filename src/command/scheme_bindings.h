@@ -103,6 +103,14 @@ sexp scm_position_line(sexp ctx, sexp self, sexp n, sexp spos);
 sexp scm_line_start_position(sexp ctx, sexp self, sexp n, sexp sline);
 sexp scm_line_end_position(sexp ctx, sexp self, sexp n, sexp sline);
 
+// --- text/buffer.c (change/undo) ---
+sexp scm_begin_change(sexp ctx, sexp self, sexp n);
+sexp scm_end_change(sexp ctx, sexp self, sexp n);
+sexp scm_undo(sexp ctx, sexp self, sexp n);
+sexp scm_change_active(sexp ctx, sexp self, sexp n);
+sexp scm_change_set_repeat_info(sexp ctx, sexp self, sexp n, sexp info);
+sexp scm_change_last_repeat_info(sexp ctx, sexp self, sexp n);
+
 // --- text/message.c ---
 sexp scm_message_send(sexp ctx, sexp self, sexp n, sexp message);
 sexp scm_message_clear(sexp ctx, sexp self, sexp n);
