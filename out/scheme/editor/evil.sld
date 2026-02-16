@@ -6,7 +6,7 @@
     evil-normal evil-insert evil-replace
     evil-select evil-select-line evil-select-rectangle evil-command
     evil-mode evil-state
-    normal-map insert-map replace-map select-map command-map pending-map
+    normal-map insert-map select-map command-map pending-map
     register-motion! register-operator! motion-ref operator-ref
     register-text-object! text-object-ref
     evil-in-text-object evil-around-text-object

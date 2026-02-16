@@ -823,11 +823,18 @@
                      (loop (- q 1) (- depth 1))))
                 (else (loop (- q 1) depth)))))))
     (and (> len 0) (< pos len)
-         (let ((c (char-at pos)))
-           (cond
-             ((char=? c open) (find-close-from pos))
-             ((char=? c close) (find-open-from (- pos 1)))
-             (else (find-open-from pos)))))))
+         (or (let ((c (char-at pos)))
+               (cond
+                 ((char=? c open) (find-close-from pos))
+                 ((char=? c close) (find-open-from (- pos 1)))
+                 (else (find-open-from pos))))
+             ;; Forward seek: find next open delimiter in buffer
+             (let seek ((p (+ pos 1)))
+               (if (>= p len) #f
+                   (if (char=? (char-at p) open)
+                       (find-close-from p)
+                       (seek (+ p 1)))))))))
+
 
 (define (find-quote-pair qchar)
   (let* ((pos (point-get))
@@ -882,50 +889,69 @@
                       (< (+ q 1) len)
                       (char=? (char-at (+ q 1)) #\>)) #t)
                 (else (loop (+ q 1))))))))
-    ;; Search backward for unmatched opening tag
-    (let find-open ((p pos) (depth 0))
-      (if (< p 0) #f
-          (if (and (char=? (char-at p) #\<) (< (+ p 1) len))
-              (let ((next (char-at (+ p 1))))
-                (cond
-                  ((or (char=? next #\!) (char=? next #\?))
-                   (find-open (- p 1) depth))
-                  ((char=? next #\/)
-                   (find-open (- p 1) (+ depth 1)))
-                  ((self-closing? p)
-                   (find-open (- p 1) depth))
-                  (else
-                   (if (= depth 0)
-                       (let* ((name (extract-tag-name (+ p 1)))
-                              (open-end (find-gt p)))
-                         (and open-end
-                              (let find-close ((q open-end) (d 0))
-                                (if (>= q len) #f
-                                    (if (and (char=? (char-at q) #\<)
-                                             (< (+ q 1) len))
-                                        (let ((qn (char-at (+ q 1))))
-                                          (cond
-                                            ((char=? qn #\/)
-                                             (let ((cn (extract-tag-name (+ q 2)))
-                                                   (ce (find-gt q)))
-                                               (if (string=? cn name)
-                                                   (if (= d 0)
-                                                       (and ce (list p open-end q ce))
-                                                       (find-close (or ce len) (- d 1)))
-                                                   (find-close (or ce (+ q 1)) d))))
-                                            ((and (not (char=? qn #\!))
-                                                  (not (char=? qn #\?))
-                                                  (not (self-closing? q)))
-                                             (let ((in (extract-tag-name (+ q 1)))
-                                                   (ie (find-gt q)))
-                                               (if (string=? in name)
-                                                   (find-close (or ie (+ q 1)) (+ d 1))
-                                                   (find-close (or ie (+ q 1)) d))))
-                                            (else
-                                             (find-close (or (find-gt q) (+ q 1)) d))))
-                                        (find-close (+ q 1) d))))))
-                       (find-open (- p 1) (- depth 1))))))
-              (find-open (- p 1) depth))))))
+    (define (opening-tag? p)
+      (and (< (+ p 1) len)
+           (char=? (char-at p) #\<)
+           (let ((next (char-at (+ p 1))))
+             (and (not (char=? next #\/))
+                  (not (char=? next #\!))
+                  (not (char=? next #\?))
+                  (not (self-closing? p))))))
+    ;; Given position of an opening tag <, find its matching close tag
+    (define (match-open-tag p)
+      (let* ((name (extract-tag-name (+ p 1)))
+             (open-end (find-gt p)))
+        (and open-end
+             (let find-close ((q open-end) (d 0))
+               (if (>= q len) #f
+                   (if (and (char=? (char-at q) #\<)
+                            (< (+ q 1) len))
+                       (let ((qn (char-at (+ q 1))))
+                         (cond
+                           ((char=? qn #\/)
+                            (let ((cn (extract-tag-name (+ q 2)))
+                                  (ce (find-gt q)))
+                              (if (string=? cn name)
+                                  (if (= d 0)
+                                      (and ce (list p open-end q ce))
+                                      (find-close (or ce len) (- d 1)))
+                                  (find-close (or ce (+ q 1)) d))))
+                           ((and (not (char=? qn #\!))
+                                 (not (char=? qn #\?))
+                                 (not (self-closing? q)))
+                            (let ((in (extract-tag-name (+ q 1)))
+                                  (ie (find-gt q)))
+                              (if (string=? in name)
+                                  (find-close (or ie (+ q 1)) (+ d 1))
+                                  (find-close (or ie (+ q 1)) d))))
+                           (else
+                            (find-close (or (find-gt q) (+ q 1)) d))))
+                       (find-close (+ q 1) d)))))))
+    (or
+     ;; Search backward for unmatched opening tag
+     (let find-open ((p pos) (depth 0))
+       (if (< p 0) #f
+           (if (and (char=? (char-at p) #\<) (< (+ p 1) len))
+               (let ((next (char-at (+ p 1))))
+                 (cond
+                   ((or (char=? next #\!) (char=? next #\?))
+                    (find-open (- p 1) depth))
+                   ((char=? next #\/)
+                    (find-open (- p 1) (+ depth 1)))
+                   ((self-closing? p)
+                    (find-open (- p 1) depth))
+                   (else
+                    (if (= depth 0)
+                        (or (match-open-tag p)
+                            (find-open (- p 1) depth))
+                        (find-open (- p 1) (- depth 1))))))
+               (find-open (- p 1) depth))))
+     ;; Forward seek: find next opening tag
+     (let seek ((p (+ pos 1)))
+       (if (>= p len) #f
+           (if (opening-tag? p)
+               (match-open-tag p)
+               (seek (+ p 1))))))))
 
 ;;;
 ;;; Text object implementations
@@ -1059,10 +1085,10 @@
              (define (blank-line? line)
                (= (%line-start-position line) (%line-end-position line)))
              (let* ((cur-line (%position-line pos))
-                    (max-line (- (%line-count) 1)))
+                    (max-line (%line-count)))
                ;; Find start: search backward for blank line boundary
                (let ((start-line (let bwd ((l cur-line))
-                                   (if (or (<= l 0) (blank-line? l))
+                                   (if (or (<= l 1) (blank-line? l))
                                        (if (blank-line? l) (+ l 1) l)
                                        (bwd (- l 1))))))
                  ;; Find end: search forward for blank line (repeat for count)
