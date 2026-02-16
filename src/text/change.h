@@ -27,4 +27,6 @@ void change_end(Buffer *buf);
 void change_record_insert(Buffer *buf, size_t pos, const char *text, size_t len);
 void change_record_delete(Buffer *buf, size_t pos, const char *text, size_t len);
 void change_undo(Buffer *buf, sexp ctx);
+void change_redo(Buffer *buf, sexp ctx);
+void change_clear_redo(Buffer *buf, sexp ctx);
 void change_free_all(Buffer *buf, sexp ctx);

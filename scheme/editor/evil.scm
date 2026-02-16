@@ -41,6 +41,8 @@
 (set-key! normal-map "c" 'evil-op-change)
 (set-key! normal-map "." 'evil-repeat)
 (set-key! normal-map "u" 'evil-undo)
+(set-key! normal-map "C-r" 'evil-redo)
+(set-key! normal-map "U" 'evil-line-restore)
 (set-key! normal-map "1" 'evil-digit-argument)
 (set-key! normal-map "2" 'evil-digit-argument)
 (set-key! normal-map "3" 'evil-digit-argument)
@@ -172,8 +174,14 @@
   "Return to normal mode."
   ;; Finalize insert/replace session change
   (when (%change-active?)
-    (when evil-pending-repeat-info
-      (%change-set-repeat-info! evil-pending-repeat-info))
+    (let ((typed (%change-current-inserts)))
+      (when evil-pending-repeat-info
+        (let ((ri evil-pending-repeat-info))
+          (%change-set-repeat-info!
+            (make-repeat-info (ri-op ri) (ri-op-count ri)
+                              (ri-motion ri) (ri-motion-count ri)
+                              (ri-text-object ri) (ri-text-object-kind ri)
+                              (ri-setup ri) typed)))))
     (set! evil-pending-repeat-info #f)
     (%end-change))
   (disable-minor-mode 'evil-insert-mode)
@@ -192,7 +200,7 @@
   "Enter insert mode."
   (unless (%change-active?)
     (%begin-change)
-    (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f)))
+    (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'insert #f)))
   (disable-minor-mode 'evil-normal-mode)
   (disable-minor-mode 'evil-replace-mode)
   (disable-minor-mode 'evil-select-mode)
@@ -206,7 +214,7 @@
   "Enter replace mode."
   (unless (%change-active?)
     (%begin-change)
-    (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f)))
+    (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'replace #f)))
   (disable-minor-mode 'evil-normal-mode)
   (disable-minor-mode 'evil-insert-mode)
   (disable-minor-mode 'evil-select-mode)
@@ -288,13 +296,14 @@
 (define evil-op-count #f)           ; count before operator
 (define evil-pending-op #f)         ; operator symbol or #f
 
-;; Repeat-info record (replaces 6 loose globals)
+;; Repeat-info record
 (define-record-type <repeat-info>
-  (make-repeat-info op op-count motion motion-count text-object text-object-kind)
+  (make-repeat-info op op-count motion motion-count text-object text-object-kind setup insert-text)
   repeat-info?
   (op ri-op) (op-count ri-op-count)
   (motion ri-motion) (motion-count ri-motion-count)
-  (text-object ri-text-object) (text-object-kind ri-text-object-kind))
+  (text-object ri-text-object) (text-object-kind ri-text-object-kind)
+  (setup ri-setup) (insert-text ri-insert-text))
 
 ;; Pending repeat-info (set during operator exec, consumed on insert exit)
 (define evil-pending-repeat-info #f)
@@ -390,7 +399,7 @@
                  (range (make-range start end 'char))
                  (op-proc (operator-ref the-op))
                  (ri (make-repeat-info the-op the-op-count
-                                       motion-sym the-motion-count #f #f)))
+                                       motion-sym the-motion-count #f #f #f #f)))
             (point-set! saved-point)
             (evil-reset-count)
             (%begin-change)
@@ -441,7 +450,7 @@
               ;; Operator-pending: wrap in transaction, apply operator
               (let ((op-proc (operator-ref evil-pending-op))
                     (ri (make-repeat-info evil-pending-op evil-op-count
-                                          #f evil-count sym kind)))
+                                          #f evil-count sym kind #f #f)))
                 (evil-reset-count)
                 (%begin-change)
                 (when op-proc (op-proc range))
@@ -462,6 +471,38 @@
 (defcommand (evil-undo)
   "Undo last change."
   (%undo))
+
+;; Redo
+(defcommand (evil-redo)
+  "Redo last undone change."
+  (%redo))
+
+;; Line restore
+(defcommand (evil-line-restore)
+  "Restore line to its state before edits began on it."
+  (%begin-change)
+  (%line-restore)
+  (%end-change))
+
+;; Replay helpers for dottable operations
+(define (evil-replay-setup setup)
+  (case setup
+    ((insert) #t)
+    ((replace) #t)
+    ((append-char) (forward-char))
+    ((append-line) (line-end))
+    ((insert-at-start) (line-start) (skip-whitespace))
+    ((open-below) (line-end) (newline))
+    ((open-above) (line-start) (newline) (prev-line))
+    ((substitute) (delete-forward-char))
+    (else #t)))
+
+(define (evil-insert-text text)
+  (let ((len (string-length text)))
+    (let loop ((i 0))
+      (when (< i len)
+        (insert-char (string-ref text i))
+        (loop (+ i 1))))))
 
 ;; Dot repeat
 (defcommand (evil-repeat)
@@ -486,11 +527,20 @@
                       (end2 (max saved end)))
                  (point-set! saved)
                  (op-proc (make-range start end2 'char)))
-               (if (%buffer-has-minor-mode? 'evil-insert-mode)
-                   (set! evil-pending-repeat-info ri)
+               ;; If operator entered insert mode and we have typed text, replay it
+               (if (and (%buffer-has-minor-mode? 'evil-insert-mode)
+                        (ri-insert-text ri)
+                        (> (string-length (ri-insert-text ri)) 0))
                    (begin
+                     (evil-insert-text (ri-insert-text ri))
                      (%change-set-repeat-info! ri)
-                     (%end-change))))))
+                     (%end-change)
+                     (evil-normal))
+                   (if (%buffer-has-minor-mode? 'evil-insert-mode)
+                       (set! evil-pending-repeat-info ri)
+                       (begin
+                         (%change-set-repeat-info! ri)
+                         (%end-change)))))))
           ;; Operator + text object
           ((ri-text-object ri)
            (let ((tproc (text-object-ref (ri-text-object ri)))
@@ -501,12 +551,42 @@
                  (when r
                    (%begin-change)
                    (op-proc r)
-                   (if (%buffer-has-minor-mode? 'evil-insert-mode)
-                       (set! evil-pending-repeat-info ri)
+                   ;; If operator entered insert mode and we have typed text, replay it
+                   (if (and (%buffer-has-minor-mode? 'evil-insert-mode)
+                            (ri-insert-text ri)
+                            (> (string-length (ri-insert-text ri)) 0))
                        (begin
+                         (evil-insert-text (ri-insert-text ri))
                          (%change-set-repeat-info! ri)
-                         (%end-change))))))))
-          ;; Insert-only session — no replay yet
+                         (%end-change)
+                         (evil-normal))
+                       (if (%buffer-has-minor-mode? 'evil-insert-mode)
+                           (set! evil-pending-repeat-info ri)
+                           (begin
+                             (%change-set-repeat-info! ri)
+                             (%end-change)))))))))
+          ;; Setup-based session (insert, replace, append, open, substitute)
+          ((ri-setup ri)
+           (when (and (ri-insert-text ri)
+                      (> (string-length (ri-insert-text ri)) 0))
+             (%begin-change)
+             (evil-replay-setup (ri-setup ri))
+             (if (eq? (ri-setup ri) 'replace)
+                 ;; Replace mode: delete then insert per character
+                 (let* ((text (ri-insert-text ri))
+                        (len (string-length text)))
+                   (let loop ((i 0))
+                     (when (< i len)
+                       (let ((c (char-at-point)))
+                         (when (and (not (char=? c #\null))
+                                    (not (char=? c #\newline)))
+                           (delete-forward-char)))
+                       (insert-char (string-ref text i))
+                       (loop (+ i 1)))))
+                 ;; Normal insert
+                 (evil-insert-text (ri-insert-text ri)))
+             (%change-set-repeat-info! ri)
+             (%end-change)))
           (else #f)))))
   (set! evil-count #f)
   (message-clear))
@@ -1355,7 +1435,7 @@
         (when (> actual 0)
           (delete-range p (+ p actual)))))
     (%change-set-repeat-info!
-      (make-repeat-info 'op-delete count 'motion-l 1 #f #f))
+      (make-repeat-info 'op-delete count 'motion-l 1 #f #f #f #f))
     (%end-change)
     (set! evil-count #f)
     (message-clear)))
@@ -1369,7 +1449,7 @@
         (when (> actual 0)
           (delete-range (- p actual) p))))
     (%change-set-repeat-info!
-      (make-repeat-info 'op-delete count 'motion-h 1 #f #f))
+      (make-repeat-info 'op-delete count 'motion-h 1 #f #f #f #f))
     (%end-change)
     (set! evil-count #f)
     (message-clear)))
@@ -1482,26 +1562,32 @@
 (defcommand (open-line-below)
   "Create a new empty line below current line, move to it and enter insert mode."
   (%begin-change)
-  (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f))
+  (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'open-below #f))
   (line-end) (newline) (evil-insert))
 (defcommand (open-line-above)
   "Create a new empty line above current line, move to it and enter insert mode."
   (%begin-change)
-  (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f))
+  (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'open-above #f))
   (line-start) (newline) (prev-line) (evil-insert))
 (defcommand (insert-at-start)
   "Set cursor to first non-blank character on current line and enter insert mode."
+  (%begin-change)
+  (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'insert-at-start #f))
   (line-start) (skip-whitespace) (evil-insert))
 (defcommand (append-char)
   "Enter insert mode after the character currently under the cursor."
+  (%begin-change)
+  (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'append-char #f))
   (forward-char) (evil-insert))
 (defcommand (append-line)
   "Set the cursor to the final column on the current line and enter insert mode."
+  (%begin-change)
+  (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'append-line #f))
   (line-end) (evil-insert))
 (defcommand (substitute-char)
   "Delete the character under cursor and enter insert mode."
   (%begin-change)
-  (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f))
+  (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'substitute #f))
   (delete-forward-char) (evil-insert))
 
 ;;;

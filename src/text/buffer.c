@@ -56,6 +56,7 @@ static void buffer_destroy(Buffer *buf) {
         buf->next->prev = buf->prev;
 
     change_free_all(buf, G ? G->chibi.ctx : NULL);
+    free(buf->line_restore_text);
     modelist_destroy(&buf->minor_modes);
     vartable_destroy(&buf->locals);
     if (buf->contents) {
@@ -259,10 +260,35 @@ bool point_set(Location loc) {
     return true;
 }
 
+static void snapshot_line(Buffer *buf) {
+    const LineTable *lt = buffer_get_line_table(buf);
+    size_t li = line_index_at(lt, point_get(buf).pos);
+    size_t start = lt->lines[li].start;
+    size_t end = lt->lines[li].end;
+    size_t len = end - start;
+
+    free(buf->line_restore_text);
+    buf->line_restore_text = malloc(len);
+    if (buf->line_restore_text) {
+        char *text = gb_text(buf->contents);
+        memcpy(buf->line_restore_text, text + start, len);
+        buf->line_restore_len = len;
+    } else {
+        buf->line_restore_len = 0;
+    }
+    buf->line_restore_line = buf->cur_line;
+}
+
 void update_line(Buffer *buf) {
     const LineTable *lt = buffer_get_line_table(buf);
     size_t line_index = line_index_at(lt, point_get(buf).pos);
-    buf->cur_line = line_index + 1;
+    size_t new_line = line_index + 1;
+
+    if (new_line != buf->cur_line && !buf->suppress_recording) {
+        snapshot_line(buf);
+    }
+
+    buf->cur_line = new_line;
 }
 
 void save_current_column(Buffer *buf) {
@@ -945,4 +971,78 @@ sexp scm_change_last_repeat_info(sexp ctx, sexp self, sexp n) {
     Buffer *buf = buffer_get_current();
     if (!buf || !buf->undo_head) return SEXP_FALSE;
     return buf->undo_head->repeat_info;
+}
+
+sexp scm_redo(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    Buffer *buf = buffer_get_current();
+    if (!buf || !buf->redo_head) {
+        message_send("No further redo information");
+        return SEXP_VOID;
+    }
+    change_redo(buf, ctx);
+    return SEXP_VOID;
+}
+
+sexp scm_line_restore(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    Buffer *buf = buffer_get_current();
+    if (!buf || !buf->line_restore_text) {
+        message_send("No line snapshot");
+        return SEXP_VOID;
+    }
+    if (buf->line_restore_line != buf->cur_line) {
+        message_send("Line snapshot is for a different line");
+        return SEXP_VOID;
+    }
+
+    const LineTable *lt = buffer_get_line_table(buf);
+    size_t li = line_index_at(lt, point_get(buf).pos);
+    size_t start = lt->lines[li].start;
+    size_t end = lt->lines[li].end;
+
+    // Delete current line content
+    point_set((Location){.pos = start});
+    update_line(buf);
+    size_t count = end - start;
+    for (size_t i = 0; i < count; i++) {
+        delete_chars(buf, -1);
+    }
+
+    // Insert snapshot text
+    for (size_t i = 0; i < buf->line_restore_len; i++) {
+        insert_char(buf, buf->line_restore_text[i]);
+    }
+
+    // Move to line start
+    point_to_line_start(buf);
+    return SEXP_VOID;
+}
+
+sexp scm_change_current_inserts(sexp ctx, sexp self, sexp n) {
+    Buffer *buf = buffer_get_current();
+    if (!buf || !buf->current_change) return sexp_c_string(ctx, "", 0);
+
+    // Calculate total length of INSERT ops
+    size_t total = 0;
+    for (EditOp *op = buf->current_change->ops; op; op = op->next) {
+        if (op->type == EDIT_INSERT) total += op->len;
+    }
+
+    if (total == 0) return sexp_c_string(ctx, "", 0);
+
+    char *combined = malloc(total);
+    if (!combined) return sexp_c_string(ctx, "", 0);
+
+    size_t pos = 0;
+    for (EditOp *op = buf->current_change->ops; op; op = op->next) {
+        if (op->type == EDIT_INSERT) {
+            memcpy(combined + pos, op->text, op->len);
+            pos += op->len;
+        }
+    }
+
+    sexp result = sexp_c_string(ctx, combined, (int)total);
+    free(combined);
+    return result;
 }

@@ -27,8 +27,6 @@ void change_end(Buffer *buf) {
     // Discard empty changes
     if (!c->ops) {
         if (c->repeat_info != SEXP_FALSE) {
-            // Need ctx to release — get it from global state
-            extern AppState *G;
             if (G && G->chibi.ctx)
                 sexp_release_object(G->chibi.ctx, c->repeat_info);
         }
@@ -39,6 +37,9 @@ void change_end(Buffer *buf) {
     c->point_after = point_get(buf).pos;
     c->prev = buf->undo_head;
     buf->undo_head = c;
+
+    // New edits invalidate redo history
+    change_clear_redo(buf, G ? G->chibi.ctx : NULL);
 }
 
 void change_record_insert(Buffer *buf, size_t pos, const char *text, size_t len) {
@@ -134,18 +135,65 @@ void change_undo(Buffer *buf, sexp ctx) {
 
     free(arr);
 
-    // Free the change
-    if (c->repeat_info != SEXP_FALSE && ctx) {
-        sexp_release_object(ctx, c->repeat_info);
+    // Push onto redo stack instead of freeing
+    c->prev = buf->redo_head;
+    buf->redo_head = c;
+}
+
+void change_redo(Buffer *buf, sexp ctx) {
+    Change *c = buf->redo_head;
+    if (!c) return;
+
+    buf->redo_head = c->prev;
+
+    // Replay ops in forward order under suppress_recording
+    buf->suppress_recording++;
+
+    for (EditOp *op = c->ops; op; op = op->next) {
+        if (op->type == EDIT_INSERT) {
+            point_set((Location){.pos = op->pos});
+            update_line(buf);
+            for (size_t j = 0; j < op->len; j++) {
+                insert_char(buf, op->text[j]);
+            }
+        } else {
+            // EDIT_DELETE: forward-delete at op->pos
+            point_set((Location){.pos = op->pos});
+            update_line(buf);
+            delete_chars(buf, -(int)op->len);
+        }
     }
-    op = c->ops;
-    while (op) {
-        EditOp *next = op->next;
-        free(op->text);
-        free(op);
-        op = next;
+
+    buf->suppress_recording--;
+
+    // Restore cursor
+    point_set((Location){.pos = c->point_after});
+    update_line(buf);
+    save_current_column(buf);
+
+    // Push onto undo stack
+    c->prev = buf->undo_head;
+    buf->undo_head = c;
+}
+
+void change_clear_redo(Buffer *buf, sexp ctx) {
+    Change *c = buf->redo_head;
+    while (c) {
+        Change *prev = c->prev;
+        if (c->repeat_info != SEXP_FALSE && ctx) {
+            sexp_release_object(ctx, c->repeat_info);
+        }
+        EditOp *op = c->ops;
+        while (op) {
+            EditOp *next = op->next;
+            free(op->text);
+            free(op);
+            op = next;
+        }
+        free(c);
+        c = prev;
     }
-    free(c);
+    buf->redo_head = NULL;
 }
 
 void change_free_all(Buffer *buf, sexp ctx) {
@@ -166,6 +214,9 @@ void change_free_all(Buffer *buf, sexp ctx) {
         c = prev;
     }
     buf->undo_head = NULL;
+
+    // Free redo stack
+    change_clear_redo(buf, ctx);
 
     // Also free any in-progress change
     if (buf->current_change) {

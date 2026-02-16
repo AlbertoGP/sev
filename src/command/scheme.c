@@ -247,9 +247,12 @@ void scheme_init(AppState *state) {
     SDEF("%begin-change", 0, scm_begin_change);
     SDEF("%end-change", 0, scm_end_change);
     SDEF("%undo", 0, scm_undo);
+    SDEF("%redo", 0, scm_redo);
     SDEF("%change-active?", 0, scm_change_active);
     SDEF("%change-set-repeat-info!", 1, scm_change_set_repeat_info);
     SDEF("%change-last-repeat-info", 0, scm_change_last_repeat_info);
+    SDEF("%line-restore", 0, scm_line_restore);
+    SDEF("%change-current-inserts", 0, scm_change_current_inserts);
 
     // Mark / selection primitives
     SDEF("%mark-set-to-point!", 1, scm_mark_set_to_point);
@@ -318,8 +321,9 @@ void scheme_init(AppState *state) {
         "%update-icon-colors! %register-icon! "
         "%register-mode-icon! %set-role! "
         "%clear-palette! %clear-roles! "
-        "%begin-change %end-change %undo "
+        "%begin-change %end-change %undo %redo "
         "%change-active? %change-set-repeat-info! %change-last-repeat-info "
+        "%line-restore %change-current-inserts "
         "%mark-set-to-point! %select-mode-set! %select-mode-get "
         "exchange-point-and-mark %point-to-mark! %goto-line "
         "%line-count %mark-position %position-line "

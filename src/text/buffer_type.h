@@ -56,7 +56,12 @@ typedef struct Buffer {
     bool is_modified;
 
     Change *undo_head;
+    Change *redo_head;
     Change *current_change;
     int suppress_recording;
+
+    char *line_restore_text;
+    size_t line_restore_len;
+    size_t line_restore_line;
 } Buffer;
 
