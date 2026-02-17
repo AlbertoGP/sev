@@ -285,10 +285,11 @@ void update_line(Buffer *buf) {
     size_t new_line = line_index + 1;
 
     if (new_line != buf->cur_line && !buf->suppress_recording) {
+        buf->cur_line = new_line;
         snapshot_line(buf);
+    } else {
+        buf->cur_line = new_line;
     }
-
-    buf->cur_line = new_line;
 }
 
 void save_current_column(Buffer *buf) {
@@ -484,6 +485,10 @@ bool delete_chars(Buffer *buf, int count) {
             char c = char_from_point(i - 1);
             line_backspace_char(&buf->lt, point, c);
             if (c == '\n') {
+                if (buf->line_restore_line == buf->cur_line) {
+                    free(buf->line_restore_text);
+                    buf->line_restore_text = NULL;
+                }
                 buf->cur_line--;
                 buf->num_lines--;
                 buf->col = 0;
@@ -507,8 +512,13 @@ bool delete_chars(Buffer *buf, int count) {
         for (int i = 0; i > count; i--) {
             char c = char_from_point(i);
             line_delete_char(&buf->lt, point, c);
-            if (c == '\n')
+            if (c == '\n') {
+                if (buf->line_restore_line == buf->cur_line) {
+                    free(buf->line_restore_text);
+                    buf->line_restore_text = NULL;
+                }
                 buf->num_lines--;
+            }
         }
         gb_delete(buf->contents, -count);
     }
