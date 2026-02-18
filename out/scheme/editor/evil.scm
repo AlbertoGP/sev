@@ -417,7 +417,8 @@
                  (new-point (point-get))
                  (start (min saved-point new-point))
                  (end (max saved-point new-point))
-                 (range (make-range start end 'char))
+                 (range (make-range start end
+                                   (if (eq? motion-sym 'current-line) 'line 'char)))
                  (op-proc (operator-ref the-op))
                  (ri (make-repeat-info the-op the-op-count
                                        motion-sym the-motion-count #f #f #f #f)))
@@ -991,7 +992,13 @@
         (loop (- i 1))))))
 
 (define (evil-register-write! text . rest)
-  (let ((shape (if (pair? rest) (car rest) 'charwise)))
+  (let* ((shape (if (pair? rest) (car rest) 'charwise))
+         ;; Linewise registers always end with \n for consistent paste behaviour
+         (text (if (and (eq? shape 'linewise)
+                        (or (= (string-length text) 0)
+                            (not (char=? (string-ref text (- (string-length text) 1)) #\newline))))
+                   (string-append text "\n")
+                   text)))
     (let ((reg current-evil-register))
       (if (char-upper-case? reg)
           (let ((lc (char-downcase reg)))
@@ -1015,8 +1022,9 @@
   (lambda (range)
     (let* ((start (range-start range))
            (end   (range-end range))
-           (text  (%buffer-substring start end)))
-      (evil-register-write! text)
+           (text  (%buffer-substring start end))
+           (shape (if (eq? (range-type range) 'line) 'linewise 'charwise)))
+      (evil-register-write! text shape)
       (delete-range start end))))
 
 (register-operator! 'op-change
@@ -1034,8 +1042,9 @@
   (lambda (range)
     (let* ((start (range-start range))
            (end   (range-end range))
-           (text  (%buffer-substring start end)))
-      (evil-register-write! text)
+           (text  (%buffer-substring start end))
+           (shape (if (eq? (range-type range) 'line) 'linewise 'charwise)))
+      (evil-register-write! text shape)
       (point-set! start))))
 
 ;;;
