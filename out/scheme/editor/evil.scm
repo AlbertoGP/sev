@@ -75,6 +75,7 @@
 (set-key! insert-map "BSP" 'delete-backward-char)
 (set-key! insert-map "C-h" 'delete-backward-char)
 (set-key! insert-map "DEL" 'delete-forward-char)
+(set-key! insert-map "C-v" 'evil-insert-paste-clipboard)
 
 ;; Select (visual) mode bindings
 (set-key! select-map "v" 'evil-select)
@@ -135,6 +136,12 @@
     (string->list "abcdefghijklmnopqrstuvwxyz")
     (string->list "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
     (list #\")))
+
+;; Special registers: "+ (clipboard) and "_ (black hole)
+(set-key! normal-map "\" +" 'evil-use-register)
+(set-key! select-map "\" +" 'evil-use-register)
+(set-key! normal-map "\" _" 'evil-use-register)
+(set-key! select-map "\" _" 'evil-use-register)
 
 ;; m / ' / ` — bind all 26 letters programmatically
 (do ((i 0 (+ i 1)))
@@ -1000,18 +1007,27 @@
                    (string-append text "\n")
                    text)))
     (let ((reg current-evil-register))
-      (if (char-upper-case? reg)
-          (let ((lc (char-downcase reg)))
-            (%register-append! lc text)
-            (%register-set-shape! lc shape)
-            (%register-set! #\" text)
-            (%register-set-shape! #\" shape))
-          (begin
-            (%register-set! reg text)
-            (%register-set-shape! reg shape)
-            (when (not (char=? reg #\"))
-              (%register-set! #\" text)
-              (%register-set-shape! #\" shape))))
+      (cond
+        ((char=? reg #\_)
+         ;; Black hole: discard silently
+         #f)
+        ((char=? reg #\+)
+         ;; Clipboard: write to OS clipboard and update unnamed
+         (%clipboard-set! text)
+         (%register-set! #\" text)
+         (%register-set-shape! #\" shape))
+        ((char-upper-case? reg)
+         (let ((lc (char-downcase reg)))
+           (%register-append! lc text)
+           (%register-set-shape! lc shape)
+           (%register-set! #\" text)
+           (%register-set-shape! #\" shape)))
+        (else
+         (%register-set! reg text)
+         (%register-set-shape! reg shape)
+         (when (not (char=? reg #\"))
+           (%register-set! #\" text)
+           (%register-set-shape! #\" shape))))
       (set! current-evil-register #\"))))
 
 ;;;
@@ -1799,9 +1815,14 @@
 
 (defcommand (evil-paste-after)
   "Paste register contents after cursor."
-  (let ((text (%register-get current-evil-register)))
+  (let* ((reg current-evil-register)
+         (text (if (char=? reg #\+)
+                   (let ((s (%clipboard-get)))
+                     (if (string=? s "") #f s))
+                   (%register-get reg)))
+         (shape (if (char=? reg #\+) 'charwise (%register-shape reg))))
     (when text
-      (let ((shape (%register-shape current-evil-register)))
+      (let ((shape shape))
         (cond
           ((eq? shape 'blockwise)
            (let* ((cur-line (%position-line (point-get)))
@@ -1834,9 +1855,14 @@
 
 (defcommand (evil-paste-before)
   "Paste register contents before cursor."
-  (let ((text (%register-get current-evil-register)))
+  (let* ((reg current-evil-register)
+         (text (if (char=? reg #\+)
+                   (let ((s (%clipboard-get)))
+                     (if (string=? s "") #f s))
+                   (%register-get reg)))
+         (shape (if (char=? reg #\+) 'charwise (%register-shape reg))))
     (when text
-      (let ((shape (%register-shape current-evil-register)))
+      (let ((shape shape))
         (cond
           ((eq? shape 'blockwise)
            (let* ((cur-line (%position-line (point-get)))
@@ -1868,6 +1894,12 @@
 
 (set-key! normal-map "p" 'evil-paste-after)
 (set-key! normal-map "P" 'evil-paste-before)
+
+(defcommand (evil-insert-paste-clipboard)
+  "Paste from system clipboard."
+  (let ((text (%clipboard-get)))
+    (when (not (string=? text ""))
+      (%insert-string text))))
 
 ;;;
 ;;; Vim Macros

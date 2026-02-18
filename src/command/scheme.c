@@ -111,6 +111,19 @@ static sexp scm_clear_roles(sexp ctx, sexp self, sexp n) {
     return SEXP_VOID;
 }
 
+static sexp scm_clipboard_get(sexp ctx, sexp self, sexp n) {
+    char *text = SDL_GetClipboardText();
+    sexp result = sexp_c_string(ctx, text ? text : "", -1);
+    SDL_free(text);
+    return result;
+}
+
+static sexp scm_clipboard_set(sexp ctx, sexp self, sexp n, sexp stext) {
+    sexp_assert_type(ctx, sexp_stringp, SEXP_STRING, stext);
+    SDL_SetClipboardText(sexp_string_data(stext));
+    return SEXP_VOID;
+}
+
 void scheme_init(AppState *state) {
     G = state;
     sexp_scheme_init();
@@ -254,6 +267,10 @@ void scheme_init(AppState *state) {
     SDEF("%line-restore", 0, scm_line_restore);
     SDEF("%change-current-inserts", 0, scm_change_current_inserts);
 
+    // Clipboard primitives
+    SDEF("%clipboard-get",  0, scm_clipboard_get);
+    SDEF("%clipboard-set!", 1, scm_clipboard_set);
+
     // Register primitives
     SDEF("%register-set!",       2, scm_register_set);
     SDEF("%register-append!",    2, scm_register_append);
@@ -345,6 +362,7 @@ void scheme_init(AppState *state) {
         "exchange-point-and-mark %point-to-mark! %goto-line "
         "%line-count %mark-position %position-line "
         "%line-start-position %line-end-position "
+        "%clipboard-get %clipboard-set! "
         "%register-set! %register-append! %register-get "
         "%register-set-shape! %register-shape "
         "%register-set-block-width! %register-block-width "
