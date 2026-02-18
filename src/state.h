@@ -69,8 +69,4 @@ typedef struct AppState {
     KeyEvent *macro_buf;
     size_t macro_buf_len;
     size_t macro_buf_cap;
-
-    // Stored macros (a-z only)
-    KeyEvent *macro_store[26];
-    size_t    macro_store_len[26];
 } AppState;
