@@ -1897,14 +1897,24 @@
 
 (defcommand (evil-play-macro)
   "Play macro from register."
-  (let ((ch (last-key-char)))
+  (let ((ch (last-key-char))
+        (count (or evil-count 1)))
     (when ch
       (set! current-evil-macro ch)
-      (%macro-play ch))))
+      (set! evil-count #f)
+      (let loop ((n count))
+        (when (> n 0)
+          (%macro-play ch)
+          (loop (- n 1)))))))
 
 (defcommand (evil-play-last-macro)
   "Replay last macro (@@ in Vim)."
-  (%macro-play current-evil-macro))
+  (let ((count (or evil-count 1)))
+    (set! evil-count #f)
+    (let loop ((n count))
+      (when (> n 0)
+        (%macro-play current-evil-macro)
+        (loop (- n 1))))))
 
 ;; q + a-z → start macro recording
 (do ((i 0 (+ i 1)))
