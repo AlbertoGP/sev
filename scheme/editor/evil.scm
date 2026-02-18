@@ -212,7 +212,8 @@
   (%set-replace-mode! #f)
   (evil-reset-count)
   (set-local! 'mode-name "Normal")
-  (message-clear))
+  (message-clear)
+  (when (%macro-recording?) (enable-minor-mode 'evil-recording-mode)))
 
 (defcommand (evil-insert)
   "Enter insert mode."
@@ -223,6 +224,7 @@
   (disable-minor-mode 'evil-replace-mode)
   (disable-minor-mode 'evil-select-mode)
   (disable-minor-mode 'evil-command-mode)
+  (disable-minor-mode 'evil-recording-mode)
   (enable-minor-mode 'evil-insert-mode)
   (%set-replace-mode! #f)
   (set-local! 'mode-name "Insert")
@@ -237,6 +239,7 @@
   (disable-minor-mode 'evil-insert-mode)
   (disable-minor-mode 'evil-select-mode)
   (disable-minor-mode 'evil-command-mode)
+  (disable-minor-mode 'evil-recording-mode)
   (enable-minor-mode 'evil-replace-mode)
   (%set-replace-mode! #t)
   (set-local! 'mode-name "Replace")
@@ -513,6 +516,8 @@
     ((open-below) (line-end) (newline))
     ((open-above) (line-start) (newline) (prev-line))
     ((substitute) (delete-forward-char))
+    ((paste-after) (forward-char))
+    ((paste-before) #t)
     (else #t)))
 
 (define (evil-insert-text text)
@@ -1687,18 +1692,77 @@
   "Paste register contents after cursor."
   (let ((text (%register-get current-evil-register)))
     (when text
+      (%begin-change)
       (forward-char)
-      (%insert-string text)))
+      (%insert-string text)
+      (%change-set-repeat-info!
+        (make-repeat-info #f 1 #f #f #f #f 'paste-after text))
+      (%end-change)))
   (set! current-evil-register #\"))
 
 (defcommand (evil-paste-before)
   "Paste register contents before cursor."
   (let ((text (%register-get current-evil-register)))
-    (when text (%insert-string text)))
+    (when text
+      (%begin-change)
+      (%insert-string text)
+      (%change-set-repeat-info!
+        (make-repeat-info #f 1 #f #f #f #f 'paste-before text))
+      (%end-change)))
   (set! current-evil-register #\"))
 
 (set-key! normal-map "p" 'evil-paste-after)
 (set-key! normal-map "P" 'evil-paste-before)
+
+;;;
+;;; Vim Macros
+;;;
+
+;; Recording-mode keymap: only intercepts 'q' to stop recording.
+;; No parent — everything else falls through the minor-mode lookup chain.
+(define evil-recording-map (make-keymap))
+(set-key! evil-recording-map "q" 'evil-stop-macro)
+(define-minor-mode 'evil-recording-mode evil-recording-map)
+
+(defcommand (evil-start-macro)
+  "Start recording macro to register."
+  (let ((ch (last-key-char)))
+    (when ch
+      (%macro-start! ch)
+      (enable-minor-mode 'evil-recording-mode)
+      (message (string-append "recording @" (string ch))))))
+
+(defcommand (evil-stop-macro)
+  "Stop macro recording."
+  (%macro-stop!)
+  (disable-minor-mode 'evil-recording-mode)
+  (message ""))
+
+(define current-evil-macro #\a)   ; last-played register for @@
+
+(defcommand (evil-play-macro)
+  "Play macro from register."
+  (let ((ch (last-key-char)))
+    (when ch
+      (set! current-evil-macro ch)
+      (%macro-play ch))))
+
+(defcommand (evil-play-last-macro)
+  "Replay last macro (@@ in Vim)."
+  (%macro-play current-evil-macro))
+
+;; q + a-z → start macro recording
+(do ((i 0 (+ i 1)))
+    ((= i 26))
+  (let ((ch (string (integer->char (+ (char->integer #\a) i)))))
+    (set-key! normal-map (string-append "q " ch) 'evil-start-macro)))
+
+;; @ + a-z → play macro; @@ → replay last
+(do ((i 0 (+ i 1)))
+    ((= i 26))
+  (let ((ch (string (integer->char (+ (char->integer #\a) i)))))
+    (set-key! normal-map (string-append "@ " ch) 'evil-play-macro)))
+(set-key! normal-map "@ @" 'evil-play-last-macro)
 
 ;;; Activate
 (evil-mode)

@@ -61,4 +61,16 @@ typedef struct AppState {
     UIState ui;
     InputState input;
     Register registers[REGISTER_COUNT];
+
+    // Macro recording
+    bool macro_recording;
+    bool macro_skip_next;       // skip recording the key that triggered start-macro
+    int  macro_target_reg;      // 0-25 = a-z
+    KeyEvent *macro_buf;
+    size_t macro_buf_len;
+    size_t macro_buf_cap;
+
+    // Stored macros (a-z only)
+    KeyEvent *macro_store[26];
+    size_t    macro_store_len[26];
 } AppState;

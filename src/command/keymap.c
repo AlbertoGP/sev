@@ -156,20 +156,38 @@ void key_dispatch(AppState *state, const KeyEvent *ev) {
                 si.command_sym = sexp_intern(state->chibi.ctx, "self-insert", -1);
                 execute_command(state, &si);
                 reset_key_state(state);
-                return;
+                goto record_macro;
             }
         }
         reset_key_state(state);
-        return;  // silently ignore
+        goto record_macro;  // silently ignore, but still record
     }
 
     if (b->type == BINDING_KEYMAP) {
         state->input.current_map = b->keymap;
-        return;
+        goto record_macro;  // prefix key: record for macro replay
     }
 
     execute_command(state, b);
     reset_key_state(state);
+
+record_macro:
+    // Record event AFTER dispatch so stop-macro can clear the flag first,
+    // preventing the stop 'q' from being recorded.
+    if (state->macro_recording) {
+        if (state->macro_skip_next) {
+            // Don't record the key that triggered start-macro (e.g. 'a' in 'qa')
+            state->macro_skip_next = false;
+        } else {
+            if (state->macro_buf_len >= state->macro_buf_cap) {
+                size_t cap = state->macro_buf_cap ? state->macro_buf_cap * 2 : 32;
+                KeyEvent *nb = SDL_realloc(state->macro_buf, cap * sizeof(KeyEvent));
+                if (nb) { state->macro_buf = nb; state->macro_buf_cap = cap; }
+            }
+            if (state->macro_buf_len < state->macro_buf_cap)
+                state->macro_buf[state->macro_buf_len++] = *ev;
+        }
+    }
 }
 
 int parse_key_sequence(const char *s, KeyEvent *out) {

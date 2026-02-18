@@ -13,6 +13,7 @@ set(SRC_FILES
     src/clay/init.c
     src/command/keyboard.c
     src/command/keymap.c
+    src/command/macro.c
     src/command/mode.c
     src/command/scheme.c
     src/display/cursor.c

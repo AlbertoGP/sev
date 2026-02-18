@@ -261,6 +261,12 @@ void scheme_init(AppState *state) {
     SDEF("%buffer-substring", 2, scm_buffer_substring);
     SDEF("%insert-string",    1, scm_insert_string);
 
+    // Macro primitives
+    SDEF("%macro-start!",     1, scm_macro_start);
+    SDEF("%macro-stop!",      0, scm_macro_stop);
+    SDEF("%macro-play",       1, scm_macro_play);
+    SDEF("%macro-recording?", 0, scm_macro_is_recording);
+
     // Mark / selection primitives
     SDEF("%mark-set-to-point!", 1, scm_mark_set_to_point);
     SDEF("%select-mode-set!", 1, scm_select_mode_set);
@@ -337,6 +343,7 @@ void scheme_init(AppState *state) {
         "%line-start-position %line-end-position "
         "%register-set! %register-append! %register-get "
         "%buffer-substring %insert-string "
+        "%macro-start! %macro-stop! %macro-play %macro-recording? "
         "global-keymap eval) "
         "%editor-env '()))",
         -1, meta);

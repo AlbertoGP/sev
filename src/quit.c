@@ -19,6 +19,11 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
 
     if (state) {
         register_free_all(state->registers);
+
+        // Free macro state
+        for (int i = 0; i < 26; i++)
+            SDL_free(state->macro_store[i]);
+        SDL_free(state->macro_buf);
         if (state->rendererData.renderer)
             SDL_DestroyRenderer(state->rendererData.renderer);
 
