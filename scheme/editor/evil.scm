@@ -118,6 +118,24 @@
 (set-key! pending-map "d" 'evil-op-delete)
 (set-key! pending-map "c" 'evil-op-change)
 
+;; Register selection state
+(define current-evil-register #\")
+
+(defcommand (evil-use-register)
+  "Select register for next op/paste."
+  (set! current-evil-register (last-key-char)))
+
+;; Bind " + (a-z, A-Z, ") sequences in normal-map and select-map
+(for-each
+  (lambda (ch)
+    (let ((seq (string-append "\"" " " (string ch))))
+      (set-key! normal-map seq 'evil-use-register)
+      (set-key! select-map seq 'evil-use-register)))
+  (append
+    (string->list "abcdefghijklmnopqrstuvwxyz")
+    (string->list "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    (list #\")))
+
 ;; m / ' / ` — bind all 26 letters programmatically
 (do ((i 0 (+ i 1)))
     ((= i 26))
@@ -903,12 +921,32 @@
           (move-point 1))))))
 
 ;;;
+;;; Register helpers
+;;;
+
+(define (evil-register-write! text)
+  (let ((reg current-evil-register))
+    (if (char-upper-case? reg)
+        (begin
+          (%register-append! (char-downcase reg) text)
+          (%register-set! #\" text))
+        (begin
+          (%register-set! reg text)
+          (when (not (char=? reg #\"))
+            (%register-set! #\" text))))
+    (set! current-evil-register #\")))
+
+;;;
 ;;; Operator definitions
 ;;;
 
 (register-operator! 'op-delete
   (lambda (range)
-    (delete-range (range-start range) (range-end range))))
+    (let* ((start (range-start range))
+           (end   (range-end range))
+           (text  (%buffer-substring start end)))
+      (evil-register-write! text)
+      (delete-range start end))))
 
 (register-operator! 'op-change
   (lambda (range)
@@ -920,6 +958,14 @@
                     end)))
       (delete-range start end)
       (evil-insert))))
+
+(register-operator! 'op-yank
+  (lambda (range)
+    (let* ((start (range-start range))
+           (end   (range-end range))
+           (text  (%buffer-substring start end)))
+      (evil-register-write! text)
+      (point-set! start))))
 
 ;;;
 ;;; Text object helpers
@@ -1402,6 +1448,10 @@
   "Delete operator."
   (evil-enter-operator 'op-delete))
 
+(defcommand (evil-op-yank)
+  "Yank operator."
+  (evil-enter-operator 'op-yank))
+
 (defcommand (evil-op-change)
   "Change operator."
   (evil-enter-operator 'op-change))
@@ -1511,8 +1561,12 @@
     (if (= mode 3)
         (evil-rect-apply delete-range)
         (let ((range (evil-visual-range)))
-          (point-set! (range-start range))
-          (delete-range (range-start range) (range-end range)))))
+          (let* ((start (range-start range))
+                 (end   (range-end range))
+                 (text  (%buffer-substring start end)))
+            (evil-register-write! text)
+            (point-set! start)
+            (delete-range start end)))))
   (%end-change)
   (evil-normal))
 
@@ -1536,6 +1590,16 @@
             (delete-range start end)
             (evil-insert))))))
 
+(defcommand (evil-visual-yank)
+  "Yank visual selection."
+  (let ((range (evil-visual-range)))
+    (let* ((start (range-start range))
+           (end   (range-end range))
+           (text  (%buffer-substring start end)))
+      (evil-register-write! text)
+      (point-set! start)
+      (evil-normal))))
+
 ;; Visual mode operator bindings
 (set-key! select-map "d" 'evil-visual-delete)
 (set-key! select-map "x" 'evil-visual-delete)
@@ -1544,6 +1608,7 @@
 (set-key! select-map "D" 'evil-visual-delete)
 (set-key! select-map "C" 'evil-visual-change)
 (set-key! select-map "S" 'evil-visual-change)
+(set-key! select-map "y" 'evil-visual-yank)
 
 ;; Visual mode motion bindings
 (set-key! select-map "w" 'evil-motion-w)
@@ -1610,6 +1675,30 @@
     (set-key! select-map (string-append "i " key) 'evil-in-text-object)
     (set-key! select-map (string-append "a " key) 'evil-around-text-object)))
   '(#\w #\W #\s #\p #\[ #\] #\( #\) #\b #\{ #\} #\B #\< #\> #\t #\" #\' #\`))
+
+;;;
+;;; Yank and paste commands
+;;;
+
+(set-key! normal-map "y"  'evil-op-yank)
+(set-key! pending-map "y" 'evil-op-yank)   ; yy = yank line
+
+(defcommand (evil-paste-after)
+  "Paste register contents after cursor."
+  (let ((text (%register-get current-evil-register)))
+    (when text
+      (forward-char)
+      (%insert-string text)))
+  (set! current-evil-register #\"))
+
+(defcommand (evil-paste-before)
+  "Paste register contents before cursor."
+  (let ((text (%register-get current-evil-register)))
+    (when text (%insert-string text)))
+  (set! current-evil-register #\"))
+
+(set-key! normal-map "p" 'evil-paste-after)
+(set-key! normal-map "P" 'evil-paste-before)
 
 ;;; Activate
 (evil-mode)

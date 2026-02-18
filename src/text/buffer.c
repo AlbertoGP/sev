@@ -935,6 +935,25 @@ sexp scm_line_end_position(sexp ctx, sexp self, sexp n, sexp sline) {
     return sexp_make_fixnum((int)lt->lines[idx].end);
 }
 
+sexp scm_buffer_substring(sexp ctx, sexp self, sexp n, sexp sstart, sexp send) {
+    Buffer *buf = buffer_get_current();
+    int start = sexp_unbox_fixnum(sstart);
+    int end   = sexp_unbox_fixnum(send);
+    int num_chars = (int)get_char_count(buf);
+    if (start < 0) start = 0;
+    if (end > num_chars) end = num_chars;
+    if (start > end) start = end;
+    char *text = buffer_text(buf);
+    return sexp_c_string(ctx, text + start, end - start);
+}
+
+sexp scm_insert_string(sexp ctx, sexp self, sexp n, sexp stext) {
+    G->needs_redraw = true;
+    sexp_assert_type(ctx, sexp_stringp, SEXP_STRING, stext);
+    insert_string(buffer_get_current(), sexp_string_data(stext));
+    return SEXP_VOID;
+}
+
 // --- Change / undo bindings ---
 
 sexp scm_begin_change(sexp ctx, sexp self, sexp n) {

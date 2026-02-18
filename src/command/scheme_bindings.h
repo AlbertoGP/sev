@@ -98,6 +98,15 @@ sexp scm_select_mode_get(sexp ctx, sexp self, sexp n);
 sexp scm_swap_point_and_mark(sexp ctx, sexp self, sexp n);
 sexp scm_point_to_named_mark(sexp ctx, sexp self, sexp n, sexp mark_char);
 
+// --- text/register.c ---
+sexp scm_register_set(sexp ctx, sexp self, sexp n, sexp sname, sexp stext);
+sexp scm_register_append(sexp ctx, sexp self, sexp n, sexp sname, sexp stext);
+sexp scm_register_get(sexp ctx, sexp self, sexp n, sexp sname);
+
+// --- text/buffer.c (substring / insert-string) ---
+sexp scm_buffer_substring(sexp ctx, sexp self, sexp n, sexp sstart, sexp send);
+sexp scm_insert_string(sexp ctx, sexp self, sexp n, sexp stext);
+
 // --- text/buffer.c (line queries) ---
 sexp scm_position_line(sexp ctx, sexp self, sexp n, sexp spos);
 sexp scm_line_start_position(sexp ctx, sexp self, sexp n, sexp sline);

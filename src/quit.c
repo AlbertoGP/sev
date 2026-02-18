@@ -4,6 +4,7 @@
 #include "clay/renderer.h"
 #include "display/tab.h"
 #include "text/buffer.h"
+#include "text/register.h"
 
 /* This function runs once at shutdown. */
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
@@ -17,6 +18,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     AppState *state = appstate;
 
     if (state) {
+        register_free_all(state->registers);
         if (state->rendererData.renderer)
             SDL_DestroyRenderer(state->rendererData.renderer);
 

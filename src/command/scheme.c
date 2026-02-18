@@ -254,6 +254,13 @@ void scheme_init(AppState *state) {
     SDEF("%line-restore", 0, scm_line_restore);
     SDEF("%change-current-inserts", 0, scm_change_current_inserts);
 
+    // Register primitives
+    SDEF("%register-set!",    2, scm_register_set);
+    SDEF("%register-append!", 2, scm_register_append);
+    SDEF("%register-get",     1, scm_register_get);
+    SDEF("%buffer-substring", 2, scm_buffer_substring);
+    SDEF("%insert-string",    1, scm_insert_string);
+
     // Mark / selection primitives
     SDEF("%mark-set-to-point!", 1, scm_mark_set_to_point);
     SDEF("%select-mode-set!", 1, scm_select_mode_set);
@@ -328,6 +335,8 @@ void scheme_init(AppState *state) {
         "exchange-point-and-mark %point-to-mark! %goto-line "
         "%line-count %mark-position %position-line "
         "%line-start-position %line-end-position "
+        "%register-set! %register-append! %register-get "
+        "%buffer-substring %insert-string "
         "global-keymap eval) "
         "%editor-env '()))",
         -1, meta);

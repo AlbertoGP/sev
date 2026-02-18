@@ -5,6 +5,7 @@
 
 #include "clay/renderer.h"
 #include "command/keyevent.h"
+#include "text/register.h"
 #include "text/var.h"
 
 typedef enum FontID {
@@ -59,4 +60,5 @@ typedef struct AppState {
     Chibi chibi;
     UIState ui;
     InputState input;
+    Register registers[REGISTER_COUNT];
 } AppState;
