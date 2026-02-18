@@ -258,8 +258,10 @@ void scheme_init(AppState *state) {
     SDEF("%register-set!",       2, scm_register_set);
     SDEF("%register-append!",    2, scm_register_append);
     SDEF("%register-get",        1, scm_register_get);
-    SDEF("%register-set-shape!", 2, scm_register_set_shape);
-    SDEF("%register-shape",      1, scm_register_get_shape);
+    SDEF("%register-set-shape!",       2, scm_register_set_shape);
+    SDEF("%register-shape",            1, scm_register_get_shape);
+    SDEF("%register-set-block-width!", 2, scm_register_set_block_width);
+    SDEF("%register-block-width",      1, scm_register_get_block_width);
     SDEF("%buffer-substring", 2, scm_buffer_substring);
     SDEF("%insert-string",    1, scm_insert_string);
 
@@ -345,6 +347,7 @@ void scheme_init(AppState *state) {
         "%line-start-position %line-end-position "
         "%register-set! %register-append! %register-get "
         "%register-set-shape! %register-shape "
+        "%register-set-block-width! %register-block-width "
         "%buffer-substring %insert-string "
         "%macro-start! %macro-stop! %macro-play %macro-recording? "
         "global-keymap eval) "

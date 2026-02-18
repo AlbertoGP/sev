@@ -104,6 +104,8 @@ sexp scm_register_append(sexp ctx, sexp self, sexp n, sexp sname, sexp stext);
 sexp scm_register_get(sexp ctx, sexp self, sexp n, sexp sname);
 sexp scm_register_set_shape(sexp ctx, sexp self, sexp n, sexp sname, sexp sshape);
 sexp scm_register_get_shape(sexp ctx, sexp self, sexp n, sexp sname);
+sexp scm_register_set_block_width(sexp ctx, sexp self, sexp n, sexp sname, sexp swidth);
+sexp scm_register_get_block_width(sexp ctx, sexp self, sexp n, sexp sname);
 
 // --- text/buffer.c (substring / insert-string) ---
 sexp scm_buffer_substring(sexp ctx, sexp self, sexp n, sexp sstart, sexp send);

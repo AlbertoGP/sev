@@ -25,6 +25,7 @@ void register_write(Register regs[], char name, const char *data, size_t len) {
         regs[idx].data.len = 0;
     }
     regs[idx].shape = SHAPE_CHARWISE;
+    regs[idx].block_width = 0;
 }
 
 void register_append(Register regs[], char name, const char *data, size_t len) {
@@ -55,6 +56,18 @@ SelectionShape register_get_shape(Register regs[], char name) {
     int idx = reg_index(name);
     if (idx < 0) return SHAPE_CHARWISE;
     return regs[idx].shape;
+}
+
+void register_set_block_width(Register regs[], char name, size_t width) {
+    int idx = reg_index(name);
+    if (idx < 0) return;
+    regs[idx].block_width = width;
+}
+
+size_t register_get_block_width(Register regs[], char name) {
+    int idx = reg_index(name);
+    if (idx < 0) return 0;
+    return regs[idx].block_width;
 }
 
 void register_free_all(Register regs[]) {
@@ -93,6 +106,21 @@ sexp scm_register_get(sexp ctx, sexp self, sexp n, sexp sname) {
     const ByteString *bs = register_read(G->registers, name);
     if (!bs || !bs->data || bs->len == 0) return SEXP_FALSE;
     return sexp_c_string(ctx, bs->data, (sexp_sint_t)bs->len);
+}
+
+sexp scm_register_set_block_width(sexp ctx, sexp self, sexp n, sexp sname, sexp swidth) {
+    sexp_assert_type(ctx, sexp_charp, SEXP_CHAR, sname);
+    char name = (char)sexp_unbox_character(sname);
+    size_t width = (size_t)sexp_unbox_fixnum(swidth);
+    register_set_block_width(G->registers, name, width);
+    return SEXP_VOID;
+}
+
+sexp scm_register_get_block_width(sexp ctx, sexp self, sexp n, sexp sname) {
+    sexp_assert_type(ctx, sexp_charp, SEXP_CHAR, sname);
+    char name = (char)sexp_unbox_character(sname);
+    size_t width = register_get_block_width(G->registers, name);
+    return sexp_make_fixnum((sexp_sint_t)width);
 }
 
 sexp scm_register_set_shape(sexp ctx, sexp self, sexp n, sexp sname, sexp sshape) {
