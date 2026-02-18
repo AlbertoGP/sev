@@ -4,7 +4,7 @@
 
 typedef struct { char *data; size_t len; } ByteString;
 
-typedef enum { SHAPE_CHARWISE } SelectionShape;  // stub for future shapes
+typedef enum { SHAPE_CHARWISE, SHAPE_LINEWISE, SHAPE_BLOCKWISE } SelectionShape;
 
 typedef struct { ByteString data; SelectionShape shape; } Register;
 
@@ -15,3 +15,5 @@ void register_write(Register regs[], char name, const char *data, size_t len);
 void register_append(Register regs[], char name, const char *data, size_t len);
 const ByteString *register_read(Register regs[], char name);
 void register_free_all(Register regs[]);
+void register_set_shape(Register regs[], char name, SelectionShape shape);
+SelectionShape register_get_shape(Register regs[], char name);

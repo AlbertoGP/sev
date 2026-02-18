@@ -102,6 +102,8 @@ sexp scm_point_to_named_mark(sexp ctx, sexp self, sexp n, sexp mark_char);
 sexp scm_register_set(sexp ctx, sexp self, sexp n, sexp sname, sexp stext);
 sexp scm_register_append(sexp ctx, sexp self, sexp n, sexp sname, sexp stext);
 sexp scm_register_get(sexp ctx, sexp self, sexp n, sexp sname);
+sexp scm_register_set_shape(sexp ctx, sexp self, sexp n, sexp sname, sexp sshape);
+sexp scm_register_get_shape(sexp ctx, sexp self, sexp n, sexp sname);
 
 // --- text/buffer.c (substring / insert-string) ---
 sexp scm_buffer_substring(sexp ctx, sexp self, sexp n, sexp sstart, sexp send);

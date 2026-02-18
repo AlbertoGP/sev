@@ -36,13 +36,25 @@ void register_append(Register regs[], char name, const char *data, size_t len) {
     memcpy(new_data + old_len, data, len);
     regs[idx].data.data = new_data;
     regs[idx].data.len = old_len + len;
-    regs[idx].shape = SHAPE_CHARWISE;
+    // preserve existing shape on append
 }
 
 const ByteString *register_read(Register regs[], char name) {
     int idx = reg_index(name);
     if (idx < 0) return NULL;
     return &regs[idx].data;
+}
+
+void register_set_shape(Register regs[], char name, SelectionShape shape) {
+    int idx = reg_index(name);
+    if (idx < 0) return;
+    regs[idx].shape = shape;
+}
+
+SelectionShape register_get_shape(Register regs[], char name) {
+    int idx = reg_index(name);
+    if (idx < 0) return SHAPE_CHARWISE;
+    return regs[idx].shape;
 }
 
 void register_free_all(Register regs[]) {
@@ -81,4 +93,29 @@ sexp scm_register_get(sexp ctx, sexp self, sexp n, sexp sname) {
     const ByteString *bs = register_read(G->registers, name);
     if (!bs || !bs->data || bs->len == 0) return SEXP_FALSE;
     return sexp_c_string(ctx, bs->data, (sexp_sint_t)bs->len);
+}
+
+sexp scm_register_set_shape(sexp ctx, sexp self, sexp n, sexp sname, sexp sshape) {
+    sexp_assert_type(ctx, sexp_charp, SEXP_CHAR, sname);
+    char name = (char)sexp_unbox_character(sname);
+    SelectionShape shape = SHAPE_CHARWISE;
+    if (sexp_symbolp(sshape)) {
+        if (sshape == sexp_intern(ctx, "linewise", -1))
+            shape = SHAPE_LINEWISE;
+        else if (sshape == sexp_intern(ctx, "blockwise", -1))
+            shape = SHAPE_BLOCKWISE;
+    }
+    register_set_shape(G->registers, name, shape);
+    return SEXP_VOID;
+}
+
+sexp scm_register_get_shape(sexp ctx, sexp self, sexp n, sexp sname) {
+    sexp_assert_type(ctx, sexp_charp, SEXP_CHAR, sname);
+    char name = (char)sexp_unbox_character(sname);
+    SelectionShape shape = register_get_shape(G->registers, name);
+    switch (shape) {
+        case SHAPE_LINEWISE:  return sexp_intern(ctx, "linewise",  -1);
+        case SHAPE_BLOCKWISE: return sexp_intern(ctx, "blockwise", -1);
+        default:              return sexp_intern(ctx, "charwise",  -1);
+    }
 }

@@ -518,6 +518,8 @@
     ((substitute) (delete-forward-char))
     ((paste-after) (forward-char))
     ((paste-before) #t)
+    ((paste-after-linewise) (line-end) (%insert-string "\n"))
+    ((paste-before-linewise) (line-start))
     (else #t)))
 
 (define (evil-insert-text text)
@@ -929,17 +931,28 @@
 ;;; Register helpers
 ;;;
 
-(define (evil-register-write! text)
-  (let ((reg current-evil-register))
-    (if (char-upper-case? reg)
-        (begin
-          (%register-append! (char-downcase reg) text)
-          (%register-set! #\" text))
-        (begin
-          (%register-set! reg text)
-          (when (not (char=? reg #\"))
-            (%register-set! #\" text))))
-    (set! current-evil-register #\")))
+(define (strip-trailing-newline text)
+  (let ((len (string-length text)))
+    (if (and (> len 0) (char=? (string-ref text (- len 1)) #\newline))
+        (substring text 0 (- len 1))
+        text)))
+
+(define (evil-register-write! text . rest)
+  (let ((shape (if (pair? rest) (car rest) 'charwise)))
+    (let ((reg current-evil-register))
+      (if (char-upper-case? reg)
+          (let ((lc (char-downcase reg)))
+            (%register-append! lc text)
+            (%register-set-shape! lc shape)
+            (%register-set! #\" text)
+            (%register-set-shape! #\" shape))
+          (begin
+            (%register-set! reg text)
+            (%register-set-shape! reg shape)
+            (when (not (char=? reg #\"))
+              (%register-set! #\" text)
+              (%register-set-shape! #\" shape))))
+      (set! current-evil-register #\"))))
 
 ;;;
 ;;; Operator definitions
@@ -1565,11 +1578,12 @@
   (let ((mode (%select-mode-get)))
     (if (= mode 3)
         (evil-rect-apply delete-range)
-        (let ((range (evil-visual-range)))
+        (let* ((shape (if (= mode 2) 'linewise 'charwise))
+               (range (evil-visual-range)))
           (let* ((start (range-start range))
                  (end   (range-end range))
                  (text  (%buffer-substring start end)))
-            (evil-register-write! text)
+            (evil-register-write! text shape)
             (point-set! start)
             (delete-range start end)))))
   (%end-change)
@@ -1597,13 +1611,21 @@
 
 (defcommand (evil-visual-yank)
   "Yank visual selection."
-  (let ((range (evil-visual-range)))
-    (let* ((start (range-start range))
-           (end   (range-end range))
-           (text  (%buffer-substring start end)))
-      (evil-register-write! text)
-      (point-set! start)
-      (evil-normal))))
+  (let* ((mode (%select-mode-get))
+         (shape (case mode ((2) 'linewise) ((3) 'blockwise) (else 'charwise)))
+         (anchor (%mark-position #\<))
+         (point  (point-get))
+         (sel-min (min anchor point)))
+    (if (= mode 3)
+        ;; block mode: use bounding char range, mark as blockwise
+        (let ((text (%buffer-substring sel-min (+ (max anchor point) 1))))
+          (evil-register-write! text 'blockwise))
+        (let ((range (evil-visual-range)))
+          (evil-register-write!
+            (%buffer-substring (range-start range) (range-end range))
+            shape)))
+    (point-set! sel-min)
+    (evil-normal)))
 
 ;; Visual mode operator bindings
 (set-key! select-map "d" 'evil-visual-delete)
@@ -1692,23 +1714,49 @@
   "Paste register contents after cursor."
   (let ((text (%register-get current-evil-register)))
     (when text
-      (%begin-change)
-      (forward-char)
-      (%insert-string text)
-      (%change-set-repeat-info!
-        (make-repeat-info #f 1 #f #f #f #f 'paste-after text))
-      (%end-change)))
+      (let ((shape (%register-shape current-evil-register)))
+        (if (eq? shape 'linewise)
+            (let ((stripped (strip-trailing-newline text)))
+              (%begin-change)
+              (line-end)
+              (%insert-string "\n")
+              (let ((paste-start (point-get)))
+                (%insert-string stripped)
+                (point-set! paste-start))
+              (%change-set-repeat-info!
+                (make-repeat-info #f 1 #f #f #f #f 'paste-after-linewise stripped))
+              (%end-change))
+            (begin
+              (%begin-change)
+              (forward-char)
+              (%insert-string text)
+              (%change-set-repeat-info!
+                (make-repeat-info #f 1 #f #f #f #f 'paste-after text))
+              (%end-change))))))
   (set! current-evil-register #\"))
 
 (defcommand (evil-paste-before)
   "Paste register contents before cursor."
   (let ((text (%register-get current-evil-register)))
     (when text
-      (%begin-change)
-      (%insert-string text)
-      (%change-set-repeat-info!
-        (make-repeat-info #f 1 #f #f #f #f 'paste-before text))
-      (%end-change)))
+      (let ((shape (%register-shape current-evil-register)))
+        (if (eq? shape 'linewise)
+            (let ((stripped (strip-trailing-newline text)))
+              (%begin-change)
+              (line-start)
+              (let ((paste-start (point-get)))
+                (%insert-string stripped)
+                (%insert-string "\n")
+                (point-set! paste-start))
+              (%change-set-repeat-info!
+                (make-repeat-info #f 1 #f #f #f #f 'paste-before-linewise text))
+              (%end-change))
+            (begin
+              (%begin-change)
+              (%insert-string text)
+              (%change-set-repeat-info!
+                (make-repeat-info #f 1 #f #f #f #f 'paste-before text))
+              (%end-change))))))
   (set! current-evil-register #\"))
 
 (set-key! normal-map "p" 'evil-paste-after)

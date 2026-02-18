@@ -159,6 +159,9 @@ sexp scm_macro_play(sexp ctx, sexp self, sexp n, sexp sname) {
     const ByteString *bs = register_read(G->registers, ch);
     if (!bs || !bs->data || bs->len == 0) return SEXP_VOID;
 
+    // Block-yanked registers are not playable as macros
+    if (register_get_shape(G->registers, ch) == SHAPE_BLOCKWISE) return SEXP_VOID;
+
     // Deserialize byte string → KeyEvent[]
     const uint8_t *bytes = (const uint8_t *)bs->data;
     size_t len = bs->len;
