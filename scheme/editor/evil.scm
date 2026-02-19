@@ -218,8 +218,10 @@
   (%select-mode-set! 0)
   (%set-replace-mode! #f)
   (evil-reset-count)
-  (set-local! 'mode-name "Normal")
-  (message-clear)
+  (set-local! 'mode-name "Normal") 
+  (unless (%macro-recording?)
+    (message-unlock)
+    (message-clear))
   (when (%macro-recording?)
     (disable-minor-mode 'evil-recording-mode)
     (enable-minor-mode 'evil-recording-mode)))
@@ -237,7 +239,8 @@
   (enable-minor-mode 'evil-insert-mode)
   (%set-replace-mode! #f)
   (set-local! 'mode-name "Insert")
-  (message "-- INSERT --"))
+  (message "-- INSERT --")
+  (message-lock))
 
 (defcommand (evil-replace)
   "Enter replace mode."
@@ -252,7 +255,8 @@
   (enable-minor-mode 'evil-replace-mode)
   (%set-replace-mode! #t)
   (set-local! 'mode-name "Replace")
-  (message "-- REPLACE --"))
+  (message "-- REPLACE --")
+  (message-lock))
 
 (define (enter-visual-submode mode-int name msg)
   (set! evil-last-visual-text-object #f)
@@ -266,7 +270,8 @@
   (enable-minor-mode 'evil-select-mode)
   (%select-mode-set! mode-int)
   (set-local! 'mode-name name)
-  (message msg))
+  (message msg)
+  (message-lock))
 
 (defcommand (evil-select)
   "Enter select mode."
@@ -1938,13 +1943,15 @@
     (when ch
       (%macro-start! ch)
       (enable-minor-mode 'evil-recording-mode)
-      (message (string-append "recording @" (string ch))))))
+      (message (string-append "recording @" (string ch)))
+      (message-lock))))
 
 (defcommand (evil-stop-macro)
   "Stop macro recording."
   (%macro-stop!)
   (disable-minor-mode 'evil-recording-mode)
-  (message ""))
+  (message-unlock)
+  (message-clear))
 
 (define current-evil-macro #\a)   ; last-played register for @@
 

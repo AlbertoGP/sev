@@ -182,6 +182,8 @@ void scheme_init(AppState *state) {
     SDEF("quit", 0, scm_quit);
     SDEF("message", 1, scm_message_send);
     SDEF("message-clear", 0, scm_message_clear);
+    SDEF("message-lock", 0, scm_message_lock);
+    SDEF("message-unlock", 0, scm_message_unlock);
     SDEF("make-keymap", 0, scm_make_keymap);
     SDEF("%set-key!", 3, scm_set_key);
     SDEF("insert-char", 1, scm_insert_char);
@@ -330,8 +332,8 @@ void scheme_init(AppState *state) {
     result = sexp_eval_string(ctx,
         "(add-module! '(editor primitives) "
         "(make-module "
-        "'(quit message message-clear make-keymap %set-key! "
-        "insert-char self-insert delete-char "
+        "'(quit message message-clear message-lock message-unlock "
+        "make-keymap %set-key! insert-char self-insert delete-char "
         "move-point move-point-by-line next-line prev-line "
         "forward-char backward-char newline insert-tab "
         "delete-backward-char delete-forward-char set-column "

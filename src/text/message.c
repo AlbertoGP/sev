@@ -16,13 +16,17 @@ Clay_String message_string = {
     .isStaticallyAllocated = true
 };
 
+static bool locked = false;
+
 void message_clear(void) {
+    if (locked) return;
     for (int i = 0; i < MAX_MESSAGE_LENGTH; i++)
         message_buf[i] = 0;
     message_string.length = 0;
 }
 
 void message_send(const char* message) {
+    if (locked) return;
     message_clear();
     strncat(message_buf, message, MAX_MESSAGE_LENGTH - 1);
     message_string.length = strlen(message_buf);
@@ -45,5 +49,17 @@ sexp scm_message_clear(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
 
     message_clear();
+    return SEXP_VOID;
+}
+
+sexp scm_message_lock(sexp ctx, sexp self, sexp n) {
+    locked = true;
+
+    return SEXP_VOID;
+}
+
+sexp scm_message_unlock(sexp ctx, sexp self, sexp n) {
+    locked = false;
+
     return SEXP_VOID;
 }
