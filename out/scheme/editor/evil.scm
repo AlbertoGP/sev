@@ -253,6 +253,8 @@
   (message "-- REPLACE --"))
 
 (define (enter-visual-submode mode-int name msg)
+  (set! evil-last-visual-text-object #f)
+  (set! evil-last-visual-text-object-kind #f)
   (unless (%buffer-has-minor-mode? 'evil-select-mode)
     (%mark-set-to-point! #\<))
   (disable-minor-mode 'evil-normal-mode)
@@ -336,6 +338,10 @@
 ;; Pending repeat-info (set during operator exec, consumed on insert exit)
 (define evil-pending-repeat-info #f)
 
+;; Visual text-object tracking (for dot repeat of visual operations)
+(define evil-last-visual-text-object #f)
+(define evil-last-visual-text-object-kind #f)
+
 ;; Motion registry
 (define *motion-table* (make-hash-table eq?))
 
@@ -387,7 +393,8 @@
   (set! evil-pending-op #f)
   (disable-minor-mode 'evil-pending-mode)
   (enable-minor-mode 'evil-normal-mode)
-  (set-local! 'mode-name "Normal"))
+  (set-local! 'mode-name "Normal")
+  (when (%macro-recording?) (enable-minor-mode 'evil-recording-mode)))
 
 ;; Word character classification
 (define (evil-word-char? c)
@@ -490,6 +497,8 @@
                       (%end-change))))
               ;; Visual mode: set selection
               (when (%buffer-has-minor-mode? 'evil-select-mode)
+                (set! evil-last-visual-text-object sym)
+                (set! evil-last-visual-text-object-kind kind)
                 (point-set! (range-start range))
                 (%mark-set-to-point! #\<)
                 (point-set! (- (range-end range) 1))
@@ -1664,12 +1673,20 @@
             (evil-register-write! text shape)
             (point-set! start)
             (delete-range start end)))))
+  (%change-set-repeat-info!
+    (make-repeat-info 'op-delete 1 #f #f
+                      evil-last-visual-text-object
+                      evil-last-visual-text-object-kind #f #f))
   (%end-change)
   (evil-normal))
 
 (defcommand (evil-visual-change)
   "Change the visual selection."
   (%begin-change)
+  (set! evil-pending-repeat-info
+    (make-repeat-info 'op-change 1 #f #f
+                      evil-last-visual-text-object
+                      evil-last-visual-text-object-kind #f #f))
   (let ((mode (%select-mode-get)))
     (if (= mode 3)
         ;; rectangle: delete rect, enter insert at upper-left
