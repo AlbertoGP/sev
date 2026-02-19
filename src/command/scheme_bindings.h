@@ -2,18 +2,22 @@
 
 #include <chibi/sexp.h>
 
-// --- text/buffer.c ---
+// --- text/buffer_edit.c ---
 sexp scm_insert_char(sexp ctx, sexp self, sexp n, sexp ch);
 sexp scm_self_insert(sexp ctx, sexp self, sexp n);
 sexp scm_delete_char(sexp ctx, sexp self, sexp n, sexp count);
 sexp scm_delete_backward_char(sexp ctx, sexp self, sexp n);
 sexp scm_delete_forward_char(sexp ctx, sexp self, sexp n);
+sexp scm_newline(sexp ctx, sexp self, sexp n);
+sexp scm_insert_tab(sexp ctx, sexp self, sexp n);
+sexp scm_delete_range(sexp ctx, sexp self, sexp n, sexp sstart, sexp send);
+sexp scm_set_replace_mode(sexp ctx, sexp self, sexp n, sexp val);
+
+// --- text/point.c ---
 sexp scm_point_move(sexp ctx, sexp self, sexp n, sexp count);
 sexp scm_point_move_by_line(sexp ctx, sexp self, sexp n, sexp count);
 sexp scm_next_line(sexp ctx, sexp self, sexp n);
 sexp scm_prev_line(sexp ctx, sexp self, sexp n);
-sexp scm_newline(sexp ctx, sexp self, sexp n);
-sexp scm_insert_tab(sexp ctx, sexp self, sexp n);
 sexp scm_point_to_line_start(sexp ctx, sexp self, sexp n);
 sexp scm_point_to_line_end(sexp ctx, sexp self, sexp n);
 sexp scm_forward_char(sexp ctx, sexp self, sexp n);
@@ -24,10 +28,8 @@ sexp scm_char_at_point(sexp ctx, sexp self, sexp n);
 sexp scm_point_get(sexp ctx, sexp self, sexp n);
 sexp scm_point_set_to(sexp ctx, sexp self, sexp n, sexp pos);
 sexp scm_buffer_length(sexp ctx, sexp self, sexp n);
-sexp scm_delete_range(sexp ctx, sexp self, sexp n, sexp sstart, sexp send);
 sexp scm_char_at(sexp ctx, sexp self, sexp n, sexp pos);
 sexp scm_last_key_char(sexp ctx, sexp self, sexp n);
-sexp scm_set_replace_mode(sexp ctx, sexp self, sexp n, sexp val);
 sexp scm_goto_line(sexp ctx, sexp self, sexp n, sexp line_num);
 sexp scm_line_count(sexp ctx, sexp self, sexp n);
 
@@ -107,16 +109,16 @@ sexp scm_register_get_shape(sexp ctx, sexp self, sexp n, sexp sname);
 sexp scm_register_set_block_width(sexp ctx, sexp self, sexp n, sexp sname, sexp swidth);
 sexp scm_register_get_block_width(sexp ctx, sexp self, sexp n, sexp sname);
 
-// --- text/buffer.c (substring / insert-string) ---
+// --- text/buffer_edit.c (substring / insert-string) ---
 sexp scm_buffer_substring(sexp ctx, sexp self, sexp n, sexp sstart, sexp send);
 sexp scm_insert_string(sexp ctx, sexp self, sexp n, sexp stext);
 
-// --- text/buffer.c (line queries) ---
+// --- text/point.c (line queries) ---
 sexp scm_position_line(sexp ctx, sexp self, sexp n, sexp spos);
 sexp scm_line_start_position(sexp ctx, sexp self, sexp n, sexp sline);
 sexp scm_line_end_position(sexp ctx, sexp self, sexp n, sexp sline);
 
-// --- text/buffer.c (change/undo) ---
+// --- text/buffer_edit.c (change/undo) ---
 sexp scm_begin_change(sexp ctx, sexp self, sexp n);
 sexp scm_end_change(sexp ctx, sexp self, sexp n);
 sexp scm_undo(sexp ctx, sexp self, sexp n);

@@ -29,11 +29,15 @@ set(SRC_FILES
     src/display/theme.c
     src/display/vline.c
     src/text/buffer.c
+    src/text/buffer_edit.c
     src/text/change.c
-    src/text/register.c
     src/text/gap.c
     src/text/line.c
     src/text/mark.c
+    src/text/mode.c
+    src/text/point.c
+    src/text/register.c
+    src/text/search.c
     src/text/var.c
 )
 
