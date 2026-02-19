@@ -9,6 +9,7 @@ Input handling and command execution. Converts SDL key events into `KeyEvent` st
 - **keyevent.h** — `KeyEvent` type: `KEYEVENT_CHAR` (unicode codepoint) or `KEYEVENT_SPECIAL` (arrows, F-keys, etc.), plus modifier flags (`MOD_CTRL`, `MOD_META`, `MOD_SHIFT`, `MOD_SUPER`).
 - **keyboard.c / keyboard.h** — SDL-to-KeyEvent translation. `handle_text_input()` decodes UTF-8 into char events; `handle_key_down()` normalizes SDL modifiers and maps special keys. Both call `key_dispatch()`. Called from `SDL_AppEvent()` in `event.c`.
 - **keymap.c / keymap.h** — Keymap data structure and dispatch engine. A `Keymap` is a dynamic array of `(KeyEvent → Binding)` entries with a parent pointer for single-inheritance. A `Binding` is either a Scheme symbol (`BINDING_COMMAND`) or a nested keymap (`BINDING_KEYMAP`, for prefix keys). `key_dispatch()` is the main entry point. Also provides `parse_key_sequence()` for Emacs-style key notation (`"C-x"`, `"M-f"`, `"SPC"`).
+- **message.c / message.h** — Echo area. Static 2048-byte buffer shared with the UI renderer via `Clay_String`, and bool lock controlling when message can be updated.
 - **mode.c / mode.h** — Mode registry. Modes have a name, type (major/minor), keymap, and `allows_input` flag. Two global registries (linked lists) for major and minor modes. Modes are created and registered globally, then enabled per-buffer. Buffer-level mode list management lives in `src/text/buffer.c`.
 - **scheme.c / scheme.h** — Scheme interpreter init. `scheme_init()` creates the Chibi Scheme context, registers ~60 foreign C functions as the `(editor primitives)` synthetic module, adds `scheme/` to the module search path, interns theme role symbols, and loads `init.scm`. The `(import ...)` forms in `init.scm` trigger Chibi's module system to load `editor/*.sld` libraries automatically. Caches `call-interactively` after load. The `scm_*` binding implementations live in their respective subsystem files, not here.
 - **scheme_bindings.h** — Forward declarations of all `scm_*` binding functions across subsystems.
@@ -50,6 +51,7 @@ SDL_AppEvent (event.c)
 ## Common Modification Workflows
 
 ### Adding a new C command exposed to Scheme
+
 1. Write `scm_*` function in the appropriate subsystem file (e.g., `src/text/buffer.c`)
 2. Add forward declaration in `scheme_bindings.h`
 3. Register in `scheme_init()` via `SDEF("scheme-name", arity, scm_function)`
@@ -57,13 +59,16 @@ SDL_AppEvent (event.c)
 5. Bind to key with `(set-key! keymap "key" 'name)`
 
 ### Adding a new special key
+
 1. Add variant to `KeySpecial` in `keyevent.h`
 2. Map SDL keycode in `sdl_to_keyspecial()` in `keyboard.c`
 3. Add string name in `parse_key_sequence()` in `keymap.c`
 
 ### Adding a new mode
+
 - Usually from Scheme: `(define-minor-mode 'name keymap)` in `scheme/mode.scm`
 - From C: `mode_create()` → `mode_register()`
 
 ### Changing keymap lookup priority
+
 - Edit `keymap_lookup_chain()` in `keymap.c`

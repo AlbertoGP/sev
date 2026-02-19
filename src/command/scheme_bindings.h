@@ -127,14 +127,14 @@ sexp scm_change_last_repeat_info(sexp ctx, sexp self, sexp n);
 sexp scm_line_restore(sexp ctx, sexp self, sexp n);
 sexp scm_change_current_inserts(sexp ctx, sexp self, sexp n);
 
-// --- text/message.c ---
-sexp scm_message_send(sexp ctx, sexp self, sexp n, sexp message);
-sexp scm_message_clear(sexp ctx, sexp self, sexp n);
-sexp scm_message_lock(sexp ctx, sexp self, sexp n);
-sexp scm_message_unlock(sexp ctx, sexp self, sexp n);
-
 // --- command/macro.c ---
 sexp scm_macro_start(sexp ctx, sexp self, sexp n, sexp sname);
 sexp scm_macro_stop(sexp ctx, sexp self, sexp n);
 sexp scm_macro_play(sexp ctx, sexp self, sexp n, sexp sname);
 sexp scm_macro_is_recording(sexp ctx, sexp self, sexp n);
+
+// --- command/message.c ---
+sexp scm_message_send(sexp ctx, sexp self, sexp n, sexp message);
+sexp scm_message_clear(sexp ctx, sexp self, sexp n);
+sexp scm_message_lock(sexp ctx, sexp self, sexp n);
+sexp scm_message_unlock(sexp ctx, sexp self, sexp n);

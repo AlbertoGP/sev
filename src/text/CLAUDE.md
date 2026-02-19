@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Text model layer. Owns all mutable text state: gap buffer storage, logical line tracking, cursor (point), marks/selections, buffer lifecycle, buffer-local variables, and the echo area. Display reads this state but never mutates it. All text mutation goes through `buffer.c`'s public API.
+Text model layer. Owns all mutable text state: gap buffer storage, logical line tracking, cursor (point), marks/selections, buffer lifecycle and buffer-local variables. Display reads this state but never mutates it. All text mutation goes through `buffer.c`'s public API.
 
 ## Files
 
@@ -12,7 +12,6 @@ Text model layer. Owns all mutable text state: gap buffer storage, logical line 
 - **location.h** — `Location` type (`{ size_t pos }`). `Mark` is a typedef alias.
 - **buffer.c / buffer.h / buffer_type.h** — Central module. `Buffer` struct aggregates gap buffer, line table, point, marks, selection, modes, local keymap, local variables, and scale. `BufferList` is a global doubly-linked list with a `current` pointer. All text operations (insert, delete, point movement) live here and keep gap buffer + line table + metadata in sync. Also holds per-buffer mode lists and the local keymap. `buffer_type.h` has the struct definition; `buffer.h` has the public API.
 - **var.c / var.h** — Buffer-local Scheme variables. Singly-linked list of `(sexp key, sexp value)` pairs. O(n) lookup. Used for settings like `display-line-numbers-type`.
-- **message.c / message.h** — Echo area. Static 2048-byte buffer shared with the UI renderer via `Clay_String`.
 
 ## Key Invariants
 
@@ -28,11 +27,12 @@ Text model layer. Owns all mutable text state: gap buffer storage, logical line 
 - **Display reads, never writes**: line table, text content, point, marks, select mode
 - **Commands mutate via buffer.c API**: insert, delete, point movement, mode changes
 - **No direct gap buffer access** outside `buffer.c`
-- **Scheme bindings** (`scm_*` functions) live at the bottom of `buffer.c`, `mark.c`, `var.c`, `message.c`
+- **Scheme bindings** (`scm_*` functions) live at the bottom of `buffer.c`, `mark.c`, `var.c`
 
 ## Common Modification Workflows
 
 ### Adding a new text operation
+
 1. Implement in `buffer.c` using `gb_*` functions on `buf->contents`
 2. Call `line_insert_char()` or `line_delete_char()` to keep line table in sync
 3. Update `buf->num_chars`, `buf->num_lines` if they change
@@ -40,15 +40,18 @@ Text model layer. Owns all mutable text state: gap buffer storage, logical line 
 5. Add Scheme binding (`scm_*` function) and register in `src/command/scheme.c`
 
 ### Adding a new mark type
+
 1. Add field to `Buffer` struct in `buffer_type.h`
 2. Handle the new mark character in `mark_get()` switch in `mark.c`
 3. Initialize in `buffer_create()`
 
 ### Adding a new buffer-local variable
+
 - No C changes needed — use `(set-local! 'name value)` from Scheme
 - To read from C: `vartable_get(buffer_get_locals(buf), interned_symbol, default)`
 
 ### Adding a new query exposed to Scheme
+
 1. Write `scm_*` function in `buffer.c` that reads buffer state
 2. Register in `src/command/scheme.c` via `SDEF()`
 3. Optionally wrap in `scheme/built-in.scm` with `defcommand`

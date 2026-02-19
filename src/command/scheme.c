@@ -2,10 +2,10 @@
 #include <chibi/eval.h>
 #include <chibi/sexp.h>
 
+#include "message.h"
 #include "scheme.h"
 #include "scheme_bindings.h"
 #include "../text/buffer.h"
-#include "../text/message.h"
 #include "../text/var.h"
 #include "../display/pane.h"
 

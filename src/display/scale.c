@@ -1,7 +1,7 @@
 #include "scale.h"
+#include "../command/message.h"
 #include "../command/scheme_internal.h"
 #include "../text/buffer.h"
-#include "../text/message.h"
 
 // --- Scheme bindings ---
 

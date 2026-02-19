@@ -13,8 +13,8 @@
 #include "change.h"
 #include "gap.h"
 #include "mark.h"
-#include "message.h"
 #include "var.h"
+#include "../command/message.h"
 #include "../command/scheme_internal.h"
 #include "../display/scale.h"
 

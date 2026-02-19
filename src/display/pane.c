@@ -6,10 +6,10 @@
 #include "status.h"
 #include "tab.h"
 #include "theme.h"
+#include "../command/message.h"
 #include "../command/scheme_internal.h"
 #include "../text/buffer_type.h"
 #include "../text/line.h"
-#include "../text/message.h"
 
 // Recursively free resources allocated for a pane sub-tree.
 void pane_destroy(Pane *pane) {

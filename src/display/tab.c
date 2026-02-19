@@ -5,8 +5,8 @@
 #include "pane.h"
 #include "tab.h"
 #include "theme.h"
+#include "../command/message.h"
 #include "../command/scheme_internal.h"
-#include "../text/message.h"
 
 static TabList tl;
 static SDL_Window *window;

@@ -14,6 +14,7 @@ set(SRC_FILES
     src/command/keyboard.c
     src/command/keymap.c
     src/command/macro.c
+    src/command/message.c
     src/command/mode.c
     src/command/scheme.c
     src/display/cursor.c
@@ -33,7 +34,6 @@ set(SRC_FILES
     src/text/gap.c
     src/text/line.c
     src/text/mark.c
-    src/text/message.c
     src/text/var.c
 )
 
