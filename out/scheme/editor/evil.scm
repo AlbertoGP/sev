@@ -220,7 +220,9 @@
   (evil-reset-count)
   (set-local! 'mode-name "Normal")
   (message-clear)
-  (when (%macro-recording?) (enable-minor-mode 'evil-recording-mode)))
+  (when (%macro-recording?)
+    (disable-minor-mode 'evil-recording-mode)
+    (enable-minor-mode 'evil-recording-mode)))
 
 (defcommand (evil-insert)
   "Enter insert mode."
@@ -394,7 +396,9 @@
   (disable-minor-mode 'evil-pending-mode)
   (enable-minor-mode 'evil-normal-mode)
   (set-local! 'mode-name "Normal")
-  (when (%macro-recording?) (enable-minor-mode 'evil-recording-mode)))
+  (when (%macro-recording?)
+    (disable-minor-mode 'evil-recording-mode)
+    (enable-minor-mode 'evil-recording-mode)))
 
 ;; Word character classification
 (define (evil-word-char? c)
