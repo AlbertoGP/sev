@@ -120,10 +120,8 @@ static void reset_key_state(AppState *state) {
     state->input.current_map = state->input.global_map;
 }
 
-void key_dispatch(AppState *state, const KeyEvent *ev) {
+static void key_dispatch_inner(AppState *state, const KeyEvent *ev) {
     assert(state->input.current_map);
-
-    last_event = *ev;
 
     Binding *b;
 
@@ -188,6 +186,22 @@ record_macro:
                 state->macro_buf[state->macro_buf_len++] = *ev;
         }
     }
+}
+
+void key_dispatch(AppState *state, const KeyEvent *ev) {
+    last_event = *ev;
+
+    if (state->minibuf.active) {
+        Buffer *saved = buffer_get_current();
+        buffer_set_current(state->minibuf.buf);
+        reset_key_state(state);       // clear any editor prefix state
+        key_dispatch_inner(state, ev);
+        if (state->minibuf.active)    // submit/cancel already restored if false
+            buffer_set_current(saved);
+        return;
+    }
+
+    key_dispatch_inner(state, ev);
 }
 
 int parse_key_sequence(const char *s, KeyEvent *out) {

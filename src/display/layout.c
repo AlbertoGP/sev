@@ -27,7 +27,10 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
         }) {
             TabContent(state);
         }
-        MessageArea(state);
+        if (state->minibuf.active)
+            MinibufArea(state);
+        else
+            MessageArea(state);
     }
 
     return Clay_EndLayout();

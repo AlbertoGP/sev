@@ -15,6 +15,7 @@ set(SRC_FILES
     src/command/keymap.c
     src/command/macro.c
     src/command/message.c
+    src/command/minibuf.c
     src/command/mode.c
     src/command/scheme.c
     src/display/cursor.c

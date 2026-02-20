@@ -3,6 +3,7 @@
 #include <chibi/sexp.h>
 
 #include "message.h"
+#include "minibuf.h"
 #include "scheme.h"
 #include "scheme_bindings.h"
 #include "../text/buffer.h"
@@ -290,6 +291,12 @@ void scheme_init(AppState *state) {
     SDEF("%macro-play",       1, scm_macro_play);
     SDEF("%macro-recording?", 0, scm_macro_is_recording);
 
+    // Minibuffer primitives
+    SDEF("%minibuffer-activate", 2, scm_minibuffer_activate);
+    SDEF("%minibuffer-submit",   0, scm_minibuffer_submit);
+    SDEF("%minibuffer-cancel",   0, scm_minibuffer_cancel);
+    SDEF("%minibuffer-active?",  0, scm_minibuffer_activep);
+
     // Mark / selection primitives
     SDEF("%mark-set-to-point!", 1, scm_mark_set_to_point);
     SDEF("%select-mode-set!", 1, scm_select_mode_set);
@@ -370,6 +377,8 @@ void scheme_init(AppState *state) {
         "%register-set-block-width! %register-block-width "
         "%buffer-substring %insert-string "
         "%macro-start! %macro-stop! %macro-play %macro-recording? "
+        "%minibuffer-activate %minibuffer-submit "
+        "%minibuffer-cancel %minibuffer-active? "
         "global-keymap eval) "
         "%editor-env '()))",
         -1, meta);

@@ -48,6 +48,16 @@ typedef struct UIState {
     float scale_factor;       // global scaling factor
 } UIState;
 
+#define MINIBUF_PROMPT_MAX 256
+typedef struct {
+    struct Buffer *buf;
+    bool active;
+    char prompt[MINIBUF_PROMPT_MAX];
+    sexp on_submit;   // Scheme (lambda (text) ...), GC-preserved; SEXP_FALSE if none
+    sexp on_cancel;   // Scheme (lambda () ...), GC-preserved; SEXP_FALSE if none
+    struct Buffer *prev_buf;
+} Minibuf;
+
 typedef struct AppState {
     SDL_Window *window;
     Clay_SDL3RendererData rendererData;
@@ -61,6 +71,8 @@ typedef struct AppState {
     UIState ui;
     InputState input;
     Register registers[REGISTER_COUNT];
+
+    Minibuf minibuf;
 
     // Macro recording
     bool macro_recording;

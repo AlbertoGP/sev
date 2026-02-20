@@ -1,4 +1,5 @@
 #include <SDL3/SDL.h>
+#include <chibi/eval.h>
 
 #include "state.h"
 #include "clay/renderer.h"
@@ -18,6 +19,13 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     AppState *state = appstate;
 
     if (state) {
+        if (state->minibuf.buf) {
+            if (state->minibuf.on_submit != SEXP_FALSE)
+                sexp_release_object(state->chibi.ctx, state->minibuf.on_submit);
+            if (state->minibuf.on_cancel != SEXP_FALSE)
+                sexp_release_object(state->chibi.ctx, state->minibuf.on_cancel);
+        }
+
         register_free_all(state->registers);
         SDL_free(state->macro_buf);
         if (state->rendererData.renderer)

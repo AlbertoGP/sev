@@ -1,0 +1,5 @@
+(define-library (editor minibuffer)
+  (import (except (scheme base) newline)
+          (editor primitives) (editor command) (editor mode))
+  (export minibuffer-read minibuffer-submit minibuffer-cancel)
+  (include "minibuffer.scm"))

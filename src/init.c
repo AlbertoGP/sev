@@ -9,6 +9,7 @@
 #include "state.h"
 #include "clay/init.h"
 #include "command/keymap.h"
+#include "command/minibuf.h"
 #include "command/scheme.h"
 #include "display/icon.h"
 #include "display/tab.h"
@@ -112,6 +113,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     if (!buffer_list_init()) {
         fprintf(stderr, "Failed to initialise buffer list.");
+        return SDL_APP_FAILURE;
+    }
+
+    if (!minibuf_init(state)) {
+        fprintf(stderr, "Failed to initialise minibuffer.");
         return SDL_APP_FAILURE;
     }
 

@@ -1,7 +1,8 @@
 ;;; init.scm - Editor initialization and keybindings
 
 (import (editor command) (editor mode) (editor icon)
-        (editor built-in) (editor evil) (editor theme))
+        (editor built-in) (editor evil) (editor theme)
+        (editor minibuffer))
 
 ;; System/UI bindings in global-keymap (inherited by all mode keymaps via parent)
 (set-key! global-keymap "ESC" 'evil-normal)
