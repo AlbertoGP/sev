@@ -8,6 +8,7 @@
 #include "buffer_type.h"
 #include "gap.h"
 #include "line.h"
+#include "utf8.h"
 #include "../command/message.h"
 #include "../command/scheme_internal.h"
 
@@ -75,31 +76,49 @@ bool point_move(int count) {
         if (count > (int)remaining) {
             count = (int)remaining;
         }
+        size_t byte_pos = point;
         for (int i = 0; i < count; i++) {
-            if (char_from_point(i) == '\n') {
+            char c = (char)gb_char_at(buf->contents, byte_pos);
+            if (c == '\n') {
                 buf->cur_line++;
                 buf->col = 0;
             } else {
                 buf->col++;
             }
+            byte_pos += utf8_seq_len_fwd(&c);
+            if (byte_pos > get_char_count(buf)) {
+                byte_pos = get_char_count(buf);
+                break;
+            }
         }
+        gb_point_set(buf->contents, byte_pos);
     } else {
         if (point == 0) return true;
         if (count < -(int)point)
             count = -(int)point;
+        size_t byte_pos = point;
         for (int i = 0; i > count; i--) {
-            if (char_from_point(i - 1) == '\n') {
+            // Walk back over continuation bytes to find the leading byte.
+            int back_len = 0;
+            char c;
+            do {
+                back_len++;
+                c = (char)gb_char_at(buf->contents, byte_pos - back_len);
+            } while (back_len < 4 && back_len < (int)byte_pos && (c & 0xC0) == 0x80);
+            // c is the leading byte of the sequence we're stepping over.
+            if (c == '\n') {
                 buf->cur_line--;
             }
-            if (char_from_point(i) == '\n') {
+            byte_pos -= back_len;
+            char c_at = (char)gb_char_at(buf->contents, byte_pos);
+            if (c_at == '\n') {
                 buf->col = 0;
             } else if (buf->col) {
                 buf->col--;
             }
         }
+        gb_point_set(buf->contents, byte_pos);
     }
-
-    gb_point_set(buf->contents, point + count);
     update_point(buf);
     buf->col_saved = get_column(buf);
     return true;

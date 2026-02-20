@@ -6,6 +6,7 @@
 #include "vline.h"
 #include "../text/buffer.h"
 #include "../text/line.h"
+#include "../text/utf8.h"
 #include "../clay/renderer.h"
 
 #define MIN_CACHE_SIZE 16
@@ -179,10 +180,11 @@ static size_t wrap_logical_line(VLineCache *cache,
         // Scan forward, tracking last word boundary
         while (line_end < end) {
             char c = buf_text[line_end];
+            int seq_len = utf8_seq_len_fwd(&buf_text[line_end]);
 
             // Measure incrementally
             float char_width = measure_text(renderer, font_id, font_size,
-                                            &buf_text[line_end], 1);
+                                            &buf_text[line_end], seq_len);
 
             // Handle tabs - approximate as spaces to next tab stop
             if (c == '\t') {
@@ -204,7 +206,7 @@ static size_t wrap_logical_line(VLineCache *cache,
             }
 
             width += char_width;
-            line_end++;
+            line_end += seq_len;
 
             // Track word boundaries
             if (is_word_boundary(c)) {

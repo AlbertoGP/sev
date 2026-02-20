@@ -4,6 +4,7 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdint.h>
 
 #include "mark.h"
 #include "line.h"
@@ -127,6 +128,9 @@ bool get_modified(void);
 // Inserts a single character at the point.
 // The point is placed after the inserted character.
 void insert_char(Buffer *buf, char c);
+// Inserts a Unicode codepoint at the point, encoding it as UTF-8.
+// The point is placed after the inserted character.
+void insert_codepoint(Buffer *buf, uint32_t cp);
 // Inserts a string of characters at the point.
 // The point is placed after the last character in the string.
 void insert_string(Buffer *buf, const char *string);

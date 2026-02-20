@@ -1,6 +1,7 @@
 // Content editing (insert/delete) and related Scheme bindings.
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -9,6 +10,7 @@
 #include "change.h"
 #include "gap.h"
 #include "line.h"
+#include "utf8.h"
 #include "../command/message.h"
 #include "../command/scheme_internal.h"
 
@@ -32,6 +34,24 @@ void insert_char(Buffer *buf, char c) {
     line_insert_char(&buf->lt, point_get(buf).pos, c);
     update_point(buf);
     change_record_insert(buf, pos_before, &c, 1);
+}
+
+void insert_codepoint(Buffer *buf, uint32_t cp) {
+    if (cp < 0x80) {
+        insert_char(buf, (char)cp);
+        return;
+    }
+    char bytes[4];
+    int len = utf8_encode(cp, bytes);
+    size_t pos_before = point_get(buf).pos;
+    for (int i = 0; i < len; i++) {
+        gb_insert(buf->contents, bytes[i]);
+        line_insert_char(&buf->lt, pos_before + i, bytes[i]);
+    }
+    buf->col_saved = ++(buf->col);
+    buf->num_chars = gb_used(buf->contents);
+    update_point(buf);
+    change_record_insert(buf, pos_before, bytes, len);
 }
 
 void insert_string(Buffer *buf, const char *s) {
@@ -108,7 +128,7 @@ bool delete_chars(Buffer *buf, int count) {
 sexp scm_insert_char(sexp ctx, sexp self, sexp n, sexp ch) {
     G->needs_redraw = true;
     sexp_assert_type(ctx, sexp_charp, SEXP_CHAR, ch);
-    insert_char(buffer_get_current(), sexp_unbox_character(ch));
+    insert_codepoint(buffer_get_current(), (uint32_t)sexp_unbox_character(ch));
 
     message_clear();
     return SEXP_VOID;
@@ -124,9 +144,9 @@ sexp scm_self_insert(sexp ctx, sexp self, sexp n) {
     if (buf->replace_mode) {
         char c = char_at_point();
         if (c != '\0' && c != '\n')
-            delete_chars(buf, -1);
+            delete_chars(buf, -utf8_seq_len_fwd(&c));
     }
-    insert_char(buf, last.codepoint);
+    insert_codepoint(buf, last.codepoint);
 
     message_clear();
     return SEXP_VOID;
@@ -160,22 +180,36 @@ SCM_CMD(scm_insert_tab, (insert_char(buffer_get_current(), '\t'), message_clear(
 
 sexp scm_delete_backward_char(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
-    size_t point = point_get(buffer_get_current()).pos;
+    Buffer *buf = buffer_get_current();
+    size_t point = point_get(buf).pos;
     message_clear();
-    if (point == 0)
+    if (point == 0) {
         message_send("Beginning of buffer");
-    delete_chars(buffer_get_current(), 1);
+        return SEXP_VOID;
+    }
+    // Walk back over continuation bytes to find the full UTF-8 sequence length.
+    int seq_len = 0;
+    char c;
+    do {
+        seq_len++;
+        c = (char)gb_char_at(buf->contents, point - seq_len);
+    } while (seq_len < 4 && seq_len < (int)point && (c & 0xC0) == 0x80);
+    delete_chars(buf, seq_len);
     return SEXP_VOID;
 }
 
 sexp scm_delete_forward_char(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
-    size_t point = point_get(buffer_get_current()).pos;
-    size_t chars = get_char_count(buffer_get_current());
+    Buffer *buf = buffer_get_current();
+    size_t point = point_get(buf).pos;
+    size_t chars = get_char_count(buf);
     message_clear();
-    if (point >= chars)
+    if (point >= chars) {
         message_send("End of buffer");
-    delete_chars(buffer_get_current(), -1);
+        return SEXP_VOID;
+    }
+    char c = char_at_point();
+    delete_chars(buf, -utf8_seq_len_fwd(&c));
     return SEXP_VOID;
 }
 
