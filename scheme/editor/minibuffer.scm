@@ -3,6 +3,11 @@
 
 (define-minor-mode 'minibuffer-mode minibuffer-map #t)
 
+;; Dedicated cursor style: sky-coloured thin bar, distinct from evil cursors
+(register-mode-icon/full 'minibuffer-mode "icon-insert.svg"
+                         'mode.minibuffer 'label.minibuffer
+                         'cursor.minibuffer 'thin)
+
 ;; Override global-keymap keys that would interfere with text entry
 (set-key! minibuffer-map "SPC"   'self-insert)
 (set-key! minibuffer-map "h"     'self-insert)

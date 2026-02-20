@@ -1,8 +1,12 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <SDL3_ttf/SDL_ttf.h>
+
+#include "cursor.h"
 #include "message.h"
 #include "theme.h"
+#include "vline.h"
 #include "../text/buffer.h"
 #include "../state.h"
 
@@ -10,6 +14,12 @@ extern Clay_String message_string;
 
 void MinibufArea(AppState *state) {
     Buffer *buf = state->minibuf.buf;
+
+    // Temporarily make the minibuf the current buffer so that char_at_point()
+    // inside Cursor() returns the right character.
+    Buffer *saved = buffer_get_current();
+    buffer_set_current(buf);
+
     char *raw = buffer_text(buf);
     const char *text = raw ? raw : "";
     size_t text_len = strlen(text);
@@ -17,25 +27,39 @@ void MinibufArea(AppState *state) {
     if (point_pos > text_len) point_pos = text_len;
 
     size_t prompt_len = strlen(state->minibuf.prompt);
-    static char minibuf_display[4096 + MINIBUF_PROMPT_MAX + 2];
 
+    // Build display string: prompt + full text (no cursor marker)
+    static char minibuf_display[4096 + MINIBUF_PROMPT_MAX + 1];
     char *dst = minibuf_display;
     memcpy(dst, state->minibuf.prompt, prompt_len);
     dst += prompt_len;
-    memcpy(dst, text, point_pos);
-    dst += point_pos;
-    *dst++ = '|';
-    size_t after_len = text_len - point_pos;
-    memcpy(dst, text + point_pos, after_len);
-    dst += after_len;
+    memcpy(dst, text, text_len);
+    dst += text_len;
     *dst = '\0';
 
     free(raw);
 
     Clay_String display_str = {
         .chars  = minibuf_display,
-        .length = (int32_t)(dst - minibuf_display)
+        .length = (int32_t)(prompt_len + text_len)
     };
+
+    // Measure x offset for the cursor: width of (prompt + text[0..point_pos))
+    uint16_t font_size = (uint16_t)(14.0f * state->ui.scale_factor);
+    TTF_Font *font = state->rendererData.fonts[FONT_NORMAL];
+    TTF_SetFontSize(font, font_size);
+
+    float cursor_x = 0.0f;
+    size_t prefix_len = prompt_len + point_pos;
+    if (prefix_len > 0) {
+        int w = 0, h = 0;
+        TTF_GetStringSize(font, minibuf_display, prefix_len, &w, &h);
+        cursor_x = (float)w;
+    }
+
+    float left_pad  = 10.0f * state->ui.scale_factor;
+    int   line_h    = vline_get_line_height(&state->rendererData,
+                                            FONT_NORMAL, font_size);
 
     CLAY(CLAY_ID("Minibuf Area"), {
         .layout = {
@@ -44,17 +68,20 @@ void MinibufArea(AppState *state) {
                 .height = CLAY_SIZING_FIT(16.0 * state->ui.scale_factor + 8)
             },
             .padding = {
-                .left  = 10.0 * state->ui.scale_factor,
-                .right = 10.0 * state->ui.scale_factor
+                .left  = left_pad,
+                .right = left_pad
             }
         },
     }) {
         CLAY_TEXT(display_str, CLAY_TEXT_CONFIG({
             .fontId    = FONT_NORMAL,
-            .fontSize  = 14.0 * state->ui.scale_factor,
+            .fontSize  = font_size,
             .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
         }));
+        Cursor(state, 0, cursor_x + left_pad, line_h, FONT_NORMAL, font_size);
     }
+
+    buffer_set_current(saved);
 }
 
 void MessageArea(AppState *state) {
@@ -65,8 +92,8 @@ void MessageArea(AppState *state) {
                 .height = CLAY_SIZING_FIT(16.0 * state->ui.scale_factor + 8)
             },
             .padding = {
-                .left = 10.0 * state->ui.scale_factor, 
-                .right = 10.0 * state->ui.scale_factor 
+                .left = 10.0 * state->ui.scale_factor,
+                .right = 10.0 * state->ui.scale_factor
             }
         },
         .clip = CLAY_CLIP_TO_NONE
@@ -78,4 +105,3 @@ void MessageArea(AppState *state) {
         }));
     }
 }
-

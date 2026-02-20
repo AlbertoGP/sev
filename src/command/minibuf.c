@@ -16,9 +16,16 @@ bool minibuf_init(AppState *state) {
     if (!buf) return false;
     state->minibuf.buf = buf;
 
+    // Enable minibuffer-mode (provides the isolated keymap + allows_input)
     Mode *mode = mode_lookup("minibuffer-mode", MODE_MINOR);
     if (mode)
         buffer_enable_minor_mode(buf, mode);
+
+    // buffer_create() auto-enables evil-normal-mode on every new buffer;
+    // remove it so the minibuf is fully isolated from evil keybindings.
+    Mode *evil = mode_lookup("evil-normal-mode", MODE_MINOR);
+    if (evil)
+        buffer_disable_minor_mode(buf, evil);
 
     return true;
 }
