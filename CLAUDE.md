@@ -40,7 +40,7 @@ The app uses SDL3's main callbacks pattern (no `main()` function):
 
 ### Global State (`src/state.h`)
 
-`AppState` struct holds all application state: window, renderer, colors, theme, Scheme context, input state. Passed through SDL3 callbacks via `void *appstate`.
+`AppState` struct holds all application state: window, renderer, colors, theme, Scheme context, input state, minibuffer state. Passed through SDL3 callbacks via `void *appstate`.
 
 ### Text Model (`src/text/`)
 
@@ -66,6 +66,7 @@ Clay immediate-mode UI with SDL3 renderer backend. Layout defined in `layout.c` 
 
 - Editor buffer view (text + cursor visualization)
 - Status bar (buffer name, position, line/column)
+- Bottom strip: minibuffer (prompt + editable text + cursor) when active, echo area otherwise
 
 - See `src/display/CLAUDE.md` for display subsystem details.
 - See `src/clay/CLAUDE.md` for Clay library and renderer backend details.
