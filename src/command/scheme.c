@@ -75,6 +75,7 @@ static sexp scm_pop_to_buffer(sexp ctx, sexp self, sexp n, sexp sname) {
     pane_set_buffer(pane, buf);
     pane_set_active(pane);
     G->needs_redraw = true;
+    G->needs_extra_frame = true;
     return SEXP_VOID;
 }
 
