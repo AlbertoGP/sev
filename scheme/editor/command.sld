@@ -4,7 +4,7 @@
           (editor primitives))
   (export
     defcommand defvar defun
-    call-interactively set-key! describe-function
+    call-interactively set-key! describe-function describe-key
     set-doc! get-doc get-doc-text
     make-interactive! interactive? interactive-spec
     register-spec-handler!

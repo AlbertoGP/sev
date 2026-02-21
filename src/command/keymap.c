@@ -7,6 +7,7 @@
 #include "keymap.h"
 #include "message.h"
 #include "mode.h"
+#include "scheme_internal.h"
 #include "../text/buffer.h"
 
 KeyEvent last_event;
@@ -22,8 +23,52 @@ bool init_input(AppState *state) {
 
     state->input.global_map  = global;
     state->input.current_map = global;
+    state->input.key_intercept_cb  = SEXP_FALSE;
+    state->input.key_intercept_map = NULL;
+    state->input.key_intercept_str[0] = '\0';
 
     return true;
+}
+
+static void key_event_append_str(char *buf, size_t sz, const KeyEvent *ev) {
+    size_t len = strlen(buf);
+    if (len > 0 && len + 1 < sz) {
+        buf[len++] = ' ';
+        buf[len]   = '\0';
+    }
+
+    char tmp[64];
+    size_t ti = 0;
+
+    if (ev->mods & MOD_CTRL)  { tmp[ti++] = 'C'; tmp[ti++] = '-'; }
+    if (ev->mods & MOD_META)  { tmp[ti++] = 'M'; tmp[ti++] = '-'; }
+    if (ev->mods & MOD_SHIFT) { tmp[ti++] = 'S'; tmp[ti++] = '-'; }
+
+    if (ev->type == KEYEVENT_SPECIAL) {
+        const char *name;
+        switch (ev->keycode) {
+        case KEY_ESC:       name = "ESC";   break;
+        case KEY_RETURN:    name = "RET";   break;
+        case KEY_TAB:       name = "TAB";   break;
+        case KEY_BACKSPACE: name = "BSP";   break;
+        case KEY_DELETE:    name = "DEL";   break;
+        case KEY_UP:        name = "UP";    break;
+        case KEY_DOWN:      name = "DOWN";  break;
+        case KEY_LEFT:      name = "LEFT";  break;
+        case KEY_RIGHT:     name = "RIGHT"; break;
+        default:            name = "?";     break;
+        }
+        snprintf(tmp + ti, sizeof(tmp) - ti, "%s", name);
+    } else {
+        if (ev->codepoint == (uint32_t)' ') {
+            snprintf(tmp + ti, sizeof(tmp) - ti, "SPC");
+        } else {
+            tmp[ti++] = (char)ev->codepoint;
+            tmp[ti]   = '\0';
+        }
+    }
+
+    strncat(buf, tmp, sz - strlen(buf) - 1);
 }
 
 static bool keymap_add(Keymap *km, KeyEvent key, Binding binding) {
@@ -198,6 +243,35 @@ void key_dispatch(AppState *state, const KeyEvent *ev) {
         key_dispatch_inner(state, ev);
         if (state->minibuf.active)    // submit/cancel already restored if false
             buffer_set_current(saved);
+        return;
+    }
+
+    if (state->input.key_intercept_cb != SEXP_FALSE) {
+        key_event_append_str(state->input.key_intercept_str,
+                             sizeof(state->input.key_intercept_str), ev);
+
+        Binding *b = (state->input.key_intercept_map == state->input.global_map)
+            ? keymap_lookup_chain(state, ev)
+            : keymap_lookup(state->input.key_intercept_map, ev);
+
+        if (b && b->type == BINDING_KEYMAP) {
+            state->input.key_intercept_map = b->keymap;
+            char echo[280];
+            snprintf(echo, sizeof(echo), "Describe key: %s", state->input.key_intercept_str);
+            message_send(echo);
+            return;
+        }
+
+        // Reached command or unbound — fire callback
+        sexp ctx = state->chibi.ctx;
+        sexp cb  = state->input.key_intercept_cb;
+        state->input.key_intercept_cb = SEXP_FALSE;
+        sexp sym = (b && b->type == BINDING_COMMAND) ? b->command_sym : SEXP_FALSE;
+        sexp kstr = sexp_c_string(ctx, state->input.key_intercept_str, -1);
+        sexp result = sexp_apply(ctx, cb, sexp_list2(ctx, sym, kstr));
+        if (sexp_exceptionp(result))
+            sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+        sexp_release_object(ctx, cb);
         return;
     }
 
@@ -416,6 +490,19 @@ sexp scm_set_keymap_parent(sexp ctx, sexp self, sexp n,
     if (!km) return sexp_user_exception(ctx, self, "null keymap", skeymap);
     Keymap *parent = sexp_cpointer_value(sparent);
     km->parent = parent;
+    return SEXP_VOID;
+}
+
+// (%read-key-binding callback) -> void
+// Activates key-intercept mode: next key sequence (until a command or unbound)
+// calls callback with (sym key-str), where sym is the bound command symbol or #f.
+sexp scm_read_key_binding(sexp ctx, sexp self, sexp n, sexp callback) {
+    if (G->input.key_intercept_cb != SEXP_FALSE)
+        sexp_release_object(ctx, G->input.key_intercept_cb);
+    G->input.key_intercept_cb = callback;
+    sexp_preserve_object(ctx, G->input.key_intercept_cb);
+    G->input.key_intercept_map = G->input.global_map;
+    G->input.key_intercept_str[0] = '\0';
     return SEXP_VOID;
 }
 

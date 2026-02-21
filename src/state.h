@@ -24,6 +24,9 @@ typedef struct {
     struct Keymap *global_map;
     struct Keymap *current_map;
     KeyEvent last_event;
+    sexp         key_intercept_cb;         // SEXP_FALSE if inactive
+    struct Keymap *key_intercept_map;      // current traversal position
+    char         key_intercept_str[256];   // accumulated display string
 } InputState;
 
 typedef struct {

@@ -156,6 +156,15 @@
     ;; Go to top
     (point-set! 0)))
 
+(defcommand (describe-key)
+  "Read a key sequence and describe its binding."
+  (message "Describe key: ")
+  (%read-key-binding
+    (lambda (sym key-str)
+      (if sym
+          (describe-function (symbol->string sym))
+          (message (string-append key-str " is unbound"))))))
+
 ;; defvar macro - declare documented variables concisely
 (define-syntax defvar
   (syntax-rules ()
