@@ -99,17 +99,6 @@
 ;; Introspection
 (define (list-commands) (list-by-kind 'command))
 
-(define (describe-function sym)
-  (let ((doc (get-doc sym))
-        (keys (where-is sym))
-        (int? (interactive? sym)))
-    (list
-      (cons 'name sym)
-      (cons 'interactive? int?)
-      (cons 'keys keys)
-      (cons 'kind (and doc (doc-kind doc)))
-      (cons 'doc (if doc (doc-text doc) "")))))
-
 ;; defcommand macro - declare commands concisely
 (define-syntax defcommand
   (syntax-rules (interactive)
@@ -135,6 +124,19 @@
      (begin
        (set-doc! 'name 'command docstring)
        (make-interactive! 'name '())))))
+
+(defcommand (describe-function fname)
+  "Display documentation for a named function or command."
+  (interactive (minibuffer-read "Describe function: "))
+  (let* ((sym  (string->symbol fname))
+         (doc  (get-doc sym))
+         (keys (where-is sym)))
+    (if (not doc)
+        (message (string-append "No documentation for: " fname))
+        (let ((key-str (if (null? keys) ""
+                           (string-append "  Keys: " (car keys)))))
+          (message (string-append fname " [" (symbol->string (doc-kind doc)) "]: "
+                                  (doc-text doc) key-str))))))
 
 ;; defvar macro - declare documented variables concisely
 (define-syntax defvar
