@@ -7,5 +7,6 @@
     call-interactively set-key! describe-function
     set-doc! get-doc get-doc-text
     make-interactive! interactive? interactive-spec
+    register-spec-handler!
     list-commands list-functions list-variables where-is)
   (include "command.scm"))

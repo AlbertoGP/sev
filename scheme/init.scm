@@ -39,5 +39,7 @@
 (set-key! global-keymap "SPC l n" 'toggle-line-numbers)
 (set-key! global-keymap "SPC r n" 'toggle-relative-line-numbers)
 
+(set-key! global-keymap "M-x" 'execute-extended-command)
+
 (reset-global-scale)
 (message-clear)

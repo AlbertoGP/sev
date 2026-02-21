@@ -40,3 +40,18 @@
 (defcommand (minibuffer-cancel)
   "Cancel minibuffer input."
   (%minibuffer-cancel))
+
+;; Register minibuffer-read as an interactive spec handler
+(register-spec-handler! 'minibuffer-read
+  (lambda (form-args done)
+    (let ((prompt (if (pair? form-args) (car form-args) "Input: ")))
+      (minibuffer-read prompt done))))
+
+(defcommand (execute-extended-command)
+  "Read command name and execute it."
+  (minibuffer-read "M-x: "
+    (lambda (name)
+      (let ((sym (string->symbol name)))
+        (if (interactive? sym)
+            (call-interactively sym)
+            (message (string-append "Not a command: " name)))))))

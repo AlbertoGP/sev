@@ -61,18 +61,32 @@
     (else
      (%set-key! keymap keystr cmd))))
 
-;; S-expression interactive spec resolution
-(define (resolve-arg-form form)
-  (case (car form)
-    ((prefix)
-     (if (pair? (cdr form))
-         (list (or (prefix-arg) (cadr form)))
-         (list (prefix-arg))))
-    (else
-     (error "Unknown interactive spec" form))))
+;; Extensible async spec handler table
+(define *spec-handlers* (make-hash-table eq?))
 
-(define (resolve-interactive-spec spec)
-  (apply append (map resolve-arg-form spec)))
+(define (register-spec-handler! type handler)
+  ;; handler: (lambda (form-args done) ...) where done takes one value
+  (hash-table-set! *spec-handlers* type handler))
+
+;; CPS traversal: resolve each spec form left-to-right, then call done with all args
+(define (resolve-spec-cps forms collected done)
+  (if (null? forms)
+      (done (reverse collected))
+      (let* ((form    (car forms))
+             (rest    (cdr forms))
+             (handler (hash-table-ref/default *spec-handlers* (car form) #f)))
+        (if (not handler)
+            (error "Unknown interactive spec type" (car form))
+            (handler (cdr form)
+                     (lambda (val)
+                       (resolve-spec-cps rest (cons val collected) done)))))))
+
+;; Built-in prefix handler (synchronous: calls done immediately)
+(register-spec-handler! 'prefix
+  (lambda (form-args done)
+    (done (if (pair? form-args)
+              (or (prefix-arg) (car form-args))
+              (prefix-arg)))))
 
 ;; call-interactively - invoke command with args based on interactive spec
 (define (call-interactively sym)
@@ -80,7 +94,7 @@
         (spec (interactive-spec sym)))
     (if (or (not spec) (null? spec))
         (proc)
-        (apply proc (resolve-interactive-spec spec)))))
+        (resolve-spec-cps spec '() (lambda (args) (apply proc args))))))
 
 ;; Introspection
 (define (list-commands) (list-by-kind 'command))

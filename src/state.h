@@ -49,6 +49,16 @@ typedef struct UIState {
 } UIState;
 
 #define MINIBUF_PROMPT_MAX 256
+#define MINIBUF_STACK_MAX 8
+
+typedef struct {
+    char   prompt[MINIBUF_PROMPT_MAX];
+    sexp   on_submit;   // GC-preserved; SEXP_FALSE if none
+    sexp   on_cancel;   // GC-preserved; SEXP_FALSE if none
+    char  *saved_text;  // malloc'd snapshot of buffer content; NULL if empty
+    size_t saved_point;
+} MinibufFrame;
+
 typedef struct {
     struct Buffer *buf;
     bool active;
@@ -56,6 +66,8 @@ typedef struct {
     sexp on_submit;   // Scheme (lambda (text) ...), GC-preserved; SEXP_FALSE if none
     sexp on_cancel;   // Scheme (lambda () ...), GC-preserved; SEXP_FALSE if none
     struct Buffer *prev_buf;
+    MinibufFrame stack[MINIBUF_STACK_MAX];
+    int          stack_depth;  // 0 = no pushed frames
 } Minibuf;
 
 typedef struct AppState {
