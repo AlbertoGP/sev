@@ -87,3 +87,19 @@
     (if (eq? (get-local 'display-line-numbers-type)
              'relative)
         #t 'relative)))
+
+;; Help buffer mode
+(define help-map (make-keymap))
+(set-key! help-map "ESC"   'pane-close)
+(set-key! help-map "q"     'pane-close)
+(set-key! help-map "j"     'next-line)
+(set-key! help-map "k"     'prev-line)
+(set-key! help-map "h"     'backward-char)
+(set-key! help-map "l"     'forward-char)
+(set-key! help-map "UP"    'prev-line)
+(set-key! help-map "DOWN"  'next-line)
+(set-key! help-map "LEFT"  'backward-char)
+(set-key! help-map "RIGHT" 'forward-char)
+(define-minor-mode 'help-mode help-map)
+(register-mode-icon/full 'help-mode "icon-help.svg"
+                         'mode.help 'label.help 'cursor.help 'solid)

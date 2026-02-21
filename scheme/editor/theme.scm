@@ -71,6 +71,7 @@
    (mode.command      . peach)
    (mode.pending      . flamingo)
    (mode.minibuffer   . sky)
+   (mode.help         . teal)
    (label.normal      . fg-0)
    (label.insert      . fg-0)
    (label.replace     . fg-0)
@@ -78,6 +79,7 @@
    (label.command     . fg-0)
    (label.pending     . fg-0)
    (label.minibuffer  . fg-0)
+   (label.help        . fg-0)
    (tab.bar           . bg-1)
    (tab.active        . bg-0)
    (tab.hover         . bg-0)
@@ -91,7 +93,8 @@
    (cursor.select     . rosewater)
    (cursor.command    . rosewater)
    (cursor.pending    . rosewater)
-   (cursor.minibuffer . rosewater)))
+   (cursor.minibuffer . rosewater)
+   (cursor.help       . rosewater)))
 
 (define-theme
  'catppuccin-macchiato
@@ -136,6 +139,7 @@
    (mode.command      . peach)
    (mode.pending      . flamingo)
    (mode.minibuffer   . sky)
+   (mode.help         . pink)
    (label.normal      . fg-0)
    (label.insert      . fg-0)
    (label.replace     . fg-0)
@@ -143,6 +147,7 @@
    (label.command     . fg-0)
    (label.pending     . fg-0)
    (label.minibuffer  . fg-0)
+   (label.help        . fg-0)
    (tab.bar           . bg-1)
    (tab.active        . bg-0)
    (tab.hover         . bg-0)
@@ -156,7 +161,8 @@
    (cursor.select     . rosewater)
    (cursor.command    . rosewater)
    (cursor.pending    . rosewater)
-   (cursor.minibuffer . rosewater)))
+   (cursor.minibuffer . rosewater)
+   (cursor.help       . rosewater)))
 
 (define-theme
  'catppuccin-latte
@@ -201,6 +207,7 @@
    (mode.command      . peach)
    (mode.pending      . flamingo)
    (mode.minibuffer   . sky)
+   (mode.help         . teal)
    (label.normal      . bg-0)
    (label.insert      . bg-0)
    (label.replace     . bg-0)
@@ -208,6 +215,7 @@
    (label.command     . bg-0)
    (label.pending     . bg-0)
    (label.minibuffer  . bg-0)
+   (label.help        . bg-0)
    (tab.bar           . bg-1)
    (tab.active        . bg-0)
    (tab.hover         . bg-0)
@@ -221,7 +229,8 @@
    (cursor.select     . rosewater)
    (cursor.command    . rosewater)
    (cursor.pending    . rosewater)
-   (cursor.minibuffer . rosewater)))
+   (cursor.minibuffer . rosewater)
+   (cursor.help       . rosewater)))
 
 (activate-theme 'catppuccin-macchiato)
 

@@ -60,6 +60,24 @@ static sexp scm_eval_buffer(sexp ctx, sexp self, sexp n) {
     return SEXP_VOID;
 }
 
+static sexp scm_pop_to_buffer(sexp ctx, sexp self, sexp n, sexp sname) {
+    if (!sexp_stringp(sname))
+        return sexp_user_exception(ctx, self, "buffer name must be a string", sname);
+    const char *name = sexp_string_data(sname);
+    Pane *pane = pane_split_horizontal(pane_get_active());
+    Buffer *buf = buffer_get_by_name(name);
+    if (!buf) {
+        buffer_create(name);
+        buf = buffer_get_by_name(name);
+    } else {
+        buffer_clear(buf);
+    }
+    pane_set_buffer(pane, buf);
+    pane_set_active(pane);
+    G->needs_redraw = true;
+    return SEXP_VOID;
+}
+
 static sexp scm_clay_debug(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     G->debug_open = !G->debug_open;
@@ -224,6 +242,7 @@ void scheme_init(AppState *state) {
     SDEF("split-vertical", 0, scm_split_vertical);
     SDEF("split-horizontal", 0, scm_split_horizontal);
     SDEF("pane-close", 0, scm_pane_close);
+    SDEF("%pop-to-buffer", 1, scm_pop_to_buffer);
     SDEF("pane-navigate-up", 0, scm_pane_navigate_up);
     SDEF("pane-navigate-down", 0, scm_pane_navigate_down);
     SDEF("pane-navigate-left", 0, scm_pane_navigate_left);
@@ -349,7 +368,7 @@ void scheme_init(AppState *state) {
         "last-key-char %set-replace-mode! tab-next tab-prev "
         "reset-global-scale increase-global-scale decrease-global-scale "
         "reset-buffer-scale increase-buffer-scale decrease-buffer-scale "
-        "split-vertical split-horizontal pane-close "
+        "split-vertical split-horizontal pane-close %pop-to-buffer "
         "pane-navigate-up pane-navigate-down "
         "pane-navigate-left pane-navigate-right "
         "pane-v-split-increase pane-v-split-decrease "

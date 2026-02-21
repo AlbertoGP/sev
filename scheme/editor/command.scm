@@ -131,12 +131,30 @@
   (let* ((sym  (string->symbol fname))
          (doc  (get-doc sym))
          (keys (where-is sym)))
-    (if (not doc)
-        (message (string-append "No documentation for: " fname))
-        (let ((key-str (if (null? keys) ""
-                           (string-append "  Keys: " (car keys)))))
-          (message (string-append fname " [" (symbol->string (doc-kind doc)) "]: "
-                                  (doc-text doc) key-str))))))
+    (%pop-to-buffer "*Help*")
+    ;; Set up help-mode on first use (buffer_create auto-enables evil-normal-mode)
+    (when (not (%buffer-has-minor-mode? 'help-mode))
+      (%disable-minor-mode 'evil-normal-mode)
+      (%enable-minor-mode 'help-mode)
+      (%set-local! 'mode-name "Help"))
+    ;; Header: name + kind
+    (%insert-string fname)
+    (%insert-string "    [")
+    (%insert-string (if doc (symbol->string (doc-kind doc)) "unknown"))
+    (%insert-string "]")
+    (newline)
+    (newline)
+    ;; Key bindings
+    (when (pair? keys)
+      (%insert-string "Keys: ")
+      (%insert-string (car keys))
+      (newline)
+      (newline))
+    ;; Docstring
+    (%insert-string (if doc (doc-text doc) "(no documentation)"))
+    (newline)
+    ;; Go to top
+    (point-set! 0)))
 
 ;; defvar macro - declare documented variables concisely
 (define-syntax defvar
