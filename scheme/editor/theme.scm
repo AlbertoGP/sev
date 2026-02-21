@@ -7,8 +7,11 @@
    name
    (list palette roles)))
 
-(define (activate-theme name)
-  (let* ((theme (hash-table-ref *themes* name))
+(defcommand (activate-theme input)
+  "Switch to the named theme."
+  (interactive (minibuffer-read "Theme: "))
+  (let* ((sym   (if (string? input) (string->symbol input) input))
+         (theme (hash-table-ref *themes* sym))
          (palette (car theme))
          (roles   (cadr theme)))
     (%clear-palette!)
@@ -22,7 +25,7 @@
                 (%set-role! (car r) (cdr r)))
               roles)
 
-    (set! *current-theme* name)
+    (set! *current-theme* sym)
     (%update-icon-colors!)))
 
 (define-theme

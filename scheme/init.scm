@@ -38,6 +38,7 @@
 (set-key! global-keymap "C-S-RIGHT" 'pane-v-split-increase)
 (set-key! global-keymap "SPC l n" 'toggle-line-numbers)
 (set-key! global-keymap "SPC r n" 'toggle-relative-line-numbers)
+(set-key! global-keymap "SPC h f" 'describe-function)
 
 (set-key! global-keymap "M-x" 'execute-extended-command)
 
