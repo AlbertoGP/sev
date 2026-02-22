@@ -318,6 +318,9 @@ void scheme_init(AppState *state) {
     SDEF("%minibuffer-cancel",   0, scm_minibuffer_cancel);
     SDEF("%minibuffer-active?",  0, scm_minibuffer_activep);
 
+    // Which-key primitives
+    SDEF("%which-key-toggle", 0, scm_which_key_toggle);
+
     // Mark / selection primitives
     SDEF("%mark-set-to-point!", 1, scm_mark_set_to_point);
     SDEF("%select-mode-set!", 1, scm_select_mode_set);
@@ -400,6 +403,7 @@ void scheme_init(AppState *state) {
         "%macro-start! %macro-stop! %macro-play %macro-recording? "
         "%minibuffer-activate %minibuffer-submit "
         "%minibuffer-cancel %minibuffer-active? "
+        "%which-key-toggle "
         "global-keymap eval) "
         "%editor-env '()))",
         -1, meta);

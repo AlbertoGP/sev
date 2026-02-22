@@ -1,6 +1,7 @@
 #include "message.h"
 #include "tab.h"
 #include "theme.h"
+#include "which_key.h"
 #include "../state.h"
 
 Clay_RenderCommandArray create_app_layout(AppState *state) {
@@ -32,6 +33,9 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
         else
             MessageArea(state);
     }
+
+    if (state->which_key.active && state->which_key.enabled)
+        WhichKey(state);
 
     return Clay_EndLayout();
 }

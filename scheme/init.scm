@@ -2,7 +2,7 @@
 
 (import (editor command) (editor mode) (editor icon)
         (editor built-in) (editor evil) (editor theme)
-        (editor minibuffer))
+        (editor minibuffer) (editor which-key))
 
 ;; System/UI bindings in global-keymap (inherited by all mode keymaps via parent)
 (set-key! global-keymap "ESC" 'evil-normal)
@@ -40,6 +40,7 @@
 (set-key! global-keymap "SPC r n" 'toggle-relative-line-numbers)
 (set-key! global-keymap "SPC h f" 'describe-function)
 (set-key! global-keymap "SPC h k" 'describe-key)
+(set-key! global-keymap "SPC h w" 'which-key-toggle)
 
 (set-key! global-keymap "M-x" 'execute-extended-command)
 

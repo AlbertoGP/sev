@@ -73,6 +73,12 @@ typedef struct {
     int          stack_depth;  // 0 = no pushed frames
 } Minibuf;
 
+typedef struct {
+    bool active;
+    bool enabled;
+    struct Keymap *keymap;
+} WhichKeyState;
+
 typedef struct AppState {
     SDL_Window *window;
     Clay_SDL3RendererData rendererData;
@@ -88,6 +94,8 @@ typedef struct AppState {
     Register registers[REGISTER_COUNT];
 
     Minibuf minibuf;
+
+    WhichKeyState which_key;
 
     // Macro recording
     bool macro_recording;

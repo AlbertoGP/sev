@@ -29,6 +29,7 @@ set(SRC_FILES
     src/display/tab.c
     src/display/theme.c
     src/display/vline.c
+    src/display/which_key.c
     src/text/buffer.c
     src/text/buffer_edit.c
     src/text/change.c

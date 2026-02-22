@@ -27,6 +27,8 @@ bool init_input(AppState *state) {
     state->input.key_intercept_map = NULL;
     state->input.key_intercept_str[0] = '\0';
 
+    state->which_key.enabled = true;
+
     return true;
 }
 
@@ -163,6 +165,8 @@ static void execute_command(AppState *state, Binding *b) {
 
 static void reset_key_state(AppState *state) {
     state->input.current_map = state->input.global_map;
+    state->which_key.active = false;
+    state->needs_redraw = true;
 }
 
 static void key_dispatch_inner(AppState *state, const KeyEvent *ev) {
@@ -208,6 +212,11 @@ static void key_dispatch_inner(AppState *state, const KeyEvent *ev) {
 
     if (b->type == BINDING_KEYMAP) {
         state->input.current_map = b->keymap;
+        if (state->which_key.enabled) {
+            state->which_key.active = true;
+            state->which_key.keymap = b->keymap;
+            state->needs_redraw = true;
+        }
         goto record_macro;  // prefix key: record for macro replay
     }
 
