@@ -21,6 +21,7 @@ void pane_destroy(Pane *pane) {
         pane_destroy(pane->v_split.right);
     } else if (pane->type == PANE_CONTENT) {
         vline_cache_destroy(&pane->content.vline_cache);
+        jump_list_free(&pane->content.jump_list);
     }
     free(pane);
 }
@@ -768,5 +769,47 @@ sexp scm_pane_close(sexp ctx, sexp self, sexp n) {
     pane_close();
 
     message_send("pane-close");
+    return SEXP_VOID;
+}
+
+sexp scm_jump_push(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane || pane->type != PANE_CONTENT) return SEXP_VOID;
+    Buffer *buf = buffer_get_current();
+    if (!buf) return SEXP_VOID;
+    Jump j = {
+        .buf_name = strdup(buffer_get_name(buf)),
+        .point    = point_get(buf),
+        .filename = NULL,
+    };
+    jump_list_push(&pane->content.jump_list, j);
+    return SEXP_VOID;
+}
+
+static void jump_apply(JumpList *jl) {
+    Buffer *buf = buffer_get_current();
+    if (!buf) return;
+    Jump *j = &jl->list[jl->current_index];
+    if (!j->buf_name) return;
+    if (strcmp(j->buf_name, buffer_get_name(buf)) != 0) return;
+    point_set(j->point);
+    update_line(buf);
+    save_current_column(buf);
+    G->needs_redraw = true;
+}
+
+sexp scm_jump_backward(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane || pane->type != PANE_CONTENT) return SEXP_VOID;
+    if (jump_list_backward(&pane->content.jump_list))
+        jump_apply(&pane->content.jump_list);
+    return SEXP_VOID;
+}
+
+sexp scm_jump_forward(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane || pane->type != PANE_CONTENT) return SEXP_VOID;
+    if (jump_list_forward(&pane->content.jump_list))
+        jump_apply(&pane->content.jump_list);
     return SEXP_VOID;
 }

@@ -24,5 +24,6 @@
     evil-motion-f evil-motion-F evil-motion-t evil-motion-T
     open-line-below open-line-above insert-at-start
     append-char append-line substitute-char
-    evil-start-macro evil-stop-macro evil-play-macro evil-play-last-macro)
+    evil-start-macro evil-stop-macro evil-play-macro evil-play-last-macro
+    evil-jump-backward evil-jump-forward)
   (include "evil.scm"))

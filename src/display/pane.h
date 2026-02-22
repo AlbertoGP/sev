@@ -8,6 +8,7 @@
 #include "vline.h"
 #include "../state.h"
 #include "../text/buffer.h"
+#include "../text/jump_list.h"
 
 typedef enum {
     DIR_UP,
@@ -35,6 +36,7 @@ typedef struct {
     float height;
     bool active;
     VLineCache vline_cache;  // Cache for visual (wrapped) lines
+    JumpList jump_list;
 } Content;
 
 // A vertical split node in a pane tree.

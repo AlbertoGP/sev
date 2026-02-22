@@ -41,6 +41,7 @@ set(SRC_FILES
     src/text/register.c
     src/text/search.c
     src/text/var.c
+    src/text/jump_list.c
 )
 
 # Create executable

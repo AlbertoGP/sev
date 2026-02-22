@@ -45,6 +45,9 @@ sexp scm_pane_h_split_decrease(sexp ctx, sexp self, sexp n);
 sexp scm_split_vertical(sexp ctx, sexp self, sexp n);
 sexp scm_split_horizontal(sexp ctx, sexp self, sexp n);
 sexp scm_pane_close(sexp ctx, sexp self, sexp n);
+sexp scm_jump_push(sexp ctx, sexp self, sexp n);
+sexp scm_jump_backward(sexp ctx, sexp self, sexp n);
+sexp scm_jump_forward(sexp ctx, sexp self, sexp n);
 
 // --- display/tab.c ---
 sexp scm_tab_next(sexp ctx, sexp self, sexp n);

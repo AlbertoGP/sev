@@ -59,6 +59,8 @@
 (set-key! normal-map ":" 'evil-command)
 (set-key! normal-map "g g" 'evil-motion-gg)
 (set-key! normal-map "G" 'evil-motion-G)
+(set-key! normal-map "C-o" 'evil-jump-backward)
+(set-key! normal-map "C-i" 'evil-jump-forward)
 
 ;; Insert mode bindings
 (set-key! insert-map "h" 'self-insert)
@@ -1463,10 +1465,12 @@
 
 (defcommand (evil-motion-gg)
   "Go to first line."
+  (when (eq? evil-sm-state 'normal) (%jump-push!))
   (evil-execute-motion 'motion-goto-line))
 
 (defcommand (evil-motion-G)
   "Go to last line."
+  (when (eq? evil-sm-state 'normal) (%jump-push!))
   (unless evil-count (set! evil-count (%line-count)))
   (evil-execute-motion 'motion-goto-line))
 
@@ -1482,6 +1486,7 @@
   "Jump to line of mark."
   (let ((ch (last-key-char)))
     (when ch
+      (when (eq? evil-sm-state 'normal) (%jump-push!))
       (register-motion! 'motion--mark-line-tmp
         (lambda (count) (%point-to-mark! ch) (line-start)))
       (evil-execute-motion 'motion--mark-line-tmp))))
@@ -1490,9 +1495,18 @@
   "Jump to exact position of mark."
   (let ((ch (last-key-char)))
     (when ch
+      (when (eq? evil-sm-state 'normal) (%jump-push!))
       (register-motion! 'motion--mark-exact-tmp
         (lambda (count) (%point-to-mark! ch)))
       (evil-execute-motion 'motion--mark-exact-tmp))))
+
+(defcommand (evil-jump-backward)
+  "Jump to older entry in jump list."
+  (%jump-backward!))
+
+(defcommand (evil-jump-forward)
+  "Jump to newer entry in jump list."
+  (%jump-forward!))
 
 ;; f/F/t/T — character seeking (current line only)
 

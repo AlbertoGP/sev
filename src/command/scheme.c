@@ -327,6 +327,11 @@ void scheme_init(AppState *state) {
     // Which-key primitives
     SDEF("%which-key-toggle", 0, scm_which_key_toggle);
 
+    // Jump list primitives
+    SDEF("%jump-push!",     0, scm_jump_push);
+    SDEF("%jump-backward!", 0, scm_jump_backward);
+    SDEF("%jump-forward!",  0, scm_jump_forward);
+
     // Mark / selection primitives
     SDEF("%mark-set-to-point!", 1, scm_mark_set_to_point);
     SDEF("%select-mode-set!", 1, scm_select_mode_set);
@@ -411,6 +416,7 @@ void scheme_init(AppState *state) {
         "%minibuffer-activate %minibuffer-submit "
         "%minibuffer-cancel %minibuffer-active? "
         "%which-key-toggle "
+        "%jump-push! %jump-backward! %jump-forward! "
         "global-keymap eval) "
         "%editor-env '()))",
         -1, meta);
