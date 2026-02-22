@@ -72,6 +72,14 @@ if(EMSCRIPTEN)
     list(JOIN EMCC_ASSETS " " EMCC_ASSETS_STR)
     set_target_properties(app PROPERTIES LINK_FLAGS "${EMCC_ASSETS_STR}")
 
+    # Allow WASM linear memory to grow beyond its initial size (required for
+    # Chibi Scheme's GC heap allocation; without this the binary has a fixed
+    # memory ceiling and any malloc beyond it returns NULL / aborts).
+    target_link_options(app PRIVATE
+        -sALLOW_MEMORY_GROWTH=1
+        -sMAXIMUM_MEMORY=268435456
+    )
+
     # Disable unused SDL3 subsystems to reduce WASM binary size
     set(SDL_AUDIO OFF CACHE BOOL "" FORCE)
     set(SDL_JOYSTICK OFF CACHE BOOL "" FORCE)

@@ -31,12 +31,8 @@ void StatusBar(AppState *state, Pane *pane) {
     Buffer *buf = pane->content.buffer;
     sexp mode_symbol = sexp_intern(state->chibi.ctx, "mode-name", -1);
     
-    const char* modeStr = sexp_to_cstring(
-        state->chibi.ctx,
-        vartable_get(buffer_get_locals(buf),
-                     mode_symbol,
-                     sexp_c_string(state->chibi.ctx, "ERROR", -1)),
-        "ERROR");
+    sexp mode_val = vartable_get(buffer_get_locals(buf), mode_symbol, SEXP_FALSE);
+    const char* modeStr = sexp_to_cstring(state->chibi.ctx, mode_val, "ERROR");
     Clay_String modeName = {
         .chars = modeStr,
         .length = strlen(modeStr),

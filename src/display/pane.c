@@ -372,9 +372,9 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                 int line_num_type = 0;
                 if (lnum_val == SEXP_TRUE) line_num_type = 1;
                 else if (sexp_symbolp(lnum_val)) {
-                    const char *s = sexp_string_data(sexp_symbol_to_string(state->chibi.ctx, lnum_val));
-                    if (strcmp(s, "relative") == 0) line_num_type = 2;
-                    else if (strcmp(s, "visual") == 0) line_num_type = 3;
+                    sexp ctx_l = state->chibi.ctx;
+                    if      (lnum_val == sexp_intern(ctx_l, "relative", -1)) line_num_type = 2;
+                    else if (lnum_val == sexp_intern(ctx_l, "visual",   -1)) line_num_type = 3;
                 }
 
                 // Calculate gutter width for line numbers

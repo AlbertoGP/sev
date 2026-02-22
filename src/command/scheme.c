@@ -148,7 +148,11 @@ void scheme_init(AppState *state) {
     G = state;
     sexp_scheme_init();
 
+#ifdef __EMSCRIPTEN__
+    sexp ctx = sexp_make_eval_context(NULL, NULL, NULL, 0, 16*1024*1024);
+#else
     sexp ctx = sexp_make_eval_context(NULL, NULL, NULL, 0, 512*1024*1024);
+#endif
     if (!ctx || sexp_exceptionp(ctx)) {
         fprintf(stderr, "ERROR: failed to create eval context\n");
         return;
