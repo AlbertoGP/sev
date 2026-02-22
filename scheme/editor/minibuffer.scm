@@ -31,7 +31,7 @@
 
 (defcommand (minibuffer-read prompt on-submit)
   "Prompt for input in the minibuffer; call on-submit with the result."
-  (%minibuffer-activate prompt on-submit))
+  (%minibuffer-activate prompt on-submit #f))
 
 (defcommand (minibuffer-submit)
   "Accept current minibuffer input."

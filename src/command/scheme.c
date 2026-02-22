@@ -315,7 +315,7 @@ void scheme_init(AppState *state) {
     SDEF("%macro-recording?", 0, scm_macro_is_recording);
 
     // Minibuffer primitives
-    SDEF("%minibuffer-activate", 2, scm_minibuffer_activate);
+    SDEF("%minibuffer-activate", 3, scm_minibuffer_activate);
     SDEF("%minibuffer-submit",   0, scm_minibuffer_submit);
     SDEF("%minibuffer-cancel",   0, scm_minibuffer_cancel);
     SDEF("%minibuffer-active?",  0, scm_minibuffer_activep);

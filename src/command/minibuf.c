@@ -7,6 +7,17 @@
 #include "scheme_internal.h"
 #include "../text/buffer.h"
 
+// Call a named command via the cached call-interactively.
+// Used to push/pop evil mode on minibuffer focus transitions.
+static void minibuf_invoke_command(sexp ctx, const char *name) {
+    if (G->chibi.call_interactively == SEXP_FALSE) return;
+    sexp sym = sexp_intern(ctx, name, -1);
+    sexp result = sexp_apply(ctx, G->chibi.call_interactively,
+                             sexp_list1(ctx, sym));
+    if (sexp_exceptionp(result))
+        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+}
+
 bool minibuf_init(AppState *state) {
     state->minibuf.on_submit   = SEXP_FALSE;
     state->minibuf.on_cancel   = SEXP_FALSE;
@@ -60,7 +71,7 @@ static void minibuf_pop(sexp ctx) {
 }
 
 sexp scm_minibuffer_activate(sexp ctx, sexp self, sexp n,
-                              sexp sprompt, sexp on_submit) {
+                              sexp sprompt, sexp on_submit, sexp on_cancel) {
     if (!sexp_stringp(sprompt))
         return sexp_user_exception(ctx, self, "prompt must be a string", sprompt);
 
@@ -77,7 +88,9 @@ sexp scm_minibuffer_activate(sexp ctx, sexp self, sexp n,
         G->minibuf.stack_depth++;
         buffer_clear(G->minibuf.buf);
     } else {
-        // Fresh activation: release any stale callbacks
+        // Fresh activation: switch the calling buffer to command-mode.
+        minibuf_invoke_command(ctx, "evil-command");
+        // Release any stale callbacks
         if (G->minibuf.on_submit != SEXP_FALSE)
             sexp_release_object(ctx, G->minibuf.on_submit);
         if (G->minibuf.on_cancel != SEXP_FALSE)
@@ -91,9 +104,11 @@ sexp scm_minibuffer_activate(sexp ctx, sexp self, sexp n,
     G->minibuf.prompt[MINIBUF_PROMPT_MAX - 1] = '\0';
 
     G->minibuf.on_submit = on_submit;
-    G->minibuf.on_cancel = SEXP_FALSE;
+    G->minibuf.on_cancel = sexp_booleanp(on_cancel) ? SEXP_FALSE : on_cancel;
     if (G->minibuf.on_submit != SEXP_FALSE)
         sexp_preserve_object(ctx, G->minibuf.on_submit);
+    if (G->minibuf.on_cancel != SEXP_FALSE)
+        sexp_preserve_object(ctx, G->minibuf.on_cancel);
 
     G->minibuf.active = true;
     G->needs_redraw   = true;
@@ -120,6 +135,8 @@ sexp scm_minibuffer_submit(sexp ctx, sexp self, sexp n) {
         G->minibuf.active = false;
         buffer_set_current(G->minibuf.prev_buf);
         G->needs_redraw = true;
+        // Full dismiss: return the calling buffer to normal-mode.
+        minibuf_invoke_command(ctx, "evil-normal");
     }
 
     if (cb_submit != SEXP_FALSE) {
@@ -158,6 +175,8 @@ sexp scm_minibuffer_cancel(sexp ctx, sexp self, sexp n) {
         G->minibuf.active = false;
         buffer_set_current(G->minibuf.prev_buf);
         G->needs_redraw = true;
+        // Full dismiss: return the calling buffer to normal-mode.
+        minibuf_invoke_command(ctx, "evil-normal");
     }
 
     if (cb_cancel != SEXP_FALSE) {
