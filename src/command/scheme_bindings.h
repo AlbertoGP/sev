@@ -77,6 +77,10 @@ sexp scm_set_key(sexp ctx, sexp self, sexp n,
 sexp scm_set_keymap_parent(sexp ctx, sexp self, sexp n,
                            sexp skeymap, sexp sparent);
 sexp scm_read_key_binding(sexp ctx, sexp self, sexp n, sexp callback);
+sexp scm_set_keymap_name(sexp ctx, sexp self, sexp n,
+                         sexp skeymap, sexp sname);
+sexp scm_bind_prefix(sexp ctx, sexp self, sexp n,
+                     sexp sparent, sexp skeystr, sexp schild);
 
 // --- text/var.c ---
 sexp scm_set_local(sexp ctx, sexp self, sexp n, sexp key, sexp sval);

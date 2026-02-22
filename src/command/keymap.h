@@ -48,10 +48,13 @@ typedef struct Keymap {
     size_t count;
     size_t cap;
     struct Keymap *parent;     // parent keymap for inheritance chain
+    char *name;                // NULL = anonymous; non-NULL = named prefix
 } Keymap;
 
 // Creates a new, empty keymap and returns a pointer to it.
 Keymap *keymap_create(void);
+// Bind a key sequence to a child keymap (prefix binding).
+void keymap_bind_prefix_sequence(Keymap *km, KeyEvent *seq, int n, Keymap *child);
 
 // Initialise global keymap state.
 bool init_input(AppState *state);

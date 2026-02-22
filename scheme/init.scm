@@ -38,9 +38,12 @@
 (set-key! global-keymap "C-S-RIGHT" 'pane-v-split-increase)
 (set-key! global-keymap "SPC l n" 'toggle-line-numbers)
 (set-key! global-keymap "SPC r n" 'toggle-relative-line-numbers)
-(set-key! global-keymap "SPC h f" 'describe-function)
-(set-key! global-keymap "SPC h k" 'describe-key)
-(set-key! global-keymap "SPC h w" 'which-key-toggle)
+(define help-map (make-keymap))
+(%set-keymap-name! help-map "help")
+(set-key! help-map "f" 'describe-function)
+(set-key! help-map "k" 'describe-key)
+(set-key! help-map "w" 'which-key-toggle)
+(%bind-prefix! global-keymap "SPC h" help-map)
 
 (set-key! global-keymap "M-x" 'execute-extended-command)
 

@@ -14,6 +14,7 @@ KeyEvent last_event;
 
 Keymap *keymap_create(void) {
     Keymap *km = calloc(1, sizeof(Keymap));
+    if (km) km->name = NULL;
     return km;
 }
 
@@ -450,6 +451,34 @@ void keymap_bind_sequence(Keymap *km, KeyEvent *seq, int n, Binding final) {
     keymap_add(km, seq[n - 1], final);
 }
 
+void keymap_bind_prefix_sequence(Keymap *km, KeyEvent *seq, int n, Keymap *child) {
+    // Navigate / create intermediate keymaps for the first n-1 keys
+    for (int i = 0; i < n - 1; i++) {
+        Binding *b = keymap_lookup_local(km, &seq[i]);
+
+        if (!b || b->type != BINDING_KEYMAP) {
+            Keymap *next = keymap_create();
+
+            Binding nb = {
+                .type = BINDING_KEYMAP,
+                .keymap = next
+            };
+
+            keymap_add(km, seq[i], nb);
+            km = next;
+        } else {
+            km = b->keymap;
+        }
+    }
+
+    // Bind the final key to the supplied child keymap
+    Binding final = {
+        .type = BINDING_KEYMAP,
+        .keymap = child
+    };
+    keymap_add(km, seq[n - 1], final);
+}
+
 // --- Scheme bindings ---
 
 sexp scm_make_keymap(sexp ctx, sexp self, sexp n) {
@@ -503,6 +532,38 @@ sexp scm_set_keymap_parent(sexp ctx, sexp self, sexp n,
     if (!km) return sexp_user_exception(ctx, self, "null keymap", skeymap);
     Keymap *parent = sexp_cpointer_value(sparent);
     km->parent = parent;
+    return SEXP_VOID;
+}
+
+// (%set-keymap-name! keymap name) -> void
+sexp scm_set_keymap_name(sexp ctx, sexp self, sexp n,
+                         sexp skeymap, sexp sname) {
+    Keymap *km = sexp_cpointer_value(skeymap);
+    if (!km) return sexp_user_exception(ctx, self, "null keymap", skeymap);
+    if (!sexp_stringp(sname))
+        return sexp_user_exception(ctx, self, "name must be a string", sname);
+    free(km->name);
+    km->name = strdup(sexp_string_data(sname));
+    return SEXP_VOID;
+}
+
+// (%bind-prefix! parent keystr child) -> void
+sexp scm_bind_prefix(sexp ctx, sexp self, sexp n,
+                     sexp sparent, sexp skeystr, sexp schild) {
+    Keymap *parent = sexp_cpointer_value(sparent);
+    if (!parent) return sexp_user_exception(ctx, self, "null parent keymap", sparent);
+    Keymap *child = sexp_cpointer_value(schild);
+    if (!child) return sexp_user_exception(ctx, self, "null child keymap", schild);
+    if (!sexp_stringp(skeystr))
+        return sexp_user_exception(ctx, self, "key must be a string", skeystr);
+
+    const char *keystr = sexp_string_data(skeystr);
+    KeyEvent seq[8];
+    int key_count = parse_key_sequence(keystr, seq);
+    if (key_count < 1)
+        return sexp_user_exception(ctx, self, "invalid key sequence", skeystr);
+
+    keymap_bind_prefix_sequence(parent, seq, key_count, child);
     return SEXP_VOID;
 }
 

@@ -12,6 +12,7 @@
 
 static char wk_key_strs[WK_MAX][WK_KEY_SZ];
 static char wk_label_strs[WK_MAX][64];
+static bool wk_is_prefix[WK_MAX];
 static int  wk_count;
 
 static void key_event_to_str(char *buf, size_t sz, const KeyEvent *ev) {
@@ -71,9 +72,22 @@ static void collect_entries(sexp ctx, Keymap *km, const char *prefix, int depth)
             const char *sym_name = sexp_string_data(name_sexp);
             snprintf(wk_label_strs[wk_count], sizeof(wk_label_strs[0]),
                      "%s", sym_name ? sym_name : "?");
+            wk_is_prefix[wk_count] = false;
             wk_count++;
         } else if (e->binding.type == BINDING_KEYMAP) {
-            collect_entries(ctx, e->binding.keymap, full_path, depth + 1);
+            Keymap *child = e->binding.keymap;
+            if (child && child->name) {
+                // Named prefix: show as collapsed entry
+                snprintf(wk_key_strs[wk_count], sizeof(wk_key_strs[0]),
+                         "%s", full_path);
+                snprintf(wk_label_strs[wk_count], sizeof(wk_label_strs[0]),
+                         "+%s", child->name);
+                wk_is_prefix[wk_count] = true;
+                wk_count++;
+            } else {
+                // Anonymous prefix: recurse as before
+                collect_entries(ctx, child, full_path, depth + 1);
+            }
         }
     }
 }
@@ -87,10 +101,15 @@ void WhichKey(AppState *state) {
     uint16_t font_size = (uint16_t)(14.0f * scale);
     float pad = 8.0f * scale;
 
+    sexp ctx = state->chibi.ctx;
     Clay_Color bg         = ui_resolve_color(state, state->ui.roles.tab_bar);
+    Clay_Color fg_header  = ui_resolve_color(state, state->ui.roles.text_primary);
     Clay_Color fg_key     = ui_resolve_color(state,
-                                sexp_intern(state->chibi.ctx, "text.key", -1));
-    Clay_Color fg_label   = ui_resolve_color(state, state->ui.roles.text_primary);
+                                sexp_intern(ctx, "text.key", -1));
+    Clay_Color fg_label   = ui_resolve_color(state,
+                                sexp_intern(ctx, "text.command", -1));
+    Clay_Color fg_prefix  = ui_resolve_color(state,
+                                sexp_intern(ctx, "text.prefix", -1));
     Clay_Color border_col = ui_resolve_color(state, state->ui.roles.text_faded);
 
     CLAY(CLAY_ID("WhichKey"), {
@@ -122,7 +141,7 @@ void WhichKey(AppState *state) {
         CLAY_TEXT(header_cs, CLAY_TEXT_CONFIG({
             .fontId    = FONT_NORMAL,
             .fontSize  = font_size,
-            .textColor = fg_label,
+            .textColor = fg_header,
             .wrapMode  = CLAY_TEXT_WRAP_NONE
         }));
 
@@ -159,7 +178,7 @@ void WhichKey(AppState *state) {
                 CLAY_TEXT(label_cs, CLAY_TEXT_CONFIG({
                     .fontId    = FONT_NORMAL,
                     .fontSize  = font_size,
-                    .textColor = fg_label,
+                    .textColor = wk_is_prefix[i] ? fg_prefix : fg_label,
                     .wrapMode  = CLAY_TEXT_WRAP_NONE
                 }));
             }
