@@ -77,6 +77,7 @@ typedef struct {
     bool active;
     bool enabled;
     struct Keymap *keymap;
+    char prefix_str[256];   // accumulated display string, e.g. "SPC h"
 } WhichKeyState;
 
 typedef struct AppState {

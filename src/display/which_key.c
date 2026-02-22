@@ -114,6 +114,18 @@ void WhichKey(AppState *state) {
             .width = { .top = 1, .bottom = 1, .left = 1, .right = 1 }
         }
     }) {
+        // Header: show the accumulated prefix
+        Clay_String header_cs = {
+            .chars  = state->which_key.prefix_str,
+            .length = (int32_t)strlen(state->which_key.prefix_str)
+        };
+        CLAY_TEXT(header_cs, CLAY_TEXT_CONFIG({
+            .fontId    = FONT_NORMAL,
+            .fontSize  = font_size,
+            .textColor = fg_label,
+            .wrapMode  = CLAY_TEXT_WRAP_NONE
+        }));
+
         for (int i = 0; i < wk_count; i++) {
             Clay_String key_cs = {
                 .chars  = wk_key_strs[i],
