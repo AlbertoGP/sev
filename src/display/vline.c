@@ -262,7 +262,7 @@ static const LogicalLineIndex *find_old_index(const LogicalLineIndex *old_index,
         if (hint + off < old_count && old_index[hint + off].line_id == line_id) {
             return &old_index[hint + off];
         }
-        if (off <= hint && old_index[hint - off].line_id == line_id) {
+        if (off <= hint && hint - off < old_count && old_index[hint - off].line_id == line_id) {
             return &old_index[hint - off];
         }
     }
