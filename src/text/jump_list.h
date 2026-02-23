@@ -25,6 +25,14 @@ static inline int jump_list_start(const JumpList *jl) {
     return jl->length <= JUMP_LIST_MAX ? 0 : jl->length % JUMP_LIST_MAX;
 }
 
+// Returns true when there is no newer entry to C-i forward to.
+static inline bool jump_list_at_front(const JumpList *jl) {
+    if (jl->length == 0) return true;
+    if (jl->length < JUMP_LIST_MAX)
+        return jl->current_index == jl->length;
+    return (jl->current_index + 1) % JUMP_LIST_MAX == jump_list_start(jl);
+}
+
 void jump_list_push(JumpList *jl, Jump j);
 // Returns true if navigation occurred.
 bool jump_list_backward(JumpList *jl);

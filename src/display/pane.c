@@ -801,8 +801,24 @@ static void jump_apply(JumpList *jl) {
 sexp scm_jump_backward(sexp ctx, sexp self, sexp n) {
     Pane *pane = pane_get_active();
     if (!pane || pane->type != PANE_CONTENT) return SEXP_VOID;
-    if (jump_list_backward(&pane->content.jump_list))
-        jump_apply(&pane->content.jump_list);
+    JumpList *jl = &pane->content.jump_list;
+    Buffer *buf = buffer_get_current();
+    if (!buf) return SEXP_VOID;
+
+    if (jump_list_at_front(jl)) {
+        // Save current position so C-i can return here.
+        Jump j = {
+            .buf_name = strdup(buffer_get_name(buf)),
+            .point    = point_get(buf),
+            .filename = NULL,
+        };
+        jump_list_push(jl, j);
+        // Skip backward past the entry we just pushed (it's our current spot).
+        jump_list_backward(jl);
+    }
+
+    if (jump_list_backward(jl))
+        jump_apply(jl);
     return SEXP_VOID;
 }
 
