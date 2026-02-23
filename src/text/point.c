@@ -466,5 +466,7 @@ sexp scm_buffer_substring(sexp ctx, sexp self, sexp n, sexp sstart, sexp send) {
     if (end > num_chars) end = num_chars;
     if (start > end) start = end;
     char *text = buffer_text(buf);
-    return sexp_c_string(ctx, text + start, end - start);
+    sexp result = sexp_c_string(ctx, text + start, end - start);
+    free(text);
+    return result;
 }

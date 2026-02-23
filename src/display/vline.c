@@ -285,9 +285,11 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
     cache->font_size = font_size;
     cache->full_rebuild = false;
 
-    const char *text = buffer_text(buf);
     const LineTable *lt = buffer_get_line_table(buf);
     if (!lt || !lt->lines) return;
+
+    const char *text = buffer_text(buf);
+    if (!text) { cache->full_rebuild = true; return; }
 
     if (full_rebuild) {
         // Full rebuild: reset and re-wrap everything
@@ -324,6 +326,7 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
             cache->index = old_index;
             cache->index_cap = old_index_cap;
             cache->full_rebuild = true;
+            free((char*)text);
             vline_rebuild(cache, buf, renderer, pane_width, font_id, font_size);
             return;
         }
@@ -369,6 +372,8 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
         free(old_lines);
         free(old_index);
     }
+
+    free((char*)text);
 
     // Shrink if underutilized
     vline_cache_shrink(cache);

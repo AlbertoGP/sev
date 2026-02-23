@@ -25,7 +25,9 @@ static sexp scm_eval_buffer(sexp ctx, sexp self, sexp n) {
     sexp_gc_var2(result, str);
     sexp_gc_preserve2(ctx, result, str);
 
-    result = sexp_eval_string(ctx, buffer_text(buffer_get_current()), -1, NULL);
+    char *eval_src = buffer_text(buffer_get_current());
+    result = sexp_eval_string(ctx, eval_src, -1, NULL);
+    free(eval_src);
 
     if (sexp_exceptionp(result)) {
         G->needs_extra_frame = true;
