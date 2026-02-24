@@ -411,9 +411,9 @@ size_t vline_for_byte_pos(const VLineCache *cache, size_t byte_pos) {
         if (byte_pos < vl->byte_start) {
             hi = mid;
         } else if (byte_pos >= vl->byte_end && mid + 1 < cache->count) {
-            // Check if we're at line boundary
-            if (byte_pos == vl->byte_end && vl->byte_start < vl->byte_end) {
-                // Cursor at end of non-empty line belongs to this line
+            if (byte_pos == vl->byte_end) {
+                // Cursor exactly at line's end belongs to this line
+                // (handles both non-empty lines and empty lines where byte_start == byte_end)
                 return mid;
             }
             lo = mid + 1;
