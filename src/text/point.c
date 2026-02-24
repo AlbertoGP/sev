@@ -248,6 +248,9 @@ void set_column(int column, bool round) {
     LineTable lt = buf->lt;
     size_t line_index = line_index_at(&lt, pos);
     int last_col = (int)(lt.lines[line_index].end - lt.lines[line_index].start);
+    if (last_col > 0 && buf_char_at(buf, lt.lines[line_index].end - 1) == '\n') {
+        last_col--;
+    }
 
     if (column > last_col + 1)
         column = last_col + 1;
@@ -272,7 +275,11 @@ void point_to_line_end(Buffer *buf) {
     size_t pos = point_get(buf).pos;
     LineTable lt = buf->lt;
     size_t line_index = line_index_at(&lt, pos);
-    point_set((Location){.pos = buf->lt.lines[line_index].end});
+    size_t end = buf->lt.lines[line_index].end;
+    if (end > buf->lt.lines[line_index].start && buf_char_at(buf, end - 1) == '\n') {
+        end--;
+    }
+    point_set((Location){.pos = end});
     update_line(buf);
     save_current_column(buf);
 }

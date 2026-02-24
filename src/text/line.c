@@ -128,13 +128,17 @@ bool line_insert_char(LineTable *lt, size_t pos, char ch) {
     if (!line_table_insert(lt, line_number + 1, new_line))
         return false;
 
-    current_line->end = pos;
+    // line_table_insert might have reallocated lt->lines, so we must refresh the pointer
+    current_line = &lt->lines[line_number];
+
+    current_line->end = pos + 1;
     current_line->version++;
 
     // Update start/end indices for all subsequent lines
     for (size_t i = line_number + 2; i < lt->count; i++) {
         lt->lines[i].start++;
         lt->lines[i].end++;
+        lt->lines[i].version++;
     }
 
     return true;
@@ -179,6 +183,7 @@ void line_backspace_char(LineTable *lt, size_t pos, char ch) {
     for (size_t i = line_number; i < lt->count; i++) {
         lt->lines[i].start--;
         lt->lines[i].end--;
+        lt->lines[i].version++;
     }
 }
 
@@ -221,5 +226,6 @@ void line_delete_char(LineTable *lt, size_t pos, char ch) {
     for (size_t i = line_number + 1; i < lt->count; i++) {
         lt->lines[i].start--;
         lt->lines[i].end--;
+        lt->lines[i].version++;
     }
 }

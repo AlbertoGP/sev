@@ -257,6 +257,8 @@ static const LogicalLineIndex *find_old_index(const LogicalLineIndex *old_index,
         return &old_index[hint];
     }
 
+    if (hint >= old_count) hint = old_count - 1;
+
     // Scan from hint forward, then backward
     for (size_t off = 1; off < old_count; off++) {
         if (hint + off < old_count && old_index[hint + off].line_id == line_id) {
@@ -412,9 +414,12 @@ size_t vline_for_byte_pos(const VLineCache *cache, size_t byte_pos) {
             hi = mid;
         } else if (byte_pos >= vl->byte_end && mid + 1 < cache->count) {
             if (byte_pos == vl->byte_end) {
-                // Cursor exactly at line's end belongs to this line
-                // (handles both non-empty lines and empty lines where byte_start == byte_end)
-                return mid;
+                // Cursor exactly at line's end belongs to this line only if it's the last visual segment
+                // AND the next line doesn't start exactly at this point.
+                bool is_last = (cache->lines[mid+1].line_id != vl->line_id);
+                if (is_last && cache->lines[mid+1].byte_start != byte_pos) {
+                    return mid;
+                }
             }
             lo = mid + 1;
         } else {
