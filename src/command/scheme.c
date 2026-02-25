@@ -185,6 +185,36 @@ static sexp scm_buffer_set_name(sexp ctx, sexp self, sexp n, sexp sname) {
     return SEXP_VOID;
 }
 
+static sexp scm_buffer_insert(sexp ctx, sexp self, sexp n, sexp sname) {
+    if (!sexp_stringp(sname))
+        return sexp_user_exception(ctx, self, "filename must be a string", sname);
+    bool ok = buffer_insert(sexp_string_data(sname));
+    return ok ? SEXP_TRUE : SEXP_FALSE;
+}
+
+static sexp scm_buffer_read(sexp ctx, sexp self, sexp n) {
+    bool ok = buffer_read();
+    return ok ? SEXP_TRUE : SEXP_FALSE;
+}
+
+static sexp scm_buffer_create(sexp ctx, sexp self, sexp n, sexp sname) {
+    if (!sexp_stringp(sname))
+        return sexp_user_exception(ctx, self, "buffer name must be a string", sname);
+    Buffer *buf = buffer_create(sexp_string_data(sname));
+    return buf ? SEXP_TRUE : SEXP_FALSE;
+}
+
+static sexp scm_pane_set_buffer(sexp ctx, sexp self, sexp n, sexp sname) {
+    if (!sexp_stringp(sname))
+        return sexp_user_exception(ctx, self, "buffer name must be a string", sname);
+    Buffer *buf = buffer_get_by_name(sexp_string_data(sname));
+    if (!buf) return SEXP_FALSE;
+    Pane *pane = pane_get_active();
+    pane_set_buffer(pane, buf);
+    G->needs_redraw = true;
+    return SEXP_TRUE;
+}
+
 
 void scheme_init(AppState *state) {
     G = state;
@@ -314,6 +344,10 @@ void scheme_init(AppState *state) {
     SDEF("%buffer-modified?", 0, scm_buffer_modified_p);
     SDEF("%set-buffer-modified!", 1, scm_set_buffer_modified);
     SDEF("%buffer-set-name!", 1, scm_buffer_set_name);
+    SDEF("%buffer-insert", 1, scm_buffer_insert);
+    SDEF("%buffer-read", 0, scm_buffer_read);
+    SDEF("%buffer-create", 1, scm_buffer_create);
+    SDEF("%pane-set-buffer!", 1, scm_pane_set_buffer);
 
     // Mode primitives
     SDEF("%register-mode", 3, scm_register_mode);
@@ -443,6 +477,7 @@ void scheme_init(AppState *state) {
         "%buffer-has-minor-mode? "
         "%buffer-file-name %set-buffer-file-name! %buffer-write "
         "%buffer-modified? %set-buffer-modified! %buffer-set-name! "
+        "%buffer-insert %buffer-read %buffer-create %pane-set-buffer! "
         "%register-mode %set-major-mode "
         "%enable-minor-mode %disable-minor-mode "
         "%buffer-major-mode %buffer-minor-modes "

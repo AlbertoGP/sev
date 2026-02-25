@@ -71,3 +71,37 @@
             (message (string-append "Saved " filename))
             (message (string-append "Failed to save " filename)))
         (call-interactively 'save-buffer-as))))
+
+(defcommand (open-file)
+  "Open an existing file into a new buffer, or switch to it if already open."
+  (interactive)
+  (minibuffer-read "Find file: "
+    (lambda (filename)
+      (if (string=? filename "")
+          (message "Filename cannot be empty")
+          (if (not (file-exists? filename))
+              (message (string-append "File not found: " filename))
+              (begin
+                (%jump-push!)
+                (if (%buffer-create filename)
+                    (begin
+                      (%pane-set-buffer! filename)
+                      (%set-buffer-file-name! filename)
+                      (if (%buffer-read)
+                          (message (string-append "Opened " filename))
+                          (message (string-append "Failed to read " filename))))
+                    (begin
+                      (%pane-set-buffer! filename)
+                      (message (string-append "Switched to buffer " filename))))))))))
+
+(defcommand (read-file)
+  "Insert the contents of a file at the point in the current buffer without moving point or other text."
+  (interactive)
+  (minibuffer-read "Insert file: "
+    (lambda (filename)
+      (if (string=? filename "")
+          (message "Filename cannot be empty")
+          (begin
+            (if (%buffer-insert filename)
+                (message (string-append "Inserted " filename))
+                (message (string-append "Could not read " filename))))))))

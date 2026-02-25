@@ -130,6 +130,11 @@ bool pane_set_buffer(Pane *pane, Buffer *buf) {
     pane->type = PANE_CONTENT;
     pane->content.type = CONTENT_TEXT;
     pane->content.buffer = buf;
+    pane->content.vline_cache.full_rebuild = true;
+
+    if (pane->content.active) {
+        sync_active_buffer();
+    }
 
     return true;
 }

@@ -165,8 +165,14 @@ bool buffer_clear(Buffer *buf) {
         buf->is_modified = true;
     }
 
+    uint64_t next_id = buf->lt.next_line_id;
     line_table_destroy(&buf->lt);
     buf->lt = new_lt;
+    buf->lt.next_line_id = next_id;
+    buf->lt.lines[0].line_id = buf->lt.next_line_id++;
+
+    // Force redraw
+    if (G) G->needs_redraw = true;
 
     return true;
 }
@@ -285,4 +291,56 @@ void set_modified(bool is_modified) {
 bool get_modified(void) {
     Buffer *buf = buffer_get_current();
     return buf ? buf->is_modified : false;
+}
+
+bool buffer_insert(char *file_name) {
+    Buffer *buf = buffer_get_current();
+    if (!buf || !file_name || file_name[0] == '\0') return false;
+
+    FILE *f = fopen(file_name, "rb");
+    if (!f) return false;
+
+    char buffer[4096];
+    size_t bytes;
+    bool inserted = false;
+
+    while ((bytes = fread(buffer, 1, sizeof(buffer) - 1, f)) > 0) {
+        buffer[bytes] = '\0';
+        insert_string(buf, buffer);
+        inserted = true;
+    }
+
+    fclose(f);
+    if (inserted) {
+        buf->is_modified = true;
+    }
+    return true;
+}
+
+bool buffer_read(void) {
+    Buffer *buf = buffer_get_current();
+    if (!buf || buf->file_name[0] == '\0') return false;
+
+    buffer_clear(buf);
+
+    FILE *f = fopen(buf->file_name, "rb");
+    if (!f) return false;
+
+    char buffer[4096];
+    size_t bytes;
+
+    while ((bytes = fread(buffer, 1, sizeof(buffer) - 1, f)) > 0) {
+        buffer[bytes] = '\0';
+        insert_string(buf, buffer);
+    }
+
+    fclose(f);
+
+    buf->file_time.mtime.tv_sec = time(NULL);
+    buf->file_time.mtime.tv_nsec = 0;
+    buf->is_modified = false;
+
+    point_set(count_to_location(0));
+
+    return true;
 }
