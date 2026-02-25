@@ -1,6 +1,6 @@
 (define-library (editor built-in)
   (import (except (scheme base) newline)
-          (editor primitives) (editor command))
+          (editor primitives) (editor command) (editor minibuffer))
   (export
     quit self-insert eval-buffer
     next-line prev-line forward-char backward-char
@@ -14,5 +14,6 @@
     pane-h-split-increase pane-h-split-decrease
     pane-v-split-increase pane-v-split-decrease
     clay-debug exchange-point-and-mark
-    line-start-skip-whitespace join-line)
+    line-start-skip-whitespace join-line
+    save-buffer save-buffer-as)
   (include "built-in.scm"))

@@ -48,3 +48,26 @@
   "Delete newline character between the current and subsequent line."
   (line-end) (delete-forward-char))
 
+(defcommand (save-buffer-as)
+  "Save the current buffer under a new file name."
+  (interactive)
+  (minibuffer-read "Save as: "
+    (lambda (filename)
+      (if (string=? filename "")
+          (message "Filename cannot be empty")
+          (begin
+            (%set-buffer-file-name! filename)
+            (%buffer-set-name! filename)
+            (if (%buffer-write)
+                (message (string-append "Saved " filename))
+                (message (string-append "Failed to save " filename))))))))
+
+(defcommand (save-buffer)
+  "Save the current buffer. If no file name is set, prompt for one."
+  (interactive)
+  (let ((filename (%buffer-file-name)))
+    (if (not (eq? filename #f))
+        (if (%buffer-write)
+            (message (string-append "Saved " filename))
+            (message (string-append "Failed to save " filename)))
+        (call-interactively 'save-buffer-as))))

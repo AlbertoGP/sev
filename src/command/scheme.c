@@ -7,6 +7,7 @@
 #include "scheme.h"
 #include "scheme_bindings.h"
 #include "../text/buffer.h"
+#include "../text/buffer_type.h"
 #include "../text/var.h"
 #include "../display/pane.h"
 
@@ -146,6 +147,45 @@ static sexp scm_clipboard_set(sexp ctx, sexp self, sexp n, sexp stext) {
     return SEXP_VOID;
 }
 
+static sexp scm_buffer_file_name(sexp ctx, sexp self, sexp n) {
+    char name[FILE_NAME_MAX] = {0};
+    get_file_name(name, sizeof(name));
+    if (name[0] == '\0') {
+        return SEXP_FALSE;
+    }
+    return sexp_c_string(ctx, name, -1);
+}
+
+static sexp scm_set_buffer_file_name(sexp ctx, sexp self, sexp n, sexp sname) {
+    if (!sexp_stringp(sname))
+        return sexp_user_exception(ctx, self, "filename must be a string", sname);
+    set_file_name(sexp_string_data(sname));
+    return SEXP_VOID;
+}
+
+static sexp scm_buffer_write(sexp ctx, sexp self, sexp n) {
+    bool ok = buffer_write();
+    return ok ? SEXP_TRUE : SEXP_FALSE;
+}
+
+static sexp scm_buffer_modified_p(sexp ctx, sexp self, sexp n) {
+    return get_modified() ? SEXP_TRUE : SEXP_FALSE;
+}
+
+static sexp scm_set_buffer_modified(sexp ctx, sexp self, sexp n, sexp val) {
+    set_modified(sexp_truep(val));
+    return SEXP_VOID;
+}
+
+static sexp scm_buffer_set_name(sexp ctx, sexp self, sexp n, sexp sname) {
+    if (!sexp_stringp(sname))
+        return sexp_user_exception(ctx, self, "buffer name must be a string", sname);
+    buffer_set_name(sexp_string_data(sname));
+    G->needs_redraw = true; // since tab name might change
+    return SEXP_VOID;
+}
+
+
 void scheme_init(AppState *state) {
     G = state;
     sexp_scheme_init();
@@ -268,6 +308,12 @@ void scheme_init(AppState *state) {
     SDEF("%set-mode-allows-input!", 2, scm_set_mode_allows_input);
     SDEF("ignore", 0, scm_ignore);
     SDEF("%buffer-has-minor-mode?", 1, scm_buffer_has_minor_mode);
+    SDEF("%buffer-file-name", 0, scm_buffer_file_name);
+    SDEF("%set-buffer-file-name!", 1, scm_set_buffer_file_name);
+    SDEF("%buffer-write", 0, scm_buffer_write);
+    SDEF("%buffer-modified?", 0, scm_buffer_modified_p);
+    SDEF("%set-buffer-modified!", 1, scm_set_buffer_modified);
+    SDEF("%buffer-set-name!", 1, scm_buffer_set_name);
 
     // Mode primitives
     SDEF("%register-mode", 3, scm_register_mode);
@@ -395,6 +441,8 @@ void scheme_init(AppState *state) {
         "%set-keymap-parent! %set-keymap-name! %bind-prefix! "
         "%read-key-binding %set-mode-allows-input! ignore "
         "%buffer-has-minor-mode? "
+        "%buffer-file-name %set-buffer-file-name! %buffer-write "
+        "%buffer-modified? %set-buffer-modified! %buffer-set-name! "
         "%register-mode %set-major-mode "
         "%enable-minor-mode %disable-minor-mode "
         "%buffer-major-mode %buffer-minor-modes "

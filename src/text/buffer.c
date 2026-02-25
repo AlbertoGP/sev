@@ -1,8 +1,10 @@
 // Buffer lifecycle and list management.
 
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "buffer.h"
 #include "buffer_type.h"
@@ -237,4 +239,50 @@ bool buffer_set_scale(Buffer *buf, float new_value) {
     if (!buf) return false;
     buf->scale_factor = new_value;
     return true;
+}
+
+void get_file_name(char *file_name, int size) {
+    Buffer *buf = buffer_get_current();
+    if (!buf || !file_name || size <= 0) return;
+    strncpy(file_name, buf->file_name, size - 1);
+    file_name[size - 1] = '\0';
+}
+
+bool set_file_name(char *file_name) {
+    Buffer *buf = buffer_get_current();
+    if (!buf || !file_name) return false;
+    strncpy(buf->file_name, file_name, FILE_NAME_MAX - 1);
+    buf->file_name[FILE_NAME_MAX - 1] = '\0';
+    return true;
+}
+
+bool buffer_write(void) {
+    Buffer *buf = buffer_get_current();
+    if (!buf || buf->file_name[0] == '\0') return false;
+
+    FILE *f = fopen(buf->file_name, "wb");
+    if (!f) return false;
+
+    char *text = buffer_text(buf);
+    if (text) {
+        size_t len = strlen(text);
+        fwrite(text, 1, len, f);
+        free(text);
+    }
+    fclose(f);
+
+    buf->file_time.mtime.tv_sec = time(NULL);
+    buf->file_time.mtime.tv_nsec = 0;
+    buf->is_modified = false;
+    return true;
+}
+
+void set_modified(bool is_modified) {
+    Buffer *buf = buffer_get_current();
+    if (buf) buf->is_modified = is_modified;
+}
+
+bool get_modified(void) {
+    Buffer *buf = buffer_get_current();
+    return buf ? buf->is_modified : false;
 }
