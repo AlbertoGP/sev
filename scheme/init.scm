@@ -49,12 +49,12 @@
 (set-key! help-map "f" 'describe-function)
 (set-key! help-map "k" 'describe-key)
 (set-key! help-map "w" 'which-key-toggle)
-(%bind-prefix! global-keymap "SPC h" help-map)
+(bind-prefix! global-keymap "SPC h" help-map)
 (define split-map (make-keymap))
 (%set-keymap-name! split-map "split")
 (set-key! split-map "h" 'split-horizontal)
 (set-key! split-map "v" 'split-vertical)
-(%bind-prefix! global-keymap "SPC s" split-map)
+(bind-prefix! global-keymap "SPC s" split-map)
 
 (set-key! global-keymap "M-x" 'execute-extended-command)
 

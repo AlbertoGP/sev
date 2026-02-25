@@ -11,7 +11,8 @@
 ;; Storage tables
 (define *doc-table* (make-hash-table eq?))           ; sym -> <doc>
 (define *interactive-table* (make-hash-table eq?))   ; sym -> spec
-(define *key-bindings-table* (make-hash-table eq?))  ; sym -> (list "C-x" ...)
+(define *keymap-edges* (make-hash-table eq?))    ; child-keymap -> list of (parent-keymap . prefix-str)
+(define *keymap-commands* (make-hash-table eq?)) ; command-sym -> list of (keymap . keystr)
 
 ;; Documentation API
 (define (set-doc! sym kind text)
@@ -45,18 +46,41 @@
   (hash-table-ref/default *interactive-table* sym #f))
 
 ;; Reverse keymap lookup
-(define (register-key-binding! sym keystr)
-  (let ((existing (hash-table-ref/default *key-bindings-table* sym '())))
-    (hash-table-set! *key-bindings-table* sym (cons keystr existing))))
+(define (register-keymap-edge! parent prev child)
+  (let ((existing (hash-table-ref/default *keymap-edges* child '())))
+    (hash-table-set! *keymap-edges* child (cons (cons parent prev) existing))))
+
+(define (register-command-binding! keymap prefix sym)
+  (let ((existing (hash-table-ref/default *keymap-commands* sym '())))
+    (hash-table-set! *keymap-commands* sym (cons (cons keymap prefix) existing))))
+
+(define (resolve-paths keymap prefix)
+  (let ((parents (hash-table-ref/default *keymap-edges* keymap '())))
+    (if (null? parents)
+        (list prefix)
+        (apply append
+               (map (lambda (p)
+                      (let ((parent-map (car p))
+                            (parent-prefix (cdr p)))
+                        (resolve-paths parent-map (string-append parent-prefix " " prefix))))
+                    parents)))))
 
 (define (where-is sym)
-  (hash-table-ref/default *key-bindings-table* sym '()))
+  (let ((bindings (hash-table-ref/default *keymap-commands* sym '())))
+    (apply append
+           (map (lambda (b)
+                  (resolve-paths (car b) (cdr b)))
+                bindings))))
+
+(define (bind-prefix! parent keystr child)
+  (register-keymap-edge! parent keystr child)
+  (%bind-prefix! parent keystr child))
 
 ;; Enhanced set-key! (wraps C primitive %set-key!)
 (define (set-key! keymap keystr cmd)
   (cond
     ((symbol? cmd)
-     (register-key-binding! cmd keystr)
+     (register-command-binding! keymap keystr cmd)
      (%set-key! keymap keystr cmd))
     (else
      (%set-key! keymap keystr cmd))))
