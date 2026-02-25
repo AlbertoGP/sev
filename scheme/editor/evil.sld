@@ -17,7 +17,7 @@
     evil-motion-W evil-motion-B evil-motion-E evil-motion-gg evil-motion-G
     evil-op-delete evil-op-change evil-op-yank evil-D evil-C evil-S evil-x evil-X
     evil-visual-delete evil-visual-change evil-visual-yank
-    evil-paste-after evil-paste-before
+    evil-paste-after evil-paste-before evil-insert-paste-clipboard
     evil-use-register current-evil-register
     evil-digit-argument evil-zero evil-repeat evil-undo evil-redo evil-line-restore
     evil-set-mark evil-goto-mark-line evil-goto-mark-exact
