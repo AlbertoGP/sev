@@ -31,6 +31,9 @@ void tab_list_quit(void);
 
 // Create a new, empty tab with the given name.
 bool tab_create(const char *name);
+// Create a new tab backed by the named buffer (creating it if needed),
+// and switch to it. Returns true on success.
+bool tab_new_with_buffer(const char *buf_name);
 // Get the current tab.
 Tab *tab_get_current(void);
 // Sets current tab to next (circular).

@@ -1,5 +1,8 @@
 ;;; build-in.scm - built-in editor command definitions.
 
+;; Counter for auto-naming new buffers (untitled-1, untitled-2, ...)
+(define *new-buffer-counter* 0)
+
 ;; C primitive commands
 (defcommand quit "Exit the editor.")
 (defcommand self-insert "Insert the character that invoked this command.")
@@ -105,3 +108,57 @@
             (if (%buffer-insert filename)
                 (message (string-append "Inserted " filename))
                 (message (string-append "Could not read " filename))))))))
+
+(defcommand (buffer-new)
+  "Create a new empty buffer named untitled-n and display it in the current pane."
+  (interactive)
+  (set! *new-buffer-counter* (+ *new-buffer-counter* 1))
+  (let ((name (string-append "untitled-" (number->string *new-buffer-counter*))))
+    (%buffer-create name)
+    (%pane-set-buffer! name)
+    (message (string-append "Created buffer " name))))
+
+(defcommand (buffer-rename)
+  "Rename the current buffer."
+  (interactive)
+  (minibuffer-read "Rename buffer to: "
+    (lambda (new-name)
+      (if (string=? new-name "")
+          (message "Buffer name cannot be empty")
+          (if (%buffer-set-name! new-name)
+              (message (string-append "Buffer renamed to " new-name))
+              (message (string-append "Name already in use: " new-name)))))))
+
+(defcommand (scratch-buffer)
+  "Switch to the *scratch* buffer, creating it if it does not exist."
+  (interactive)
+  (unless (%pane-set-buffer! "*scratch*")
+    (%buffer-create "*scratch*")
+    (%pane-set-buffer! "*scratch*"))
+  (message "Switched to *scratch*"))
+
+(defcommand (switch-to-buffer)
+  "Switch the current pane to a named buffer."
+  (interactive)
+  (minibuffer-read "Switch to buffer: "
+    (lambda (name)
+      (if (string=? name "")
+          (message "Buffer name cannot be empty")
+          (if (%pane-set-buffer! name)
+              (message (string-append "Switched to " name))
+              (message (string-append "No buffer named \"" name "\"")))))))
+
+(defcommand (tab-new)
+  "Create a new tab. Prompts for a buffer name; auto-generates untitled-n if left empty."
+  (interactive)
+  (minibuffer-read "Buffer name for new tab (empty for auto): "
+    (lambda (name)
+      (let ((buf-name
+             (if (string=? name "")
+                 (begin
+                   (set! *new-buffer-counter* (+ *new-buffer-counter* 1))
+                   (string-append "untitled-" (number->string *new-buffer-counter*)))
+                 name)))
+        (if (%tab-new! buf-name)
+            (message (string-append "Opened tab " buf-name))
+            (message (string-append "Failed to create tab " buf-name)))))))

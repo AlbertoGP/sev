@@ -424,6 +424,31 @@ void TabContent(AppState *state) {
     PaneContent(state, t->contents, 1, 0, 0);
 }
 
+bool tab_new_with_buffer(const char *buf_name) {
+    Buffer *buf = buffer_get_by_name(buf_name);
+    if (!buf) {
+        buf = buffer_create(buf_name);
+        if (!buf) return false;
+    }
+
+    if (!tab_create(buf_name)) return false;
+
+    // tab_create appends to the end; find and switch to it.
+    Tab *t = tl.list;
+    while (t->next) t = t->next;
+    tl.current = t;
+
+    t->contents = pane_create();
+    if (!t->contents) return false;
+    pane_set_buffer(t->contents, buf);
+    t->contents->content.active = true;
+
+    sync_active_buffer();
+    update_window_title();
+    G->needs_redraw = true;
+    return true;
+}
+
 // --- Scheme bindings ---
 
 sexp scm_tab_next(sexp ctx, sexp self, sexp n) {
@@ -438,4 +463,11 @@ sexp scm_tab_prev(sexp ctx, sexp self, sexp n) {
     message_clear();
     if (tab_prev()) message_send("tab-prev");
     return SEXP_VOID;
+}
+
+sexp scm_tab_new(sexp ctx, sexp self, sexp n, sexp sbuf_name) {
+    if (!sexp_stringp(sbuf_name))
+        return sexp_user_exception(ctx, self, "buffer name must be a string", sbuf_name);
+    bool ok = tab_new_with_buffer(sexp_string_data(sbuf_name));
+    return ok ? SEXP_TRUE : SEXP_FALSE;
 }

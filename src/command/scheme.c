@@ -180,9 +180,9 @@ static sexp scm_set_buffer_modified(sexp ctx, sexp self, sexp n, sexp val) {
 static sexp scm_buffer_set_name(sexp ctx, sexp self, sexp n, sexp sname) {
     if (!sexp_stringp(sname))
         return sexp_user_exception(ctx, self, "buffer name must be a string", sname);
-    buffer_set_name(sexp_string_data(sname));
-    G->needs_redraw = true; // since tab name might change
-    return SEXP_VOID;
+    bool ok = buffer_set_name(sexp_string_data(sname));
+    if (ok) G->needs_redraw = true; // since tab name might change
+    return ok ? SEXP_TRUE : SEXP_FALSE;
 }
 
 static sexp scm_buffer_insert(sexp ctx, sexp self, sexp n, sexp sname) {
@@ -310,6 +310,7 @@ void scheme_init(AppState *state) {
     SDEF("%set-replace-mode!", 1, scm_set_replace_mode);
     SDEF("tab-next", 0, scm_tab_next);
     SDEF("tab-prev", 0, scm_tab_prev);
+    SDEF("%tab-new!", 1, scm_tab_new);
     SDEF("reset-global-scale", 0, scm_reset_global_scale);
     SDEF("increase-global-scale", 0, scm_increase_global_scale);
     SDEF("decrease-global-scale", 0, scm_decrease_global_scale);
@@ -463,7 +464,7 @@ void scheme_init(AppState *state) {
         "delete-backward-char delete-forward-char set-column "
         "line-start line-end skip-whitespace char-at-point "
         "point-get point-set! buffer-length delete-range char-at "
-        "last-key-char %set-replace-mode! tab-next tab-prev "
+        "last-key-char %set-replace-mode! tab-next tab-prev %tab-new! "
         "reset-global-scale increase-global-scale decrease-global-scale "
         "reset-buffer-scale increase-buffer-scale decrease-buffer-scale "
         "split-vertical split-horizontal pane-close %pop-to-buffer "
