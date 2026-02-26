@@ -402,6 +402,7 @@
   (set! evil-op-count #f)
   (set! evil-pending-op #f)
   (set! evil-op-echo #f)
+  (message-clear)
   (disable-minor-mode 'evil-pending-mode)
   (enable-minor-mode 'evil-normal-mode)
   (set-local! 'mode-name "Normal")
@@ -489,7 +490,7 @@
         (disable-minor-mode 'evil-normal-mode)
         (enable-minor-mode 'evil-pending-mode)
         (set-local! 'mode-name "Pending")
-        (message (string-append echo "-")))))
+        (message-echo (string-append echo "-")))))
 
 ;; Core dispatch: execute a text object
 (define (evil-execute-text-object kind)
@@ -657,7 +658,7 @@
     (when (and ch (not (eq? ch #f)))
       (let ((digit (- (char->integer ch) (char->integer #\0))))
         (set! evil-count (+ (* (or evil-count 0) 10) digit))
-        (message (string-append (or evil-op-echo "") (number->string evil-count) "-"))))))
+        (message-echo (string-append (or evil-op-echo "") (number->string evil-count) "-"))))))
 
 ;; 0 key: line-start or append zero to count
 (defcommand (evil-zero)
@@ -665,7 +666,7 @@
   (if evil-count
       (begin
         (set! evil-count (* evil-count 10))
-        (message (string-append (or evil-op-echo "") (number->string evil-count) "-")))
+        (message-echo (string-append (or evil-op-echo "") (number->string evil-count) "-")))
       (evil-execute-motion 'motion-0)))
 
 ;;;

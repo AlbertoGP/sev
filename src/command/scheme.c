@@ -277,6 +277,7 @@ void scheme_init(AppState *state) {
     // Register foreign functions
     SDEF("quit", 0, scm_quit);
     sexp_define_foreign_opt(ctx, env, "message", 1, (sexp_proc1)scm_message, SEXP_FALSE);
+    SDEF("message-echo", 1, scm_message_echo_scm);
     SDEF("message-clear", 0, scm_message_clear);
     SDEF("message-lock", 0, scm_message_lock);
     SDEF("message-unlock", 0, scm_message_unlock);
@@ -458,7 +459,7 @@ void scheme_init(AppState *state) {
     result = sexp_eval_string(ctx,
         "(add-module! '(editor primitives) "
         "(make-module "
-        "'(quit message message-clear message-lock message-unlock "
+        "'(quit message message-echo message-clear message-lock message-unlock "
         "make-keymap %set-key! insert-char self-insert delete-char "
         "move-point move-point-by-line next-line prev-line "
         "forward-char backward-char newline insert-tab "

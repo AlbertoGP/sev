@@ -69,6 +69,15 @@ void message_send(const char* message) {
 
 // --- Scheme bindings ---
 
+sexp scm_message_echo_scm(sexp ctx, sexp self, sexp n, sexp sarg) {
+    G->needs_redraw = true;
+    if (!sexp_stringp(sarg))
+        return sexp_type_exception(ctx, self, SEXP_STRING, sarg);
+    const char *str = sexp_string_data(sarg);
+    message_echo(str);
+    return SEXP_VOID;
+}
+
 sexp scm_message(sexp ctx, sexp self, sexp n, sexp sarg) {
     G->needs_redraw = true;
     if (sarg == SEXP_FALSE) {

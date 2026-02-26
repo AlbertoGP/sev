@@ -147,6 +147,7 @@ sexp scm_macro_is_recording(sexp ctx, sexp self, sexp n);
 
 // --- command/message.c ---
 sexp scm_message(sexp ctx, sexp self, sexp n, sexp sarg);
+sexp scm_message_echo_scm(sexp ctx, sexp self, sexp n, sexp sarg);
 sexp scm_message_clear(sexp ctx, sexp self, sexp n);
 sexp scm_message_lock(sexp ctx, sexp self, sexp n);
 sexp scm_message_unlock(sexp ctx, sexp self, sexp n);

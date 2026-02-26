@@ -166,11 +166,12 @@ static void execute_command(AppState *state, Binding *b) {
 }
 
 static void reset_key_state(AppState *state) {
+    bool was_mid_prefix = (state->input.current_map != state->input.global_map);
     state->input.current_map = state->input.global_map;
     state->which_key.active = false;
     state->which_key.prefix_str[0] = '\0';
     state->needs_redraw = true;
-    message_echo_clear();
+    if (was_mid_prefix) message_echo_clear();
 }
 
 static void key_dispatch_inner(AppState *state, const KeyEvent *ev) {
@@ -213,6 +214,7 @@ static void key_dispatch_inner(AppState *state, const KeyEvent *ev) {
             }
         }
         reset_key_state(state);
+        message_echo_clear();
         goto record_macro;  // silently ignore, but still record
     }
 
