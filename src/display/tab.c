@@ -67,22 +67,8 @@ bool tab_list_init(AppState *state) {
 "All mimsy were the borogoves,\n"
 "    And the mome raths outgrabe.");
     point_set((Location){.pos = 0});
-
-    #define NAME_1 "untitled-1"
-    Buffer *buf = buffer_create(NAME_1);
-    tab_create(NAME_1);
-    Tab *next = tl.list->next;
-    next->contents = pane_create();
-    pane_set_buffer(next->contents, buf);
-    next->contents->content.active = true;
-
-    #define NAME_2 "untitled-2"
-    buf = buffer_create(NAME_2);
-    tab_create(NAME_2);
-    next = next->next;
-    next->contents = pane_create();
-    pane_set_buffer(next->contents, buf);
-    next->contents->content.active = true;
+    save_current_column(buffer_get_current());
+    update_line(buffer_get_current());
 
     update_window_title();
 
