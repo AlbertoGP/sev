@@ -18,9 +18,27 @@ Clay_String message_string = {
 };
 
 static bool locked = false;
+static bool is_transient = false;
 
 void message_clear(void) {
     if (locked) return;
+    is_transient = false;
+    for (int i = 0; i < MAX_MESSAGE_LENGTH; i++)
+        message_buf[i] = 0;
+    message_string.length = 0;
+}
+
+void message_echo(const char *msg) {
+    if (locked) return;
+    message_buf[0] = '\0';
+    strncat(message_buf, msg, MAX_MESSAGE_LENGTH - 1);
+    message_string.length = strlen(message_buf);
+    is_transient = true;
+}
+
+void message_echo_clear(void) {
+    if (!is_transient) return;
+    is_transient = false;
     for (int i = 0; i < MAX_MESSAGE_LENGTH; i++)
         message_buf[i] = 0;
     message_string.length = 0;
@@ -42,6 +60,7 @@ static void messages_buffer_append(const char *msg) {
 
 void message_send(const char* message) {
     if (locked) return;
+    is_transient = false;
     message_clear();
     strncat(message_buf, message, MAX_MESSAGE_LENGTH - 1);
     message_string.length = strlen(message_buf);

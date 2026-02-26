@@ -4,3 +4,5 @@
 
 void message_send(const char *message);
 void message_clear(void);
+void message_echo(const char *msg);
+void message_echo_clear(void);

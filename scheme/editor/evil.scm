@@ -334,6 +334,7 @@
 (define evil-count #f)              ; #f or accumulated int
 (define evil-op-count #f)           ; count before operator
 (define evil-pending-op #f)         ; operator symbol or #f
+(define evil-op-echo #f)            ; echo string like "d" or "2d", or #f
 
 ;; Repeat-info record
 (define-record-type <repeat-info>
@@ -400,6 +401,7 @@
   (set! evil-count #f)
   (set! evil-op-count #f)
   (set! evil-pending-op #f)
+  (set! evil-op-echo #f)
   (disable-minor-mode 'evil-pending-mode)
   (enable-minor-mode 'evil-normal-mode)
   (set-local! 'mode-name "Normal")
@@ -475,7 +477,11 @@
              (col (+ 1 (- orig-point line-start-pos))))
         (evil-execute-motion 'current-line)
         (set-column col))
-      (begin
+      (let* ((count-str (if evil-count (number->string evil-count) ""))
+             (ch (last-key-char))
+             (op-str (if ch (string ch) ""))
+             (echo (string-append count-str op-str)))
+        (set! evil-op-echo echo)
         (set! evil-op-count (or evil-count 1))
         (set! evil-count #f)
         (set! evil-pending-op op-sym)
@@ -483,7 +489,7 @@
         (disable-minor-mode 'evil-normal-mode)
         (enable-minor-mode 'evil-pending-mode)
         (set-local! 'mode-name "Pending")
-        (message-clear))))
+        (message (string-append echo "-")))))
 
 ;; Core dispatch: execute a text object
 (define (evil-execute-text-object kind)
@@ -651,7 +657,7 @@
     (when (and ch (not (eq? ch #f)))
       (let ((digit (- (char->integer ch) (char->integer #\0))))
         (set! evil-count (+ (* (or evil-count 0) 10) digit))
-        (message (string-append (number->string evil-count) "-"))))))
+        (message (string-append (or evil-op-echo "") (number->string evil-count) "-"))))))
 
 ;; 0 key: line-start or append zero to count
 (defcommand (evil-zero)
@@ -659,7 +665,7 @@
   (if evil-count
       (begin
         (set! evil-count (* evil-count 10))
-        (message (string-append (number->string evil-count) "-")))
+        (message (string-append (or evil-op-echo "") (number->string evil-count) "-")))
       (evil-execute-motion 'motion-0)))
 
 ;;;

@@ -170,6 +170,7 @@ static void reset_key_state(AppState *state) {
     state->which_key.active = false;
     state->which_key.prefix_str[0] = '\0';
     state->needs_redraw = true;
+    message_echo_clear();
 }
 
 static void key_dispatch_inner(AppState *state, const KeyEvent *ev) {
@@ -219,6 +220,7 @@ static void key_dispatch_inner(AppState *state, const KeyEvent *ev) {
         state->input.current_map = b->keymap;
         key_event_append_str(state->which_key.prefix_str,
                              sizeof(state->which_key.prefix_str), ev);
+        message_echo(state->which_key.prefix_str);
         if (state->which_key.enabled) {
             state->which_key.active = true;
             state->which_key.keymap = b->keymap;
