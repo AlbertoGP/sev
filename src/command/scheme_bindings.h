@@ -53,6 +53,7 @@ sexp scm_jump_forward(sexp ctx, sexp self, sexp n);
 sexp scm_tab_next(sexp ctx, sexp self, sexp n);
 sexp scm_tab_prev(sexp ctx, sexp self, sexp n);
 sexp scm_tab_new(sexp ctx, sexp self, sexp n, sexp sbuf_name);
+sexp scm_no_tabs_p(sexp ctx, sexp self, sexp n);
 
 // --- display/scale.c ---
 sexp scm_reset_global_scale(sexp ctx, sexp self, sexp n);

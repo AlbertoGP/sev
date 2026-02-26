@@ -4,6 +4,7 @@
 #include "icon.h"
 #include "pane.h"
 #include "tab.h"
+#include "splash.h"
 #include "theme.h"
 #include "../command/message.h"
 #include "../command/scheme_internal.h"
@@ -13,7 +14,10 @@ static SDL_Window *window;
 
 static void update_window_title(void) {
     char buf[TAB_NAME_MAX];
-    snprintf(buf, TAB_NAME_MAX, "%s - sev", tl.current->name);
+    if (tl.current)
+        snprintf(buf, TAB_NAME_MAX, "%s - sev", tl.current->name);
+    else
+        sprintf(buf, "sev");
     SDL_SetWindowTitle(window, buf);
 }
 
@@ -25,66 +29,58 @@ bool tab_list_init(AppState *state) {
 
     if (!buffer_get_current()) return false;
 
-    if (!tab_create("*scratch*")) {
-        return false;
-    }
-    tl.current->contents = pane_create();
-    pane_set_buffer(tl.current->contents, buffer_get_by_name("*scratch*"));
-    tl.current->contents->content.active = true;
-    insert_string(buffer_get_current(),
-"'Twas brillig, and the slithy toves\n"
-"    Did gyre and gimble in the wabe:\n"
-"All mimsy were the borogoves,\n"
-"    And the mome raths outgrabe.\n"
-"\n"
-"\"Beware the Jabberwock, my son!\n"
-"    The jaws that bite, the claws that catch!\n"
-"Beware the Jubjub bird, and shun\n"
-"    The frumious Bandersnatch!\"\n"
-"\n"
-"He took his vorpal sword in hand;\n"
-"    Long time the manxome foe he sought—\n"
-"So rested he by the Tumtum tree\n"
-"    And stood awhile in thought.\n"
-"\n"
-"And, as in uffish thought he stood,\n"
-"    The Jabberwock, with eyes of flame,\n"
-"Came whiffling through the tulgey wood,\n"
-"    And burbled as it came!\n"
-"\n"
-"One, two! One, two! And through and through\n"
-"    The vorpal blade went snicker-snack!\n"
-"He left it dead, and with its head\n"
-"    He went galumphing back.\n"
-"\n"
-"\"And hast thou slain the Jabberwock?\n"
-"    Come to my arms, my beamish boy!\n"
-"O frabjous day! Callooh! Callay!\"\n"
-"    He chortled in his joy.\n"
-"\n"
-"'Twas brillig, and the slithy toves\n"
-"    Did gyre and gimble in the wabe:\n"
-"All mimsy were the borogoves,\n"
-"    And the mome raths outgrabe.");
-    point_set((Location){.pos = 0});
-    save_current_column(buffer_get_current());
-    update_line(buffer_get_current());
-
-    update_window_title();
+//     if (!tab_create("*scratch*")) {
+//         return false;
+//     }
+//     tl.current->contents = pane_create();
+//     pane_set_buffer(tl.current->contents, buffer_get_by_name("*scratch*"));
+//     tl.current->contents->content.active = true;
+//     insert_string(buffer_get_current(),
+// "'Twas brillig, and the slithy toves\n"
+// "    Did gyre and gimble in the wabe:\n"
+// "All mimsy were the borogoves,\n"
+// "    And the mome raths outgrabe.\n"
+// "\n"
+// "\"Beware the Jabberwock, my son!\n"
+// "    The jaws that bite, the claws that catch!\n"
+// "Beware the Jubjub bird, and shun\n"
+// "    The frumious Bandersnatch!\"\n"
+// "\n"
+// "He took his vorpal sword in hand;\n"
+// "    Long time the manxome foe he sought—\n"
+// "So rested he by the Tumtum tree\n"
+// "    And stood awhile in thought.\n"
+// "\n"
+// "And, as in uffish thought he stood,\n"
+// "    The Jabberwock, with eyes of flame,\n"
+// "Came whiffling through the tulgey wood,\n"
+// "    And burbled as it came!\n"
+// "\n"
+// "One, two! One, two! And through and through\n"
+// "    The vorpal blade went snicker-snack!\n"
+// "He left it dead, and with its head\n"
+// "    He went galumphing back.\n"
+// "\n"
+// "\"And hast thou slain the Jabberwock?\n"
+// "    Come to my arms, my beamish boy!\n"
+// "O frabjous day! Callooh! Callay!\"\n"
+// "    He chortled in his joy.\n"
+// "\n"
+// "'Twas brillig, and the slithy toves\n"
+// "    Did gyre and gimble in the wabe:\n"
+// "All mimsy were the borogoves,\n"
+// "    And the mome raths outgrabe.");
+//     point_set((Location){.pos = 0});
+//     save_current_column(buffer_get_current());
+//     update_line(buffer_get_current());
+//
+//     update_window_title();
 
     return true;
 }
 
 // Free resources allocated for a tab.
 static void tab_destroy(Tab *tab) {
-    // Quit if tab is only tab.
-    if (!tl.current->next && !tl.current->prev) {
-        SDL_Event quit_event;
-        quit_event.type = SDL_EVENT_QUIT;
-        SDL_PushEvent(&quit_event);
-        return;
-    }
-
     if (tl.current == tab) {
         tl.current = tab->next ? tab->next : tab->prev;
     }
@@ -154,6 +150,7 @@ Tab *tab_get_current(void) {
 }
 
 bool tab_next(void) {
+    if (!tl.current) return false;
     if (!tl.current->prev && !tl.current->next) return false;
 
     tl.current = tl.current->next ? tl.current->next : tl.list;
@@ -164,6 +161,7 @@ bool tab_next(void) {
 }
 
 bool tab_prev(void) {
+    if (!tl.current) return false;
     if (!tl.current->prev && !tl.current->next) return false;
 
     if (tl.current->prev) {
@@ -178,10 +176,12 @@ bool tab_prev(void) {
 }
 
 Pane *tab_get_root_pane(void) {
+    if (!tl.current) return NULL;
     return tl.current->contents;
 }
 
 void tab_set_root_pane(Pane *pane) {
+    if (!tl.current) return;
     tl.current->contents = pane;
 }
 
@@ -402,8 +402,8 @@ static Clay_Sizing layoutExpand = {
 void TabContent(AppState *state) {
     Tab *t = tl.current;
 
-    if (!t->contents) {
-         CLAY_AUTO_ID({ .layout = { .sizing = layoutExpand } });
+    if (!t || !t->contents) {
+         SplashPane(state);
          return;
     }
 
@@ -456,4 +456,8 @@ sexp scm_tab_new(sexp ctx, sexp self, sexp n, sexp sbuf_name) {
         return sexp_user_exception(ctx, self, "buffer name must be a string", sbuf_name);
     bool ok = tab_new_with_buffer(sexp_string_data(sbuf_name));
     return ok ? SEXP_TRUE : SEXP_FALSE;
+}
+
+sexp scm_no_tabs_p(sexp ctx, sexp self, sexp n) {
+    return tab_get_current() == NULL ? SEXP_TRUE : SEXP_FALSE;
 }

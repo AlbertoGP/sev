@@ -311,6 +311,7 @@ void scheme_init(AppState *state) {
     SDEF("tab-next", 0, scm_tab_next);
     SDEF("tab-prev", 0, scm_tab_prev);
     SDEF("%tab-new!", 1, scm_tab_new);
+    SDEF("no-tabs?", 0, scm_no_tabs_p);
     SDEF("reset-global-scale", 0, scm_reset_global_scale);
     SDEF("increase-global-scale", 0, scm_increase_global_scale);
     SDEF("decrease-global-scale", 0, scm_decrease_global_scale);
@@ -464,7 +465,7 @@ void scheme_init(AppState *state) {
         "delete-backward-char delete-forward-char set-column "
         "line-start line-end skip-whitespace char-at-point "
         "point-get point-set! buffer-length delete-range char-at "
-        "last-key-char %set-replace-mode! tab-next tab-prev %tab-new! "
+        "last-key-char %set-replace-mode! tab-next tab-prev %tab-new! no-tabs? "
         "reset-global-scale increase-global-scale decrease-global-scale "
         "reset-buffer-scale increase-buffer-scale decrease-buffer-scale "
         "split-vertical split-horizontal pane-close %pop-to-buffer "

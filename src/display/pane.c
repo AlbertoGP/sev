@@ -164,6 +164,7 @@ static Pane *pane_get_active_from_children(Pane *pane) {
 
 Pane *pane_get_active(void) {
     Pane *pane = tab_get_root_pane();
+    if (!pane) return NULL;
     return pane_get_active_from_children(pane);
 }
 
