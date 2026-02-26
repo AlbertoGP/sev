@@ -27,6 +27,7 @@ bool init_input(AppState *state) {
     state->input.key_intercept_cb  = SEXP_FALSE;
     state->input.key_intercept_map = NULL;
     state->input.key_intercept_str[0] = '\0';
+    state->input.key_unbound_cb    = SEXP_FALSE;
 
     state->which_key.enabled = true;
     state->which_key.prefix_str[0] = '\0';
@@ -215,6 +216,13 @@ static void key_dispatch_inner(AppState *state, const KeyEvent *ev) {
         }
         reset_key_state(state);
         message_echo_clear();
+        if (state->input.key_unbound_cb != SEXP_FALSE) {
+            sexp ctx = state->chibi.ctx;
+            sexp result = sexp_apply(ctx, state->chibi.call_interactively,
+                                     sexp_list1(ctx, state->input.key_unbound_cb));
+            if (sexp_exceptionp(result))
+                sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+        }
         goto record_macro;  // silently ignore, but still record
     }
 
@@ -583,6 +591,21 @@ sexp scm_read_key_binding(sexp ctx, sexp self, sexp n, sexp callback) {
     sexp_preserve_object(ctx, G->input.key_intercept_cb);
     G->input.key_intercept_map = G->input.global_map;
     G->input.key_intercept_str[0] = '\0';
+    return SEXP_VOID;
+}
+
+// (%set-key-unbound-cb! sym-or-#f) -> void
+// When set to a symbol, that command is called via call-interactively
+// whenever a key is silently ignored (no binding found, no self-insert).
+sexp scm_set_key_unbound_cb(sexp ctx, sexp self, sexp n, sexp sym) {
+    if (sym == SEXP_FALSE) {
+        G->input.key_unbound_cb = SEXP_FALSE;
+    } else if (sexp_symbolp(sym)) {
+        G->input.key_unbound_cb = sym;
+        sexp_preserve_object(ctx, G->input.key_unbound_cb);
+    } else {
+        return sexp_user_exception(ctx, self, "must be a symbol or #f", sym);
+    }
     return SEXP_VOID;
 }
 

@@ -403,6 +403,7 @@
   (set! evil-pending-op #f)
   (set! evil-op-echo #f)
   (message-clear)
+  (%set-key-unbound-cb! #f)
   (disable-minor-mode 'evil-pending-mode)
   (enable-minor-mode 'evil-normal-mode)
   (set-local! 'mode-name "Normal")
@@ -490,6 +491,7 @@
         (disable-minor-mode 'evil-normal-mode)
         (enable-minor-mode 'evil-pending-mode)
         (set-local! 'mode-name "Pending")
+        (%set-key-unbound-cb! 'evil-normal)
         (message-echo (string-append echo "-")))))
 
 ;; Core dispatch: execute a text object

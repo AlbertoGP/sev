@@ -338,6 +338,7 @@ void scheme_init(AppState *state) {
     SDEF("%set-keymap-name!", 2, scm_set_keymap_name);
     SDEF("%bind-prefix!", 3, scm_bind_prefix);
     SDEF("%read-key-binding", 1, scm_read_key_binding);
+    SDEF("%set-key-unbound-cb!", 1, scm_set_key_unbound_cb);
     SDEF("%set-mode-allows-input!", 2, scm_set_mode_allows_input);
     SDEF("ignore", 0, scm_ignore);
     SDEF("%buffer-has-minor-mode?", 1, scm_buffer_has_minor_mode);
@@ -476,7 +477,7 @@ void scheme_init(AppState *state) {
         "pane-h-split-increase pane-h-split-decrease "
         "eval-buffer clay-debug prefix-arg "
         "%set-keymap-parent! %set-keymap-name! %bind-prefix! "
-        "%read-key-binding %set-mode-allows-input! ignore "
+        "%read-key-binding %set-key-unbound-cb! %set-mode-allows-input! ignore "
         "%buffer-has-minor-mode? "
         "%buffer-file-name %set-buffer-file-name! %buffer-write "
         "%buffer-modified? %set-buffer-modified! %buffer-set-name! "
