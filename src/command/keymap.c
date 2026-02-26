@@ -188,11 +188,13 @@ static void key_dispatch_inner(AppState *state, const KeyEvent *ev) {
     if (!b) {
         if (state->input.current_map != state->input.global_map) {
             // In prefix sequence: invalid continuation is an error
+            char seq[256];
+            strncpy(seq, state->which_key.prefix_str, sizeof(seq) - 1);
+            seq[sizeof(seq) - 1] = '\0';
+            key_event_append_str(seq, sizeof(seq), ev);
             reset_key_state(state);
-            char msg[128];
-            snprintf(msg, 128, "Undefined key: codepoint: %c mods: %d",
-                   last_event.keycode,
-                   last_event.mods);
+            char msg[270];
+            snprintf(msg, sizeof(msg), "\"%s\" is undefined", seq);
             message_send(msg);
             return;
         }
@@ -215,11 +217,11 @@ static void key_dispatch_inner(AppState *state, const KeyEvent *ev) {
 
     if (b->type == BINDING_KEYMAP) {
         state->input.current_map = b->keymap;
+        key_event_append_str(state->which_key.prefix_str,
+                             sizeof(state->which_key.prefix_str), ev);
         if (state->which_key.enabled) {
             state->which_key.active = true;
             state->which_key.keymap = b->keymap;
-            key_event_append_str(state->which_key.prefix_str,
-                                 sizeof(state->which_key.prefix_str), ev);
             state->needs_redraw = true;
         }
         goto record_macro;  // prefix key: record for macro replay
