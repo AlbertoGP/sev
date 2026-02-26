@@ -6,6 +6,7 @@
 
 #include "../clay/clay.h"
 #include "../command/scheme_internal.h"
+#include "../text/buffer.h"
 
 #define MAX_MESSAGE_LENGTH 2048
 static char message_buf[MAX_MESSAGE_LENGTH];
@@ -25,24 +26,41 @@ void message_clear(void) {
     message_string.length = 0;
 }
 
+static void messages_buffer_append(const char *msg) {
+    Buffer *msgs = buffer_get_by_name("*Messages*");
+    if (!msgs) {
+        msgs = buffer_create("*Messages*");
+        if (!msgs) return;
+    }
+    Buffer *saved = buffer_get_current();
+    buffer_set_current(msgs);
+    point_set(buffer_end());
+    insert_string(msgs, msg);
+    insert_string(msgs, "\n");
+    buffer_set_current(saved);
+}
+
 void message_send(const char* message) {
     if (locked) return;
     message_clear();
     strncat(message_buf, message, MAX_MESSAGE_LENGTH - 1);
     message_string.length = strlen(message_buf);
+    messages_buffer_append(message);
 }
 
 // --- Scheme bindings ---
 
-sexp scm_message_send(sexp ctx, sexp self, sexp n, sexp message) {
+sexp scm_message(sexp ctx, sexp self, sexp n, sexp sarg) {
     G->needs_redraw = true;
-
-    if (sexp_stringp(message)) {
-        message_send(sexp_string_data(message));
-        return SEXP_VOID;
-    } else {
-        return sexp_type_exception(ctx, self, SEXP_STRING, message);
+    if (sarg == SEXP_FALSE) {
+        message_clear();
+        return sexp_c_string(ctx, "", -1);
     }
+    if (!sexp_stringp(sarg))
+        return sexp_type_exception(ctx, self, SEXP_STRING, sarg);
+    const char *str = sexp_string_data(sarg);
+    message_send(str);
+    return sexp_c_string(ctx, str, -1);
 }
 
 sexp scm_message_clear(sexp ctx, sexp self, sexp n) {

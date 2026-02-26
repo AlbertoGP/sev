@@ -276,7 +276,7 @@ void scheme_init(AppState *state) {
 
     // Register foreign functions
     SDEF("quit", 0, scm_quit);
-    SDEF("message", 1, scm_message_send);
+    sexp_define_foreign_opt(ctx, env, "message", 1, (sexp_proc1)scm_message, SEXP_FALSE);
     SDEF("message-clear", 0, scm_message_clear);
     SDEF("message-lock", 0, scm_message_lock);
     SDEF("message-unlock", 0, scm_message_unlock);
