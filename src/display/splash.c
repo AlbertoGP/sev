@@ -12,6 +12,26 @@ static void XSpacer(void) {
     }){}
 }
 
+static void SuggestionRow(AppState *state, Clay_String label, Clay_String key) {
+    float font_size = 14 * state->ui.scale_factor;
+    sexp key_role = sexp_intern(state->chibi.ctx, "text.key", -1);
+    CLAY_AUTO_ID({
+        .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } }
+    }) {
+        CLAY_TEXT(label, CLAY_TEXT_CONFIG({
+            .fontId = FONT_NORMAL,
+            .fontSize = font_size,
+            .textColor = ui_resolve_color(state, state->ui.roles.text_faded),
+        }));
+        XSpacer();
+        CLAY_TEXT(key, CLAY_TEXT_CONFIG({
+            .fontId = FONT_NORMAL,
+            .fontSize = font_size,
+            .textColor = ui_resolve_color(state, key_role),
+        }));
+    }
+}
+
 void SplashPane(AppState *state) {
     float icon_size = 80.0f * state->ui.scale_factor;
     CLAY(CLAY_ID("Splash"), {
@@ -57,57 +77,12 @@ void SplashPane(AppState *state) {
                 .childGap = 5.0 * state->ui.scale_factor,
             }
         }) {
-            CLAY_AUTO_ID({
-                .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } }
-            }) {
-            
-                CLAY_TEXT(CLAY_STRING("Create a new empty buffer"), CLAY_TEXT_CONFIG({
-                    .fontId = FONT_NORMAL,
-                    .fontSize = 14 * state->ui.scale_factor,
-                    .textColor = ui_resolve_color(state, state->ui.roles.text_faded),
-                }));
-                XSpacer();
-                CLAY_TEXT(CLAY_STRING("SPC b n"), CLAY_TEXT_CONFIG({
-                    .fontId = FONT_NORMAL,
-                    .fontSize = 14 * state->ui.scale_factor,
-                    .textColor = ui_resolve_color(state,
-                                    sexp_intern(state->chibi.ctx, "text.key", -1))
-                }));
-            }
-            CLAY_AUTO_ID({
-                .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } }
-            }) {
-            
-                CLAY_TEXT(CLAY_STRING("Help commands"), CLAY_TEXT_CONFIG({
-                    .fontId = FONT_NORMAL,
-                    .fontSize = 14 * state->ui.scale_factor,
-                    .textColor = ui_resolve_color(state, state->ui.roles.text_faded),
-                }));
-                XSpacer();
-                CLAY_TEXT(CLAY_STRING("SPC h"), CLAY_TEXT_CONFIG({
-                    .fontId = FONT_NORMAL,
-                    .fontSize = 14 * state->ui.scale_factor,
-                    .textColor = ui_resolve_color(state,
-                                    sexp_intern(state->chibi.ctx, "text.key", -1))
-                }));
-            }
-            CLAY_AUTO_ID({
-                .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } }
-            }) {
-            
-                CLAY_TEXT(CLAY_STRING("Invoke command"), CLAY_TEXT_CONFIG({
-                    .fontId = FONT_NORMAL,
-                    .fontSize = 14 * state->ui.scale_factor,
-                    .textColor = ui_resolve_color(state, state->ui.roles.text_faded),
-                }));
-                XSpacer();
-                CLAY_TEXT(CLAY_STRING("M-x"), CLAY_TEXT_CONFIG({
-                    .fontId = FONT_NORMAL,
-                    .fontSize = 14 * state->ui.scale_factor,
-                    .textColor = ui_resolve_color(state,
-                                    sexp_intern(state->chibi.ctx, "text.key", -1))
-                }));
-            }
+            SuggestionRow(state, CLAY_STRING("Create a new empty buffer"),
+                                 CLAY_STRING("SPC b n"));
+            SuggestionRow(state, CLAY_STRING("Help commands"),
+                                 CLAY_STRING("SPC h"));
+            SuggestionRow(state, CLAY_STRING("Invoke command"),
+                                 CLAY_STRING("M-x"));
         }
     }
 }
