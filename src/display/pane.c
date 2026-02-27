@@ -408,11 +408,10 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                 // Calculate visible lines
                 int line_height = vline_get_line_height(&state->rendererData,
                                                         font_id, font_size);
-                size_t visible_count = line_height > 0 ? (size_t)(text_height / line_height) : 1;
+                size_t visible_count = line_height > 0 ? (size_t)(text_height / line_height) : 0;
+                if (visible_count > 0)
+                    vline_scroll_to_cursor(cache, point, visible_count);
                 if (visible_count == 0) visible_count = 1;
-
-                // Scroll to keep cursor visible
-                vline_scroll_to_cursor(cache, point, visible_count);
 
                 // Render visible visual lines
                 size_t end_vline = cache->top_vline + visible_count;

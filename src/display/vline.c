@@ -398,6 +398,10 @@ void vline_scroll_to_cursor(VLineCache *cache, size_t byte_pos, size_t visible_c
     else if (cursor_vline >= cache->top_vline + visible_count) {
         cache->top_vline = cursor_vline - visible_count + 1;
     }
+
+    // If entire buffer fits in the viewport, always show from top.
+    if (cache->count <= visible_count)
+        cache->top_vline = 0;
 }
 
 size_t vline_for_byte_pos(const VLineCache *cache, size_t byte_pos) {
