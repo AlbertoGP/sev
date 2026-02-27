@@ -119,3 +119,6 @@ void PaneContent(AppState *state, Pane *pane, int32_t index, float width, float 
 
 // Free all strings allocated during layout. Call after rendering.
 void pane_free_strings(void);
+
+// Push current buffer position onto the active pane's jump list.
+void pane_push_jump(void);

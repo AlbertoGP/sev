@@ -218,6 +218,8 @@ static sexp scm_pane_set_buffer(sexp ctx, sexp self, sexp n, sexp sname) {
     Buffer *buf = buffer_get_by_name(sexp_string_data(sname));
     if (!buf) return SEXP_FALSE;
     Pane *pane = pane_get_active();
+    if (buf != buffer_get_current())
+        pane_push_jump();
     pane_set_buffer(pane, buf);
     G->needs_redraw = true;
     return SEXP_TRUE;

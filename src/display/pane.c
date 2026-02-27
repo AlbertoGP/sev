@@ -799,12 +799,34 @@ sexp scm_jump_push(sexp ctx, sexp self, sexp n) {
     return SEXP_VOID;
 }
 
-static void jump_apply(JumpList *jl) {
+void pane_push_jump(void) {
+    Pane *pane = pane_get_active();
+    if (!pane || pane->type != PANE_CONTENT) return;
     Buffer *buf = buffer_get_current();
     if (!buf) return;
+    Jump j = {
+        .buf_name = strdup(buffer_get_name(buf)),
+        .point    = point_get(buf),
+        .filename = NULL,
+    };
+    jump_list_push(&pane->content.jump_list, j);
+}
+
+static void jump_apply(JumpList *jl) {
     Jump *j = &jl->list[jl->current_index];
     if (!j->buf_name) return;
-    if (strcmp(j->buf_name, buffer_get_name(buf)) != 0) return;
+
+    Buffer *buf = buffer_get_current();
+    if (!buf) return;
+
+    if (strcmp(j->buf_name, buffer_get_name(buf)) != 0) {
+        Buffer *target = buffer_get_by_name(j->buf_name);
+        if (!target) return;  // buffer was closed
+        Pane *pane = pane_get_active();
+        if (!pane || !pane_set_buffer(pane, target)) return;
+        buf = buffer_get_current();  // refreshed after sync_active_buffer()
+    }
+
     point_set(j->point);
     update_line(buf);
     save_current_column(buf);
