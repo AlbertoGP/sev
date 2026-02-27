@@ -8,5 +8,6 @@
     buffer-major-mode buffer-minor-modes
     set-local! get-local
     register-mode-icon register-mode-icon/full
-    toggle-line-numbers toggle-relative-line-numbers)
+    toggle-line-numbers toggle-relative-line-numbers
+    toggle-visual-line-numbers)
   (include "mode.scm"))

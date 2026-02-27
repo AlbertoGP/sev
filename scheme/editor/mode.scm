@@ -88,6 +88,13 @@
              'relative)
         #t 'relative)))
 
+(defcommand (toggle-visual-line-numbers)
+  "Toggle visual line numbering in the current buffer."
+  (set-local! 'display-line-numbers-type
+    (if (eq? (get-local 'display-line-numbers-type)
+             'visual)
+        #t 'visual)))
+
 ;; Help buffer mode
 (define help-map (make-keymap))
 (set-key! help-map "ESC"   'pane-close)
