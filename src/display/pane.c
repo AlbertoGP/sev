@@ -358,7 +358,7 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
         CLAY(id, {
             .layout = {
                 .sizing = layoutExpand,
-                .padding = { .left = padding, .right = padding },
+                .padding = { .left = padding, .right = padding, .top = 2, .bottom = 2 },
                 .layoutDirection = CLAY_TOP_TO_BOTTOM,
             },
             .clip = { .vertical = true }

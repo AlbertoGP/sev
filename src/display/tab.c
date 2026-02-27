@@ -360,7 +360,12 @@ void TabContent(AppState *state) {
          return;
     }
 
-    PaneContent(state, t->contents, 1, 0, 0);
+    CLAY(CLAY_ID_LOCAL("Tab Content"), {
+        .layout = { .sizing = layoutExpand },
+        .backgroundColor = ui_resolve_color(state, state->ui.roles.pane_bg)
+    }) {
+        PaneContent(state, t->contents, 1, 0, 0);
+    }
 }
 
 bool tab_new_with_buffer(const char *buf_name) {

@@ -47,7 +47,6 @@ void SplashPane(AppState *state) {
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
             .childGap = 10.0 * state->ui.scale_factor,
         },
-        .backgroundColor = ui_resolve_color(state, state->ui.roles.tab_bar)
     }) {
         SDL_Texture *icon = icon_get("splash-icon", state, (int)icon_size, (int)icon_size);
         CLAY(CLAY_ID("Splash Icon"), {

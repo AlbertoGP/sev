@@ -14,20 +14,13 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
 
     CLAY(CLAY_ID("Layout Background"), {
         .layout = {
-            .layoutDirection = CLAY_TOP_TO_BOTTOM,
             .sizing = layoutExpand,
+            .layoutDirection = CLAY_TOP_TO_BOTTOM
         },
         .backgroundColor = ui_resolve_color(state, state->ui.roles.ui_bg)
     }) {
         TabBar(state);
-        CLAY(CLAY_ID_LOCAL("Tab Content"), {
-            .layout = {
-                .sizing = layoutExpand,
-                .padding = CLAY_PADDING_ALL(2)
-            }
-        }) {
-            TabContent(state);
-        }
+        TabContent(state);
         if (state->minibuf.active)
             MinibufArea(state);
         else

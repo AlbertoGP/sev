@@ -37,7 +37,7 @@ typedef struct {
 } Chibi;
 
 typedef struct CachedRoles {
-    sexp ui_bg;
+    sexp ui_bg, pane_bg;
     sexp bar_bg, bar_text_active;
     sexp tab_bar, tab_active, tab_hover, tab_inactive;
     sexp text_primary, text_faded;

@@ -61,7 +61,8 @@
    (rosewater . "#f5e0dc"))
 
  ;; roles
- '((ui.bg             . bg-0)
+ '((ui.bg             . bg-1)
+   (pane.bg           . bg-0)
    (bar.bg            . fg-0)
    (bar.text.active   . text-2)
    (mode.normal       . lavender)
@@ -133,7 +134,8 @@
    (rosewater . "#f4dbd6"))
 
  ;; roles
- '((ui.bg             . bg-0)
+ '((ui.bg             . bg-1)
+   (pane.bg           . bg-0)
    (bar.bg            . fg-0)
    (bar.text.active   . text-2)
    (mode.normal       . lavender)
@@ -205,7 +207,8 @@
    (rosewater . "#dc8a78"))
 
  ;; roles
- '((ui.bg             . bg-0)
+ '((ui.bg             . bg-1)
+   (pane.bg           . bg-0)
    (bar.bg            . bg-2)
    (bar.text.active   . text-2)
    (mode.normal       . lavender)
