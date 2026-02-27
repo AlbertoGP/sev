@@ -4,6 +4,18 @@
 #include "jump_list.h"
 
 void jump_list_push(JumpList *jl, Jump j) {
+    // Deduplicate: ignore if identical to the most recent entry.
+    if (jl->length > 0) {
+        Jump *last = &jl->list[(jl->length - 1) % JUMP_LIST_MAX];
+        if (last->buf_name && j.buf_name &&
+                strcmp(last->buf_name, j.buf_name) == 0 &&
+                last->point.pos == j.point.pos) {
+            free(j.buf_name);
+            free(j.filename);
+            return;
+        }
+    }
+
     int slot = jl->length % JUMP_LIST_MAX;
     // Free old strings if we are overwriting a ring slot.
     if (jl->length >= JUMP_LIST_MAX) {
