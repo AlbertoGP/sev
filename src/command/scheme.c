@@ -10,6 +10,7 @@
 #include "../text/buffer_type.h"
 #include "../text/var.h"
 #include "../display/pane.h"
+#include "../display/tab.h"
 
 AppState *G;   // global app state for commands
 
@@ -67,7 +68,14 @@ static sexp scm_pop_to_buffer(sexp ctx, sexp self, sexp n, sexp sname) {
     if (!sexp_stringp(sname))
         return sexp_user_exception(ctx, self, "buffer name must be a string", sname);
     const char *name = sexp_string_data(sname);
-    Pane *pane = pane_split_horizontal(pane_get_active());
+    Pane *active = pane_get_active();
+    Pane *pane;
+    if (active)
+        pane = pane_split_horizontal(active);
+    else {
+        if (!tab_new_with_buffer(name)) return SEXP_FALSE;
+        pane = pane_get_active();
+    }
     Buffer *buf = buffer_get_by_name(name);
     if (!buf) {
         buffer_create(name);
