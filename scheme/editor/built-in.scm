@@ -153,6 +153,17 @@
               (message (string-append "Switched to " name))
               (message (string-append "No buffer named \"" name "\"")))))))
 
+(defcommand (buffer-close)
+  "Close a named buffer, removing all panes and tabs that display it."
+  (interactive)
+  (minibuffer-read "Close buffer: "
+    (lambda (name)
+      (if (string=? name "")
+          (message "Buffer name cannot be empty")
+          (if (%buffer-close! name)
+              (message (string-append "Closed buffer " name))
+              (message (string-append "No buffer named \"" name "\"")))))))
+
 (defcommand (tab-new)
   "Create a new tab. Prompts for a buffer name; auto-generates untitled-n if left empty."
   (interactive)

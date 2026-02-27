@@ -13,6 +13,7 @@
 
 // Recursively free resources allocated for a pane sub-tree.
 void pane_destroy(Pane *pane) {
+    if (!pane) return;
     if (pane->type == PANE_H_SPLIT) {
         pane_destroy(pane->h_split.top);
         pane_destroy(pane->h_split.bottom);

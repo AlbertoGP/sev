@@ -388,6 +388,99 @@ bool tab_new_with_buffer(const char *buf_name) {
     return true;
 }
 
+// --- Buffer close helpers ---
+
+// Recursively close panes in `pane`'s subtree that show `buf`.
+// Returns true if the entire subtree should be removed (all leaves show buf).
+// When returning true, the pane itself is NOT freed — caller handles that.
+// When returning false, the pane tree has been restructured in place.
+static bool pane_tree_close_buffer(Pane *pane, Buffer *buf, Tab *tab) {
+    if (pane->type == PANE_CONTENT) {
+        return pane->content.buffer == buf;
+    }
+
+    Pane *first  = (pane->type == PANE_H_SPLIT) ? pane->h_split.top  : pane->v_split.left;
+    Pane *second = (pane->type == PANE_H_SPLIT) ? pane->h_split.bottom : pane->v_split.right;
+
+    bool kill_first  = pane_tree_close_buffer(first,  buf, tab);
+    bool kill_second = pane_tree_close_buffer(second, buf, tab);
+
+    if (kill_first && kill_second) {
+        // Both subtrees are dead. Destroy children; caller destroys this node.
+        pane_destroy(first);
+        pane_destroy(second);
+        if (pane->type == PANE_H_SPLIT) { pane->h_split.top    = pane->h_split.bottom = NULL; }
+        else                            { pane->v_split.left   = pane->v_split.right   = NULL; }
+        return true;
+    }
+
+    if (kill_first || kill_second) {
+        Pane *dead     = kill_first  ? first  : second;
+        Pane *survivor = kill_first  ? second : first;
+
+        // Promote survivor to replace this split node in its parent.
+        if (pane->parent) {
+            pane_replace_child(pane->parent, pane, survivor);
+        } else {
+            tab->contents = survivor;
+        }
+        survivor->parent = pane->parent;
+
+        pane_destroy(dead);
+        // Null children before freeing this split node to avoid double-free.
+        if (pane->type == PANE_H_SPLIT) { pane->h_split.top  = pane->h_split.bottom = NULL; }
+        else                            { pane->v_split.left = pane->v_split.right   = NULL; }
+        free(pane);
+    }
+
+    return false;
+}
+
+// Returns true if any content pane in the tree has active=true.
+static bool pane_has_active(Pane *pane) {
+    if (!pane) return false;
+    if (pane->type == PANE_CONTENT) return pane->content.active;
+    Pane *first  = (pane->type == PANE_H_SPLIT) ? pane->h_split.top    : pane->v_split.left;
+    Pane *second = (pane->type == PANE_H_SPLIT) ? pane->h_split.bottom : pane->v_split.right;
+    return pane_has_active(first) || pane_has_active(second);
+}
+
+// If no content pane in the tree has active=true, activate the first leaf.
+static void ensure_active_pane(Pane *pane) {
+    if (!pane || pane_has_active(pane)) return;
+    while (pane->type != PANE_CONTENT)
+        pane = (pane->type == PANE_H_SPLIT) ? pane->h_split.top : pane->v_split.left;
+    pane->content.active = true;
+}
+
+sexp scm_buffer_close(sexp ctx, sexp self, sexp n, sexp sname) {
+    if (!sexp_stringp(sname))
+        return sexp_user_exception(ctx, self, "buffer name must be a string", sname);
+    Buffer *buf = buffer_get_by_name(sexp_string_data(sname));
+    if (!buf) return SEXP_FALSE;
+
+    Tab *tab = tl.list;
+    while (tab) {
+        Tab *next = tab->next;
+        if (tab->contents) {
+            bool remove_root = pane_tree_close_buffer(tab->contents, buf, tab);
+            if (remove_root) {
+                pane_destroy(tab->contents);
+                tab->contents = NULL;
+                tab_destroy(tab);
+            } else {
+                ensure_active_pane(tab->contents);
+            }
+        }
+        tab = next;
+    }
+
+    sync_active_buffer();
+    buffer_delete(buf);
+    G->needs_redraw = true;
+    return SEXP_TRUE;
+}
+
 // --- Scheme bindings ---
 
 sexp scm_tab_next(sexp ctx, sexp self, sexp n) {

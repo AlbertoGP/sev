@@ -362,6 +362,7 @@ void scheme_init(AppState *state) {
     SDEF("%buffer-read", 0, scm_buffer_read);
     SDEF("%buffer-create", 1, scm_buffer_create);
     SDEF("%pane-set-buffer!", 1, scm_pane_set_buffer);
+    SDEF("%buffer-close!", 1, scm_buffer_close);
 
     // Mode primitives
     SDEF("%register-mode", 3, scm_register_mode);
@@ -491,7 +492,7 @@ void scheme_init(AppState *state) {
         "%buffer-has-minor-mode? "
         "%buffer-file-name %set-buffer-file-name! %buffer-write "
         "%buffer-modified? %set-buffer-modified! %buffer-set-name! "
-        "%buffer-insert %buffer-read %buffer-create %pane-set-buffer! "
+        "%buffer-insert %buffer-read %buffer-create %pane-set-buffer! %buffer-close! "
         "%register-mode %set-major-mode "
         "%enable-minor-mode %disable-minor-mode "
         "%buffer-major-mode %buffer-minor-modes "

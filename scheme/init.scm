@@ -48,6 +48,7 @@
 (%set-keymap-name! buffer-map "buffer")
 (set-key! buffer-map "n" 'buffer-new)
 (set-key! buffer-map "r" 'buffer-rename)
+(set-key! buffer-map "c" 'buffer-close)
 (set-key! buffer-map "s" 'switch-to-buffer)
 (bind-prefix! global-keymap "SPC b" buffer-map)
 (define help-map (make-keymap))
