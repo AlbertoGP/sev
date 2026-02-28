@@ -148,6 +148,27 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         state->needs_redraw = true;
         float deltaTime = ((float) SDL_GetTicksNS() - state->last_frame_ns) / 1e9;
         Clay_UpdateScrollContainers(true, (Clay_Vector2) { event->wheel.x, event->wheel.y }, deltaTime);
+
+        // Scroll the buffer pane under the mouse cursor.
+        Pane *scroll_hit = pane_at_coords(tab_get_root_pane(),
+                                          event->wheel.mouse_x, event->wheel.mouse_y);
+        if (scroll_hit && scroll_hit->content.type == CONTENT_TEXT) {
+            VLineCache *cache = &scroll_hit->content.vline_cache;
+            if (cache->count > 0) {
+                // wheel.y positive = away from user = scroll down (reveal lower lines).
+                int delta = (int)(event->wheel.y * 3.0f);
+                if (event->wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
+                    delta = -delta;
+                if (delta > 0) {
+                    size_t inc = (size_t)delta;
+                    cache->top_vline = (cache->top_vline + inc < cache->count)
+                                       ? cache->top_vline + inc : cache->count - 1;
+                } else if (delta < 0) {
+                    size_t dec = (size_t)(-delta);
+                    cache->top_vline = (dec < cache->top_vline) ? cache->top_vline - dec : 0;
+                }
+            }
+        }
         break;
 
     case SDL_EVENT_WINDOW_RESIZED:
