@@ -1,4 +1,5 @@
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_mouse.h>
 #include <chibi/eval.h>
 
 #include "state.h"
@@ -157,7 +158,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             if (cache->count > 0) {
                 // wheel.y positive = away from user = scroll down (reveal lower lines).
                 int delta = (int)(event->wheel.y * 3.0f);
-                if (event->wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
+                if (event->wheel.direction == SDL_MOUSEWHEEL_NORMAL)
                     delta = -delta;
                 if (delta > 0) {
                     size_t inc = (size_t)delta;
