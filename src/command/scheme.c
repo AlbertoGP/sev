@@ -429,6 +429,10 @@ void scheme_init(AppState *state) {
     SDEF("%jump-backward!", 0, scm_jump_backward);
     SDEF("%jump-forward!",  0, scm_jump_forward);
 
+    // Mouse handler primitives
+    SDEF("%set-mouse-click-handler!", 1, scm_set_mouse_click_handler);
+    SDEF("%set-mouse-drag-handler!",  1, scm_set_mouse_drag_handler);
+
     // Mark / selection primitives
     SDEF("%mark-set-to-point!", 1, scm_mark_set_to_point);
     SDEF("%select-mode-set!", 1, scm_select_mode_set);
@@ -517,6 +521,7 @@ void scheme_init(AppState *state) {
         "%minibuffer-cancel %minibuffer-active? "
         "%which-key-toggle "
         "%jump-push! %jump-backward! %jump-forward! "
+        "%set-mouse-click-handler! %set-mouse-drag-handler! "
         "global-keymap eval) "
         "%editor-env '()))",
         -1, meta);

@@ -48,6 +48,8 @@ sexp scm_pane_close(sexp ctx, sexp self, sexp n);
 sexp scm_jump_push(sexp ctx, sexp self, sexp n);
 sexp scm_jump_backward(sexp ctx, sexp self, sexp n);
 sexp scm_jump_forward(sexp ctx, sexp self, sexp n);
+sexp scm_set_mouse_click_handler(sexp ctx, sexp self, sexp n, sexp cb);
+sexp scm_set_mouse_drag_handler(sexp ctx, sexp self, sexp n, sexp cb);
 
 // --- display/tab.c ---
 sexp scm_tab_next(sexp ctx, sexp self, sexp n);

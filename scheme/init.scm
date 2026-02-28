@@ -72,5 +72,8 @@
 
 (set-key! global-keymap "M-x" 'execute-extended-command)
 
+(%set-mouse-click-handler! default-mouse-click)
+(%set-mouse-drag-handler! default-mouse-drag)
+
 (reset-global-scale)
 (message-clear)

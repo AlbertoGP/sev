@@ -71,6 +71,30 @@ void pane_replace_child(Pane *parent, Pane *old_child, Pane *new_child) {
     }
 }
 
+Pane *pane_at_coords(Pane *root, float x, float y) {
+    if (!root) return NULL;
+    if (root->type == PANE_V_SPLIT) {
+        Pane *found = pane_at_coords(root->v_split.left, x, y);
+        if (found) return found;
+        return pane_at_coords(root->v_split.right, x, y);
+    }
+    if (root->type == PANE_H_SPLIT) {
+        Pane *found = pane_at_coords(root->h_split.top, x, y);
+        if (found) return found;
+        return pane_at_coords(root->h_split.bottom, x, y);
+    }
+    // PANE_CONTENT — use stored geometry (available after first rendered frame)
+    Content *c = &root->content;
+    if (c->line_height_px <= 0) return NULL;
+    float left   = c->text_origin_x - c->gutter_width_px;
+    float right  = c->text_origin_x + c->text_origin_w;
+    float top    = c->text_origin_y;
+    float bottom = c->text_origin_y + c->text_origin_h;
+    if (x >= left && x <= right && y >= top && y <= bottom)
+        return root;
+    return NULL;
+}
+
 void sync_active_buffer(void) {
     Pane *active = pane_get_active();
     if (active && active->content.type == CONTENT_TEXT) {
@@ -408,6 +432,17 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                 // Calculate visible lines
                 int line_height = vline_get_line_height(&state->rendererData,
                                                         font_id, font_size);
+
+                // Store geometry for mouse hit-testing (used next frame).
+                pane->content.text_origin_x   = box.x + padding + gutter_width;
+                pane->content.text_origin_y   = box.y + 2;
+                pane->content.text_origin_w   = text_width - gutter_width;
+                pane->content.text_origin_h   = text_height;
+                pane->content.gutter_width_px = gutter_width;
+                pane->content.line_height_px  = line_height;
+                pane->content.render_font_id   = font_id;
+                pane->content.render_font_size = font_size;
+
                 size_t visible_count = line_height > 0 ? (size_t)(text_height / line_height) : 0;
                 if (visible_count > 0)
                     vline_scroll_to_cursor(cache, point, visible_count);
@@ -868,5 +903,23 @@ sexp scm_jump_forward(sexp ctx, sexp self, sexp n) {
     if (!pane || pane->type != PANE_CONTENT) return SEXP_VOID;
     if (jump_list_forward(&pane->content.jump_list))
         jump_apply(&pane->content.jump_list);
+    return SEXP_VOID;
+}
+
+sexp scm_set_mouse_click_handler(sexp ctx, sexp self, sexp n, sexp cb) {
+    if (G->input.mouse_click_cb != SEXP_FALSE)
+        sexp_release_object(ctx, G->input.mouse_click_cb);
+    G->input.mouse_click_cb = cb;
+    if (cb != SEXP_FALSE)
+        sexp_preserve_object(ctx, cb);
+    return SEXP_VOID;
+}
+
+sexp scm_set_mouse_drag_handler(sexp ctx, sexp self, sexp n, sexp cb) {
+    if (G->input.mouse_drag_cb != SEXP_FALSE)
+        sexp_release_object(ctx, G->input.mouse_drag_cb);
+    G->input.mouse_drag_cb = cb;
+    if (cb != SEXP_FALSE)
+        sexp_preserve_object(ctx, cb);
     return SEXP_VOID;
 }

@@ -28,6 +28,11 @@ bool init_input(AppState *state) {
     state->input.key_intercept_map = NULL;
     state->input.key_intercept_str[0] = '\0';
     state->input.key_unbound_cb    = SEXP_FALSE;
+    state->input.mouse_click_cb    = SEXP_FALSE;
+    state->input.mouse_drag_cb     = SEXP_FALSE;
+    state->input.mouse_button_down = false;
+    state->input.mouse_down_pane   = NULL;
+    state->input.mouse_drag_active = false;
 
     state->which_key.enabled = true;
     state->which_key.prefix_str[0] = '\0';

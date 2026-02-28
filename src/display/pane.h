@@ -37,6 +37,19 @@ typedef struct {
     bool active;
     VLineCache vline_cache;  // Cache for visual (wrapped) lines
     JumpList jump_list;
+    // Geometry updated each frame during rendering; used for mouse hit-testing.
+    // text_origin_x/y: screen position of the text area (after padding + gutter).
+    // gutter_width_px: width of the line-number gutter (0 if off).
+    // line_height_px:  pixel height of one visual line (0 if not yet rendered).
+    // render_font_id/size: font used this frame (needed for x-position lookup).
+    float    text_origin_x;
+    float    text_origin_y;
+    float    text_origin_w;
+    float    text_origin_h;
+    float    gutter_width_px;
+    int      line_height_px;
+    uint16_t render_font_id;
+    uint16_t render_font_size;
 } Content;
 
 // A vertical split node in a pane tree.
@@ -113,6 +126,11 @@ bool pane_h_split_decrease(void);
 // Sync the current buffer to match the active pane.
 // Call after changing active pane or switching tabs.
 void sync_active_buffer(void);
+
+// Walk the pane tree and return the PANE_CONTENT leaf whose screen area
+// contains (x, y), or NULL if none match.  Requires at least one rendered
+// frame so that geometry is populated.
+Pane *pane_at_coords(Pane *root, float x, float y);
 
 // Clay component for rendering pane contents.
 void PaneContent(AppState *state, Pane *pane, int32_t index, float width, float height);

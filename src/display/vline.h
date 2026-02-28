@@ -80,3 +80,11 @@ size_t vline_for_byte_pos(const VLineCache *cache, size_t byte_pos);
 // Get line height for the given font.
 int vline_get_line_height(Clay_SDL3RendererData *renderer,
                           uint16_t font_id, uint16_t font_size);
+
+// Given pixel coordinates relative to the top-left of the text area (after
+// padding and gutter), return the buffer byte offset of the character
+// nearest to (rel_x, rel_y).  Clamps to line boundaries.
+size_t vline_byte_pos_at_xy(const VLineCache *cache, const char *buf_text,
+                             float rel_x, float rel_y, int line_height,
+                             Clay_SDL3RendererData *renderer,
+                             uint16_t font_id, uint16_t font_size);

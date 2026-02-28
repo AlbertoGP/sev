@@ -404,6 +404,44 @@ void vline_scroll_to_cursor(VLineCache *cache, size_t byte_pos, size_t visible_c
         cache->top_vline = 0;
 }
 
+size_t vline_byte_pos_at_xy(const VLineCache *cache, const char *buf_text,
+                             float rel_x, float rel_y, int line_height,
+                             Clay_SDL3RendererData *renderer,
+                             uint16_t font_id, uint16_t font_size) {
+    if (!cache || cache->count == 0 || line_height <= 0) return 0;
+
+    // Map rel_y to a visual line index.
+    size_t vline_idx = cache->top_vline;
+    if (rel_y > 0.0f)
+        vline_idx = cache->top_vline + (size_t)(rel_y / line_height);
+    if (vline_idx >= cache->count)
+        vline_idx = cache->count - 1;
+
+    const VisualLine *vl = &cache->lines[vline_idx];
+    const char *line_text = buf_text + vl->byte_start;
+    size_t len = vl->byte_end - vl->byte_start;
+
+    // Click left of text area → clamp to line start.
+    if (rel_x <= 0.0f) return vl->byte_start;
+    // Click past end of line → clamp to line end.
+    if (len == 0 || rel_x >= vl->measured_width) return vl->byte_end;
+
+    // Linear scan: find the character boundary closest to rel_x.
+    float x_accum = 0.0f;
+    size_t byte_offset = 0;
+    while (byte_offset < len) {
+        int seq = utf8_seq_len_fwd(line_text + byte_offset);
+        float char_w = measure_text(renderer, font_id, font_size,
+                                    line_text + byte_offset, seq);
+        // Click in left half of this character → cursor before it.
+        if (rel_x < x_accum + char_w / 2.0f)
+            return vl->byte_start + byte_offset;
+        x_accum += char_w;
+        byte_offset += seq;
+    }
+    return vl->byte_end;
+}
+
 size_t vline_for_byte_pos(const VLineCache *cache, size_t byte_pos) {
     if (!cache || cache->count == 0) return 0;
 

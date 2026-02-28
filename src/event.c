@@ -1,7 +1,75 @@
 #include <SDL3/SDL.h>
+#include <chibi/eval.h>
 
 #include "state.h"
 #include "command/keyboard.h"
+#include "display/pane.h"
+#include "display/tab.h"
+#include "display/vline.h"
+#include "text/buffer.h"
+
+// Invoke (mouse-click-cb button buf-pos clicks) on the Scheme side.
+static void invoke_mouse_click_cb(AppState *state, int button,
+                                  size_t pos, int clicks) {
+    sexp cb = state->input.mouse_click_cb;
+    if (cb == SEXP_FALSE) return;
+
+    sexp ctx = state->chibi.ctx;
+    sexp_gc_var1(args);
+    sexp_gc_preserve1(ctx, args);
+    args = sexp_list3(ctx,
+        sexp_make_fixnum(button),
+        sexp_make_fixnum((sexp_sint_t)pos),
+        sexp_make_fixnum(clicks));
+    sexp result = sexp_apply(ctx, cb, args);
+    if (sexp_exceptionp(result))
+        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+    sexp_gc_release1(ctx);
+}
+
+// Invoke (mouse-drag-cb current-pos start-pos) on the Scheme side.
+static void invoke_mouse_drag_cb(AppState *state, size_t pos, size_t start_pos) {
+    sexp cb = state->input.mouse_drag_cb;
+    if (cb == SEXP_FALSE) return;
+
+    sexp ctx = state->chibi.ctx;
+    sexp_gc_var1(args);
+    sexp_gc_preserve1(ctx, args);
+    args = sexp_list2(ctx,
+        sexp_make_fixnum((sexp_sint_t)pos),
+        sexp_make_fixnum((sexp_sint_t)start_pos));
+    sexp result = sexp_apply(ctx, cb, args);
+    if (sexp_exceptionp(result))
+        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+    sexp_gc_release1(ctx);
+}
+
+// Hit-test the screen point (x, y) against the pane tree, then compute the
+// buffer byte position.  Returns true and fills *pos_out on success.
+static bool pane_hit_to_buf_pos(AppState *state, Pane *pane,
+                                 float x, float y, size_t *pos_out) {
+    if (!pane || pane->content.type != CONTENT_TEXT) return false;
+    Buffer *buf = pane->content.buffer;
+    if (!buf) return false;
+
+    float rel_x = x - pane->content.text_origin_x;
+    float rel_y = y - pane->content.text_origin_y;
+    // Clamp rel_y so dragging slightly outside still lands on nearest line.
+    if (rel_y < 0.0f) rel_y = 0.0f;
+    if (rel_y > pane->content.text_origin_h)
+        rel_y = pane->content.text_origin_h;
+
+    char *chars = buffer_text(buf);
+    *pos_out = vline_byte_pos_at_xy(
+        &pane->content.vline_cache, chars,
+        rel_x, rel_y,
+        pane->content.line_height_px,
+        &state->rendererData,
+        pane->content.render_font_id,
+        pane->content.render_font_size);
+    free(chars);
+    return true;
+}
 
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
@@ -16,21 +84,69 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         handle_key_down(state, &event->key);
         break;
 
-    case SDL_EVENT_MOUSE_MOTION:
-        state->needs_redraw = true; 
-        Clay_SetPointerState((Clay_Vector2) { event->motion.x, event->motion.y }, event->button.down);
-        break;
-    case SDL_EVENT_MOUSE_BUTTON_DOWN:
+    case SDL_EVENT_MOUSE_MOTION: {
         state->needs_redraw = true;
-        Clay_SetPointerState((Clay_Vector2) { event->motion.x, event->motion.y }, true);
+        float x = event->motion.x;
+        float y = event->motion.y;
+        bool button_held = (event->motion.state & SDL_BUTTON_LMASK) != 0;
+        Clay_SetPointerState((Clay_Vector2){x, y}, button_held);
+
+        if (state->input.mouse_button_down && state->input.mouse_down_pane) {
+            float dx = x - state->input.mouse_down_x;
+            float dy = y - state->input.mouse_down_y;
+            if (!state->input.mouse_drag_active && (dx*dx + dy*dy) > 9.0f)
+                state->input.mouse_drag_active = true;
+
+            if (state->input.mouse_drag_active) {
+                Pane *p = state->input.mouse_down_pane;
+                size_t pos = 0;
+                if (pane_hit_to_buf_pos(state, p, x, y, &pos))
+                    invoke_mouse_drag_cb(state, pos, state->input.mouse_down_buf_pos);
+            }
+        }
         break;
+    }
+
+    case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+        state->needs_redraw = true;
+        float x = event->button.x;
+        float y = event->button.y;
+        Clay_SetPointerState((Clay_Vector2){x, y}, true);
+
+        state->input.mouse_button_down = true;
+        state->input.mouse_down_x = x;
+        state->input.mouse_down_y = y;
+        state->input.mouse_drag_active = false;
+
+        Pane *hit = pane_at_coords(tab_get_root_pane(), x, y);
+        state->input.mouse_down_pane = hit;
+
+        if (hit && hit->content.type == CONTENT_TEXT) {
+            // Switch active pane so that Scheme point-set! targets the right buffer.
+            if (!hit->content.active)
+                pane_set_active(hit);
+
+            size_t pos = 0;
+            if (pane_hit_to_buf_pos(state, hit, x, y, &pos)) {
+                state->input.mouse_down_buf_pos = pos;
+                invoke_mouse_click_cb(state, event->button.button, pos,
+                                      event->button.clicks);
+            }
+        }
+        break;
+    }
+
     case SDL_EVENT_MOUSE_BUTTON_UP:
         state->needs_redraw = true;
-        Clay_SetPointerState((Clay_Vector2) { event->motion.x, event->motion.y }, false);
+        Clay_SetPointerState((Clay_Vector2){event->button.x, event->button.y}, false);
+        state->input.mouse_button_down = false;
+        state->input.mouse_drag_active = false;
+        state->input.mouse_down_pane   = NULL;
         break;
+
     case SDL_EVENT_MOUSE_WHEEL:
         state->needs_redraw = true;
-        float deltaTime = ((float) SDL_GetTicksNS() - state->last_frame_ns) / 1e9; 
+        float deltaTime = ((float) SDL_GetTicksNS() - state->last_frame_ns) / 1e9;
         Clay_UpdateScrollContainers(true, (Clay_Vector2) { event->wheel.x, event->wheel.y }, deltaTime);
         break;
 

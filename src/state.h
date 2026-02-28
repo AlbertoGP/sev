@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stddef.h>
+
 #include <SDL3/SDL.h>
 #include <chibi/eval.h>
 
@@ -7,6 +9,9 @@
 #include "command/keyevent.h"
 #include "text/register.h"
 #include "text/var.h"
+
+// Forward declaration — pane.h includes state.h, so we can't include it here.
+struct Pane;
 
 typedef enum FontID {
     FONT_NORMAL,
@@ -28,6 +33,14 @@ typedef struct {
     struct Keymap *key_intercept_map;      // current traversal position
     char         key_intercept_str[256];   // accumulated display string
     sexp         key_unbound_cb;           // called on silently-ignored key; SEXP_FALSE if inactive
+    // Mouse
+    sexp         mouse_click_cb;           // (lambda (button buf-pos clicks) ...) or SEXP_FALSE
+    sexp         mouse_drag_cb;            // (lambda (current-pos start-pos) ...) or SEXP_FALSE
+    bool         mouse_button_down;
+    struct Pane *mouse_down_pane;          // locked pane for drag; NULL if not dragging
+    float        mouse_down_x, mouse_down_y;
+    size_t       mouse_down_buf_pos;       // buffer byte pos at click
+    bool         mouse_drag_active;        // true once motion exceeds 3px threshold
 } InputState;
 
 typedef struct {
