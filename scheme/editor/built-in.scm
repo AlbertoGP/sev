@@ -179,11 +179,3 @@
             (message (string-append "Opened tab " buf-name))
             (message (string-append "Failed to create tab " buf-name)))))))
 
-;; Default mouse click handler: left-click moves point.
-(define (default-mouse-click button buf-pos clicks)
-  (when (= button 1)
-    (point-set! buf-pos)))
-
-;; Default mouse drag handler: drag moves point (selection can be layered on top).
-(define (default-mouse-drag current-pos start-pos)
-  (point-set! current-pos))

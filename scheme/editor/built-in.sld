@@ -17,6 +17,5 @@
     clay-debug exchange-point-and-mark
     line-start-skip-whitespace join-line
     save-buffer save-buffer-as open-file read-file
-    buffer-new buffer-rename scratch-buffer switch-to-buffer buffer-close tab-new
-    default-mouse-click default-mouse-drag)
+    buffer-new buffer-rename scratch-buffer switch-to-buffer buffer-close tab-new)
   (include "built-in.scm"))

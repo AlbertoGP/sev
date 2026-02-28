@@ -72,8 +72,27 @@
 
 (set-key! global-keymap "M-x" 'execute-extended-command)
 
-(%set-mouse-click-handler! default-mouse-click)
-(%set-mouse-drag-handler! default-mouse-drag)
+;; Click: exit any visual select mode, then move point to clicked position.
+(%set-mouse-click-handler!
+  (lambda (button buf-pos clicks)
+    (when (= button 1)
+      (when (%buffer-has-minor-mode? 'evil-select-mode)
+        (evil-normal))
+      (point-set! buf-pos))))
+
+;; Drag: on first motion enter visual-char mode anchored at the click position
+;; (the click handler already moved point there), then track cursor.
+;; In evil buffers this activates evil-select-mode; in others point just follows.
+(%set-mouse-drag-handler!
+  (lambda (current-pos start-pos)
+    (when (and (not (%buffer-has-minor-mode? 'evil-select-mode))
+               (or (%buffer-has-minor-mode? 'evil-normal-mode)
+                   (%buffer-has-minor-mode? 'evil-insert-mode)
+                   (%buffer-has-minor-mode? 'evil-replace-mode)))
+      ;; Point is at start-pos (set by click handler); evil-select anchors
+      ;; mark < there, then enables evil-select-mode with SELECT_REGULAR.
+      (evil-select))
+    (point-set! current-pos)))
 
 (reset-global-scale)
 (message-clear)
