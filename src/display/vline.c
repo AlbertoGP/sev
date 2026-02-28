@@ -404,6 +404,26 @@ void vline_scroll_to_cursor(VLineCache *cache, size_t byte_pos, size_t visible_c
         cache->top_vline = 0;
 }
 
+size_t vline_clamp_byte_pos_to_viewport(const VLineCache *cache,
+                                        size_t byte_pos,
+                                        size_t visible_count) {
+    if (!cache || cache->count == 0 || visible_count == 0) return byte_pos;
+
+    size_t cursor_vline = vline_for_byte_pos(cache, byte_pos);
+    if (cursor_vline >= cache->count)
+        cursor_vline = cache->count - 1;
+
+    if (cursor_vline < cache->top_vline)
+        return cache->lines[cache->top_vline].byte_start;
+
+    size_t last_visible = cache->top_vline + visible_count - 1;
+    if (last_visible >= cache->count) last_visible = cache->count - 1;
+    if (cursor_vline > last_visible)
+        return cache->lines[last_visible].byte_start;
+
+    return byte_pos;
+}
+
 size_t vline_byte_pos_at_xy(const VLineCache *cache, const char *buf_text,
                              float rel_x, float rel_y, int line_height,
                              Clay_SDL3RendererData *renderer,

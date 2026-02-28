@@ -167,6 +167,24 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                     size_t dec = (size_t)(-delta);
                     cache->top_vline = (dec < cache->top_vline) ? cache->top_vline - dec : 0;
                 }
+
+                // For the active pane: move cursor into viewport rather than
+                // letting vline_scroll_to_cursor revert the scroll next frame.
+                if (scroll_hit->content.active) {
+                    Buffer *buf = scroll_hit->content.buffer;
+                    int lh = scroll_hit->content.line_height_px;
+                    size_t vc = (lh > 0)
+                        ? (size_t)(scroll_hit->content.text_origin_h / lh) : 0;
+                    if (vc > 0) {
+                        size_t cur = point_get(buf).pos;
+                        size_t clamped = vline_clamp_byte_pos_to_viewport(cache, cur, vc);
+                        if (clamped != cur) {
+                            point_set((Location){ .pos = clamped });
+                            update_line(buf);
+                            save_current_column(buf);
+                        }
+                    }
+                }
             }
         }
         break;

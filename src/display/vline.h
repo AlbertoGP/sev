@@ -73,6 +73,13 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
 // visible_count is the number of visual lines that fit in the viewport.
 void vline_scroll_to_cursor(VLineCache *cache, size_t byte_pos, size_t visible_count);
 
+// If byte_pos is outside the visible viewport, return the byte_start of the
+// nearest visible line; otherwise return byte_pos unchanged.
+// Used when scrolling: cursor follows viewport rather than viewport following cursor.
+size_t vline_clamp_byte_pos_to_viewport(const VLineCache *cache,
+                                        size_t byte_pos,
+                                        size_t visible_count);
+
 // Find the visual line index containing a given byte position.
 // Returns the index, or cache->count if not found.
 size_t vline_for_byte_pos(const VLineCache *cache, size_t byte_pos);

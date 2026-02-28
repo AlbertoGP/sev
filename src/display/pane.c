@@ -444,7 +444,7 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                 pane->content.render_font_size = font_size;
 
                 size_t visible_count = line_height > 0 ? (size_t)(text_height / line_height) : 0;
-                if (visible_count > 0)
+                if (visible_count > 0 && pane->content.active)
                     vline_scroll_to_cursor(cache, point, visible_count);
                 if (visible_count == 0) visible_count = 1;
 
