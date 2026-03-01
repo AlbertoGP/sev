@@ -474,7 +474,8 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                     size_t line_len = line_end - line_start;
 
                     // Determine if cursor is on this line
-                    bool cursor_on_line = (point >= line_start && point < line_end);
+                    bool cursor_on_line = (point >= line_start) && (point < line_end)
+                                           && !state->minibuf.active;
                     bool is_last = (i + 1 == cache->count) || (cache->lines[i+1].line_id != vl->line_id);
                     if (!cursor_on_line && point == line_end && is_last) {
                         // Only claim it if the next line doesn't start exactly at this point
