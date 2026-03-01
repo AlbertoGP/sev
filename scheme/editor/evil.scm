@@ -174,6 +174,13 @@
   (set-key! map "T SPC" 'evil-motion-T))
   (list normal-map pending-map select-map))
 
+;; r — replace char(s) without entering insert mode
+(do ((i 33 (+ i 1)))
+    ((= i 127))
+  (let ((ch (string (integer->char i))))
+    (set-key! normal-map (string-append "r " ch) 'evil-char-replace)
+    (set-key! select-map (string-append "r " ch) 'evil-visual-char-replace)))
+
 ;; Register modes (second arg = keymap, third arg = allows-input)
 (define-minor-mode 'evil-normal-mode normal-map)
 (define-minor-mode 'evil-insert-mode insert-map #t)
@@ -632,21 +639,38 @@
            (when (and (ri-insert-text ri)
                       (> (string-length (ri-insert-text ri)) 0))
              (%begin-change)
-             (evil-replay-setup (ri-setup ri))
-             (if (eq? (ri-setup ri) 'replace)
-                 ;; Replace mode: delete then insert per character
-                 (let* ((text (ri-insert-text ri))
-                        (len (string-length text)))
-                   (let loop ((i 0))
-                     (when (< i len)
-                       (let ((c (char-at-point)))
-                         (when (and (not (char=? c #\null))
-                                    (not (char=? c #\newline)))
-                           (delete-forward-char)))
-                       (insert-char (string-ref text i))
-                       (loop (+ i 1)))))
-                 ;; Normal insert
-                 (evil-insert-text (ri-insert-text ri)))
+             (cond
+               ((eq? (ri-setup ri) 'char-replace)
+                ;; r-replace: delete count chars and overwrite with single char
+                (let ((ch (string-ref (ri-insert-text ri) 0))
+                      (count (or (ri-op-count ri) 1)))
+                  (let* ((p (point-get))
+                         (line (%position-line p))
+                         (line-end (%line-end-position line))
+                         (avail (- line-end p)))
+                    (when (>= avail count)
+                      (let loop ((i 0))
+                        (when (< i count)
+                          (delete-forward-char)
+                          (insert-char ch)
+                          (loop (+ i 1))))
+                      (point-set! (- (point-get) 1))))))
+               (else
+                (evil-replay-setup (ri-setup ri))
+                (if (eq? (ri-setup ri) 'replace)
+                    ;; Replace mode: delete then insert per character
+                    (let* ((text (ri-insert-text ri))
+                           (len (string-length text)))
+                      (let loop ((i 0))
+                        (when (< i len)
+                          (let ((c (char-at-point)))
+                            (when (and (not (char=? c #\null))
+                                       (not (char=? c #\newline)))
+                              (delete-forward-char)))
+                          (insert-char (string-ref text i))
+                          (loop (+ i 1)))))
+                    ;; Normal insert
+                    (evil-insert-text (ri-insert-text ri)))))
              (%change-set-repeat-info! ri)
              (%end-change)))
           (else #f)))))
@@ -1640,6 +1664,54 @@
     (%end-change)
     (set! evil-count #f)
     (message-clear)))
+
+;;;
+;;; r — character replace
+;;;
+
+(defcommand (evil-char-replace)
+  "Replace [count] chars with typed char."
+  (let ((ch (last-key-char))
+        (count (or evil-count 1)))
+    (when ch
+      (let* ((p (point-get))
+             (line (%position-line p))
+             (line-end (%line-end-position line))
+             (avail (- line-end p)))
+        (when (>= avail count)
+          (%begin-change)
+          (let loop ((i 0))
+            (when (< i count)
+              (delete-forward-char)
+              (insert-char ch)
+              (loop (+ i 1))))
+          (point-set! (- (point-get) 1))
+          (%change-set-repeat-info!
+            (make-repeat-info #f count #f #f #f #f 'char-replace (string ch)))
+          (%end-change))))
+    (set! evil-count #f)
+    (message-clear)))
+
+(defcommand (evil-visual-char-replace)
+  "Replace all non-newline chars in selection with typed char."
+  (let ((ch (last-key-char)))
+    (when ch
+      (%begin-change)
+      (let* ((range (evil-visual-range))
+             (start (range-start range))
+             (end (range-end range))
+             (n (- end start)))
+        (point-set! start)
+        (let loop ((i 0))
+          (when (< i n)
+            (let ((c (char-at-point)))
+              (if (char=? c #\newline)
+                  (begin (point-set! (+ (point-get) 1)) (loop (+ i 1)))
+                  (begin (delete-forward-char) (insert-char ch) (loop (+ i 1))))))))
+      (when (> (point-get) 0)
+        (point-set! (- (point-get) 1)))
+      (%end-change)
+      (evil-normal))))
 
 ;;;
 ;;; Visual mode operators
