@@ -175,11 +175,17 @@
   (list normal-map pending-map select-map))
 
 ;; r — replace char(s) without entering insert mode
+;; Pending keymap: all printable chars + SPC dispatch to evil-char-replace-dispatch
+(define evil-char-replace-pending-map (make-keymap))
+(set-keymap-parent! evil-char-replace-pending-map global-keymap)
 (do ((i 33 (+ i 1)))
     ((= i 127))
   (let ((ch (string (integer->char i))))
-    (set-key! normal-map (string-append "r " ch) 'evil-char-replace)
-    (set-key! select-map (string-append "r " ch) 'evil-visual-char-replace)))
+    (set-key! evil-char-replace-pending-map ch 'evil-char-replace-dispatch)))
+(set-key! evil-char-replace-pending-map "SPC" 'evil-char-replace-dispatch)
+
+(set-key! normal-map "r" 'evil-char-replace-setup)
+(set-key! select-map "r" 'evil-char-replace-setup)
 
 ;; Register modes (second arg = keymap, third arg = allows-input)
 (define-minor-mode 'evil-normal-mode normal-map)
@@ -202,6 +208,9 @@
                          'mode.command 'label.command 'cursor.command  'solid)
 (register-mode-icon/full 'evil-pending-mode "icon-pending.svg"
                          'mode.pending 'label.pending 'cursor.pending  'under)
+(define-minor-mode 'evil-char-replace-pending-mode evil-char-replace-pending-map)
+(register-mode-icon/full 'evil-char-replace-pending-mode "icon-normal.svg"
+                         'mode.normal 'label.normal 'cursor.normal 'under)
 
 ;; State transitions
 (defcommand (evil-normal)
@@ -223,6 +232,7 @@
   (disable-minor-mode 'evil-select-mode)
   (disable-minor-mode 'evil-command-mode)
   (disable-minor-mode 'evil-pending-mode)
+  (disable-minor-mode 'evil-char-replace-pending-mode)
   (enable-minor-mode 'evil-normal-mode)
   (%select-mode-set! 0)
   (%set-replace-mode! #f)
@@ -1668,6 +1678,20 @@
 ;;;
 ;;; r — character replace
 ;;;
+
+(defcommand (evil-char-replace-setup)
+  "Enter char-replace pending state (show UNDER cursor until char typed)."
+  (disable-minor-mode 'evil-normal-mode)
+  (enable-minor-mode 'evil-char-replace-pending-mode)
+  (message-echo (if evil-count (string-append (number->string evil-count) "r-") "r-")))
+
+(defcommand (evil-char-replace-dispatch)
+  "Replace char(s) at cursor or in selection with typed char."
+  (disable-minor-mode 'evil-char-replace-pending-mode)
+  (enable-minor-mode 'evil-normal-mode)
+  (if (%buffer-has-minor-mode? 'evil-select-mode)
+      (evil-visual-char-replace)
+      (evil-char-replace)))
 
 (defcommand (evil-char-replace)
   "Replace [count] chars with typed char."
