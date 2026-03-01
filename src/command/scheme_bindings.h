@@ -106,6 +106,9 @@ sexp scm_register_mode_icon(sexp ctx, sexp self, sexp n,
                             sexp srole_bg, sexp srole_label,
                             sexp srole_cursor, sexp scursor_type);
 
+// --- display/theme.c ---
+sexp scm_set_cursor_override(sexp ctx, sexp self, sexp n, sexp stype);
+
 // --- text/mark.c ---
 sexp scm_mark_set_to_point(sexp ctx, sexp self, sexp n, sexp mark_char);
 sexp scm_mark_position(sexp ctx, sexp self, sexp n, sexp mark_char);

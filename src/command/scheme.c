@@ -379,6 +379,7 @@ void scheme_init(AppState *state) {
     SDEF("%update-icon-colors!", 0, scm_update_icon_colors);
     SDEF("%register-icon!", 3, scm_register_icon);
     SDEF("%register-mode-icon!", 6, scm_register_mode_icon);
+    SDEF("%set-cursor-override!", 1, scm_set_cursor_override);
     SDEF("%set-role!", 2, scm_set_role);
     SDEF("%clear-palette!", 0, scm_clear_palette);
     SDEF("%clear-roles!", 0, scm_clear_roles);
@@ -502,7 +503,7 @@ void scheme_init(AppState *state) {
         "%buffer-major-mode %buffer-minor-modes "
         "%set-local! %get-local %set-palette! "
         "%update-icon-colors! %register-icon! "
-        "%register-mode-icon! %set-role! "
+        "%register-mode-icon! %set-cursor-override! %set-role! "
         "%clear-palette! %clear-roles! "
         "%begin-change %end-change %undo %redo "
         "%change-active? %change-set-repeat-info! %change-last-repeat-info "

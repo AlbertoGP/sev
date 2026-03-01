@@ -6,6 +6,7 @@
 
 #include "theme.h"
 #include "mode_icon.h"
+#include "../command/scheme_internal.h"
 
 Clay_Color hex_to_rgba(const char* str) {
     int r, g, b, a;
@@ -61,9 +62,28 @@ Clay_Color ui_get_cursor_color(AppState *G) {
     return (Clay_Color){255, 0, 255, 255};
 }
 
+static int cursor_type_override = -1; // -1 = no override
+
 CursorType get_cursor_type(void) {
+    if (cursor_type_override >= 0)
+        return (CursorType)cursor_type_override;
     ModeIconEntry *icon = mode_icon_for_current_buffer();
     if (icon)
         return icon->cursor_type;
     return CURSOR_SOLID;
+}
+
+sexp scm_set_cursor_override(sexp ctx, sexp self, sexp n, sexp stype) {
+    if (stype == SEXP_FALSE) {
+        cursor_type_override = -1;
+    } else {
+        const char *s = sexp_string_data(sexp_symbol_to_string(ctx, stype));
+        CursorType ct = CURSOR_SOLID;
+        if (strcmp(s, "thin") == 0)   ct = CURSOR_THIN;
+        else if (strcmp(s, "hollow") == 0) ct = CURSOR_HOLLOW;
+        else if (strcmp(s, "under") == 0)  ct = CURSOR_UNDER;
+        cursor_type_override = (int)ct;
+    }
+    G->needs_redraw = true;
+    return SEXP_VOID;
 }
