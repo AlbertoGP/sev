@@ -200,6 +200,21 @@
 (register-mode-icon/full 'evil-pending-mode "icon-pending.svg"
                          'mode.pending 'label.pending 'cursor.pending  'under)
 
+;; UTF-8 helpers
+(define (utf8-byte-len-at pos)
+  (let* ((raw (char->integer (char-at pos)))
+         (b   (if (< raw 0) (+ raw 256) raw)))
+    (cond ((< b 128) 1)
+          ((< b 224) 2)
+          ((< b 240) 3)
+          (else 4))))
+
+(define (count-chars-in-range start end)
+  (let loop ((pos start) (n 0))
+    (if (>= pos end)
+        n
+        (loop (+ pos (utf8-byte-len-at pos)) (+ n 1)))))
+
 ;; State transitions
 (defcommand (evil-normal)
   "Return to normal mode."
@@ -1642,7 +1657,11 @@
           (p (point-get)))
       (let ((actual (min count (- len p))))
         (when (> actual 0)
-          (delete-range p (+ p actual)))))
+          (let loop ((i 0))
+            (when (and (< i actual) (< (point-get) (buffer-length)))
+              (let ((p (point-get)))
+                (delete-range p (+ p (utf8-byte-len-at p))))
+              (loop (+ i 1)))))))
     (%change-set-repeat-info!
       (make-repeat-info 'op-delete count 'motion-l 1 #f #f #f #f))
     (%end-change)
@@ -1656,7 +1675,10 @@
     (let ((p (point-get)))
       (let ((actual (min count p)))
         (when (> actual 0)
-          (delete-range (- p actual) p))))
+          (let loop ((i 0))
+            (when (< i actual)
+              (delete-backward-char)
+              (loop (+ i 1)))))))
     (%change-set-repeat-info!
       (make-repeat-info 'op-delete count 'motion-h 1 #f #f #f #f))
     (%end-change)
@@ -1692,7 +1714,8 @@
           (%begin-change)
           (let loop ((i 0))
             (when (< i count)
-              (delete-forward-char)
+              (let ((p (point-get)))
+                (delete-range p (+ p (utf8-byte-len-at p))))
               (insert-char ch)
               (loop (+ i 1))))
           (point-set! (- (point-get) 1))
@@ -1742,14 +1765,17 @@
             (let* ((range (evil-visual-range))
                    (start (range-start range))
                    (end (range-end range))
-                   (n (- end start)))
+                   (n (count-chars-in-range start end)))
               (point-set! start)
               (let loop ((i 0))
                 (when (< i n)
                   (let ((c (char-at-point)))
                     (if (char=? c #\newline)
                         (begin (point-set! (+ (point-get) 1)) (loop (+ i 1)))
-                        (begin (delete-forward-char) (insert-char ch) (loop (+ i 1))))))))
+                        (let ((p (point-get)))
+                          (delete-range p (+ p (utf8-byte-len-at p)))
+                          (insert-char ch)
+                          (loop (+ i 1))))))))
             (when (> (point-get) 0)
               (point-set! (- (point-get) 1)))))
       (%end-change)
@@ -1767,7 +1793,7 @@
          (mode (%select-mode-get)))
     (case mode
       ((1) ;; char: inclusive of both ends
-       (make-range sel-min (+ sel-max 1) 'char))
+       (make-range sel-min (+ sel-max (utf8-byte-len-at sel-max)) 'char))
       ((2) ;; line: expand to full line boundaries
        (let* ((line-min (%position-line sel-min))
               (line-max (%position-line sel-max))
