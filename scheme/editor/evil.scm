@@ -1798,10 +1798,7 @@
        (let* ((line-min (%position-line sel-min))
               (line-max (%position-line sel-max))
               (start (%line-start-position line-min))
-              (end (%line-end-position line-max))
-              (len (buffer-length))
-              (end (if (and (< end len) (char=? (char-at end) #\newline))
-                       (+ end 1) end)))
+              (end (%line-end-position line-max)))
          (make-range start end 'line))))))
 
 (define (evil-rect-apply op)
