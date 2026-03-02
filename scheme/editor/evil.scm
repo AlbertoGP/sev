@@ -1121,7 +1121,15 @@
     (let* ((start (range-start range))
            (end   (range-end range))
            (text  (%buffer-substring start end))
-           (shape (if (eq? (range-type range) 'line) 'linewise 'charwise)))
+           (shape (if (eq? (range-type range) 'line) 'linewise 'charwise))
+           ;; Linewise delete on the last line (no trailing newline): include
+           ;; the preceding newline so the empty line doesn't remain.
+           (start (if (and (eq? (range-type range) 'line)
+                           (= end (buffer-length))
+                           (> start 0)
+                           (char=? (char-at (- start 1)) #\newline))
+                      (- start 1)
+                      start)))
       (evil-register-write! text shape)
       (delete-range start end))))
 
