@@ -18,6 +18,7 @@
     evil-op-delete evil-op-change evil-op-yank evil-D evil-C evil-S evil-x evil-X
     evil-char-replace evil-visual-char-replace evil-char-replace-setup
     evil-visual-delete evil-visual-change evil-visual-yank
+    evil-visual-rect-insert evil-visual-rect-append
     evil-paste-after evil-paste-before evil-insert-paste-clipboard
     evil-use-register current-evil-register
     evil-digit-argument evil-zero evil-repeat evil-undo evil-redo evil-line-restore

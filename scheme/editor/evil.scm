@@ -227,9 +227,22 @@
             (make-repeat-info (ri-op ri) (ri-op-count ri)
                               (ri-motion ri) (ri-motion-count ri)
                               (ri-text-object ri) (ri-text-object-kind ri)
-                              (ri-setup ri) typed)))))
-    (set! evil-pending-repeat-info #f)
-    (%end-change))
+                              (ri-setup ri) typed))))
+      (set! evil-pending-repeat-info #f)
+      (when evil-rect-insert-info
+        (let* ((info evil-rect-insert-info)
+               (row-min (car info))
+               (row-max (cadr info))
+               (col     (car (cddr info))))
+          (set! evil-rect-insert-info #f)
+          (when (> (string-length typed) 0)
+            (let loop ((line row-max))
+              (when (> line row-min)
+                (point-set! (min (+ (%line-start-position line) col)
+                                 (%line-end-position line)))
+                (%insert-string typed)
+                (loop (- line 1)))))))
+      (%end-change)))
   (disable-minor-mode 'evil-insert-mode)
   (disable-minor-mode 'evil-replace-mode)
   (disable-minor-mode 'evil-select-mode)
@@ -371,6 +384,7 @@
 ;; Visual text-object tracking (for dot repeat of visual operations)
 (define evil-last-visual-text-object #f)
 (define evil-last-visual-text-object-kind #f)
+(define evil-rect-insert-info #f)  ; #f or (list row-min row-max col)
 
 ;; Motion registry
 (define *motion-table* (make-hash-table eq?))
@@ -1801,6 +1815,41 @@
               (end (%line-end-position line-max)))
          (make-range start end 'line))))))
 
+(define (evil-rect-bounds)
+  (let* ((anchor (%mark-position #\<))
+         (point  (point-get))
+         (la (%position-line anchor))
+         (lb (%position-line point))
+         (ca (- anchor (%line-start-position la)))
+         (cb (- point  (%line-start-position lb))))
+    (list (min la lb) (max la lb) (min ca cb) (+ (max ca cb) 1))))
+
+(defcommand (evil-visual-rect-insert)
+  "Enter insert mode at the left column of each line in rectangle selection."
+  (let* ((b (evil-rect-bounds))
+         (row-min (list-ref b 0)) (row-max (list-ref b 1))
+         (col-min (list-ref b 2)))
+    (%begin-change)
+    (set! evil-rect-insert-info (list row-min row-max col-min))
+    (set! evil-pending-repeat-info
+      (make-repeat-info 'op-rect-insert 1 #f #f #f #f 'rect-insert #f))
+    (point-set! (min (+ (%line-start-position row-min) col-min)
+                     (%line-end-position row-min)))
+    (evil-insert)))
+
+(defcommand (evil-visual-rect-append)
+  "Enter insert mode at the right column of each line in rectangle selection."
+  (let* ((b (evil-rect-bounds))
+         (row-min (list-ref b 0)) (row-max (list-ref b 1))
+         (col-max (list-ref b 3)))
+    (%begin-change)
+    (set! evil-rect-insert-info (list row-min row-max col-max))
+    (set! evil-pending-repeat-info
+      (make-repeat-info 'op-rect-append 1 #f #f #f #f 'rect-append #f))
+    (point-set! (min (+ (%line-start-position row-min) col-max)
+                     (%line-end-position row-min)))
+    (evil-insert)))
+
 (define (evil-rect-apply op)
   (let* ((anchor (%mark-position #\<))
          (point (point-get))
@@ -1889,7 +1938,12 @@
   (let ((mode (%select-mode-get)))
     (if (= mode 3)
         ;; rectangle: delete rect, enter insert at upper-left
-        (begin (evil-rect-apply delete-range) (evil-insert))
+        (let* ((b (evil-rect-bounds))
+               (row-min (list-ref b 0)) (row-max (list-ref b 1))
+               (col-min (list-ref b 2)))
+          (set! evil-rect-insert-info (list row-min row-max col-min))
+          (evil-rect-apply delete-range)
+          (evil-insert))
         ;; char or line
         (let ((range (evil-visual-range)))
           (let* ((start (range-start range))
@@ -1955,6 +2009,8 @@
 (set-key! select-map "C" 'evil-visual-change)
 (set-key! select-map "S" 'evil-visual-change)
 (set-key! select-map "y" 'evil-visual-yank)
+(set-key! select-map "I" 'evil-visual-rect-insert)
+(set-key! select-map "A" 'evil-visual-rect-append)
 
 ;; Visual mode motion bindings
 (set-key! select-map "w" 'evil-motion-w)
