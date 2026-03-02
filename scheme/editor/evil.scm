@@ -1927,7 +1927,15 @@
                (range (evil-visual-range)))
           (let* ((start (range-start range))
                  (end   (range-end range))
-                 (text  (%buffer-substring start end)))
+                 (text  (%buffer-substring start end))
+                 ;; Linewise delete on the last line (no trailing newline): include
+                 ;; the preceding newline so the empty line doesn't remain.
+                 (start (if (and (= mode 2)
+                                 (= end (buffer-length))
+                                 (> start 0)
+                                 (char=? (char-at (- start 1)) #\newline))
+                            (- start 1)
+                            start)))
             (evil-register-write! text shape)
             (point-set! start)
             (delete-range start end)))))
