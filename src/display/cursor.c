@@ -1,16 +1,16 @@
 #include "cursor.h"
 #include "theme.h"
 #include "../text/buffer.h"
+#include "../text/utf8.h"
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 
 void Cursor(AppState *state, int32_t index,
             float offset, int height,
             FontID font_id, uint16_t font_size ) {
-    static char point_char[1];
+    static char point_char[4];
     static Clay_String point_str = {
         .chars = point_char,
-        .length = 1,
         .isStaticallyAllocated = true
     };
     static Clay_String gap_str = {
@@ -18,7 +18,18 @@ void Cursor(AppState *state, int32_t index,
         .length = 1,
         .isStaticallyAllocated = true
     };
-    point_char[0] = char_at_point() ? char_at_point() : ' ';
+    char first = char_at_point();
+    if (!first) {
+        point_char[0] = ' ';
+        point_str.length = 1;
+    } else {
+        int seq_len = utf8_seq_len_fwd(&first);
+        Buffer *buf = buffer_get_current();
+        size_t pos = point_get(buf).pos;
+        for (int i = 0; i < seq_len; i++)
+            point_char[i] = (char)buf_char_at(buf, pos + i);
+        point_str.length = seq_len;
+    }
 
     Clay_Color cursorColor = ui_get_cursor_color(state);
 
