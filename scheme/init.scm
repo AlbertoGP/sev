@@ -94,5 +94,16 @@
       (evil-select))
     (point-set! current-pos)))
 
+;; Splash keymap: minimal set of commands available when no panes/tabs are open.
+;; Intentionally excludes cursor motion and editing commands.
+(define splash-map (make-keymap))
+(%set-keymap-name! splash-map "splash")
+(bind-prefix! splash-map "SPC b" buffer-map)
+(bind-prefix! splash-map "SPC h" help-map)
+(set-key! splash-map "SPC t n" 'tab-new)
+(set-key! splash-map "M-x"     'execute-extended-command)
+(set-key! splash-map "C-q"     'quit)
+(%set-splash-keymap! splash-map)
+
 (reset-global-scale)
 (message-clear)

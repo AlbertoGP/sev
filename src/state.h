@@ -25,6 +25,12 @@ typedef enum Theme {
     THEME_LIGHT
 } Theme;
 
+typedef enum {
+    FOCUS_PANE,
+    FOCUS_SPLASH,
+    FOCUS_MINIBUFFER,
+} FocusTarget;
+
 typedef struct {
     struct Keymap *global_map;
     struct Keymap *current_map;
@@ -41,6 +47,8 @@ typedef struct {
     float        mouse_down_x, mouse_down_y;
     size_t       mouse_down_buf_pos;       // buffer byte pos at click
     bool         mouse_drag_active;        // true once motion exceeds 3px threshold
+    FocusTarget  current_focus;
+    struct Keymap *splash_map;             // NULL until registered from Scheme
 } InputState;
 
 typedef struct {
@@ -83,6 +91,7 @@ typedef struct {
     sexp on_submit;   // Scheme (lambda (text) ...), GC-preserved; SEXP_FALSE if none
     sexp on_cancel;   // Scheme (lambda () ...), GC-preserved; SEXP_FALSE if none
     struct Buffer *prev_buf;
+    FocusTarget  prev_focus;   // saved focus before minibuf activation
     MinibufFrame stack[MINIBUF_STACK_MAX];
     int          stack_depth;  // 0 = no pushed frames
 } Minibuf;

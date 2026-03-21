@@ -97,9 +97,10 @@ Pane *pane_at_coords(Pane *root, float x, float y) {
 
 void sync_active_buffer(void) {
     Pane *active = pane_get_active();
-    if (active && active->content.type == CONTENT_TEXT) {
+    if (active && active->content.type == CONTENT_TEXT)
         buffer_set_current(active->content.buffer);
-    }
+    if (!G->minibuf.active)
+        G->input.current_focus = active ? FOCUS_PANE : FOCUS_SPLASH;
 }
 
 Pane *pane_create(void) {

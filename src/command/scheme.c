@@ -212,6 +212,13 @@ static sexp scm_buffer_create(sexp ctx, sexp self, sexp n, sexp sname) {
     return buf ? SEXP_TRUE : SEXP_FALSE;
 }
 
+static sexp scm_set_splash_keymap(sexp ctx, sexp self, sexp n, sexp skm) {
+    if (!sexp_cpointerp(skm))
+        return sexp_user_exception(ctx, self, "expected keymap cpointer", skm);
+    G->input.splash_map = sexp_cpointer_value(skm);
+    return SEXP_VOID;
+}
+
 static sexp scm_pane_set_buffer(sexp ctx, sexp self, sexp n, sexp sname) {
     if (!sexp_stringp(sname))
         return sexp_user_exception(ctx, self, "buffer name must be a string", sname);
@@ -363,6 +370,7 @@ void scheme_init(AppState *state) {
     SDEF("%buffer-create", 1, scm_buffer_create);
     SDEF("%pane-set-buffer!", 1, scm_pane_set_buffer);
     SDEF("%buffer-close!", 1, scm_buffer_close);
+    SDEF("%set-splash-keymap!", 1, scm_set_splash_keymap);
 
     // Mode primitives
     SDEF("%register-mode", 3, scm_register_mode);
