@@ -208,7 +208,7 @@ Pane *pane_split(Pane *pane, PaneType split_type) {
 
     Pane *split = malloc(sizeof(Pane));
     if (!split) return NULL;
-    Pane *new = malloc(sizeof(Pane));
+    Pane *new = calloc(1, sizeof(Pane));
     if (!new) {
         free(split);
         return NULL;
