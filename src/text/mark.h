@@ -14,7 +14,8 @@ typedef enum SelectMode {
     SELECT_NONE = 0,
     SELECT_REGULAR,
     SELECT_LINE,
-    SELECT_RECTANGLE
+    SELECT_RECTANGLE,
+    SELECT_RECTANGLE_RAGGED
 } SelectMode;
 
 // Looks up the specified mark and sets it to the specified location.

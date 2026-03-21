@@ -590,6 +590,7 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                                 }
                                 break;
                             }
+                            case SELECT_RECTANGLE_RAGGED:
                             case SELECT_RECTANGLE: {
                                 size_t line_a = line_index_at(lt, sel_a);
                                 size_t line_b = line_index_at(lt, sel_b);
@@ -605,7 +606,13 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                                     size_t log_start = lt->lines[vl_logical].start;
                                     size_t log_end   = lt->lines[vl_logical].end;
                                     size_t hs = log_start + col_min;
-                                    size_t he = log_start + col_max + 1;
+                                    size_t he;
+                                    if (buf->select_mode == SELECT_RECTANGLE_RAGGED) {
+                                        he = log_end;
+                                        if (he > log_start && chars[he - 1] == '\n') he--;
+                                    } else {
+                                        he = log_start + col_max + 1;
+                                    }
                                     if (he > log_end) he = log_end;
                                     if (hs > log_end) hs = log_end;
                                     // Clamp to visual line bounds
