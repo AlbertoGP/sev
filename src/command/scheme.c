@@ -1,6 +1,9 @@
 #include <SDL3/SDL_events.h>
 #include <chibi/eval.h>
 #include <chibi/sexp.h>
+#ifndef __EMSCRIPTEN__
+#include <unistd.h>
+#endif
 
 #include "message.h"
 #include "minibuf.h"
@@ -571,6 +574,28 @@ void scheme_init(AppState *state) {
     LOAD_SCRIPT("init");
 
     #undef LOAD_SCRIPT
+
+    // Load user init.scm from ~/.config/sev/init.scm (Linux/desktop only)
+#ifndef __EMSCRIPTEN__
+    {
+        char user_init[1024];
+        const char *xdg = getenv("XDG_CONFIG_HOME");
+        if (xdg && xdg[0]) {
+            snprintf(user_init, sizeof(user_init), "%s/sev/init.scm", xdg);
+        } else {
+            const char *home = getenv("HOME");
+            if (home && home[0])
+                snprintf(user_init, sizeof(user_init), "%s/.config/sev/init.scm", home);
+            else
+                user_init[0] = '\0';
+        }
+        if (user_init[0] && access(user_init, F_OK) == 0) {
+            result = sexp_load(ctx, sexp_c_string(ctx, user_init, -1), env);
+            if (sexp_exceptionp(result))
+                sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+        }
+    }
+#endif
 
     // Get call-interactively procedure (imported from (editor command) by init.scm)
     state->chibi.call_interactively = sexp_env_ref(

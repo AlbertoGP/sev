@@ -109,6 +109,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
+    state->ui.scale_factor = 1.0;
     scheme_init(state);
 
     if (!buffer_list_init()) {
@@ -130,7 +131,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     state->needs_extra_frame = true;
     state->animating = false;
     state->last_frame_ns = 0;
-    state->ui.scale_factor = 1.0;
 
     /* Start in event-driven mode; iterate.c switches to 60fps during animations */
     SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, "waitevent");
