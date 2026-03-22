@@ -486,7 +486,7 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
         },
     }) {
         // Per-pane tab bar.
-        TabBar(state, pane);
+        TabBar(state, pane, index);
 
         Clay_ElementId id = CLAY_IDI_LOCAL("Buffer Text", index);
         CLAY(id, {
@@ -787,7 +787,7 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                 }
             }
         }
-        StatusBar(state, pane);
+        StatusBar(state, pane, index);
     }
 }
 

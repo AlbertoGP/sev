@@ -26,7 +26,7 @@ void bar_strings_push(char *p) {
 }
 
 
-void StatusBar(AppState *state, Pane *pane) {
+void StatusBar(AppState *state, Pane *pane, int32_t index) {
     if (!pane->display.active_tab) return;
     bool active = pane->display.active;
     Buffer *buf = pane->display.active_tab->buffer;
@@ -79,7 +79,7 @@ void StatusBar(AppState *state, Pane *pane) {
             Clay_Color label_color = icon
                 ? ui_resolve_color(state, icon->role_label)
                 : (Clay_Color){255, 0, 255, 255};
-            CLAY(CLAY_ID("Mode Name"), {
+            CLAY(CLAY_IDI_LOCAL("Mode Name", index), {
                 .layout = {
                     .padding = {
                         .left = 8.0 * state->ui.scale_factor,
@@ -98,7 +98,7 @@ void StatusBar(AppState *state, Pane *pane) {
             }){
                 if (icon) {
                     SDL_Texture *tex = icon_get(icon->icon_name, state, 16, 16);
-                    CLAY(CLAY_ID("Mode Icon"), {
+                    CLAY(CLAY_IDI_LOCAL("Mode Icon", index), {
                         .layout = {
                             .sizing = {
                                 .width = 16.0 * state->ui.scale_factor,

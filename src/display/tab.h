@@ -60,7 +60,7 @@ bool tab_new_with_buffer(const char *buf_name);
 void update_window_title(void);
 
 // Clay component: per-pane tab bar (no global app icon).
-void TabBar(AppState *state, struct Pane *dp);
+void TabBar(AppState *state, struct Pane *dp, int32_t index);
 
 // --- Scheme bindings ---
 #include <chibi/sexp.h>

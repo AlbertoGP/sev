@@ -236,7 +236,7 @@ static bool CloseButton(AppState *state, Pane *dp, Tab *t, bool is_active) {
     return hovered;
 }
 
-void TabBar(AppState *state, Pane *dp) {
+void TabBar(AppState *state, Pane *dp, int32_t index) {
     if (!dp || dp->type != PANE_DISPLAY) return;
 
     tab_cb_reset();
@@ -244,7 +244,7 @@ void TabBar(AppState *state, Pane *dp) {
     float cr = 5 * state->ui.scale_factor;
     Clay_Color active_color = ui_resolve_color(state, state->ui.roles.tab_active);
 
-    CLAY(CLAY_ID_LOCAL("Tab Bar"), {
+    CLAY(CLAY_IDI_LOCAL("Tab Bar", index), {
         .layout = {
             .sizing = { .width = CLAY_SIZING_GROW(0) },
             .padding = CLAY_PADDING_ALL(5 * state->ui.scale_factor),
