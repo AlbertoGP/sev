@@ -102,12 +102,12 @@ void sync_active_buffer(void) {
         G->input.current_focus = active ? FOCUS_PANE : FOCUS_SPLASH;
 }
 
-Pane *pane_display_create(Buffer *buf, const char *name) {
+Pane *pane_display_create(Buffer *buf) {
     Pane *pane = calloc(1, sizeof(Pane));
     if (!pane) return NULL;
     pane->type = PANE_DISPLAY;
 
-    Tab *tab = tab_alloc(name, buf);
+    Tab *tab = tab_alloc(buf);
     if (!tab) { free(pane); return NULL; }
 
     pane->display.list = tab;
@@ -186,22 +186,6 @@ void pane_close(void) {
     update_window_title();
 }
 
-void pane_sync_tabs_for_buffer(Pane *pane, Buffer *buf) {
-    if (!pane) return;
-    if (pane->type == PANE_DISPLAY) {
-        for (Tab *t = pane->display.list; t; t = t->next)
-            if (t->buffer == buf) tab_sync_name(t);
-        return;
-    }
-    if (pane->type == PANE_V_SPLIT) {
-        pane_sync_tabs_for_buffer(pane->v_split.left, buf);
-        pane_sync_tabs_for_buffer(pane->v_split.right, buf);
-    }
-    if (pane->type == PANE_H_SPLIT) {
-        pane_sync_tabs_for_buffer(pane->h_split.top, buf);
-        pane_sync_tabs_for_buffer(pane->h_split.bottom, buf);
-    }
-}
 
 static Pane *pane_get_active_from(Pane *pane) {
     if (!pane) return NULL;
@@ -244,9 +228,8 @@ Pane *pane_split(Pane *pane, PaneType split_type) {
     if (!split) return NULL;
 
     // New sibling gets one tab showing the same buffer as pane's active tab.
-    const char *name = pane->display.active_tab ? pane->display.active_tab->name : "";
-    Buffer *buf      = pane->display.active_tab ? pane->display.active_tab->buffer : NULL;
-    Pane *new_pane = pane_display_create(buf, name);
+    Buffer *buf = pane->display.active_tab ? pane->display.active_tab->buffer : NULL;
+    Pane *new_pane = pane_display_create(buf);
     if (!new_pane) { free(split); return NULL; }
 
     split->type = split_type;

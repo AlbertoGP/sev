@@ -11,14 +11,11 @@
 #include "../text/jump_list.h"
 #include "../state.h"
 
-#define TAB_NAME_MAX 256
-
 // A tab is a node in a doubly-linked list owned by a display pane.
 // It holds rendering state so switching tabs preserves scroll/cache.
 typedef struct Tab {
     struct Tab *next;
     struct Tab *prev;
-    char name[TAB_NAME_MAX];
 
     Buffer *buffer;
     VLineCache vline_cache;
@@ -35,14 +32,14 @@ struct Pane;
 bool tab_system_init(AppState *state);
 
 // Allocate a new Tab node (initialises vline_cache; caller links into list).
-Tab *tab_alloc(const char *name, Buffer *buf);
+Tab *tab_alloc(Buffer *buf);
 // Free a Tab node (destroys vline_cache and jump_list).
 void tab_free(Tab *tab);
 
 // --- Per-display-pane tab operations ---
 
 // Append a new tab for buf to dp's tab list and make it active.
-Tab *display_tab_new(struct Pane *dp, Buffer *buf, const char *name);
+Tab *display_tab_new(struct Pane *dp, Buffer *buf);
 // Close dp's active tab. Returns true if the tab list is now empty
 // (caller should then close the pane).
 bool display_tab_close(struct Pane *dp);
@@ -56,10 +53,8 @@ bool display_tab_prev(struct Pane *dp);
 // Returns true on success.
 bool tab_new_with_buffer(const char *buf_name);
 
-// Set a tab's buffer, invalidate its vline cache, and sync its name.
+// Set a tab's buffer and invalidate its vline cache.
 void tab_set_buffer(Tab *tab, Buffer *buf);
-// Sync a tab's name from its buffer's current name.
-void tab_sync_name(Tab *tab);
 
 // Update the window title to reflect the active tab.
 void update_window_title(void);

@@ -191,12 +191,8 @@ static sexp scm_set_buffer_modified(sexp ctx, sexp self, sexp n, sexp val) {
 static sexp scm_buffer_set_name(sexp ctx, sexp self, sexp n, sexp sname) {
     if (!sexp_stringp(sname))
         return sexp_user_exception(ctx, self, "buffer name must be a string", sname);
-    Buffer *buf = buffer_get_current();
     bool ok = buffer_set_name(sexp_string_data(sname));
-    if (ok) {
-        pane_sync_tabs_for_buffer(pane_get_root(), buf);
-        G->needs_redraw = true;
-    }
+    if (ok) G->needs_redraw = true;
     return ok ? SEXP_TRUE : SEXP_FALSE;
 }
 

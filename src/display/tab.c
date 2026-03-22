@@ -17,35 +17,28 @@ bool tab_system_init(AppState *state) {
 }
 
 void update_window_title(void) {
-    char buf[TAB_NAME_MAX];
+    char buf[BUFFER_NAME_MAX + 8];
     Pane *active = pane_get_active();
-    if (active && active->display.active_tab)
-        snprintf(buf, TAB_NAME_MAX, "%s - sev", active->display.active_tab->name);
+    Tab *t = active ? active->display.active_tab : NULL;
+    if (t && t->buffer)
+        snprintf(buf, sizeof(buf), "%s - sev", t->buffer->name);
     else
-        snprintf(buf, TAB_NAME_MAX, "sev");
+        snprintf(buf, sizeof(buf), "sev");
     SDL_SetWindowTitle(window, buf);
 }
 
-Tab *tab_alloc(const char *name, Buffer *buf) {
+Tab *tab_alloc(Buffer *buf) {
     Tab *tab = calloc(1, sizeof(Tab));
     if (!tab) return NULL;
-    strncpy(tab->name, name, TAB_NAME_MAX - 1);
     tab->buffer = buf;
     tab->vline_cache = vline_cache_create();
     return tab;
-}
-
-void tab_sync_name(Tab *tab) {
-    if (!tab || !tab->buffer) return;
-    strncpy(tab->name, tab->buffer->name, TAB_NAME_MAX - 1);
-    tab->name[TAB_NAME_MAX - 1] = '\0';
 }
 
 void tab_set_buffer(Tab *tab, Buffer *buf) {
     if (!tab || !buf) return;
     tab->buffer = buf;
     tab->vline_cache.full_rebuild = true;
-    tab_sync_name(tab);
 }
 
 void tab_free(Tab *tab) {
@@ -55,9 +48,9 @@ void tab_free(Tab *tab) {
     free(tab);
 }
 
-Tab *display_tab_new(Pane *dp, Buffer *buf, const char *name) {
+Tab *display_tab_new(Pane *dp, Buffer *buf) {
     if (!dp || dp->type != PANE_DISPLAY) return NULL;
-    Tab *tab = tab_alloc(name, buf);
+    Tab *tab = tab_alloc(buf);
     if (!tab) return NULL;
 
     // Append to end of list.
@@ -126,7 +119,7 @@ bool tab_new_with_buffer(const char *buf_name) {
     Pane *root = pane_get_root();
     if (!root) {
         // No panes yet: create the root PANE_DISPLAY.
-        Pane *p = pane_display_create(buf, buf_name);
+        Pane *p = pane_display_create(buf);
         if (!p) return false;
         // pane_display_create doesn't set root_pane; we do it via replace_child(NULL,NULL,p).
         pane_replace_child(NULL, NULL, p);
@@ -135,7 +128,7 @@ bool tab_new_with_buffer(const char *buf_name) {
         // Add tab to active display pane.
         Pane *active = pane_get_active();
         if (!active) return false;
-        Tab *t = display_tab_new(active, buf, buf_name);
+        Tab *t = display_tab_new(active, buf);
         if (!t) return false;
     }
 
@@ -257,8 +250,8 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
         for (int i = 1; t != NULL; t = t->next, i++) {
             bool is_active = (t == dp->display.active_tab);
             Clay_String tab_name = {
-                .chars = t->name,
-                .length = strlen(t->name),
+                .chars = t->buffer->name,
+                .length = strlen(t->buffer->name),
                 .isStaticallyAllocated = true
             };
             CLAY(CLAY_IDI_LOCAL("Tab", i), {
