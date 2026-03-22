@@ -243,6 +243,10 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
         .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } },
         .clip = { .horizontal = true },
         .backgroundColor = ui_resolve_color(state, state->ui.roles.tab_bar),
+        .border = {
+            .width = { .betweenChildren = 1 },
+            .color = ui_resolve_color(state, state->ui.roles.border_inactive)
+        }
     }) {
         Tab *t = dp->display.list;
         if (!t) return;
@@ -261,6 +265,10 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
                 .backgroundColor = is_active
                     ? active_color
                     : ui_resolve_color(state, state->ui.roles.tab_inactive),
+                .border = {
+                    .width = { .bottom = is_active ? 0 : 2 },
+                    .color = ui_resolve_color(state, state->ui.roles.border_inactive)
+            }
             }) {
                 Clay_Color c = ui_resolve_color(state, state->ui.roles.text_primary);
                 float TAB_HEIGHT = 30 * state->ui.scale_factor;
@@ -297,6 +305,18 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
                 if (cb) Clay_OnHover(block_click ? NULL : HandleClickTab, cb);
             }
         }
+        CLAY(CLAY_ID_LOCAL("Tab bar space"), {
+            .layout = {
+                 .sizing = {
+                     .width = CLAY_SIZING_GROW(0),
+                     .height = CLAY_SIZING_GROW(0)
+                }
+            },
+            .border = {
+                .width = { .bottom = 2 },
+                .color = ui_resolve_color(state, state->ui.roles.border_inactive)
+            }
+        }) {}
     }
 }
 

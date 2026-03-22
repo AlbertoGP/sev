@@ -552,6 +552,9 @@ void scheme_init(AppState *state) {
 
     INTERN_ROLE(ui_bg, "ui.bg");
     INTERN_ROLE(pane_bg, "pane.bg");
+    INTERN_ROLE(border_active, "border.active");
+    INTERN_ROLE(border_inactive, "border.inactive");
+    INTERN_ROLE(border_bell, "border.bell");
     INTERN_ROLE(bar_bg, "bar.bg");
     INTERN_ROLE(bar_text_active, "bar.text.active");
     INTERN_ROLE(tab_bar, "tab.bar");

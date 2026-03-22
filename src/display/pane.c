@@ -789,8 +789,11 @@ static void VSplitPane(AppState *state, Pane *pane, int32_t index, float width, 
                 .width  = width  ? CLAY_SIZING_PERCENT(width)  : CLAY_SIZING_GROW(0),
                 .height = height ? CLAY_SIZING_PERCENT(height) : CLAY_SIZING_GROW(0),
             },
-            .childGap = 2
         },
+        .border = {
+            .width = { .betweenChildren = 1 },
+            .color = ui_resolve_color(state, state->ui.roles.border_inactive)
+        }
     }) {
         PaneContent(state, pane->v_split.left,  1, pane->v_split.left_width,       0);
         PaneContent(state, pane->v_split.right, 2, 1 - pane->v_split.left_width,   0);
@@ -805,7 +808,10 @@ static void HSplitPane(AppState *state, Pane *pane, int32_t index, float width, 
                 .width  = width  ? CLAY_SIZING_PERCENT(width)  : CLAY_SIZING_GROW(0),
                 .height = height ? CLAY_SIZING_PERCENT(height) : CLAY_SIZING_GROW(0),
             },
-            .childGap = 2
+        },
+        .border = {
+            .width = { .betweenChildren = 1 },
+            .color = ui_resolve_color(state, state->ui.roles.border_inactive)
         }
     }) {
         PaneContent(state, pane->h_split.top,    1, 0, pane->h_split.top_height);
