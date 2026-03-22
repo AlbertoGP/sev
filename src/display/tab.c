@@ -190,7 +190,7 @@ static void HandleClickTab(Clay_ElementId elementId, Clay_PointerData pointerInf
 static void *tab_cb_data[MAX_TAB_CB_DATA][2];
 static int   tab_cb_count = 0;
 
-static void tab_cb_reset(void) { tab_cb_count = 0; }
+void tab_cb_reset(void) { tab_cb_count = 0; }
 
 static void **tab_cb_alloc(Pane *dp, Tab *t) {
     if (tab_cb_count >= MAX_TAB_CB_DATA) return NULL;
@@ -234,8 +234,6 @@ static bool CloseButton(AppState *state, Pane *dp, Tab *t) {
 
 void TabBar(AppState *state, Pane *dp, int32_t index) {
     if (!dp || dp->type != PANE_DISPLAY) return;
-
-    tab_cb_reset();
 
     Clay_Color active_color = ui_resolve_color(state, state->ui.roles.tab_active);
 

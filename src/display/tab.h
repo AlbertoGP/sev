@@ -59,6 +59,8 @@ void tab_set_buffer(Tab *tab, Buffer *buf);
 // Update the window title to reflect the active tab.
 void update_window_title(void);
 
+// Reset the tab callback slot pool. Call once per frame before layout.
+void tab_cb_reset(void);
 // Clay component: per-pane tab bar (no global app icon).
 void TabBar(AppState *state, struct Pane *dp, int32_t index);
 

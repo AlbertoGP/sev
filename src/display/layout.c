@@ -39,6 +39,7 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
         .height = CLAY_SIZING_GROW(0)
     };
 
+    tab_cb_reset();
     Clay_BeginLayout();
 
     CLAY(CLAY_ID("Layout Background"), {
