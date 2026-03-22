@@ -5,7 +5,6 @@
 #include "state.h"
 #include "command/keyboard.h"
 #include "display/pane.h"
-#include "display/tab.h"
 #include "display/vline.h"
 #include "text/buffer.h"
 
@@ -49,25 +48,25 @@ static void invoke_mouse_drag_cb(AppState *state, size_t pos, size_t start_pos) 
 // buffer byte position.  Returns true and fills *pos_out on success.
 static bool pane_hit_to_buf_pos(AppState *state, Pane *pane,
                                  float x, float y, size_t *pos_out) {
-    if (!pane || pane->content.type != CONTENT_TEXT) return false;
-    Buffer *buf = pane->content.buffer;
+    if (!pane || pane->type != PANE_DISPLAY || !pane->display.active_tab) return false;
+    Buffer *buf = pane->display.active_tab->buffer;
     if (!buf) return false;
 
-    float rel_x = x - pane->content.text_origin_x;
-    float rel_y = y - pane->content.text_origin_y;
+    float rel_x = x - pane->display.text_origin_x;
+    float rel_y = y - pane->display.text_origin_y;
     // Clamp rel_y so dragging slightly outside still lands on nearest line.
     if (rel_y < 0.0f) rel_y = 0.0f;
-    if (rel_y > pane->content.text_origin_h)
-        rel_y = pane->content.text_origin_h;
+    if (rel_y > pane->display.text_origin_h)
+        rel_y = pane->display.text_origin_h;
 
     char *chars = buffer_text(buf);
     *pos_out = vline_byte_pos_at_xy(
-        &pane->content.vline_cache, chars,
+        &pane->display.active_tab->vline_cache, chars,
         rel_x, rel_y,
-        pane->content.line_height_px,
+        pane->display.line_height_px,
         &state->rendererData,
-        pane->content.render_font_id,
-        pane->content.render_font_size);
+        pane->display.render_font_id,
+        pane->display.render_font_size);
     free(chars);
     return true;
 }
@@ -119,12 +118,12 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         state->input.mouse_down_y = y;
         state->input.mouse_drag_active = false;
 
-        Pane *hit = pane_at_coords(tab_get_root_pane(), x, y);
+        Pane *hit = pane_at_coords(pane_get_root(), x, y);
         state->input.mouse_down_pane = hit;
 
-        if (hit && hit->content.type == CONTENT_TEXT) {
+        if (hit && hit->type == PANE_DISPLAY && hit->display.active_tab) {
             // Switch active pane so that Scheme point-set! targets the right buffer.
-            if (!hit->content.active)
+            if (!hit->display.active)
                 pane_set_active(hit);
 
             size_t pos = 0;
@@ -151,10 +150,10 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         Clay_UpdateScrollContainers(true, (Clay_Vector2) { event->wheel.x, event->wheel.y }, deltaTime);
 
         // Scroll the buffer pane under the mouse cursor.
-        Pane *scroll_hit = pane_at_coords(tab_get_root_pane(),
+        Pane *scroll_hit = pane_at_coords(pane_get_root(),
                                           event->wheel.mouse_x, event->wheel.mouse_y);
-        if (scroll_hit && scroll_hit->content.type == CONTENT_TEXT) {
-            VLineCache *cache = &scroll_hit->content.vline_cache;
+        if (scroll_hit && scroll_hit->type == PANE_DISPLAY && scroll_hit->display.active_tab) {
+            VLineCache *cache = &scroll_hit->display.active_tab->vline_cache;
             if (cache->count > 0) {
                 // wheel.y positive = away from user = scroll down (reveal lower lines).
                 int delta = (int)(event->wheel.y * 3.0f);
@@ -171,11 +170,11 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 
                 // For the active pane: move cursor into viewport rather than
                 // letting vline_scroll_to_cursor revert the scroll next frame.
-                if (scroll_hit->content.active) {
-                    Buffer *buf = scroll_hit->content.buffer;
-                    int lh = scroll_hit->content.line_height_px;
+                if (scroll_hit->display.active) {
+                    Buffer *buf = scroll_hit->display.active_tab->buffer;
+                    int lh = scroll_hit->display.line_height_px;
                     size_t vc = (lh > 0)
-                        ? (size_t)(scroll_hit->content.text_origin_h / lh) : 0;
+                        ? (size_t)(scroll_hit->display.text_origin_h / lh) : 0;
                     if (vc > 0) {
                         size_t cur = point_get(buf).pos;
                         size_t clamped = vline_clamp_byte_pos_to_viewport(cache, cur, vc);

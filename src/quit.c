@@ -3,7 +3,7 @@
 
 #include "state.h"
 #include "clay/renderer.h"
-#include "display/tab.h"
+#include "display/pane.h"
 #include "text/buffer.h"
 #include "text/register.h"
 
@@ -13,7 +13,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Application failed to run");
     }
 
-    tab_list_quit();
+    pane_quit();
     buffer_list_quit();
 
     AppState *state = appstate;

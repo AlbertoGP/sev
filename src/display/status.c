@@ -27,8 +27,9 @@ void bar_strings_push(char *p) {
 
 
 void StatusBar(AppState *state, Pane *pane) {
-    bool active = pane->content.active;
-    Buffer *buf = pane->content.buffer;
+    if (!pane->display.active_tab) return;
+    bool active = pane->display.active;
+    Buffer *buf = pane->display.active_tab->buffer;
     sexp mode_symbol = sexp_intern(state->chibi.ctx, "mode-name", -1);
     
     sexp mode_val = vartable_get(buffer_get_locals(buf), mode_symbol, SEXP_FALSE);
@@ -60,7 +61,7 @@ void StatusBar(AppState *state, Pane *pane) {
             },
             .padding = {
                  .right = 10.0 * state->ui.scale_factor,
-                 .left = pane->content.active ? 0 : 10.0 * state->ui.scale_factor
+                 .left = pane->display.active ? 0 : 10.0 * state->ui.scale_factor
             },
             .childGap = 10.0 * state->ui.scale_factor,
         },
@@ -69,7 +70,7 @@ void StatusBar(AppState *state, Pane *pane) {
             .horizontal = true
         }
     }) {
-        if (pane->content.active) {
+        if (pane->display.active) {
             ModeIconEntry *icon = mode_icon_for_current_buffer();
             Clay_Color mode_bg = icon
                 ? ui_resolve_color(state, icon->role_mode_bg)

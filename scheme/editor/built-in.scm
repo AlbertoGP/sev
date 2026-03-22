@@ -114,7 +114,7 @@
   (interactive)
   (set! *new-buffer-counter* (+ *new-buffer-counter* 1))
   (let ((name (string-append "untitled-" (number->string *new-buffer-counter*))))
-    (if (no-tabs?)
+    (if (no-panes?)
         (%tab-new! name)
         (begin
           (%buffer-create name)
@@ -135,7 +135,7 @@
 (defcommand (scratch-buffer)
   "Switch to the *scratch* buffer, creating it if it does not exist."
   (interactive)
-  (if (no-tabs?)
+  (if (no-panes?)
       (%tab-new! "*scratch*")
       (unless (%pane-set-buffer! "*scratch*")
         (%buffer-create "*scratch*")

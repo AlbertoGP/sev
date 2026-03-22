@@ -12,7 +12,7 @@
 #include "command/minibuf.h"
 #include "command/scheme.h"
 #include "display/icon.h"
-#include "display/tab.h"
+#include "display/pane.h"
 #include "text/buffer.h"
 
 /* This function runs once at startup. */
@@ -122,8 +122,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
-    if (!tab_list_init(state)) {
-        fprintf(stderr, "Failed to initialise tab list.");
+    if (!pane_init(state)) {
+        fprintf(stderr, "Failed to initialise pane system.");
         return SDL_APP_FAILURE;
     }
 

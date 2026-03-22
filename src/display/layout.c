@@ -1,12 +1,40 @@
+#include "icon.h"
 #include "message.h"
-#include "tab.h"
+#include "pane.h"
+#include "splash.h"
 #include "theme.h"
 #include "which_key.h"
 #include "../state.h"
 
+static void GlobalHeader(AppState *state) {
+    float icon_size = 24.0f * state->ui.scale_factor;
+    CLAY(CLAY_ID("Global Header"), {
+        .layout = {
+            .sizing = {
+                .width  = CLAY_SIZING_GROW(0),
+                .height = CLAY_SIZING_FIXED(icon_size + 10 * state->ui.scale_factor),
+            },
+            .padding = CLAY_PADDING_ALL(5 * state->ui.scale_factor),
+            .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
+        },
+        .backgroundColor = ui_resolve_color(state, state->ui.roles.tab_bar),
+    }) {
+        SDL_Texture *app_tex = icon_get("tab-icon", state, (int)icon_size, (int)icon_size);
+        CLAY(CLAY_ID("App Icon"), {
+            .layout = {
+                .sizing = {
+                    .width  = CLAY_SIZING_FIXED(icon_size),
+                    .height = CLAY_SIZING_FIXED(icon_size)
+                },
+            },
+            .image = app_tex,
+        }) {}
+    }
+}
+
 Clay_RenderCommandArray create_app_layout(AppState *state) {
     Clay_Sizing layoutExpand = {
-        .width = CLAY_SIZING_GROW(0),
+        .width  = CLAY_SIZING_GROW(0),
         .height = CLAY_SIZING_GROW(0)
     };
 
@@ -19,8 +47,17 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
         },
         .backgroundColor = ui_resolve_color(state, state->ui.roles.ui_bg)
     }) {
-        TabBar(state);
-        TabContent(state);
+        Pane *root = pane_get_root();
+        if (!root) {
+            GlobalHeader(state);
+            SplashPane(state);
+        } else {
+            CLAY(CLAY_ID("Root Pane Area"), {
+                .layout = { .sizing = layoutExpand }
+            }) {
+                PaneContent(state, root, 1, 0, 0);
+            }
+        }
         if (state->minibuf.active)
             MinibufArea(state);
         else

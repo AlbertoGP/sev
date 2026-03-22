@@ -4,368 +4,102 @@
 #include "icon.h"
 #include "pane.h"
 #include "tab.h"
-#include "splash.h"
 #include "theme.h"
 #include "../command/message.h"
 #include "../command/scheme_internal.h"
 
-static TabList tl;
 static SDL_Window *window;
 
-static void update_window_title(void) {
+bool tab_system_init(AppState *state) {
+    window = state->window;
+    return true;
+}
+
+void update_window_title(void) {
     char buf[TAB_NAME_MAX];
-    if (tl.current)
-        snprintf(buf, TAB_NAME_MAX, "%s - sev", tl.current->name);
+    Pane *active = pane_get_active();
+    if (active && active->display.active_tab)
+        snprintf(buf, TAB_NAME_MAX, "%s - sev", active->display.active_tab->name);
     else
-        sprintf(buf, "sev");
+        snprintf(buf, TAB_NAME_MAX, "sev");
     SDL_SetWindowTitle(window, buf);
 }
 
-bool tab_list_init(AppState *state) {
-    tl.list = NULL;
-    tl.current = NULL;
-
-    window = state->window;
-
-    if (!buffer_get_current()) return false;
-
-    return true;
-}
-
-// Free resources allocated for a tab.
-static void tab_destroy(Tab *tab) {
-    if (tl.current == tab) {
-        tl.current = tab->next ? tab->next : tab->prev;
-    }
-
-    if (tab->prev)
-        tab->prev->next = tab->next;
-    else
-        tl.list = tab->next;
-
-    if (tab->next)
-        tab->next->prev = tab->prev;
-
-    if (tab->contents) {
-        pane_destroy(tab->contents);
-        tab->contents = NULL;
-    }
-
-    free(tab);
-
-    update_window_title();
-}
-
-
-void tab_list_quit(void) {
-    Tab *tab = tl.list;
-
-    if (!tab) return;
-
-    while (tab) {
-        Tab *next = tab->next;
-        tab_destroy(tab);
-        tab = next;
-    }
-
-    tl.list = NULL;
-    tl.current = NULL;
-}
-
-bool tab_create(const char *name) {
-    Tab *tab = malloc(sizeof(Tab));
-    if (!tab) return false;
-
+Tab *tab_alloc(const char *name, Buffer *buf) {
+    Tab *tab = calloc(1, sizeof(Tab));
+    if (!tab) return NULL;
     strncpy(tab->name, name, TAB_NAME_MAX - 1);
-    tab->contents = NULL;
-    tab->next = NULL;
+    tab->buffer = buf;
+    tab->vline_cache = vline_cache_create();
+    return tab;
+}
 
-    // if tab list is empty, tab becomes list head
-    if (!tl.list) {
-        tab->prev = NULL;
-        tl.list = tab;
-        tl.current = tab;
-    // otherwise append to the end of the list
+void tab_free(Tab *tab) {
+    if (!tab) return;
+    vline_cache_destroy(&tab->vline_cache);
+    jump_list_free(&tab->jump_list);
+    free(tab);
+}
+
+Tab *display_tab_new(Pane *dp, Buffer *buf, const char *name) {
+    if (!dp || dp->type != PANE_DISPLAY) return NULL;
+    Tab *tab = tab_alloc(name, buf);
+    if (!tab) return NULL;
+
+    // Append to end of list.
+    if (!dp->display.list) {
+        dp->display.list = tab;
     } else {
-        Tab *list = tl.list;
-        while (list->next) {
-            list = list->next;
-        }
-        list->next = tab;
-        tab->prev = list;
+        Tab *last = dp->display.list;
+        while (last->next) last = last->next;
+        last->next = tab;
+        tab->prev = last;
     }
-
-    return true;
+    dp->display.active_tab = tab;
+    return tab;
 }
 
-Tab *tab_get_current(void) {
-    return tl.current;
+bool display_tab_close(Pane *dp) {
+    if (!dp || dp->type != PANE_DISPLAY || !dp->display.active_tab) return true;
+    Tab *t = dp->display.active_tab;
+
+    // Choose next active tab.
+    Tab *next_active = t->next ? t->next : t->prev;
+
+    // Unlink from list.
+    if (t->prev) t->prev->next = t->next;
+    else dp->display.list = t->next;
+    if (t->next) t->next->prev = t->prev;
+
+    tab_free(t);
+    dp->display.active_tab = next_active;
+    return dp->display.list == NULL;
 }
 
-bool tab_next(void) {
-    if (!tl.current) return false;
-    if (!tl.current->prev && !tl.current->next) return false;
-
-    tl.current = tl.current->next ? tl.current->next : tl.list;
+bool display_tab_next(Pane *dp) {
+    if (!dp || dp->type != PANE_DISPLAY || !dp->display.active_tab) return false;
+    Tab *cur = dp->display.active_tab;
+    if (!cur->next && !cur->prev) return false;
+    dp->display.active_tab = cur->next ? cur->next : dp->display.list;
     sync_active_buffer();
     update_window_title();
-
     return true;
 }
 
-bool tab_prev(void) {
-    if (!tl.current) return false;
-    if (!tl.current->prev && !tl.current->next) return false;
-
-    if (tl.current->prev) {
-         tl.current = tl.current->prev;
+bool display_tab_prev(Pane *dp) {
+    if (!dp || dp->type != PANE_DISPLAY || !dp->display.active_tab) return false;
+    Tab *cur = dp->display.active_tab;
+    if (!cur->next && !cur->prev) return false;
+    if (cur->prev) {
+        dp->display.active_tab = cur->prev;
     } else {
-        while (tl.current->next) tl.current = tl.current->next;
+        Tab *last = dp->display.list;
+        while (last->next) last = last->next;
+        dp->display.active_tab = last;
     }
     sync_active_buffer();
     update_window_title();
-
     return true;
-}
-
-Pane *tab_get_root_pane(void) {
-    if (!tl.current) return NULL;
-    return tl.current->contents;
-}
-
-void tab_set_root_pane(Pane *pane) {
-    if (!tl.current) return;
-    tl.current->contents = pane;
-}
-
-void tab_close_current(void) {
-    tab_destroy(tl.current);
-}
-
-static void HandleCloseTab(Clay_ElementId elementId, Clay_PointerData pointerInfo, void *userData) {
-    Tab *t = (Tab *)userData;
-    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-        tab_destroy(t);
-        sync_active_buffer();
-    }
-}
-
-static bool CloseButton(AppState *state, Tab *t) {
-    bool hovered = false;
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {
-                .width = CLAY_SIZING_FIXED(16 * state->ui.scale_factor),
-                .height = CLAY_SIZING_FIXED(16 * state->ui.scale_factor),
-             },
-            .childAlignment = {
-                .x = CLAY_ALIGN_X_CENTER,
-                .y = CLAY_ALIGN_Y_CENTER
-            }
-        },
-        .floating = {
-            .attachTo = CLAY_ATTACH_TO_PARENT,
-            .attachPoints = {
-                 .element = CLAY_ATTACH_POINT_RIGHT_CENTER,
-                 .parent = CLAY_ATTACH_POINT_RIGHT_CENTER
-            },
-            .offset = { .x = -5 * state->ui.scale_factor },
-            .pointerCaptureMode = CLAY_POINTER_CAPTURE_MODE_PASSTHROUGH
-        },
-        .cornerRadius = CLAY_CORNER_RADIUS(8 * state->ui.scale_factor),
-        .backgroundColor = Clay_Hovered()
-            ? ui_resolve_color(state, state->ui.roles.bar_bg)
-            : (Clay_Color){0}
-    }) {
-        SDL_Texture *icon = tl.current == t
-            ? icon_get("tab-close-active", state, 8, 8)
-            : icon_get("tab-close-inactive", state, 8, 8);
-        CLAY_AUTO_ID({
-            .layout = {
-                .sizing = {
-                    .width = 8.0 * state->ui.scale_factor,
-                    .height = 8.0 * state->ui.scale_factor
-                }
-            },
-            .image = {
-                .imageData = icon
-            },
-        }){}
-        Clay_OnHover(HandleCloseTab, t);
-        hovered = Clay_Hovered();
-    }
-    return hovered;
-}
-
-static void HandleClickTab(Clay_ElementId elementId, Clay_PointerData pointerInfo, void *userData) {
-    Tab *t = (Tab *)userData;
-    if (pointerInfo.state == CLAY_POINTER_DATA_PRESSED_THIS_FRAME) {
-        tl.current = t;
-        sync_active_buffer();
-        update_window_title();
-    }
-}
-
-static void OpenTabs(AppState *state);
-
-void TabBar(AppState *state) {
-    CLAY(CLAY_ID("Tab Bar"), {
-        .layout = {
-            .sizing = { .width = CLAY_SIZING_GROW(0) },
-            .padding = CLAY_PADDING_ALL(5 * state->ui.scale_factor),
-            .childGap = 5.0 * state->ui.scale_factor,
-            .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
-        },
-        .clip = { .horizontal = true },
-        .backgroundColor = ui_resolve_color(state, state->ui.roles.tab_bar),
-    }) {
-        SDL_Texture *app_tex = icon_get("tab-icon", state, 24, 24);
-        CLAY(CLAY_ID("App Icon"), {
-            .layout = {
-                .sizing = {
-                    .width = 24.0 * state->ui.scale_factor,
-                    .height = 24.0 * state->ui.scale_factor
-                },
-            },
-            .image = app_tex,
-        }) {}
-        OpenTabs(state);
-    }
-}
-
-void OpenTabs(AppState *state) {
-    Tab *t = tl.list;
-    // TODO: extract to a state variable toggle-able from Scheme.
-    // if (!t || !t->next) return;  // Hide tab bar if only one tab.
-    if (!t) return;                 // Show tab bar if only one tab.
-    float cr = 5 * state->ui.scale_factor;
-    Clay_Color active_color = ui_resolve_color(state, state->ui.roles.tab_active) ;
-
-    for (int i = 1; t != NULL; t = t->next, i++) {
-        Clay_String tab_name = {
-            .chars = t->name,
-            .length = strlen(t->name),
-            .isStaticallyAllocated = true
-        };
-        CLAY(CLAY_IDI("Tab", i), {
-            .layout = {
-                .padding = {
-                    .left = 2 * cr,
-                    .right = cr,
-                    .top = 0, .bottom = 0
-                },
-                .childAlignment = {
-                    .y = CLAY_ALIGN_Y_CENTER
-                },
-            },
-            .cornerRadius = CLAY_CORNER_RADIUS(cr),
-            .backgroundColor = tl.current == t
-                ? active_color
-                : Clay_Hovered()
-                    ? ui_resolve_color(state, state->ui.roles.tab_hover)
-                    : ui_resolve_color(state, state->ui.roles.tab_inactive),
-        }) {
-            // floating filler to join tab to content area
-            if (tl.current == t) {
-                CLAY_AUTO_ID({
-                    .layout = {
-                        .sizing = {
-                            .width = CLAY_SIZING_PERCENT(1),
-                            .height = CLAY_SIZING_FIXED(2 * cr)
-                        },
-                    },
-                    .floating = {
-                        .attachTo = CLAY_ATTACH_TO_PARENT,
-                        .attachPoints = {
-                             .parent = CLAY_ATTACH_POINT_CENTER_BOTTOM,
-                             .element = CLAY_ATTACH_POINT_CENTER_TOP
-                        },
-                        .offset = {
-                            .y = -cr
-                        }
-                    },
-                    .backgroundColor = active_color,
-                }) {
-                    Clay_Color tab_color = active_color;
-                    CLAY_AUTO_ID({
-                        .layout = {
-                            .sizing = {
-                                .width = CLAY_SIZING_FIXED(2 * cr),
-                                .height = CLAY_SIZING_FIXED(2 * cr)
-                            },
-                        },
-                        .floating = {
-                            .attachTo = CLAY_ATTACH_TO_PARENT,
-                            .attachPoints = {
-                                .parent = CLAY_ATTACH_POINT_LEFT_BOTTOM,
-                                .element = CLAY_ATTACH_POINT_RIGHT_BOTTOM
-                            },
-                        },
-                        .backgroundColor = tab_color,
-                        .custom = { .customData = (void *)(uintptr_t)CUSTOM_RENDER_CONCAVE_LEFT },
-                    }) {}
-                    CLAY_AUTO_ID({
-                        .layout = {
-                            .sizing = {
-                                .width = CLAY_SIZING_FIXED(2 * cr),
-                                .height = CLAY_SIZING_FIXED(2 * cr)
-                            },
-                        },
-                        .floating = {
-                            .attachTo = CLAY_ATTACH_TO_PARENT,
-                            .attachPoints = {
-                                .parent = CLAY_ATTACH_POINT_RIGHT_BOTTOM,
-                                .element = CLAY_ATTACH_POINT_LEFT_BOTTOM
-                            },
-                        },
-                        .backgroundColor = tab_color,
-                        .custom = { .customData = (void *)(uintptr_t)CUSTOM_RENDER_CONCAVE_RIGHT },
-                    }) {}
-                }
-            }
-            Clay_Color c = tl.current == t
-                ? ui_resolve_color(state, state->ui.roles.text_primary)
-                : ui_resolve_color(state, state->ui.roles.text_faded);
-            CLAY_AUTO_ID({
-                .layout = {
-                    .sizing = {
-                        .width = CLAY_SIZING_FIXED(136 * state->ui.scale_factor),
-                        .height = CLAY_SIZING_FIXED(25 * state->ui.scale_factor)
-                    },
-                    .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
-                }
-            }) {
-                CLAY_TEXT(tab_name, CLAY_TEXT_CONFIG({
-                    .fontId = FONT_NORMAL,
-                    .fontSize = 14 * state->ui.scale_factor,
-                    .textColor = c
-                }));
-            }
-            bool block_click = CloseButton(state, t);
-            Clay_OnHover(block_click ? NULL : HandleClickTab, t);
-        }
-    }
-}
-
-static Clay_Sizing layoutExpand = {
-    .width = CLAY_SIZING_GROW(0),
-    .height = CLAY_SIZING_GROW(0)
-};
-
-void TabContent(AppState *state) {
-    Tab *t = tl.current;
-
-    if (!t || !t->contents) {
-         SplashPane(state);
-         return;
-    }
-
-    CLAY(CLAY_ID_LOCAL("Tab Content"), {
-        .layout = { .sizing = layoutExpand },
-        .backgroundColor = ui_resolve_color(state, state->ui.roles.pane_bg)
-    }) {
-        PaneContent(state, t->contents, 1, 0, 0);
-    }
 }
 
 bool tab_new_with_buffer(const char *buf_name) {
@@ -375,17 +109,21 @@ bool tab_new_with_buffer(const char *buf_name) {
         if (!buf) return false;
     }
 
-    if (!tab_create(buf_name)) return false;
-
-    // tab_create appends to the end; find and switch to it.
-    Tab *t = tl.list;
-    while (t->next) t = t->next;
-    tl.current = t;
-
-    t->contents = pane_create();
-    if (!t->contents) return false;
-    pane_set_buffer(t->contents, buf);
-    t->contents->content.active = true;
+    Pane *root = pane_get_root();
+    if (!root) {
+        // No panes yet: create the root PANE_DISPLAY.
+        Pane *p = pane_display_create(buf, buf_name);
+        if (!p) return false;
+        // pane_display_create doesn't set root_pane; we do it via replace_child(NULL,NULL,p).
+        pane_replace_child(NULL, NULL, p);
+        p->display.active = true;
+    } else {
+        // Add tab to active display pane.
+        Pane *active = pane_get_active();
+        if (!active) return false;
+        Tab *t = display_tab_new(active, buf, buf_name);
+        if (!t) return false;
+    }
 
     sync_active_buffer();
     update_window_title();
@@ -393,97 +131,232 @@ bool tab_new_with_buffer(const char *buf_name) {
     return true;
 }
 
-// --- Buffer close helpers ---
+// --- TabBar Clay rendering ---
 
-// Recursively close panes in `pane`'s subtree that show `buf`.
-// Returns true if the entire subtree should be removed (all leaves show buf).
-// When returning true, the pane itself is NOT freed — caller handles that.
-// When returning false, the pane tree has been restructured in place.
-static bool pane_tree_close_buffer(Pane *pane, Buffer *buf, Tab *tab) {
-    if (pane->type == PANE_CONTENT) {
-        return pane->content.buffer == buf;
+static void HandleCloseTab(Clay_ElementId elementId, Clay_PointerData pointerInfo, void *userData) {
+    if (pointerInfo.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
+    Pane *dp = ((void **)userData)[0];
+    Tab  *t  = ((void **)userData)[1];
+    if (!dp || !t) return;
+
+    // Switch active if closing the current tab.
+    if (dp->display.active_tab == t) {
+        Tab *next = t->next ? t->next : t->prev;
+        dp->display.active_tab = next;
     }
+    // Unlink.
+    if (t->prev) t->prev->next = t->next;
+    else dp->display.list = t->next;
+    if (t->next) t->next->prev = t->prev;
+    tab_free(t);
 
-    Pane *first  = (pane->type == PANE_H_SPLIT) ? pane->h_split.top  : pane->v_split.left;
-    Pane *second = (pane->type == PANE_H_SPLIT) ? pane->h_split.bottom : pane->v_split.right;
-
-    bool kill_first  = pane_tree_close_buffer(first,  buf, tab);
-    bool kill_second = pane_tree_close_buffer(second, buf, tab);
-
-    if (kill_first && kill_second) {
-        // Both subtrees are dead. Destroy children; caller destroys this node.
-        pane_destroy(first);
-        pane_destroy(second);
-        if (pane->type == PANE_H_SPLIT) { pane->h_split.top    = pane->h_split.bottom = NULL; }
-        else                            { pane->v_split.left   = pane->v_split.right   = NULL; }
-        return true;
-    }
-
-    if (kill_first || kill_second) {
-        Pane *dead     = kill_first  ? first  : second;
-        Pane *survivor = kill_first  ? second : first;
-
-        // Promote survivor to replace this split node in its parent.
-        if (pane->parent) {
-            pane_replace_child(pane->parent, pane, survivor);
-        } else {
-            tab->contents = survivor;
+    if (!dp->display.list) {
+        // No tabs left: close the pane entirely.
+        // The pane is now in an invalid state; we need to close it.
+        // Temporarily mark it active so pane_close() finds it.
+        bool was_active = dp->display.active;
+        dp->display.active = true;
+        pane_close();
+        if (was_active) {
+            // pane_close already handled activation of sibling.
         }
-        survivor->parent = pane->parent;
-
-        pane_destroy(dead);
-        // Null children before freeing this split node to avoid double-free.
-        if (pane->type == PANE_H_SPLIT) { pane->h_split.top  = pane->h_split.bottom = NULL; }
-        else                            { pane->v_split.left = pane->v_split.right   = NULL; }
-        free(pane);
+    } else {
+        sync_active_buffer();
+        update_window_title();
     }
-
-    return false;
 }
 
-// Returns true if any content pane in the tree has active=true.
-static bool pane_has_active(Pane *pane) {
-    if (!pane) return false;
-    if (pane->type == PANE_CONTENT) return pane->content.active;
-    Pane *first  = (pane->type == PANE_H_SPLIT) ? pane->h_split.top    : pane->v_split.left;
-    Pane *second = (pane->type == PANE_H_SPLIT) ? pane->h_split.bottom : pane->v_split.right;
-    return pane_has_active(first) || pane_has_active(second);
+static void HandleClickTab(Clay_ElementId elementId, Clay_PointerData pointerInfo, void *userData) {
+    if (pointerInfo.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
+    Pane *dp = ((void **)userData)[0];
+    Tab  *t  = ((void **)userData)[1];
+    if (!dp || !t) return;
+    dp->display.active_tab = t;
+    if (!dp->display.active) pane_set_active(dp);
+    else sync_active_buffer();
+    update_window_title();
 }
 
-// If no content pane in the tree has active=true, activate the first leaf.
-static void ensure_active_pane(Pane *pane) {
-    if (!pane || pane_has_active(pane)) return;
-    while (pane->type != PANE_CONTENT)
-        pane = (pane->type == PANE_H_SPLIT) ? pane->h_split.top : pane->v_split.left;
-    pane->content.active = true;
+// Static storage for close-button callback data.
+// We need (Pane*, Tab*) pairs — one per tab rendered per frame.
+#define MAX_TAB_CB_DATA 64
+static void *tab_cb_data[MAX_TAB_CB_DATA][2];
+static int   tab_cb_count = 0;
+
+static void tab_cb_reset(void) { tab_cb_count = 0; }
+
+static void **tab_cb_alloc(Pane *dp, Tab *t) {
+    if (tab_cb_count >= MAX_TAB_CB_DATA) return NULL;
+    void **slot = tab_cb_data[tab_cb_count++];
+    slot[0] = dp;
+    slot[1] = t;
+    return slot;
 }
 
-sexp scm_buffer_close(sexp ctx, sexp self, sexp n, sexp sname) {
-    if (!sexp_stringp(sname))
-        return sexp_user_exception(ctx, self, "buffer name must be a string", sname);
-    Buffer *buf = buffer_get_by_name(sexp_string_data(sname));
-    if (!buf) return SEXP_FALSE;
+static bool CloseButton(AppState *state, Pane *dp, Tab *t, bool is_active) {
+    void **cb = tab_cb_alloc(dp, t);
+    bool hovered = false;
+    CLAY_AUTO_ID({
+        .layout = {
+            .sizing = {
+                .width  = CLAY_SIZING_FIXED(16 * state->ui.scale_factor),
+                .height = CLAY_SIZING_FIXED(16 * state->ui.scale_factor),
+            },
+            .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
+        },
+        .floating = {
+            .attachTo = CLAY_ATTACH_TO_PARENT,
+            .attachPoints = {
+                .element = CLAY_ATTACH_POINT_RIGHT_CENTER,
+                .parent  = CLAY_ATTACH_POINT_RIGHT_CENTER
+            },
+            .offset = { .x = -5 * state->ui.scale_factor },
+            .pointerCaptureMode = CLAY_POINTER_CAPTURE_MODE_PASSTHROUGH
+        },
+        .cornerRadius = CLAY_CORNER_RADIUS(8 * state->ui.scale_factor),
+        .backgroundColor = Clay_Hovered()
+            ? ui_resolve_color(state, state->ui.roles.bar_bg)
+            : (Clay_Color){0}
+    }) {
+        SDL_Texture *icon = is_active
+            ? icon_get("tab-close-active",   state, 8, 8)
+            : icon_get("tab-close-inactive", state, 8, 8);
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {
+                    .width  = 8.0 * state->ui.scale_factor,
+                    .height = 8.0 * state->ui.scale_factor
+                }
+            },
+            .image = { .imageData = icon },
+        }) {}
+        if (cb) Clay_OnHover(HandleCloseTab, cb);
+        hovered = Clay_Hovered();
+    }
+    return hovered;
+}
 
-    Tab *tab = tl.list;
-    while (tab) {
-        Tab *next = tab->next;
-        if (tab->contents) {
-            bool remove_root = pane_tree_close_buffer(tab->contents, buf, tab);
-            if (remove_root) {
-                pane_destroy(tab->contents);
-                tab->contents = NULL;
-                tab_destroy(tab);
-            } else {
-                ensure_active_pane(tab->contents);
+void TabBar(AppState *state, Pane *dp) {
+    if (!dp || dp->type != PANE_DISPLAY) return;
+
+    tab_cb_reset();
+
+    float cr = 5 * state->ui.scale_factor;
+    Clay_Color active_color = ui_resolve_color(state, state->ui.roles.tab_active);
+
+    CLAY(CLAY_ID_LOCAL("Tab Bar"), {
+        .layout = {
+            .sizing = { .width = CLAY_SIZING_GROW(0) },
+            .padding = CLAY_PADDING_ALL(5 * state->ui.scale_factor),
+            .childGap = 5.0 * state->ui.scale_factor,
+            .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
+        },
+        .clip = { .horizontal = true },
+        .backgroundColor = ui_resolve_color(state, state->ui.roles.tab_bar),
+    }) {
+        Tab *t = dp->display.list;
+        if (!t) return;
+
+        for (int i = 1; t != NULL; t = t->next, i++) {
+            bool is_active = (t == dp->display.active_tab);
+            Clay_String tab_name = {
+                .chars = t->name,
+                .length = strlen(t->name),
+                .isStaticallyAllocated = true
+            };
+            CLAY(CLAY_IDI_LOCAL("Tab", i), {
+                .layout = {
+                    .padding = {
+                        .left = 2 * cr, .right = cr, .top = 0, .bottom = 0
+                    },
+                    .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
+                },
+                .cornerRadius = CLAY_CORNER_RADIUS(cr),
+                .backgroundColor = is_active
+                    ? active_color
+                    : Clay_Hovered()
+                        ? ui_resolve_color(state, state->ui.roles.tab_hover)
+                        : ui_resolve_color(state, state->ui.roles.tab_inactive),
+            }) {
+                if (is_active) {
+                    CLAY_AUTO_ID({
+                        .layout = {
+                            .sizing = {
+                                .width  = CLAY_SIZING_PERCENT(1),
+                                .height = CLAY_SIZING_FIXED(2 * cr)
+                            },
+                        },
+                        .floating = {
+                            .attachTo = CLAY_ATTACH_TO_PARENT,
+                            .attachPoints = {
+                                .parent  = CLAY_ATTACH_POINT_CENTER_BOTTOM,
+                                .element = CLAY_ATTACH_POINT_CENTER_TOP
+                            },
+                            .offset = { .y = -cr }
+                        },
+                        .backgroundColor = active_color,
+                    }) {
+                        Clay_Color tab_color = active_color;
+                        CLAY_AUTO_ID({
+                            .layout = {
+                                .sizing = {
+                                    .width  = CLAY_SIZING_FIXED(2 * cr),
+                                    .height = CLAY_SIZING_FIXED(2 * cr)
+                                },
+                            },
+                            .floating = {
+                                .attachTo = CLAY_ATTACH_TO_PARENT,
+                                .attachPoints = {
+                                    .parent  = CLAY_ATTACH_POINT_LEFT_BOTTOM,
+                                    .element = CLAY_ATTACH_POINT_RIGHT_BOTTOM
+                                },
+                            },
+                            .backgroundColor = tab_color,
+                            .custom = { .customData = (void *)(uintptr_t)CUSTOM_RENDER_CONCAVE_LEFT },
+                        }) {}
+                        CLAY_AUTO_ID({
+                            .layout = {
+                                .sizing = {
+                                    .width  = CLAY_SIZING_FIXED(2 * cr),
+                                    .height = CLAY_SIZING_FIXED(2 * cr)
+                                },
+                            },
+                            .floating = {
+                                .attachTo = CLAY_ATTACH_TO_PARENT,
+                                .attachPoints = {
+                                    .parent  = CLAY_ATTACH_POINT_RIGHT_BOTTOM,
+                                    .element = CLAY_ATTACH_POINT_LEFT_BOTTOM
+                                },
+                            },
+                            .backgroundColor = tab_color,
+                            .custom = { .customData = (void *)(uintptr_t)CUSTOM_RENDER_CONCAVE_RIGHT },
+                        }) {}
+                    }
+                }
+                Clay_Color c = is_active
+                    ? ui_resolve_color(state, state->ui.roles.text_primary)
+                    : ui_resolve_color(state, state->ui.roles.text_faded);
+                CLAY_AUTO_ID({
+                    .layout = {
+                        .sizing = {
+                            .width  = CLAY_SIZING_FIXED(136 * state->ui.scale_factor),
+                            .height = CLAY_SIZING_FIXED(25 * state->ui.scale_factor)
+                        },
+                        .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
+                    }
+                }) {
+                    CLAY_TEXT(tab_name, CLAY_TEXT_CONFIG({
+                        .fontId   = FONT_NORMAL,
+                        .fontSize = 14 * state->ui.scale_factor,
+                        .textColor = c
+                    }));
+                }
+                void **cb = tab_cb_alloc(dp, t);
+                bool block_click = CloseButton(state, dp, t, is_active);
+                if (cb) Clay_OnHover(block_click ? NULL : HandleClickTab, cb);
             }
         }
-        tab = next;
     }
-
-    sync_active_buffer();
-    buffer_delete(buf);
-    G->needs_redraw = true;
-    return SEXP_TRUE;
 }
 
 // --- Scheme bindings ---
@@ -491,14 +364,16 @@ sexp scm_buffer_close(sexp ctx, sexp self, sexp n, sexp sname) {
 sexp scm_tab_next(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     message_clear();
-    if (tab_next()) message_send("tab-next");
+    Pane *active = pane_get_active();
+    if (active && display_tab_next(active)) message_send("tab-next");
     return SEXP_VOID;
 }
 
 sexp scm_tab_prev(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;
     message_clear();
-    if (tab_prev()) message_send("tab-prev");
+    Pane *active = pane_get_active();
+    if (active && display_tab_prev(active)) message_send("tab-prev");
     return SEXP_VOID;
 }
 
@@ -509,6 +384,6 @@ sexp scm_tab_new(sexp ctx, sexp self, sexp n, sexp sbuf_name) {
     return ok ? SEXP_TRUE : SEXP_FALSE;
 }
 
-sexp scm_no_tabs_p(sexp ctx, sexp self, sexp n) {
-    return tab_get_current() == NULL ? SEXP_TRUE : SEXP_FALSE;
+sexp scm_no_panes_p(sexp ctx, sexp self, sexp n) {
+    return pane_get_root() == NULL ? SEXP_TRUE : SEXP_FALSE;
 }

@@ -1,14 +1,13 @@
-// Pane data structures and functions
-// Panes form a binary tree of splits/content within a tab.
+// Pane data structures and functions.
+// Panes form a binary tree of splits and display leaves.
+// PANE_DISPLAY leaves each own a tab list.
 
 #pragma once
 
 #include <stdbool.h>
 
-#include "vline.h"
+#include "tab.h"
 #include "../state.h"
-#include "../text/buffer.h"
-#include "../text/jump_list.h"
 
 typedef enum {
     DIR_UP,
@@ -17,31 +16,14 @@ typedef enum {
     DIR_RIGHT
 } Direction;
 
-typedef enum {
-    CONTENT_TEXT,
-    CONTENT_UI
-} ContentType;
-
-// A content node in a pane tree.
-// Can either be associated with a buffer, or a custom UI component.
-// Only one content pane can be active in a tab at any time.
+// A display pane: owns a doubly-linked tab list and tracks which tab is active.
+// Also stores per-pane geometry for mouse hit-testing (updated each frame).
 typedef struct {
-    ContentType type;
-    union {
-        Buffer *buffer;
-        // TODO: add custom UI type.
-    };
-    uint64_t layout_version;
-    float width;
-    float height;
-    bool active;
-    VLineCache vline_cache;  // Cache for visual (wrapped) lines
-    JumpList jump_list;
+    Tab  *list;          // head of tab list (NULL only while being constructed)
+    Tab  *active_tab;    // currently displayed tab
+    bool  active;        // true if this is the focused display pane
+
     // Geometry updated each frame during rendering; used for mouse hit-testing.
-    // text_origin_x/y: screen position of the text area (after padding + gutter).
-    // gutter_width_px: width of the line-number gutter (0 if off).
-    // line_height_px:  pixel height of one visual line (0 if not yet rendered).
-    // render_font_id/size: font used this frame (needed for x-position lookup).
     float    text_origin_x;
     float    text_origin_y;
     float    text_origin_w;
@@ -50,10 +32,9 @@ typedef struct {
     int      line_height_px;
     uint16_t render_font_id;
     uint16_t render_font_size;
-} Content;
+} DisplayContent;
 
 // A vertical split node in a pane tree.
-// Records the width of the left sub-pane.
 typedef struct {
     float left_width;
     struct Pane *left;
@@ -61,7 +42,6 @@ typedef struct {
 } VSplit;
 
 // A horizontal split node in a pane tree.
-// Records the height of the upper sub-pane.
 typedef struct {
     float top_height;
     struct Pane *top;
@@ -69,37 +49,46 @@ typedef struct {
 } HSplit;
 
 typedef enum {
-    PANE_CONTENT,
+    PANE_DISPLAY,   // leaf: owns a tab list
     PANE_V_SPLIT,
     PANE_H_SPLIT
 } PaneType;
 
-// A pane either contains content, or is split into sub-panes.
+// A pane is either a display leaf (owns tabs) or a split node.
 typedef struct Pane {
     PaneType type;
     union {
-        Content content;
+        DisplayContent display;
         VSplit v_split;
         HSplit h_split;
     };
     struct Pane *parent;
 } Pane;
 
-// Creates and returns a pointer to a new pane.
-Pane *pane_create(void);
+// Initialise pane system (store window pointer; root starts NULL → splash).
+bool pane_init(AppState *state);
+// Shutdown: destroy root pane tree.
+void pane_quit(void);
+// Get the global root pane (NULL if no panes open).
+Pane *pane_get_root(void);
+
+// Create a new PANE_DISPLAY with a single tab showing buf.
+// Does NOT link it into the tree or set root_pane; caller does that.
+Pane *pane_display_create(Buffer *buf, const char *name);
 // Recursively free resources allocated for a pane sub-tree.
 void pane_destroy(Pane *pane);
-// Closes current pane.
-// If it is the root pane in a tab, the tab is closed.
+// Close the active display pane (or just its active tab if multiple tabs).
 void pane_close(void);
-// Sets a pane's content to a specified buffer.
+
+// Set a display pane's active tab's buffer.
 bool pane_set_buffer(Pane *pane, Buffer *buf);
-// Returns the currently active pane in the currently selected tab.
+// Returns the currently active PANE_DISPLAY in the pane tree.
 Pane *pane_get_active(void);
-// Makes the specified pane the active pane.
+// Makes the specified display pane the active one.
 bool pane_set_active(Pane *pane);
 
 // Splits a pane. Use PANE_H_SPLIT or PANE_V_SPLIT.
+// The new sibling pane gets one tab showing the same buffer as pane's active tab.
 Pane *pane_split(Pane *pane, PaneType split_type);
 // Navigate to adjacent pane in the given direction.
 bool pane_navigate(Direction dir);
@@ -107,15 +96,15 @@ bool pane_navigate(Direction dir);
 bool pane_has_neighbour(Pane *pane, Direction dir);
 // Get the sibling of a pane (NULL if root).
 Pane *pane_get_sibling(Pane *pane);
-// Replace a child in a parent split node.
+// Replace a child in a parent split node (or update root if parent is NULL).
 void pane_replace_child(Pane *parent, Pane *old_child, Pane *new_child);
 
-// Convenience wrappers (call pane_split/pane_navigate internally).
+// Convenience wrappers.
 static inline Pane *pane_split_horizontal(Pane *pane) { return pane_split(pane, PANE_H_SPLIT); }
-static inline Pane *pane_split_vertical(Pane *pane) { return pane_split(pane, PANE_V_SPLIT); }
-static inline bool pane_navigate_up(void) { return pane_navigate(DIR_UP); }
-static inline bool pane_navigate_down(void) { return pane_navigate(DIR_DOWN); }
-static inline bool pane_navigate_left(void) { return pane_navigate(DIR_LEFT); }
+static inline Pane *pane_split_vertical(Pane *pane)   { return pane_split(pane, PANE_V_SPLIT); }
+static inline bool pane_navigate_up(void)    { return pane_navigate(DIR_UP); }
+static inline bool pane_navigate_down(void)  { return pane_navigate(DIR_DOWN); }
+static inline bool pane_navigate_left(void)  { return pane_navigate(DIR_LEFT); }
 static inline bool pane_navigate_right(void) { return pane_navigate(DIR_RIGHT); }
 
 bool pane_v_split_increase(void);
@@ -123,13 +112,12 @@ bool pane_v_split_decrease(void);
 bool pane_h_split_increase(void);
 bool pane_h_split_decrease(void);
 
-// Sync the current buffer to match the active pane.
+// Sync the current buffer to match the active pane's active tab.
 // Call after changing active pane or switching tabs.
 void sync_active_buffer(void);
 
-// Walk the pane tree and return the PANE_CONTENT leaf whose screen area
-// contains (x, y), or NULL if none match.  Requires at least one rendered
-// frame so that geometry is populated.
+// Walk the pane tree and return the PANE_DISPLAY leaf whose screen area
+// contains (x, y), or NULL if none match.
 Pane *pane_at_coords(Pane *root, float x, float y);
 
 // Clay component for rendering pane contents.
@@ -138,5 +126,24 @@ void PaneContent(AppState *state, Pane *pane, int32_t index, float width, float 
 // Free all strings allocated during layout. Call after rendering.
 void pane_free_strings(void);
 
-// Push current buffer position onto the active pane's jump list.
+// Push current buffer position onto the active pane's active tab's jump list.
 void pane_push_jump(void);
+
+// Scheme bindings.
+#include <chibi/sexp.h>
+sexp scm_pane_navigate_up(sexp ctx, sexp self, sexp n);
+sexp scm_pane_navigate_down(sexp ctx, sexp self, sexp n);
+sexp scm_pane_navigate_left(sexp ctx, sexp self, sexp n);
+sexp scm_pane_navigate_right(sexp ctx, sexp self, sexp n);
+sexp scm_pane_v_split_increase(sexp ctx, sexp self, sexp n);
+sexp scm_pane_v_split_decrease(sexp ctx, sexp self, sexp n);
+sexp scm_pane_h_split_increase(sexp ctx, sexp self, sexp n);
+sexp scm_pane_h_split_decrease(sexp ctx, sexp self, sexp n);
+sexp scm_split_vertical(sexp ctx, sexp self, sexp n);
+sexp scm_split_horizontal(sexp ctx, sexp self, sexp n);
+sexp scm_pane_close(sexp ctx, sexp self, sexp n);
+sexp scm_jump_push(sexp ctx, sexp self, sexp n);
+sexp scm_jump_backward(sexp ctx, sexp self, sexp n);
+sexp scm_jump_forward(sexp ctx, sexp self, sexp n);
+sexp scm_set_mouse_click_handler(sexp ctx, sexp self, sexp n, sexp cb);
+sexp scm_set_mouse_drag_handler(sexp ctx, sexp self, sexp n, sexp cb);

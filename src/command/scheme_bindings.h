@@ -55,7 +55,7 @@ sexp scm_set_mouse_drag_handler(sexp ctx, sexp self, sexp n, sexp cb);
 sexp scm_tab_next(sexp ctx, sexp self, sexp n);
 sexp scm_tab_prev(sexp ctx, sexp self, sexp n);
 sexp scm_tab_new(sexp ctx, sexp self, sexp n, sexp sbuf_name);
-sexp scm_no_tabs_p(sexp ctx, sexp self, sexp n);
+sexp scm_no_panes_p(sexp ctx, sexp self, sexp n);
 sexp scm_buffer_close(sexp ctx, sexp self, sexp n, sexp sname);
 
 // --- display/scale.c ---
