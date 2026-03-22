@@ -207,39 +207,28 @@ static void **tab_cb_alloc(Pane *dp, Tab *t) {
     return slot;
 }
 
-static bool CloseButton(AppState *state, Pane *dp, Tab *t, bool is_active) {
+static bool CloseButton(AppState *state, Pane *dp, Tab *t) {
     void **cb = tab_cb_alloc(dp, t);
     bool hovered = false;
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {
-                .width  = CLAY_SIZING_FIXED(16 * state->ui.scale_factor),
-                .height = CLAY_SIZING_FIXED(16 * state->ui.scale_factor),
+                .width  = CLAY_SIZING_FIXED(14 * state->ui.scale_factor),
+                .height = CLAY_SIZING_FIXED(14 * state->ui.scale_factor),
             },
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
         },
-        .floating = {
-            .attachTo = CLAY_ATTACH_TO_PARENT,
-            .attachPoints = {
-                .element = CLAY_ATTACH_POINT_RIGHT_CENTER,
-                .parent  = CLAY_ATTACH_POINT_RIGHT_CENTER
-            },
-            .offset = { .x = -5 * state->ui.scale_factor },
-            .pointerCaptureMode = CLAY_POINTER_CAPTURE_MODE_PASSTHROUGH
-        },
-        .cornerRadius = CLAY_CORNER_RADIUS(8 * state->ui.scale_factor),
+        .cornerRadius = CLAY_CORNER_RADIUS(7 * state->ui.scale_factor),
         .backgroundColor = Clay_Hovered()
             ? ui_resolve_color(state, state->ui.roles.bar_bg)
             : (Clay_Color){0}
     }) {
-        SDL_Texture *icon = is_active
-            ? icon_get("tab-close-active",   state, 8, 8)
-            : icon_get("tab-close-inactive", state, 8, 8);
+        SDL_Texture *icon = icon_get("tab-close",   state, 7, 7);
         CLAY_AUTO_ID({
             .layout = {
                 .sizing = {
-                    .width  = 8.0 * state->ui.scale_factor,
-                    .height = 8.0 * state->ui.scale_factor
+                    .width  = 7.0 * state->ui.scale_factor,
+                    .height = 7.0 * state->ui.scale_factor
                 }
             },
             .image = { .imageData = icon },
@@ -255,16 +244,10 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
 
     tab_cb_reset();
 
-    float cr = 5 * state->ui.scale_factor;
     Clay_Color active_color = ui_resolve_color(state, state->ui.roles.tab_active);
 
     CLAY(CLAY_IDI_LOCAL("Tab Bar", index), {
-        .layout = {
-            .sizing = { .width = CLAY_SIZING_GROW(0) },
-            .padding = CLAY_PADDING_ALL(5 * state->ui.scale_factor),
-            .childGap = 5.0 * state->ui.scale_factor,
-            .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
-        },
+        .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } },
         .clip = { .horizontal = true },
         .backgroundColor = ui_resolve_color(state, state->ui.roles.tab_bar),
     }) {
@@ -280,82 +263,22 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
             };
             CLAY(CLAY_IDI_LOCAL("Tab", i), {
                 .layout = {
-                    .padding = {
-                        .left = 2 * cr, .right = cr, .top = 0, .bottom = 0
-                    },
                     .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
                 },
-                .cornerRadius = CLAY_CORNER_RADIUS(cr),
                 .backgroundColor = is_active
                     ? active_color
-                    : Clay_Hovered()
-                        ? ui_resolve_color(state, state->ui.roles.tab_hover)
-                        : ui_resolve_color(state, state->ui.roles.tab_inactive),
+                    : ui_resolve_color(state, state->ui.roles.tab_inactive),
             }) {
-                if (is_active) {
-                    CLAY_AUTO_ID({
-                        .layout = {
-                            .sizing = {
-                                .width  = CLAY_SIZING_PERCENT(1),
-                                .height = CLAY_SIZING_FIXED(2 * cr)
-                            },
-                        },
-                        .floating = {
-                            .attachTo = CLAY_ATTACH_TO_PARENT,
-                            .attachPoints = {
-                                .parent  = CLAY_ATTACH_POINT_CENTER_BOTTOM,
-                                .element = CLAY_ATTACH_POINT_CENTER_TOP
-                            },
-                            .offset = { .y = -cr }
-                        },
-                        .backgroundColor = active_color,
-                    }) {
-                        Clay_Color tab_color = active_color;
-                        CLAY_AUTO_ID({
-                            .layout = {
-                                .sizing = {
-                                    .width  = CLAY_SIZING_FIXED(2 * cr),
-                                    .height = CLAY_SIZING_FIXED(2 * cr)
-                                },
-                            },
-                            .floating = {
-                                .attachTo = CLAY_ATTACH_TO_PARENT,
-                                .attachPoints = {
-                                    .parent  = CLAY_ATTACH_POINT_LEFT_BOTTOM,
-                                    .element = CLAY_ATTACH_POINT_RIGHT_BOTTOM
-                                },
-                            },
-                            .backgroundColor = tab_color,
-                            .custom = { .customData = (void *)(uintptr_t)CUSTOM_RENDER_CONCAVE_LEFT },
-                        }) {}
-                        CLAY_AUTO_ID({
-                            .layout = {
-                                .sizing = {
-                                    .width  = CLAY_SIZING_FIXED(2 * cr),
-                                    .height = CLAY_SIZING_FIXED(2 * cr)
-                                },
-                            },
-                            .floating = {
-                                .attachTo = CLAY_ATTACH_TO_PARENT,
-                                .attachPoints = {
-                                    .parent  = CLAY_ATTACH_POINT_RIGHT_BOTTOM,
-                                    .element = CLAY_ATTACH_POINT_LEFT_BOTTOM
-                                },
-                            },
-                            .backgroundColor = tab_color,
-                            .custom = { .customData = (void *)(uintptr_t)CUSTOM_RENDER_CONCAVE_RIGHT },
-                        }) {}
-                    }
-                }
-                Clay_Color c = is_active
-                    ? ui_resolve_color(state, state->ui.roles.text_primary)
-                    : ui_resolve_color(state, state->ui.roles.text_faded);
+                Clay_Color c = ui_resolve_color(state, state->ui.roles.text_primary);
+                float TAB_HEIGHT = 30 * state->ui.scale_factor;
+                float TAB_PADDING_X = 20 * state->ui.scale_factor;
                 CLAY_AUTO_ID({
                     .layout = {
                         .sizing = {
-                            .width  = CLAY_SIZING_FIXED(136 * state->ui.scale_factor),
-                            .height = CLAY_SIZING_FIXED(25 * state->ui.scale_factor)
+                            .width  = CLAY_SIZING_FIT(0),
+                            .height = CLAY_SIZING_FIXED(TAB_HEIGHT)
                         },
+                        .padding = { .left = TAB_PADDING_X },
                         .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
                     }
                 }) {
@@ -366,7 +289,18 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
                     }));
                 }
                 void **cb = tab_cb_alloc(dp, t);
-                bool block_click = CloseButton(state, dp, t, is_active);
+                bool show_cross = Clay_Hovered();
+                bool block_click = false;
+                CLAY(CLAY_IDI_LOCAL("Tab Close Button", i), {
+                    .layout = {
+                        .sizing = { .width = CLAY_SIZING_FIXED(TAB_PADDING_X) },
+                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
+                    },
+                }) {
+                    if (show_cross) {
+                        block_click = CloseButton(state, dp, t);
+                    }
+                }
                 if (cb) Clay_OnHover(block_click ? NULL : HandleClickTab, cb);
             }
         }

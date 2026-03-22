@@ -491,6 +491,7 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
             },
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
         },
+        .backgroundColor = ui_resolve_color(state, state->ui.roles.pane_bg)
     }) {
         // Per-pane tab bar.
         TabBar(state, pane, index);
