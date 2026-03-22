@@ -187,13 +187,21 @@ void pane_close(void) {
     update_window_title();
 }
 
-bool pane_set_buffer(Pane *pane, Buffer *buf) {
-    if (!pane || pane->type != PANE_DISPLAY) return false;
-    if (!pane->display.active_tab) return false;
-    pane->display.active_tab->buffer = buf;
-    pane->display.active_tab->vline_cache.full_rebuild = true;
-    if (pane->display.active) sync_active_buffer();
-    return true;
+void pane_sync_tabs_for_buffer(Pane *pane, Buffer *buf) {
+    if (!pane) return;
+    if (pane->type == PANE_DISPLAY) {
+        for (Tab *t = pane->display.list; t; t = t->next)
+            if (t->buffer == buf) tab_sync_name(t);
+        return;
+    }
+    if (pane->type == PANE_V_SPLIT) {
+        pane_sync_tabs_for_buffer(pane->v_split.left, buf);
+        pane_sync_tabs_for_buffer(pane->v_split.right, buf);
+    }
+    if (pane->type == PANE_H_SPLIT) {
+        pane_sync_tabs_for_buffer(pane->h_split.top, buf);
+        pane_sync_tabs_for_buffer(pane->h_split.bottom, buf);
+    }
 }
 
 static Pane *pane_get_active_from(Pane *pane) {
@@ -930,7 +938,9 @@ static void jump_apply(JumpList *jl) {
         Buffer *target = buffer_get_by_name(j->buf_name);
         if (!target) return;
         Pane *pane = pane_get_active();
-        if (!pane || !pane_set_buffer(pane, target)) return;
+        if (!pane || !pane->display.active_tab) return;
+        tab_set_buffer(pane->display.active_tab, target);
+        sync_active_buffer();
         buf = buffer_get_current();
     }
     point_set(j->point);

@@ -80,8 +80,8 @@ void pane_destroy(Pane *pane);
 // Close the active display pane (or just its active tab if multiple tabs).
 void pane_close(void);
 
-// Set a display pane's active tab's buffer.
-bool pane_set_buffer(Pane *pane, Buffer *buf);
+// Walk the pane tree and sync the name of every tab showing buf.
+void pane_sync_tabs_for_buffer(Pane *pane, Buffer *buf);
 // Returns the currently active PANE_DISPLAY in the pane tree.
 Pane *pane_get_active(void);
 // Makes the specified display pane the active one.

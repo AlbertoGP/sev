@@ -88,13 +88,13 @@
                 (%jump-push!)
                 (if (%buffer-create filename)
                     (begin
-                      (%pane-set-buffer! filename)
+                      (%tab-set-buffer! filename)
                       (%set-buffer-file-name! filename)
                       (if (%buffer-read)
                           (message (string-append "Opened " filename))
                           (message (string-append "Failed to read " filename))))
                     (begin
-                      (%pane-set-buffer! filename)
+                      (%tab-set-buffer! filename)
                       (message (string-append "Switched to buffer " filename))))))))))
 
 (defcommand (read-file)
@@ -118,7 +118,7 @@
         (%tab-new! name)
         (begin
           (%buffer-create name)
-          (%pane-set-buffer! name)))
+          (%tab-set-buffer! name)))
     (message (string-append "Created buffer " name))))
 
 (defcommand (buffer-rename)
@@ -137,9 +137,9 @@
   (interactive)
   (if (no-panes?)
       (%tab-new! "*scratch*")
-      (unless (%pane-set-buffer! "*scratch*")
+      (unless (%tab-set-buffer! "*scratch*")
         (%buffer-create "*scratch*")
-        (%pane-set-buffer! "*scratch*")))
+        (%tab-set-buffer! "*scratch*")))
   (message "Switched to *scratch*"))
 
 (defcommand (switch-to-buffer)
@@ -149,7 +149,7 @@
     (lambda (name)
       (if (string=? name "")
           (message "Buffer name cannot be empty")
-          (if (%pane-set-buffer! name)
+          (if (%tab-set-buffer! name)
               (message (string-append "Switched to " name))
               (message (string-append "No buffer named \"" name "\"")))))))
 

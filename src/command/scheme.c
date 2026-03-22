@@ -55,7 +55,7 @@ static sexp scm_eval_buffer(sexp ctx, sexp self, sexp n) {
         insert_string(buf, ": ");
         insert_string(buf, sexp_string_data(str) + 1);
         delete_chars(buf, 1);
-        pane_set_buffer(pane, buf);
+        tab_set_buffer(pane->display.active_tab, buf);
         pane_set_active(pane);
     } else {
         str = sexp_write_to_string(ctx, result);
@@ -86,7 +86,7 @@ static sexp scm_pop_to_buffer(sexp ctx, sexp self, sexp n, sexp sname) {
     } else {
         buffer_clear(buf);
     }
-    pane_set_buffer(pane, buf);
+    tab_set_buffer(pane->display.active_tab, buf);
     pane_set_active(pane);
     G->needs_redraw = true;
     G->needs_extra_frame = true;
@@ -191,8 +191,12 @@ static sexp scm_set_buffer_modified(sexp ctx, sexp self, sexp n, sexp val) {
 static sexp scm_buffer_set_name(sexp ctx, sexp self, sexp n, sexp sname) {
     if (!sexp_stringp(sname))
         return sexp_user_exception(ctx, self, "buffer name must be a string", sname);
+    Buffer *buf = buffer_get_current();
     bool ok = buffer_set_name(sexp_string_data(sname));
-    if (ok) G->needs_redraw = true; // since tab name might change
+    if (ok) {
+        pane_sync_tabs_for_buffer(pane_get_root(), buf);
+        G->needs_redraw = true;
+    }
     return ok ? SEXP_TRUE : SEXP_FALSE;
 }
 
@@ -222,15 +226,17 @@ static sexp scm_set_splash_keymap(sexp ctx, sexp self, sexp n, sexp skm) {
     return SEXP_VOID;
 }
 
-static sexp scm_pane_set_buffer(sexp ctx, sexp self, sexp n, sexp sname) {
+static sexp scm_tab_set_buffer(sexp ctx, sexp self, sexp n, sexp sname) {
     if (!sexp_stringp(sname))
         return sexp_user_exception(ctx, self, "buffer name must be a string", sname);
     Buffer *buf = buffer_get_by_name(sexp_string_data(sname));
     if (!buf) return SEXP_FALSE;
     Pane *pane = pane_get_active();
+    if (!pane || !pane->display.active_tab) return SEXP_FALSE;
     if (buf != buffer_get_current())
         pane_push_jump();
-    pane_set_buffer(pane, buf);
+    tab_set_buffer(pane->display.active_tab, buf);
+    sync_active_buffer();
     G->needs_redraw = true;
     return SEXP_TRUE;
 }
@@ -371,7 +377,7 @@ void scheme_init(AppState *state) {
     SDEF("%buffer-insert", 1, scm_buffer_insert);
     SDEF("%buffer-read", 0, scm_buffer_read);
     SDEF("%buffer-create", 1, scm_buffer_create);
-    SDEF("%pane-set-buffer!", 1, scm_pane_set_buffer);
+    SDEF("%tab-set-buffer!", 1, scm_tab_set_buffer);
     SDEF("%buffer-close!", 1, scm_buffer_close);
     SDEF("%set-splash-keymap!", 1, scm_set_splash_keymap);
 
@@ -508,7 +514,7 @@ void scheme_init(AppState *state) {
         "%buffer-has-minor-mode? "
         "%buffer-file-name %set-buffer-file-name! %buffer-write "
         "%buffer-modified? %set-buffer-modified! %buffer-set-name! "
-        "%buffer-insert %buffer-read %buffer-create %pane-set-buffer! %buffer-close! "
+        "%buffer-insert %buffer-read %buffer-create %tab-set-buffer! %buffer-close! "
         "%register-mode %set-major-mode "
         "%enable-minor-mode %disable-minor-mode "
         "%buffer-major-mode %buffer-minor-modes "

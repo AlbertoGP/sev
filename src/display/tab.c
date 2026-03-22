@@ -4,6 +4,7 @@
 #include "icon.h"
 #include "pane.h"
 #include "tab.h"
+#include "../text/buffer_type.h"
 #include "theme.h"
 #include "../command/message.h"
 #include "../command/scheme_internal.h"
@@ -32,6 +33,19 @@ Tab *tab_alloc(const char *name, Buffer *buf) {
     tab->buffer = buf;
     tab->vline_cache = vline_cache_create();
     return tab;
+}
+
+void tab_sync_name(Tab *tab) {
+    if (!tab || !tab->buffer) return;
+    strncpy(tab->name, tab->buffer->name, TAB_NAME_MAX - 1);
+    tab->name[TAB_NAME_MAX - 1] = '\0';
+}
+
+void tab_set_buffer(Tab *tab, Buffer *buf) {
+    if (!tab || !buf) return;
+    tab->buffer = buf;
+    tab->vline_cache.full_rebuild = true;
+    tab_sync_name(tab);
 }
 
 void tab_free(Tab *tab) {

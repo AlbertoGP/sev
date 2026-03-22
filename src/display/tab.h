@@ -56,6 +56,11 @@ bool display_tab_prev(struct Pane *dp);
 // Returns true on success.
 bool tab_new_with_buffer(const char *buf_name);
 
+// Set a tab's buffer, invalidate its vline cache, and sync its name.
+void tab_set_buffer(Tab *tab, Buffer *buf);
+// Sync a tab's name from its buffer's current name.
+void tab_sync_name(Tab *tab);
+
 // Update the window title to reflect the active tab.
 void update_window_title(void);
 
