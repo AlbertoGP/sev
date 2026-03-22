@@ -2,6 +2,7 @@
 #include "message.h"
 #include "pane.h"
 #include "splash.h"
+#include "status.h"
 #include "theme.h"
 #include "which_key.h"
 #include "../state.h"
@@ -57,6 +58,7 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
             }) {
                 PaneContent(state, root, 1, 0, 0);
             }
+            StatusBar(state);
         }
         if (state->minibuf.active)
             MinibufArea(state);

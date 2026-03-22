@@ -3,7 +3,6 @@
 
 #include "icon.h"
 #include "mode_icon.h"
-#include "pane.h"
 #include "theme.h"
 #include "../state.h"
 #include "../text/buffer.h"
@@ -26,12 +25,11 @@ void bar_strings_push(char *p) {
 }
 
 
-void StatusBar(AppState *state, Pane *pane, int32_t index) {
-    if (!pane->display.active_tab) return;
-    bool active = pane->display.active;
-    Buffer *buf = pane->display.active_tab->buffer;
+void StatusBar(AppState *state) {
+    Buffer *buf = buffer_get_current();
+    if (!buf) return;
+
     sexp mode_symbol = sexp_intern(state->chibi.ctx, "mode-name", -1);
-    
     sexp mode_val = vartable_get(buffer_get_locals(buf), mode_symbol, SEXP_FALSE);
     const char* modeStr = sexp_to_cstring(state->chibi.ctx, mode_val, "ERROR");
     Clay_String modeName = {
@@ -51,17 +49,15 @@ void StatusBar(AppState *state, Pane *pane, int32_t index) {
          .chars = pos,
          .length = strlen(pos),
     };
-    Clay_Color textColor = active
-        ? ui_resolve_color(state, state->ui.roles.bar_text_active)
-        : ui_resolve_color(state, state->ui.roles.text_faded);
-    CLAY_AUTO_ID({
+    Clay_Color textColor = ui_resolve_color(state, state->ui.roles.bar_text_active);
+
+    CLAY(CLAY_ID("Status Bar"), {
         .layout = {
             .sizing = {
                 .width = CLAY_SIZING_GROW(0),
             },
             .padding = {
                  .right = 10.0 * state->ui.scale_factor,
-                 .left = pane->display.active ? 0 : 10.0 * state->ui.scale_factor
             },
             .childGap = 10.0 * state->ui.scale_factor,
         },
@@ -70,50 +66,48 @@ void StatusBar(AppState *state, Pane *pane, int32_t index) {
             .horizontal = true
         }
     }) {
-        if (pane->display.active) {
-            ModeIconEntry *icon = mode_icon_for_current_buffer();
-            Clay_Color mode_bg = icon
-                ? ui_resolve_color(state, icon->role_mode_bg)
-                : ui_resolve_color(state,
-                      sexp_intern(state->chibi.ctx, "mode.normal", -1));
-            Clay_Color label_color = icon
-                ? ui_resolve_color(state, icon->role_label)
-                : (Clay_Color){255, 0, 255, 255};
-            CLAY(CLAY_IDI_LOCAL("Mode Name", index), {
-                .layout = {
-                    .padding = {
-                        .left = 8.0 * state->ui.scale_factor,
-                        .right = 14.0 * state->ui.scale_factor
-                    },
-                    .childAlignment = {
-                        .y = CLAY_ALIGN_Y_CENTER
-                    },
-                    .childGap = 4.0 * state->ui.scale_factor
+        ModeIconEntry *icon = mode_icon_for_current_buffer();
+        Clay_Color mode_bg = icon
+            ? ui_resolve_color(state, icon->role_mode_bg)
+            : ui_resolve_color(state,
+                  sexp_intern(state->chibi.ctx, "mode.normal", -1));
+        Clay_Color label_color = icon
+            ? ui_resolve_color(state, icon->role_label)
+            : (Clay_Color){255, 0, 255, 255};
+        CLAY(CLAY_ID("Mode Name"), {
+            .layout = {
+                .padding = {
+                    .left = 8.0 * state->ui.scale_factor,
+                    .right = 14.0 * state->ui.scale_factor
                 },
-                .cornerRadius = {
-                    .topRight = 8.0 * state->ui.scale_factor,
-                    .bottomRight = 8.0 * state->ui.scale_factor
-                 },
-                .backgroundColor = mode_bg
-            }){
-                if (icon) {
-                    SDL_Texture *tex = icon_get(icon->icon_name, state, 16, 16);
-                    CLAY(CLAY_IDI_LOCAL("Mode Icon", index), {
-                        .layout = {
-                            .sizing = {
-                                .width = 16.0 * state->ui.scale_factor,
-                                .height = 16.0 * state->ui.scale_factor
-                            },
+                .childAlignment = {
+                    .y = CLAY_ALIGN_Y_CENTER
+                },
+                .childGap = 4.0 * state->ui.scale_factor
+            },
+            .cornerRadius = {
+                .topRight = 8.0 * state->ui.scale_factor,
+                .bottomRight = 8.0 * state->ui.scale_factor
+             },
+            .backgroundColor = mode_bg
+        }){
+            if (icon) {
+                SDL_Texture *tex = icon_get(icon->icon_name, state, 16, 16);
+                CLAY(CLAY_ID("Mode Icon"), {
+                    .layout = {
+                        .sizing = {
+                            .width = 16.0 * state->ui.scale_factor,
+                            .height = 16.0 * state->ui.scale_factor
                         },
-                        .image = tex
-                    }) {}
-                }
-                CLAY_TEXT(modeName, CLAY_TEXT_CONFIG({
-                    .fontId = FONT_BOLD,
-                    .fontSize = 14.0 * state->ui.scale_factor,
-                    .textColor = label_color,
-                }));
+                    },
+                    .image = tex
+                }) {}
             }
+            CLAY_TEXT(modeName, CLAY_TEXT_CONFIG({
+                .fontId = FONT_BOLD,
+                .fontSize = 14.0 * state->ui.scale_factor,
+                .textColor = label_color,
+            }));
         }
         CLAY_TEXT(bufName, CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,

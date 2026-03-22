@@ -3,7 +3,6 @@
 
 #include "cursor.h"
 #include "pane.h"
-#include "status.h"
 #include "tab.h"
 #include "theme.h"
 #include "../command/message.h"
@@ -795,7 +794,6 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                 }
             }
         }
-        StatusBar(state, pane, index);
     }
 }
 
