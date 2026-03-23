@@ -139,7 +139,7 @@ void WhichKey(AppState *state) {
             .length = (int32_t)strlen(state->which_key.prefix_str)
         };
         CLAY_TEXT(header_cs, CLAY_TEXT_CONFIG({
-            .fontId    = FONT_UI_NORMAL,
+            .fontId    = FONT_BUF_NORMAL,
             .fontSize  = font_size,
             .textColor = fg_header,
             .wrapMode  = CLAY_TEXT_WRAP_NONE
