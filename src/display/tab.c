@@ -279,12 +279,15 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
                         .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
                     },
                 }) {
+                    float radius = 3 * state->ui.scale_factor;
                     if (t->buffer->is_modified) {
-                        CLAY_TEXT(CLAY_STRING("●"), CLAY_TEXT_CONFIG({
-                            .fontId   = FONT_BUF_NORMAL,
-                            .fontSize = 9 * state->ui.scale_factor,
-                            .textColor = ui_resolve_color(state, state->ui.roles.border_active)
-                        }));
+                        CLAY_AUTO_ID({
+                            .layout = {
+                                .sizing = { .height = CLAY_SIZING_FIXED(2 * radius), .width = CLAY_SIZING_FIXED(2 * radius) },
+                            },
+                            .cornerRadius = CLAY_CORNER_RADIUS(radius),
+                            .backgroundColor = ui_resolve_color(state, state->ui.roles.border_active)
+                        }) {}
                     }
                 }
                 CLAY_AUTO_ID({
@@ -293,6 +296,7 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
                             .width  = CLAY_SIZING_FIT(0),
                             .height = CLAY_SIZING_FIXED(TAB_HEIGHT)
                         },
+                        .padding = { .bottom = 4 },
                         .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
                     }
                 }) {
