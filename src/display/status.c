@@ -1,5 +1,6 @@
 #include <SDL3/SDL_render.h>
 #include <chibi/sexp.h>
+#include <stdio.h>
 
 #include "icon.h"
 #include "mode_icon.h"
@@ -70,16 +71,19 @@ void StatusBar(AppState *state) {
         Clay_Color label_color = icon
             ? ui_resolve_color(state, icon->role_label)
             : (Clay_Color){255, 0, 255, 255};
+
+        bool recording = state->macro_recording;
+
         CLAY(CLAY_ID("Mode Name"), {
             .layout = {
                 .padding = {
                     .left = 8.0 * state->ui.scale_factor,
                     .right = 14.0 * state->ui.scale_factor
                 },
+                .childGap = 3.0 * state->ui.scale_factor,
                 .childAlignment = {
                     .y = CLAY_ALIGN_Y_CENTER
                 },
-                .childGap = 4.0 * state->ui.scale_factor
             },
             .cornerRadius = {
                 .topRight = 8.0 * state->ui.scale_factor,
@@ -104,6 +108,42 @@ void StatusBar(AppState *state) {
                 .fontSize = 14.0 * state->ui.scale_factor,
                 .textColor = label_color,
             }));
+        }
+        if (recording) {
+            float radius = 3.0 * state->ui.scale_factor;
+            CLAY(CLAY_ID("Macro indicator"), {
+                .layout = {
+                    .sizing = { .height = CLAY_SIZING_GROW(0) },
+                    .childAlignment = {
+                        .y = CLAY_ALIGN_Y_CENTER
+                    },
+                    .childGap = 4.0 * state->ui.scale_factor
+                },
+            }){
+                CLAY_AUTO_ID({
+                    .layout = {
+                        .sizing = { .height = CLAY_SIZING_GROW(0) },
+                        .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
+                        .padding = { .top = (radius / 2) },
+                    }
+                }) {
+                    CLAY_AUTO_ID({
+                        .layout = {
+                            .sizing = {
+                                .height = CLAY_SIZING_FIXED(2.0 * radius),
+                                .width = CLAY_SIZING_FIXED(2.0 * radius)
+                            }
+                        },
+                        .cornerRadius = CLAY_CORNER_RADIUS(radius),
+                        .backgroundColor = ui_resolve_color(state, sexp_intern(state->chibi.ctx, "macro.indicator", -1))
+                    }) {}
+                }
+                CLAY_TEXT(CLAY_STRING("REC"), CLAY_TEXT_CONFIG({
+                    .fontId = FONT_UI_BOLD,
+                    .fontSize = 12.0 * state->ui.scale_factor,
+                    .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
+                }));
+            }
         }
         CLAY_AUTO_ID({
             .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) }}

@@ -277,9 +277,7 @@
   (enable-minor-mode 'evil-insert-mode)
   (%select-mode-set! 0)
   (%set-replace-mode! #f)
-  (set-local! 'mode-name "Insert")
-  (message "-- INSERT --")
-  (message-lock))
+  (set-local! 'mode-name "Insert"))
 
 (defcommand (evil-replace)
   "Enter replace mode."
@@ -294,11 +292,9 @@
   (enable-minor-mode 'evil-replace-mode)
   (%select-mode-set! 0)
   (%set-replace-mode! #t)
-  (set-local! 'mode-name "Replace")
-  (message "-- REPLACE --")
-  (message-lock))
+  (set-local! 'mode-name "Replace"))
 
-(define (enter-visual-submode mode-int name msg)
+(define (enter-visual-submode mode-int name)
   (set! evil-last-visual-text-object #f)
   (set! evil-last-visual-text-object-kind #f)
   (unless (%buffer-has-minor-mode? 'evil-select-mode)
@@ -309,27 +305,25 @@
   (disable-minor-mode 'evil-command-mode)
   (enable-minor-mode 'evil-select-mode)
   (%select-mode-set! mode-int)
-  (set-local! 'mode-name name)
-  (message msg)
-  (message-lock))
+  (set-local! 'mode-name name))
 
 (defcommand (evil-select)
   "Enter select mode."
   (if (and (%buffer-has-minor-mode? 'evil-select-mode) (= (%select-mode-get) 1))
       (evil-normal)
-      (enter-visual-submode 1 "Select" "-- SELECT --")))
+      (enter-visual-submode 1 "Select")))
 
 (defcommand (evil-select-line)
   "Enter visual line mode."
   (if (and (%buffer-has-minor-mode? 'evil-select-mode) (= (%select-mode-get) 2))
       (evil-normal)
-      (enter-visual-submode 2 "Line" "-- SELECT LINE --")))
+      (enter-visual-submode 2 "Line")))
 
 (defcommand (evil-select-rectangle)
   "Enter visual block mode."
   (if (and (%buffer-has-minor-mode? 'evil-select-mode) (rect-mode? (%select-mode-get)))
       (evil-normal)
-      (enter-visual-submode 3 "Rectangle" "-- SELECT RECTANGLE --")))
+      (enter-visual-submode 3 "Rectangle")))
 
 (defcommand (evil-visual-dollar)
   "Move to end of line; in rectangle mode, enables ragged right edge."
@@ -2225,21 +2219,22 @@
 (set-key! evil-recording-map "q" 'evil-stop-macro)
 (define-minor-mode 'evil-recording-mode evil-recording-map)
 
+(define macro-char "")
+
 (defcommand (evil-start-macro)
   "Start recording macro to register."
   (let ((ch (last-key-char)))
     (when ch
       (%macro-start! ch)
       (enable-minor-mode 'evil-recording-mode)
-      (message (string-append "recording @" (string ch)))
-      (message-lock))))
+      (set! macro-char ch)
+      (message (string-append "Recording macro @" (string macro-char))))))
 
 (defcommand (evil-stop-macro)
   "Stop macro recording."
   (%macro-stop!)
   (disable-minor-mode 'evil-recording-mode)
-  (message-unlock)
-  (message-clear))
+  (message (string-append "Saved macro @" (string macro-char))))
 
 (define current-evil-macro #\a)   ; last-played register for @@
 
