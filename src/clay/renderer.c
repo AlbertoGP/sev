@@ -143,10 +143,10 @@ static void SDL_Clay_RenderFillRoundedRect(Clay_SDL3RendererData *rendererData, 
     const float rBL = SDL_min(cornerRadius.bottomLeft, minRadius);
 
     // Per-corner segment counts
-    const int segTL = rTL > 0 ? SDL_max(NUM_CIRCLE_SEGMENTS, (int)(rTL * 0.5f)) : 0;
-    const int segTR = rTR > 0 ? SDL_max(NUM_CIRCLE_SEGMENTS, (int)(rTR * 0.5f)) : 0;
-    const int segBR = rBR > 0 ? SDL_max(NUM_CIRCLE_SEGMENTS, (int)(rBR * 0.5f)) : 0;
-    const int segBL = rBL > 0 ? SDL_max(NUM_CIRCLE_SEGMENTS, (int)(rBL * 0.5f)) : 0;
+    const int segTL = rTL > 0 ? SDL_max(NUM_CIRCLE_SEGMENTS, (int)(rTL * 2.0f)) : 0;
+    const int segTR = rTR > 0 ? SDL_max(NUM_CIRCLE_SEGMENTS, (int)(rTR * 2.0f)) : 0;
+    const int segBR = rBR > 0 ? SDL_max(NUM_CIRCLE_SEGMENTS, (int)(rBR * 2.0f)) : 0;
+    const int segBL = rBL > 0 ? SDL_max(NUM_CIRCLE_SEGMENTS, (int)(rBL * 2.0f)) : 0;
 
     // Perimeter points: rounded corners get segments+1 points, sharp corners get 1
     const int perimTL = segTL > 0 ? segTL + 1 : 1;
@@ -213,6 +213,61 @@ static void SDL_Clay_RenderFillRoundedRect(Clay_SDL3RendererData *rendererData, 
     indices[indexCount++] = 1;
 
     SDL_RenderGeometry(rendererData->renderer, NULL, vertices, vertexCount, indices, indexCount);
+
+    // Alpha-feathered corona: 1px wide strip around each arc that fades to transparent,
+    // giving smooth sub-pixel edges without requiring shaders.
+    SDL_SetRenderDrawBlendMode(rendererData->renderer, SDL_BLENDMODE_BLEND);
+    const SDL_FColor color_fade = { color.r, color.g, color.b, 0.0f };
+
+    for (int c = 0; c < 4; c++) {
+        if (corners[c].segments == 0) continue;
+        const int segs = corners[c].segments;
+        const int fv_count = (segs + 1) * 2;
+        const int fi_count = segs * 6;
+        SDL_Vertex fv[fv_count];
+        int        fi[fi_count];
+
+        const float step = (SDL_PI_F / 2.0f) / segs;
+        for (int i = 0; i <= segs; i++) {
+            const float angle = corners[c].startAngle + (float)i * step;
+            const float r     = corners[c].radius;
+            const float cx    = corners[c].cx;
+            const float cy    = corners[c].cy;
+            // Inner vertex at fill edge — full opacity
+            fv[i * 2]     = (SDL_Vertex){ { cx + SDL_cosf(angle) * r,         cy + SDL_sinf(angle) * r         }, color,      {0,0} };
+            // Outer vertex 1px further — transparent
+            fv[i * 2 + 1] = (SDL_Vertex){ { cx + SDL_cosf(angle) * (r + 1.0f), cy + SDL_sinf(angle) * (r + 1.0f) }, color_fade, {0,0} };
+        }
+        int idx = 0;
+        for (int i = 0; i < segs; i++) {
+            fi[idx++] = i*2;     fi[idx++] = i*2+1;   fi[idx++] = (i+1)*2;
+            fi[idx++] = i*2+1;   fi[idx++] = (i+1)*2+1; fi[idx++] = (i+1)*2;
+        }
+        SDL_RenderGeometry(rendererData->renderer, NULL, fv, fv_count, fi, fi_count);
+    }
+
+    // Feather straight edge sections between adjacent rounded corners.
+    // Only applied when both flanking corners are rounded so the outer vertex
+    // of this strip coincides exactly with the terminal outer vertex of each arc corona.
+    // (Edges adjacent to a sharp corner are left hard to avoid bleeding into neighbours.)
+    const struct { float x0,y0, x1,y1, nx,ny; int active; } edges[4] = {
+        { rect.x + rTL, rect.y,          rect.x + rect.w - rTR, rect.y,           0,-1, rTL>0 && rTR>0 }, // top
+        { rect.x+rect.w, rect.y+rTR,     rect.x+rect.w, rect.y+rect.h-rBR,        1, 0, rTR>0 && rBR>0 }, // right
+        { rect.x+rect.w-rBR, rect.y+rect.h, rect.x+rBL, rect.y+rect.h,           0, 1, rBR>0 && rBL>0 }, // bottom
+        { rect.x, rect.y+rect.h-rBL,     rect.x, rect.y+rTL,                     -1, 0, rBL>0 && rTL>0 }, // left
+    };
+    for (int e = 0; e < 4; e++) {
+        if (!edges[e].active) continue;
+        if (edges[e].x0 == edges[e].x1 && edges[e].y0 == edges[e].y1) continue;
+        SDL_Vertex ev[4] = {
+            { { edges[e].x0,              edges[e].y0              }, color,      {0,0} },
+            { { edges[e].x0 + edges[e].nx, edges[e].y0 + edges[e].ny }, color_fade, {0,0} },
+            { { edges[e].x1,              edges[e].y1              }, color,      {0,0} },
+            { { edges[e].x1 + edges[e].nx, edges[e].y1 + edges[e].ny }, color_fade, {0,0} },
+        };
+        int ei[6] = { 0,1,2, 1,3,2 };
+        SDL_RenderGeometry(rendererData->renderer, NULL, ev, 4, ei, 6);
+    }
 }
 
 static void SDL_Clay_RenderArc(Clay_SDL3RendererData *rendererData, const SDL_FPoint center, const float radius, const float startAngle, const float endAngle, const float thickness, const Clay_Color color) {
@@ -233,8 +288,8 @@ static void SDL_Clay_RenderArc(Clay_SDL3RendererData *rendererData, const SDL_FP
         for (int i = 0; i <= numCircleSegments; i++) {
             const float angle = radStart + i * angleStep;
             points[i] = (SDL_FPoint){
-                    SDL_roundf(center.x + SDL_cosf(angle) * clampedRadius),
-                    SDL_roundf(center.y + SDL_sinf(angle) * clampedRadius) };
+                    center.x + SDL_cosf(angle) * clampedRadius,
+                    center.y + SDL_sinf(angle) * clampedRadius };
         }
         SDL_RenderLines(rendererData->renderer, points, numCircleSegments + 1);
     }
