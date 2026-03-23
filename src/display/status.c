@@ -100,7 +100,7 @@ void StatusBar(AppState *state) {
                 }) {}
             }
             CLAY_TEXT(modeName, CLAY_TEXT_CONFIG({
-                .fontId = FONT_BOLD,
+                .fontId = FONT_UI_BOLD,
                 .fontSize = 14.0 * state->ui.scale_factor,
                 .textColor = label_color,
             }));
@@ -109,7 +109,7 @@ void StatusBar(AppState *state) {
             .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) }}
         }) {}
         CLAY_TEXT(pointPos, CLAY_TEXT_CONFIG({
-            .fontId = FONT_NORMAL,
+            .fontId = FONT_UI_NORMAL,
             .fontSize = 14.0 * state->ui.scale_factor,
             .textColor = textColor,
         }));

@@ -14,9 +14,12 @@
 struct Pane;
 
 typedef enum FontID {
-    FONT_NORMAL,
-    FONT_BOLD,
-    FONT_ITALIC,
+    FONT_UI_NORMAL,
+    FONT_UI_BOLD,
+    FONT_UI_ITALIC,
+    FONT_BUF_NORMAL,
+    FONT_BUF_BOLD,
+    FONT_BUF_ITALIC,
     FONT_COUNT
 } FontID;
 

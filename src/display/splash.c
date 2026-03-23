@@ -19,13 +19,13 @@ static void SuggestionRow(AppState *state, Clay_String label, Clay_String key) {
         .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } }
     }) {
         CLAY_TEXT(label, CLAY_TEXT_CONFIG({
-            .fontId = FONT_NORMAL,
+            .fontId = FONT_UI_NORMAL,
             .fontSize = font_size,
             .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
         }));
         XSpacer();
         CLAY_TEXT(key, CLAY_TEXT_CONFIG({
-            .fontId = FONT_NORMAL,
+            .fontId = FONT_BUF_NORMAL,
             .fontSize = font_size,
             .textColor = ui_resolve_color(state, key_role),
         }));
@@ -60,7 +60,7 @@ void SplashPane(AppState *state) {
             .image = icon
         }) {}
         CLAY_TEXT(CLAY_STRING("sev"), CLAY_TEXT_CONFIG({
-            .fontId = FONT_NORMAL,
+            .fontId = FONT_UI_NORMAL,
             .fontSize = 22.0 * state->ui.scale_factor,
             .textColor = ui_resolve_color(state,
                       sexp_intern(state->chibi.ctx, "text.splash", -1)),

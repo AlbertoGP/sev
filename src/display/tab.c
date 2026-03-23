@@ -206,12 +206,12 @@ static bool CloseButton(AppState *state, Pane *dp, Tab *t) {
     CLAY_AUTO_ID({
         .layout = {
             .sizing = {
-                .width  = CLAY_SIZING_FIXED(14 * state->ui.scale_factor),
-                .height = CLAY_SIZING_FIXED(14 * state->ui.scale_factor),
+                .width  = CLAY_SIZING_FIXED(15 * state->ui.scale_factor),
+                .height = CLAY_SIZING_FIXED(15 * state->ui.scale_factor),
             },
             .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
         },
-        .cornerRadius = CLAY_CORNER_RADIUS(7 * state->ui.scale_factor),
+        .cornerRadius = CLAY_CORNER_RADIUS(8 * state->ui.scale_factor),
         .backgroundColor = Clay_Hovered()
             ? ui_resolve_color(state, state->ui.roles.bar_bg)
             : (Clay_Color){0}
@@ -279,8 +279,8 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
                 }) {
                     if (t->buffer->is_modified) {
                         CLAY_TEXT(CLAY_STRING("●"), CLAY_TEXT_CONFIG({
-                            .fontId   = FONT_NORMAL,
-                            .fontSize = 10 * state->ui.scale_factor,
+                            .fontId   = FONT_BUF_NORMAL,
+                            .fontSize = 9 * state->ui.scale_factor,
                             .textColor = ui_resolve_color(state, state->ui.roles.border_active)
                         }));
                     }
@@ -295,7 +295,7 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
                     }
                 }) {
                     CLAY_TEXT(tab_name, CLAY_TEXT_CONFIG({
-                        .fontId   = FONT_NORMAL,
+                        .fontId   = FONT_UI_NORMAL,
                         .fontSize = 12 * state->ui.scale_factor,
                         .textColor = c
                     }));

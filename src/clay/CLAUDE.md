@@ -15,7 +15,7 @@ Bridges the vendored Clay immediate-mode UI library to SDL3. Provides arena init
 - Layout is fully recomputed every frame — no persistent layout state
 - `Clay_BeginLayout()` / `Clay_EndLayout()` must bracket all `CLAY()` calls each frame
 - Clay does not own string data — callers must keep strings alive until after rendering
-- Font IDs are indices into `rendererData.fonts[]` (FONT_NORMAL=0, FONT_BOLD=1, FONT_ITALIC=2)
+- Font IDs are indices into `rendererData.fonts[]` (FONT_UI_NORMAL=0, FONT_UI_BOLD=1, FONT_UI_ITALIC=2)
 - All `Clay_Color` values use 0–255 range
 
 ## Per-Frame Pipeline

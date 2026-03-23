@@ -139,7 +139,7 @@ void WhichKey(AppState *state) {
             .length = (int32_t)strlen(state->which_key.prefix_str)
         };
         CLAY_TEXT(header_cs, CLAY_TEXT_CONFIG({
-            .fontId    = FONT_NORMAL,
+            .fontId    = FONT_UI_NORMAL,
             .fontSize  = font_size,
             .textColor = fg_header,
             .wrapMode  = CLAY_TEXT_WRAP_NONE
@@ -169,14 +169,14 @@ void WhichKey(AppState *state) {
                     }
                 }) {
                     CLAY_TEXT(key_cs, CLAY_TEXT_CONFIG({
-                        .fontId    = FONT_NORMAL,
+                        .fontId    = FONT_BUF_NORMAL,
                         .fontSize  = font_size,
                         .textColor = fg_key,
                         .wrapMode  = CLAY_TEXT_WRAP_NONE
                     }));
                 }
                 CLAY_TEXT(label_cs, CLAY_TEXT_CONFIG({
-                    .fontId    = FONT_NORMAL,
+                    .fontId    = FONT_BUF_NORMAL,
                     .fontSize  = font_size,
                     .textColor = wk_is_prefix[i] ? fg_prefix : fg_label,
                     .wrapMode  = CLAY_TEXT_WRAP_NONE

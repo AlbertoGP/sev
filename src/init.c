@@ -58,46 +58,70 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     // #define FONT_PATH_REGULAR "/resources/VictorMono-Regular.ttf"
     // #define FONT_PATH_BOLD "/resources/VictorMono-Bold.ttf"
     // #define FONT_PATH_ITALIC "/resources/VictorMono-Italic.ttf"
-    #define FONT_PATH_REGULAR "/resources/JetBrainsMono-Regular.ttf"
-    #define FONT_PATH_BOLD "/resources/JetBrainsMono-SemiBold.ttf"
-    #define FONT_PATH_ITALIC "/resources/JetBrainsMono-Italic.ttf"
+    #define FONT_PATH_UI_REGULAR "/resources/IBMPlexSans-Regular.ttf"
+    #define FONT_PATH_UI_BOLD "/resources/IBMPlexSans-SemiBold.ttf"
+    #define FONT_PATH_UI_ITALIC "/resources/IBMPlexSans-Italic.ttf"
+    #define FONT_PATH_BUF_REGULAR "/resources/JetBrainsMono-Regular.ttf"
+    #define FONT_PATH_BUF_BOLD "/resources/JetBrainsMono-SemiBold.ttf"
+    #define FONT_PATH_BUF_ITALIC "/resources/JetBrainsMono-Italic.ttf"
     #else
     char* basePath = (char*)SDL_GetBasePath();
-    char fontPathRegular[1024];
-    char fontPathBold[1024];
-    char fontPathItalic[1024];
+    char fontPathUIRegular[1024];
+    char fontPathUIBold[1024];
+    char fontPathUIItalic[1024];
+    char fontPathBufRegular[1024];
+    char fontPathBufBold[1024];
+    char fontPathBufItalic[1024];
     // snprintf(fontPathRegular, sizeof(fontPathRegular), "%sresources/VictorMono-Regular.ttf", basePath);
     // snprintf(fontPathBold, sizeof(fontPathBold), "%sresources/VictorMono-Bold.ttf", basePath);
     // snprintf(fontPathItalic, sizeof(fontPathItalic), "%sresources/VictorMono-Italic.ttf", basePath);
-    snprintf(fontPathRegular, sizeof(fontPathRegular), "%sresources/JetBrainsMono-Regular.ttf", basePath);
-    snprintf(fontPathBold, sizeof(fontPathBold), "%sresources/JetBrainsMono-SemiBold.ttf", basePath);
-    snprintf(fontPathItalic, sizeof(fontPathItalic), "%sresources/JetBrainsMono-Italic.ttf", basePath);
-    #define FONT_PATH_REGULAR fontPathRegular
-    #define FONT_PATH_BOLD fontPathBold
-    #define FONT_PATH_ITALIC fontPathItalic
+    snprintf(fontPathUIRegular, sizeof(fontPathUIRegular), "%sresources/IBMPlexSans-Regular.ttf", basePath);
+    snprintf(fontPathUIBold, sizeof(fontPathUIBold), "%sresources/IBMPlexSans-SemiBold.ttf", basePath);
+    snprintf(fontPathUIItalic, sizeof(fontPathUIItalic), "%sresources/IBMPlexSans-Italic.ttf", basePath);
+    snprintf(fontPathBufRegular, sizeof(fontPathBufRegular), "%sresources/JetBrainsMono-Regular.ttf", basePath);
+    snprintf(fontPathBufBold, sizeof(fontPathBufBold), "%sresources/JetBrainsMono-SemiBold.ttf", basePath);
+    snprintf(fontPathBufItalic, sizeof(fontPathBufItalic), "%sresources/JetBrainsMono-Italic.ttf", basePath);
+    #define FONT_PATH_UI_REGULAR fontPathUIRegular
+    #define FONT_PATH_UI_BOLD fontPathUIBold
+    #define FONT_PATH_UI_ITALIC fontPathUIItalic
+    #define FONT_PATH_BUF_REGULAR fontPathBufRegular
+    #define FONT_PATH_BUF_BOLD fontPathBufBold
+    #define FONT_PATH_BUF_ITALIC fontPathBufItalic
     #endif
     
-    TTF_Font* font_normal = TTF_OpenFont(FONT_PATH_REGULAR, 24);
-    TTF_Font* font_bold   = TTF_OpenFont(FONT_PATH_BOLD, 24);
-    TTF_Font* font_italic = TTF_OpenFont(FONT_PATH_ITALIC, 24);
+    TTF_Font* font_ui_normal = TTF_OpenFont(FONT_PATH_UI_REGULAR, 24);
+    TTF_Font* font_ui_bold   = TTF_OpenFont(FONT_PATH_UI_BOLD, 24);
+    TTF_Font* font_ui_italic = TTF_OpenFont(FONT_PATH_UI_ITALIC, 24);
+    TTF_Font* font_buf_normal = TTF_OpenFont(FONT_PATH_BUF_REGULAR, 24);
+    TTF_Font* font_buf_bold   = TTF_OpenFont(FONT_PATH_BUF_BOLD, 24);
+    TTF_Font* font_buf_italic = TTF_OpenFont(FONT_PATH_BUF_ITALIC, 24);
     
-    if (!font_normal || !font_bold || !font_italic) {
+    if (!font_ui_normal || !font_ui_bold || !font_ui_italic || !font_buf_normal || !font_buf_bold || !font_buf_italic) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to load font = %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
     
-    TTF_SetFontStyle(font_normal, TTF_STYLE_NORMAL);
-    TTF_SetFontStyle(font_bold,   TTF_STYLE_NORMAL);
-    TTF_SetFontStyle(font_italic, TTF_STYLE_ITALIC);
+    TTF_SetFontStyle(font_ui_normal, TTF_STYLE_NORMAL);
+    TTF_SetFontStyle(font_ui_bold,   TTF_STYLE_NORMAL);
+    TTF_SetFontStyle(font_ui_italic, TTF_STYLE_ITALIC);
+    TTF_SetFontStyle(font_buf_normal, TTF_STYLE_NORMAL);
+    TTF_SetFontStyle(font_buf_bold,   TTF_STYLE_NORMAL);
+    TTF_SetFontStyle(font_buf_italic, TTF_STYLE_ITALIC);
     
-    state->rendererData.fonts[FONT_NORMAL] = font_normal;
-    state->rendererData.fonts[FONT_BOLD]   = font_bold;
-    state->rendererData.fonts[FONT_ITALIC] = font_italic;
+    state->rendererData.fonts[FONT_UI_NORMAL] = font_ui_normal;
+    state->rendererData.fonts[FONT_UI_BOLD]   = font_ui_bold;
+    state->rendererData.fonts[FONT_UI_ITALIC] = font_ui_italic;
+    state->rendererData.fonts[FONT_BUF_NORMAL] = font_buf_normal;
+    state->rendererData.fonts[FONT_BUF_BOLD]   = font_buf_bold;
+    state->rendererData.fonts[FONT_BUF_ITALIC] = font_buf_italic;
 
     state->rendererData.font_paths = SDL_calloc(FONT_COUNT, sizeof(const char *));
-    state->rendererData.font_paths[FONT_NORMAL] = SDL_strdup(FONT_PATH_REGULAR);
-    state->rendererData.font_paths[FONT_BOLD]   = SDL_strdup(FONT_PATH_BOLD);
-    state->rendererData.font_paths[FONT_ITALIC] = SDL_strdup(FONT_PATH_ITALIC);
+    state->rendererData.font_paths[FONT_UI_NORMAL] = SDL_strdup(FONT_PATH_UI_REGULAR);
+    state->rendererData.font_paths[FONT_UI_BOLD]   = SDL_strdup(FONT_PATH_UI_BOLD);
+    state->rendererData.font_paths[FONT_UI_ITALIC] = SDL_strdup(FONT_PATH_UI_ITALIC);
+    state->rendererData.font_paths[FONT_BUF_NORMAL] = SDL_strdup(FONT_PATH_BUF_REGULAR);
+    state->rendererData.font_paths[FONT_BUF_BOLD]   = SDL_strdup(FONT_PATH_BUF_BOLD);
+    state->rendererData.font_paths[FONT_BUF_ITALIC] = SDL_strdup(FONT_PATH_BUF_ITALIC);
 
     if (!clay_init(state)) {
         fprintf(stderr, "Failed to initialise Clay UI.");

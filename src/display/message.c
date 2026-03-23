@@ -46,7 +46,7 @@ void MinibufArea(AppState *state) {
 
     // Measure x offset for the cursor: width of (prompt + text[0..point_pos))
     uint16_t font_size = (uint16_t)(14.0f * state->ui.scale_factor);
-    TTF_Font *font = state->rendererData.fonts[FONT_NORMAL];
+    TTF_Font *font = state->rendererData.fonts[FONT_UI_NORMAL];
     TTF_SetFontSize(font, font_size);
 
     float cursor_x = 0.0f;
@@ -59,7 +59,7 @@ void MinibufArea(AppState *state) {
 
     float left_pad  = 10.0f * state->ui.scale_factor;
     int   line_h    = vline_get_line_height(&state->rendererData,
-                                            FONT_NORMAL, font_size);
+                                            FONT_UI_NORMAL, font_size);
 
     CLAY(CLAY_ID("Minibuf Area"), {
         .layout = {
@@ -74,11 +74,11 @@ void MinibufArea(AppState *state) {
         },
     }) {
         CLAY_TEXT(display_str, CLAY_TEXT_CONFIG({
-            .fontId    = FONT_NORMAL,
+            .fontId    = FONT_UI_NORMAL,
             .fontSize  = font_size,
             .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
         }));
-        Cursor(state, 0, cursor_x + left_pad, line_h, FONT_NORMAL, font_size);
+        Cursor(state, 0, cursor_x + left_pad, line_h, FONT_UI_NORMAL, font_size);
     }
 
     buffer_set_current(saved);
@@ -99,7 +99,7 @@ void MessageArea(AppState *state) {
         .clip = CLAY_CLIP_TO_NONE
     }){
         CLAY_TEXT(message_string, CLAY_TEXT_CONFIG({
-            .fontId = FONT_NORMAL,
+            .fontId = FONT_UI_NORMAL,
             .fontSize = 14.0 * state->ui.scale_factor,
             .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
         }));

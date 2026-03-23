@@ -462,7 +462,7 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
         pane_strings[pane_strings_count++] = chars;
     size_t point = point_get(buf).pos;
 
-    const uint16_t font_id   = FONT_NORMAL;
+    const uint16_t font_id   = FONT_BUF_NORMAL;
     const uint16_t font_size = 15 * state->ui.scale_factor * buffer_get_scale(buf);
     const float padding      = 24.0f * state->ui.scale_factor;
 
@@ -770,7 +770,7 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                 }) {
                     CLAY_TEXT(CLAY_STRING("Loading..."),
                         CLAY_TEXT_CONFIG({
-                            .fontId = FONT_NORMAL,
+                            .fontId = FONT_BUF_NORMAL,
                             .fontSize = 16,
                             .textColor = ui_resolve_color(state, state->ui.roles.text_faded),
                             .textAlignment = CLAY_TEXT_ALIGN_CENTER
