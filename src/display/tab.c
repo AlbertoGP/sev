@@ -159,14 +159,16 @@ static void HandleCloseTab(Clay_ElementId elementId, Clay_PointerData pointerInf
 
     if (!dp->display.list) {
         // No tabs left: close the pane entirely.
-        // The pane is now in an invalid state; we need to close it.
         // Temporarily mark it active so pane_close() finds it.
+        // First clear the real active pane's flag to avoid pane_get_active()
+        // finding the wrong pane (e.g. the left sibling) via depth-first search.
         bool was_active = dp->display.active;
+        if (!was_active) {
+            Pane *current = pane_get_active();
+            if (current) current->display.active = false;
+        }
         dp->display.active = true;
         pane_close();
-        if (was_active) {
-            // pane_close already handled activation of sibling.
-        }
     } else {
         sync_active_buffer();
         update_window_title();
