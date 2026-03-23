@@ -47,7 +47,7 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
             .sizing = layoutExpand,
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         },
-        .backgroundColor = ui_resolve_color(state, state->ui.roles.ui_bg)
+        .backgroundColor = ui_resolve_color(state, state->ui.roles.tab_bar)
     }) {
         GlobalHeader(state);
         Pane *root = pane_get_root();
@@ -60,8 +60,8 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
             }) {
                 PaneContent(state, root, 1, 0, 0);
             }
-            StatusBar(state);
         }
+        StatusBar(state);
         if (state->minibuf.active)
             MinibufArea(state);
         else

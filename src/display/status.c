@@ -38,10 +38,6 @@ void StatusBar(AppState *state) {
         .isStaticallyAllocated = true
     };
 
-    Clay_String bufName = {
-         .chars = buffer_get_name(buf),
-         .length = strlen(buffer_get_name(buf)),
-    };
     char *pos = malloc(32 * sizeof(char));
     snprintf(pos, 32, "%zu:%d", buf_get_line(buf), get_column(buf));
     bar_strings_push(pos);
@@ -109,11 +105,6 @@ void StatusBar(AppState *state) {
                 .textColor = label_color,
             }));
         }
-        CLAY_TEXT(bufName, CLAY_TEXT_CONFIG({
-            .fontId = FONT_NORMAL,
-            .fontSize = 14.0 * state->ui.scale_factor,
-            .textColor = textColor,
-        }));
         CLAY_AUTO_ID({
             .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) }}
         }) {}
