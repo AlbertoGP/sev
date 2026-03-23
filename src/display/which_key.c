@@ -110,7 +110,7 @@ void WhichKey(AppState *state) {
                                 sexp_intern(ctx, "text.command", -1));
     Clay_Color fg_prefix  = ui_resolve_color(state,
                                 sexp_intern(ctx, "text.prefix", -1));
-    Clay_Color border_col = ui_resolve_color(state, state->ui.roles.text_faded);
+    Clay_Color border_col = ui_resolve_color(state, state->ui.roles.border_inactive);
 
     CLAY(CLAY_ID("WhichKey"), {
         .floating = {

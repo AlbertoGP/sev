@@ -13,7 +13,7 @@ static void GlobalHeader(AppState *state) {
         .layout = {
             .sizing = {
                 .width  = CLAY_SIZING_GROW(0),
-                .height = CLAY_SIZING_FIXED(icon_size + 10 * state->ui.scale_factor),
+                .height = CLAY_SIZING_FIXED(icon_size + 4 * state->ui.scale_factor),
             },
             .padding = CLAY_PADDING_ALL(5 * state->ui.scale_factor),
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
@@ -49,13 +49,14 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
         },
         .backgroundColor = ui_resolve_color(state, state->ui.roles.ui_bg)
     }) {
+        GlobalHeader(state);
         Pane *root = pane_get_root();
         if (!root) {
-            GlobalHeader(state);
             SplashPane(state);
         } else {
             CLAY(CLAY_ID("Root Pane Area"), {
-                .layout = { .sizing = layoutExpand }
+                .layout = { .sizing = layoutExpand },
+                .border = { .width = { .top = 1 }, .color = ui_resolve_color(state, state->ui.roles.border_inactive) }
             }) {
                 PaneContent(state, root, 1, 0, 0);
             }

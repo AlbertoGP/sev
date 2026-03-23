@@ -21,7 +21,7 @@ static void SuggestionRow(AppState *state, Clay_String label, Clay_String key) {
         CLAY_TEXT(label, CLAY_TEXT_CONFIG({
             .fontId = FONT_NORMAL,
             .fontSize = font_size,
-            .textColor = ui_resolve_color(state, state->ui.roles.text_faded),
+            .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
         }));
         XSpacer();
         CLAY_TEXT(key, CLAY_TEXT_CONFIG({
@@ -47,6 +47,7 @@ void SplashPane(AppState *state) {
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
             .childGap = 10.0 * state->ui.scale_factor,
         },
+        .backgroundColor = ui_resolve_color(state, state->ui.roles.pane_bg)
     }) {
         SDL_Texture *icon = icon_get("splash-icon", state, (int)icon_size, (int)icon_size);
         CLAY(CLAY_ID("Splash Icon"), {

@@ -63,7 +63,7 @@
  ;; roles
  '((ui.bg             . bg-1)
    (pane.bg           . bg-0)
-   (border.active     . lavender)
+   (border.active     . mauve)
    (border.inactive   . fg-0)
    (border.bell       . yellow)
    (bar.bg            . fg-0)
@@ -139,7 +139,7 @@
  ;; roles
  '((ui.bg             . bg-1)
    (pane.bg           . bg-0)
-   (border.active     . lavender)
+   (border.active     . mauve)
    (border.inactive   . fg-0)
    (border.bell       . yellow)
    (bar.bg            . fg-0)
@@ -215,7 +215,7 @@
  ;; roles
  '((ui.bg             . bg-1)
    (pane.bg           . bg-0)
-   (border.active     . lavender)
+   (border.active     . mauve)
    (border.inactive   . fg-0)
    (border.bell       . yellow)
    (bar.bg            . bg-2)

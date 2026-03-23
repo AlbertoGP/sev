@@ -269,7 +269,7 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
             }
             }) {
                 Clay_Color c = ui_resolve_color(state, state->ui.roles.text_primary);
-                float TAB_HEIGHT = 30 * state->ui.scale_factor;
+                float TAB_HEIGHT = 26 * state->ui.scale_factor;
                 float TAB_PADDING_X = 20 * state->ui.scale_factor;
                 CLAY_AUTO_ID({
                     .layout = {
@@ -283,7 +283,7 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
                 }) {
                     CLAY_TEXT(tab_name, CLAY_TEXT_CONFIG({
                         .fontId   = FONT_NORMAL,
-                        .fontSize = 14 * state->ui.scale_factor,
+                        .fontSize = 12 * state->ui.scale_factor,
                         .textColor = c
                     }));
                 }
