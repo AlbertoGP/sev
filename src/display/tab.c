@@ -271,13 +271,26 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
                 Clay_Color c = ui_resolve_color(state, state->ui.roles.text_primary);
                 float TAB_HEIGHT = 26 * state->ui.scale_factor;
                 float TAB_PADDING_X = 20 * state->ui.scale_factor;
+                CLAY(CLAY_IDI_LOCAL("Modified Indicator", i), {
+                    .layout = {
+                        .sizing = { .width = CLAY_SIZING_FIXED(TAB_PADDING_X) },
+                        .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
+                    },
+                }) {
+                    if (t->buffer->is_modified) {
+                        CLAY_TEXT(CLAY_STRING("●"), CLAY_TEXT_CONFIG({
+                            .fontId   = FONT_NORMAL,
+                            .fontSize = 10 * state->ui.scale_factor,
+                            .textColor = ui_resolve_color(state, state->ui.roles.border_active)
+                        }));
+                    }
+                }
                 CLAY_AUTO_ID({
                     .layout = {
                         .sizing = {
                             .width  = CLAY_SIZING_FIT(0),
                             .height = CLAY_SIZING_FIXED(TAB_HEIGHT)
                         },
-                        .padding = { .left = TAB_PADDING_X },
                         .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
                     }
                 }) {
@@ -290,7 +303,7 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
                 void **cb = tab_cb_alloc(dp, t);
                 bool show_cross = Clay_Hovered();
                 bool block_click = false;
-                CLAY(CLAY_IDI_LOCAL("Tab Close Button", i), {
+                CLAY(CLAY_IDI_LOCAL("Close Button", i), {
                     .layout = {
                         .sizing = { .width = CLAY_SIZING_FIXED(TAB_PADDING_X) },
                         .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
