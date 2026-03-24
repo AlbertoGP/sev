@@ -657,8 +657,24 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                         }
 
                         if (cursor_on_line && pane->display.active) {
+                            // Find the font for the character under the cursor by
+                            // looking up which hl_span covers point.
+                            uint16_t cursor_font_id = font_id;
+                            size_t pt_line_idx = line_index_at(lt, point);
+                            const Line *pt_line = &lt->lines[pt_line_idx];
+                            for (uint32_t si = 0; si < pt_line->hl_span_count; si++) {
+                                const HLSpan *sp = &pt_line->hl_spans[si];
+                                if ((uint32_t)point >= sp->start_byte &&
+                                    (uint32_t)point <  sp->end_byte) {
+                                    TextStyle ts = ui_resolve_text_style(
+                                        state, hl_kind_to_role(state, sp->style),
+                                        font_id, font_size);
+                                    cursor_font_id = ts.font_id;
+                                    break;
+                                }
+                            }
                             Cursor(state, (int32_t)i, cursor_offset + gutter_width,
-                                   line_height, font_id, font_size);
+                                   line_height, cursor_font_id, font_size);
                         }
 
                         if (buf->select_mode != SELECT_NONE && pane->display.active) {
