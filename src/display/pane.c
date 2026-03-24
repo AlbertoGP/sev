@@ -775,18 +775,19 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                                 float _sw = (float)_wx - x_prev; \
                                 x_prev = (float)_wx; \
                                 if (_sw > 0.0f) { \
+                                    TextStyle style = ui_resolve_text_style(state, (role_expr), FONT_BUF_NORMAL, 15); \
                                     Clay_String _t = { .chars = chars + (from), \
                                                        .length = (to) - (from) }; \
                                     CLAY(CLAY_IDI_LOCAL("Seg", run_id++), { \
                                         .layout = { .sizing = { \
                                             .width  = CLAY_SIZING_FIXED(_sw), \
                                             .height = CLAY_SIZING_FIXED(line_height) \
-                                        }} \
+                                        }}, \
                                     }) { \
                                         CLAY_TEXT(_t, CLAY_TEXT_CONFIG({ \
-                                            .fontId    = font_id, \
+                                            .fontId    = style.font_id, \
                                             .fontSize  = font_size, \
-                                            .textColor = ui_resolve_color(state, (role_expr)) \
+                                            .textColor = style.color \
                                         })); \
                                     } \
                                 } \
