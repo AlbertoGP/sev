@@ -17,10 +17,7 @@ static float measure_text(Clay_SDL3RendererData *renderer,
                           uint16_t font_id, uint16_t font_size,
                           const char *text, size_t len) {
     if (len == 0) return 0.0f;
-
-    TTF_Font *font = renderer->fonts[font_id];
-    TTF_SetFontSize(font, font_size);
-
+    TTF_Font *font = SDL_Clay_GetRenderFont(renderer, font_id, (float)font_size);
     int w = 0, h = 0;
     TTF_GetStringSize(font, text, len, &w, &h);
     return (float)w;
@@ -28,8 +25,7 @@ static float measure_text(Clay_SDL3RendererData *renderer,
 
 int vline_get_line_height(Clay_SDL3RendererData *renderer,
                           uint16_t font_id, uint16_t font_size) {
-    TTF_Font *font = renderer->fonts[font_id];
-    TTF_SetFontSize(font, font_size);
+    TTF_Font *font = SDL_Clay_GetRenderFont(renderer, font_id, (float)font_size);
     return TTF_GetFontHeight(font);
 }
 

@@ -188,6 +188,18 @@ void ts_buffer_reparse(Buffer *buf) {
     ts_tree_delete(old_tree);
     buf->ts.tree = new_tree;
 
+    // Mark logical lines that overlap changed ranges as hl_dirty.
+    // Stage 6 will use this to skip re-highlighting clean lines.
+    LineTable *lt = (LineTable *)buffer_get_line_table(buf);
+    for (uint32_t ri = 0; ri < buf->ts.changed_ranges_count; ri++) {
+        uint32_t r_start = buf->ts.changed_ranges[ri].start_byte;
+        uint32_t r_end   = buf->ts.changed_ranges[ri].end_byte;
+        size_t first = line_index_at(lt, r_start);
+        size_t last  = r_end > 0 ? line_index_at(lt, r_end - 1) : first;
+        for (size_t li = first; li <= last && li < lt->count; li++)
+            lt->lines[li].hl_dirty = true;
+    }
+
     ts_buffer_highlight(buf);
 }
 

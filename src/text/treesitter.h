@@ -4,19 +4,6 @@
 #include "gap.h"
 #include "line.h"
 
-typedef enum {
-    HL_DEFAULT = 0,
-    HL_KEYWORD,
-    HL_STRING,
-    HL_COMMENT,
-    HL_NUMBER,
-    HL_CONSTANT,   // booleans, chars, quoted forms
-    HL_FUNCTION,   // first symbol in a list
-    HL_BUILTIN,    // built-in functions
-    HL_OPERATOR,
-    HL_COUNT       // HL_VARIABLE / HL_PUNCTUATION / HL_ESCAPE → HL_DEFAULT
-} HLKind;
-
 typedef struct {
     TSParser         *parser;
     TSTree           *tree;

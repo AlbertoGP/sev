@@ -22,7 +22,7 @@ static int render_font_cache_count = 0;
 
 static void flush_text_cache_for_font(uint16_t font_id, float size);
 
-static TTF_Font *get_render_font(Clay_SDL3RendererData *rd, uint16_t font_id, float size) {
+TTF_Font *SDL_Clay_GetRenderFont(Clay_SDL3RendererData *rd, uint16_t font_id, float size) {
     for (int i = 0; i < render_font_cache_count; i++) {
         if (render_font_cache[i].font_id == font_id && render_font_cache[i].size == size)
             return render_font_cache[i].font;
@@ -104,7 +104,7 @@ static TTF_Text *get_cached_text(Clay_SDL3RendererData *rd, uint16_t font_id, fl
         text_cache[idx].str = NULL;
     }
 
-    TTF_Font *font = get_render_font(rd, font_id, font_size);
+    TTF_Font *font = SDL_Clay_GetRenderFont(rd, font_id, font_size);
     TTF_Text *text = TTF_CreateText(rd->textEngine, font, str, len);
 
     char *str_copy = SDL_malloc(len);

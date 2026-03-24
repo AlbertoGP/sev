@@ -6,6 +6,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef enum {
+    HL_DEFAULT = 0,
+    HL_KEYWORD, HL_STRING, HL_COMMENT, HL_NUMBER,
+    HL_CONSTANT, HL_FUNCTION, HL_BUILTIN, HL_OPERATOR,
+    HL_COUNT
+} HLKind;
+
 typedef struct {
     uint32_t start_byte;
     uint32_t end_byte;

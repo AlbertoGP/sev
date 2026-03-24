@@ -451,6 +451,20 @@ void pane_free_strings(void) {
     pane_strings_count = 0;
 }
 
+static sexp hl_kind_to_role(AppState *state, uint16_t kind) {
+    switch ((HLKind)kind) {
+    case HL_KEYWORD:  return state->ui.roles.hl_keyword;
+    case HL_STRING:   return state->ui.roles.hl_string;
+    case HL_COMMENT:  return state->ui.roles.hl_comment;
+    case HL_NUMBER:   return state->ui.roles.hl_number;
+    case HL_CONSTANT: return state->ui.roles.hl_constant;
+    case HL_FUNCTION: return state->ui.roles.hl_function;
+    case HL_BUILTIN:  return state->ui.roles.hl_builtin;
+    case HL_OPERATOR: return state->ui.roles.hl_operator;
+    default:          return state->ui.roles.text_primary;
+    }
+}
+
 static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, float height) {
     Tab *tab = pane->display.active_tab;
     if (!tab) return;
@@ -494,8 +508,7 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                 float text_width  = box.width - (2 * padding);
                 float text_height = box.height;
 
-                TTF_Font *font = state->rendererData.fonts[font_id];
-                TTF_SetFontSize(font, font_size);
+                TTF_Font *font = SDL_Clay_GetRenderFont(&state->rendererData, font_id, (float)font_size);
 
                 sexp lnum_sym = sexp_intern(state->chibi.ctx, "display-line-numbers-type", -1);
                 sexp lnum_val = vartable_get(buffer_get_locals(buf), lnum_sym, SEXP_FALSE);
@@ -557,6 +570,7 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                         pane_strings[pane_strings_count++] = lnum_strs;
                 }
 
+                int32_t run_id = 0;
                 for (size_t i = cache->top_vline; i < end_vline; i++) {
                     VisualLine *vl = &cache->lines[i];
                     size_t line_start = vl->byte_start;
@@ -588,7 +602,7 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                                 .width  = CLAY_SIZING_GROW(0),
                                 .height = CLAY_SIZING_FIXED(line_height)
                             },
-                            .layoutDirection = line_num_type ? CLAY_LEFT_TO_RIGHT : CLAY_TOP_TO_BOTTOM,
+                            .layoutDirection = CLAY_LEFT_TO_RIGHT,
                         }
                     }) {
                         if (line_num_type && lnum_strs) {
@@ -745,16 +759,59 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                         }
 
                         if (line_len > 0) {
-                            Clay_String text = {
-                                .chars = chars + line_start,
-                                .length = line_len,
-                                .isStaticallyAllocated = false
-                            };
-                            CLAY_TEXT(text, CLAY_TEXT_CONFIG({
-                                .fontId = font_id,
-                                .fontSize = font_size,
-                                .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
-                            }));
+                            size_t log_idx = line_index_at(lt, vl->byte_start);
+                            const Line *log_line = &lt->lines[log_idx];
+                            size_t pos = line_start;
+                            // x_prev tracks the measured pixel width from line_start to the
+                            // end of the last emitted run, matching how cursor_offset is
+                            // measured. This prevents sub-pixel rounding errors from
+                            // accumulating across segment boundaries.
+                            float x_prev = 0.0f;
+
+                            #define EMIT_RUN(from, to, role_expr) do { \
+                                int _wx = 0, _wh = 0; \
+                                TTF_GetStringSize(font, chars + line_start, \
+                                                  (to) - line_start, &_wx, &_wh); \
+                                float _sw = (float)_wx - x_prev; \
+                                x_prev = (float)_wx; \
+                                if (_sw > 0.0f) { \
+                                    Clay_String _t = { .chars = chars + (from), \
+                                                       .length = (to) - (from) }; \
+                                    CLAY(CLAY_IDI_LOCAL("Seg", run_id++), { \
+                                        .layout = { .sizing = { \
+                                            .width  = CLAY_SIZING_FIXED(_sw), \
+                                            .height = CLAY_SIZING_FIXED(line_height) \
+                                        }} \
+                                    }) { \
+                                        CLAY_TEXT(_t, CLAY_TEXT_CONFIG({ \
+                                            .fontId    = font_id, \
+                                            .fontSize  = font_size, \
+                                            .textColor = ui_resolve_color(state, (role_expr)) \
+                                        })); \
+                                    } \
+                                } \
+                            } while(0)
+
+                            for (uint32_t si = 0; si < log_line->hl_span_count; si++) {
+                                const HLSpan *span = &log_line->hl_spans[si];
+                                if ((size_t)span->end_byte   <= line_start) continue;
+                                if ((size_t)span->start_byte >= line_end)   break;
+                                size_t seg_s = (size_t)span->start_byte > line_start
+                                             ? (size_t)span->start_byte : line_start;
+                                size_t seg_e = (size_t)span->end_byte   < line_end
+                                             ? (size_t)span->end_byte   : line_end;
+
+                                if (pos < seg_s)
+                                    EMIT_RUN(pos, seg_s, state->ui.roles.text_primary);
+                                EMIT_RUN(seg_s, seg_e,
+                                         hl_kind_to_role(state, span->style));
+                                pos = seg_e;
+                            }
+
+                            if (pos < line_end)
+                                EMIT_RUN(pos, line_end, state->ui.roles.text_primary);
+
+                            #undef EMIT_RUN
                         }
                     }
                 }
