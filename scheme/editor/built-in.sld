@@ -1,6 +1,10 @@
 (define-library (editor built-in)
   (import (except (scheme base) newline)
           (scheme file)
+          (scheme read)
+          (scheme write)
+          (scheme eval)
+          (scheme repl)
           (editor primitives) (editor command) (editor minibuffer))
   (export
     quit self-insert eval-buffer
@@ -17,5 +21,6 @@
     clay-debug exchange-point-and-mark
     line-start-skip-whitespace join-line
     save-buffer save-buffer-as open-file read-file
-    buffer-new buffer-rename scratch-buffer switch-to-buffer buffer-close tab-new)
+    buffer-new buffer-rename scratch-buffer switch-to-buffer buffer-close tab-new
+    eval-expression)
   (include "built-in.scm"))

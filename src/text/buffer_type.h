@@ -5,6 +5,7 @@
 #include "line.h"
 #include "location.h"
 #include "mark.h"
+#include "treesitter.h"
 #include "var.h"
 #include "../command/mode.h"
 
@@ -63,5 +64,7 @@ typedef struct Buffer {
     char *line_restore_text;
     size_t line_restore_len;
     size_t line_restore_line;
+
+    TSState ts;
 } Buffer;
 

@@ -44,6 +44,18 @@
 (defcommand exchange-point-and-mark "Swap point and selection anchor.")
 
 ;; compound Scheme commands
+(defcommand (eval-expression)
+  "Evaluate a Scheme expression from the minibuffer and display the result."
+  (interactive)
+  (minibuffer-read "Eval: "
+    (lambda (expr-str)
+      (unless (string=? expr-str "")
+        (let* ((expr   (read (open-input-string expr-str)))
+               (result (eval expr (interaction-environment)))
+               (out    (open-output-string)))
+          (write result out)
+          (message (get-output-string out)))))))
+
 (defcommand (line-start-skip-whitespace)
   "Set cursor to first non-blank character on current line."
   (line-start) (skip-whitespace))

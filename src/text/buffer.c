@@ -10,6 +10,7 @@
 #include "buffer_type.h"
 #include "change.h"
 #include "gap.h"
+#include "treesitter.h"
 #include "var.h"
 #include "../command/mode.h"
 #include "../command/scheme_internal.h"
@@ -46,6 +47,7 @@ static void buffer_destroy(Buffer *buf) {
     if (buf->next)
         buf->next->prev = buf->prev;
 
+    ts_buffer_free(buf);
     change_free_all(buf, G ? G->chibi.ctx : NULL);
     free(buf->line_restore_text);
     modelist_destroy(&buf->minor_modes);
@@ -131,6 +133,8 @@ Buffer *buffer_create(const char *name) {
     }
 
     reset_buffer_scale(G, buf);
+    ts_buffer_init(buf);
+    ts_buffer_parse(buf);
 
     return buf;
 }
@@ -313,6 +317,7 @@ bool buffer_insert(char *file_name) {
     fclose(f);
     if (inserted) {
         buf->is_modified = true;
+        ts_buffer_parse(buf);
     }
     return true;
 }
@@ -341,6 +346,7 @@ bool buffer_read(void) {
     buf->is_modified = false;
 
     point_set(count_to_location(0));
+    ts_buffer_parse(buf);
 
     return true;
 }

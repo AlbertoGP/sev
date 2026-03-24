@@ -71,6 +71,7 @@
 (set-key! global-keymap "SPC t n" 'tab-new)
 
 (set-key! global-keymap "M-x" 'execute-extended-command)
+(set-key! global-keymap "M-:" 'eval-expression)
 
 ;; Click: exit any visual select mode, then move point to clicked position.
 (%set-mouse-click-handler!

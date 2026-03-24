@@ -43,10 +43,30 @@ set(SRC_FILES
     src/text/search.c
     src/text/var.c
     src/text/jump_list.c
+    src/text/treesitter.c
 )
 
 # Create executable
 add_executable(app ${SRC_FILES})
+
+# ------------------------------------------------------------
+# Tree-sitter (vendored, always static)
+# ------------------------------------------------------------
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+add_subdirectory(vendored/tree-sitter EXCLUDE_FROM_ALL)
+
+# Build tree-sitter-scheme grammar directly (its CMakeLists has an invalid
+# version string, so we compile the sources ourselves)
+add_library(tree-sitter-scheme STATIC
+    vendored/tree-sitter-scheme/src/parser.c
+)
+set_target_properties(tree-sitter-scheme PROPERTIES C_STANDARD 11 POSITION_INDEPENDENT_CODE ON)
+target_include_directories(tree-sitter-scheme PRIVATE vendored/tree-sitter-scheme/src)
+
+target_include_directories(app PRIVATE
+    vendored/tree-sitter/lib/include
+    vendored/tree-sitter-scheme/bindings/c
+)
 
 # ------------------------------------------------------------
 # Platform-specific configuration
@@ -170,6 +190,8 @@ if(EMSCRIPTEN)
         SDL3_image::SDL3_image-static
         SDL3_ttf::SDL3_ttf-static
         chibi::libchibi-scheme
+        tree-sitter
+        tree-sitter-scheme
     )
 
 else()
@@ -192,6 +214,6 @@ else()
     find_package(SDL3_ttf REQUIRED)
 
     # Use system chibi-scheme (has correct module paths configured)
-    target_link_libraries(app PUBLIC SDL3::SDL3 SDL3_image::SDL3_image SDL3_ttf::SDL3_ttf chibi-scheme)
+    target_link_libraries(app PUBLIC SDL3::SDL3 SDL3_image::SDL3_image SDL3_ttf::SDL3_ttf chibi-scheme tree-sitter tree-sitter-scheme)
 
 endif()
