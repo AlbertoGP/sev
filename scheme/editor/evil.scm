@@ -257,9 +257,7 @@
   (%set-replace-mode! #f)
   (evil-reset-count)
   (set-local! 'mode-name "Normal") 
-  (unless (%macro-recording?)
-    (message-unlock)
-    (message-clear))
+  (message-clear)
   (when (%macro-recording?)
     (disable-minor-mode 'evil-recording-mode)
     (enable-minor-mode 'evil-recording-mode)))
@@ -277,6 +275,7 @@
   (enable-minor-mode 'evil-insert-mode)
   (%select-mode-set! 0)
   (%set-replace-mode! #f)
+  (message-clear)
   (set-local! 'mode-name "Insert"))
 
 (defcommand (evil-replace)
@@ -292,6 +291,7 @@
   (enable-minor-mode 'evil-replace-mode)
   (%select-mode-set! 0)
   (%set-replace-mode! #t)
+  (message-clear)
   (set-local! 'mode-name "Replace"))
 
 (define (enter-visual-submode mode-int name)
@@ -305,6 +305,7 @@
   (disable-minor-mode 'evil-command-mode)
   (enable-minor-mode 'evil-select-mode)
   (%select-mode-set! mode-int)
+  (message-clear)
   (set-local! 'mode-name name))
 
 (defcommand (evil-select)

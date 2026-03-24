@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Text model layer. Owns all mutable text state: gap buffer storage, logical line tracking, cursor (point), marks/selections, registers, undo history, buffer lifecycle and buffer-local variables. Display reads this state but never mutates it.
+Text model layer. Owns all mutable text state: gap buffer storage, logical line tracking, cursor (point), marks/selections, registers, undo history, jump list, buffer lifecycle, and buffer-local variables. Display reads this state but never mutates it.
 
 ## Files
 
@@ -10,14 +10,16 @@ Text model layer. Owns all mutable text state: gap buffer storage, logical line 
 - **line.c / line.h** — Logical line table. Tracks byte ranges for each line; kept in sync with the gap buffer after every insert/delete. Each `Line` has a stable `line_id` (never recycled) and a `version` counter (bumped on change) — the display's vline cache uses these for incremental rebuilds. Supports binary search by byte position.
 - **mark.c / mark.h** — Named marks (`'a'`–`'z'`) and selection boundaries (`'<'`/`'>'`). Marks are byte offsets and are **not auto-adjusted** after edits — callers must manage staleness. `SelectMode`: NONE, REGULAR (char), LINE, RECTANGLE.
 - **location.h** — `Location` type (`{ size_t pos }`). `Mark` is a typedef alias.
-- **register.c / register.h** — Named registers (`a`–`z`, `A`–`Z`, unnamed `"`). Store copied/cut text for yank/paste operations.
+- **utf8.h** — Inline UTF-8 helpers: `utf8_seq_len_fwd`, `utf8_seq_len_back`, `utf8_encode`. Header-only, no `.c` file.
+- **register.c / register.h** — Named registers (`a`–`z`, `A`–`Z`, unnamed `"`). Store copied/cut text for yank/paste operations. Each register tracks shape (CHARWISE, LINEWISE, BLOCKWISE).
 - **change.c / change.h** — Undo/redo history. Transactions (`Change`) record sequences of `EditOp`s (insert/delete) with point positions before/after and an optional Scheme repeat-info record. Manages undo stack linkage and redo clearing.
+- **jump_list.c / jump_list.h** — Vim-style jump list for C-o/C-i navigation. Ring buffer of 100 `Jump` entries (buffer name + point position + optional filename). `jump_list_push`, `jump_list_backward`, `jump_list_forward`. Exposed to Scheme via `%jump-push!`, `%jump-backward!`, `%jump-forward!`.
 - **buffer.c / buffer.h / buffer_type.h** — Buffer lifecycle and `BufferList` management. `Buffer` struct aggregates all per-buffer state. `BufferList` is a global doubly-linked list with a `current` pointer. `buffer_type.h` has the struct definition; `buffer.h` has the public API.
 - **buffer_edit.c** — Content mutation: insert, delete, and their Scheme bindings. Keeps gap buffer, line table, change log, and metadata in sync after every edit.
 - **point.c** — Point movement and position queries: forward/backward by char/word/line, beginning/end-of-line, goto, and related Scheme bindings.
 - **mode.c** — Per-buffer major/minor mode lists, local keymap, and local variable accessors.
 - **search.c** — Forward/backward text search (stub, TODO).
-- **var.c / var.h** — Buffer-local Scheme variables. Singly-linked list of `(sexp key, sexp value)` pairs. O(n) lookup. Used for settings like `display-line-numbers-type`.
+- **var.c / var.h** — Buffer-local Scheme variables. Singly-linked list of `(sexp key, sexp value)` pairs. O(n) lookup. `vartable_get(buffer_get_locals(buf), symbol, default)` is the C read path.
 
 ## Key Invariants
 
@@ -55,10 +57,10 @@ Text model layer. Owns all mutable text state: gap buffer storage, logical line 
 ### Adding a new buffer-local variable
 
 - No C changes needed — use `(set-local! 'name value)` from Scheme
-- To read from C: `vartable_get(buffer_get_locals(buf), interned_symbol, default)`
+- To read from C: `vartable_get(buffer_get_locals(buf), sexp_intern(ctx, "name", -1), default)`
 
 ### Adding a new query exposed to Scheme
 
 1. Write `scm_*` function in the appropriate `.c` file (edit ops → `buffer_edit.c`, movement → `point.c`, etc.)
 2. Register in `src/command/scheme.c` via `SDEF()`
-3. Optionally wrap in `scheme/built-in.scm` with `defcommand`
+3. Optionally wrap in `scheme/editor/built-in.scm` with `defcommand`

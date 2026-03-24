@@ -23,7 +23,7 @@ make build-debug      # With AddressSanitizer
 make vg               # Run with Valgrind
 
 # Run
-./out/app             # Makefile build
+./out/sev             # Makefile build
 ./build-desktop/app   # CMake build
 ```
 
@@ -33,24 +33,31 @@ make vg               # Run with Valgrind
 
 The app uses SDL3's main callbacks pattern (no `main()` function):
 
-- `SDL_AppInit()` in `src/init.c` - Window, fonts, Clay UI, buffers, Scheme init
-- `SDL_AppIterate()` in `src/iterate.c` - Main loop with 60 FPS cap for animations
-- `SDL_AppEvent()` in `src/event.c` - Event dispatch (keyboard, mouse, window)
-- `SDL_AppQuit()` in `src/quit.c` - Cleanup
+- `SDL_AppInit()` in `src/init.c` — window, fonts, Clay UI, buffers, Scheme init
+- `SDL_AppIterate()` in `src/iterate.c` — main loop with 60 FPS cap for animations
+- `SDL_AppEvent()` in `src/event.c` — event dispatch (keyboard, mouse, window)
+- `SDL_AppQuit()` in `src/quit.c` — cleanup
 
 ### Global State (`src/state.h`)
 
-`AppState` struct holds all application state: window, renderer, colors, theme, Scheme context, input state, minibuffer state. Passed through SDL3 callbacks via `void *appstate`.
+`AppState` struct holds all application state, passed through SDL3 callbacks via `void *appstate`. Key sub-structs:
+
+- `Chibi` — Scheme context (`ctx`), global environment (`env`), cached `call_interactively`
+- `UIState` — current theme symbol, role/palette `VarTable`s, pre-interned `CachedRoles`, global `scale_factor`
+- `InputState` — active keymaps, last key event, mouse click/drag callbacks, `FocusTarget` (PANE / SPLASH / MINIBUFFER), which-key intercept state
+- `Minibuf` — active buffer, prompt, submit/cancel Scheme callbacks, push/pop frame stack (depth 8)
+- `WhichKeyState` — active flag, enabled flag, intercept keymap, accumulated prefix string
+- Macro recording fields — `macro_recording`, `macro_buf`, `macro_buf_len`, `macro_target_reg`
 
 ### Text Model (`src/text/`)
 
-Buffers, marks, logical lines, buffer-local variables.
+Buffers, marks, logical lines, registers, undo, jump list, buffer-local variables.
 
 - See `src/text/CLAUDE.md` for subsystem details.
 
 ### Input + Command Layer (`src/command/`)
 
-Input handling and command execution layer. Modes, keymaps and Scheme interpreter init are defined here too.
+Input handling, command execution, mode registry, macro recording, Scheme interpreter init.
 
 - See `src/command/CLAUDE.md` for subsystem details.
 
@@ -62,10 +69,13 @@ Chibi Scheme provides extensibility and user scripting.
 
 ### UI Rendering (`src/clay/`, `src/display/`)
 
-Clay immediate-mode UI with SDL3 renderer backend. Layout defined in `layout.c` with:
+Clay immediate-mode UI with SDL3 renderer backend. Layout defined in `layout.c`:
 
-- Editor buffer view (text + cursor visualization)
-- Status bar (buffer name, position, line/column)
+- Global header (app icon strip)
+- Pane tree: binary tree of splits and `PANE_DISPLAY` leaves; each leaf owns its own tab list and renders its own tab bar above the buffer view
+- Splash screen when no panes are open
+- Global status bar (mode icon + mode name pill; macro indicator dot + "REC" when recording)
+- Which-key popup overlay when active
 - Bottom strip: minibuffer (prompt + editable text + cursor) when active, echo area otherwise
 
 - See `src/display/CLAUDE.md` for display subsystem details.
@@ -74,15 +84,18 @@ Clay immediate-mode UI with SDL3 renderer backend. Layout defined in `layout.c` 
 ## Key Patterns
 
 - **Dirty flag**: `state->needs_redraw` controls when to re-render
-- **Key parsing**: `parse_key_sequence()` handles Emacs-style notation ("C-x", "M-f", "SPC", "RET")
+- **Key parsing**: `parse_key_sequence()` handles Emacs-style notation (`"C-x"`, `"M-f"`, `"SPC"`, `"RET"`)
+- **Color resolution**: `ui_resolve_color(state, role_symbol)` — two-level role → palette → `Clay_Color`
+- **Buffer-local vars from C**: `vartable_get(buffer_get_locals(buf), sexp_intern(ctx, "name", -1), default)`
+- **Scheme global vars from C**: `sexp_env_ref(ctx, state->chibi.env, sym, default)`
 
 ## Dependencies
 
 Vendored as git submodules in `vendored/`:
 
-- SDL3 - Windowing and input
-- SDL_ttf - Font rendering
-- chibi-scheme - Scheme interpreter
+- SDL3 — windowing and input
+- SDL_ttf — font rendering
+- chibi-scheme — Scheme interpreter
 
 Clone with `--recursive` or run `git submodule update --init --recursive`.
 
