@@ -599,6 +599,7 @@ void scheme_init(AppState *state) {
     INTERN_ROLE(hl_function, "hl.function");
     INTERN_ROLE(hl_builtin,  "hl.builtin");
     INTERN_ROLE(hl_operator, "hl.operator");
+    INTERN_ROLE(hl_bracket,  "hl.bracket");
 
     // bar_bg, bar_text_active;
     // tab_bar, tab_active, tab_hover, tab_inactive;

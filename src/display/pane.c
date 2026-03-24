@@ -461,6 +461,7 @@ static sexp hl_kind_to_role(AppState *state, uint16_t kind) {
     case HL_FUNCTION: return state->ui.roles.hl_function;
     case HL_BUILTIN:  return state->ui.roles.hl_builtin;
     case HL_OPERATOR: return state->ui.roles.hl_operator;
+    case HL_BRACKET:  return state->ui.roles.hl_bracket;
     default:          return state->ui.roles.text_primary;
     }
 }

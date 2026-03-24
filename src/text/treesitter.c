@@ -118,6 +118,9 @@ static HLKind capture_name_to_kind(const char *name, uint32_t len) {
         if (memcmp(name, "constant.builtin", 16) == 0) return HL_CONSTANT;
         if (memcmp(name, "function.builtin", 16) == 0) return HL_BUILTIN;
         break;
+    case 19:
+        if (memcmp(name, "punctuation.bracket", 19) == 0) return HL_BRACKET;
+        break;
     default:
         break;
     }

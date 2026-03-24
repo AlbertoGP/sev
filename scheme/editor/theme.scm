@@ -105,12 +105,13 @@
    (macro.bg          . fg-2)
    (hl.keyword        . (:color mauve))
    (hl.string         . (:color green))
-   (hl.comment        . (:color fg-2 :font buf-italic))
+   (hl.comment        . (:color accent-0 :font buf-italic))
    (hl.number         . (:color peach))
    (hl.constant       . (:color peach))
    (hl.function       . (:color blue))
    (hl.builtin        . (:color sky))
-   (hl.operator       . (:color text-0))))
+   (hl.operator       . (:color text-0))
+   (hl.bracket        . (:color accent-0))))
 
 (define-theme
  'catppuccin-macchiato
@@ -189,12 +190,13 @@
    (macro.bg          . fg-2)
    (hl.keyword        . (:color mauve))
    (hl.string         . (:color green))
-   (hl.comment        . (:color fg-2 :font buf-italic))
+   (hl.comment        . (:color accent-0 :font buf-italic))
    (hl.number         . (:color peach))
    (hl.constant       . (:color peach))
    (hl.function       . (:color blue))
    (hl.builtin        . (:color sky))
-   (hl.operator       . (:color text-0))))
+   (hl.operator       . (:color text-0))
+   (hl.bracket        . (:color accent-0))))
 
 (define-theme
  'catppuccin-latte
@@ -273,12 +275,13 @@
    (macro.bg          . fg-2)
    (hl.keyword        . (:color mauve))
    (hl.string         . (:color green))
-   (hl.comment        . (:color fg-2 :font buf-italic))
+   (hl.comment        . (:color accent-0 :font buf-italic))
    (hl.number         . (:color peach))
    (hl.constant       . (:color peach))
    (hl.function       . (:color blue))
    (hl.builtin        . (:color sky))
-   (hl.operator       . (:color text-0))))
+   (hl.operator       . (:color text-0))
+   (hl.bracket        . (:color accent-0))))
 
 (activate-theme 'catppuccin-macchiato)
 
