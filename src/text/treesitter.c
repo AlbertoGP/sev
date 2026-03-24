@@ -1,6 +1,7 @@
 #include "treesitter.h"
 #include "buffer.h"
 #include "buffer_type.h"
+#include "line.h"
 #include "../../vendored/tree-sitter-scheme/bindings/c/tree-sitter-scheme.h"
 #include <chibi/eval.h>
 #include "../command/scheme_internal.h"
@@ -29,6 +30,45 @@ static const char *ts_read_gap(void *payload, uint32_t byte_index,
         *bytes_read = (uint32_t)(gb->size - physical);
         return &gb->buffer[physical];
     }
+}
+
+TSPoint ts_byte_to_point(const LineTable *lt, uint32_t byte) {
+    size_t idx = line_index_at(lt, (size_t)byte);
+    return (TSPoint){ .row = (uint32_t)idx, .column = (uint32_t)(byte - lt->lines[idx].start) };
+}
+
+void ts_buffer_edit(Buffer *buf,
+                    uint32_t start_byte, uint32_t old_end_byte, uint32_t new_end_byte,
+                    TSPoint new_end_point) {
+    if (!buf->ts.tree) return;
+    TSInputEdit edit = {
+        .start_byte    = start_byte,
+        .old_end_byte  = old_end_byte,
+        .new_end_byte  = new_end_byte,
+        .start_point   = ts_byte_to_point(&buf->lt, start_byte),
+        .old_end_point = ts_byte_to_point(&buf->lt, old_end_byte),
+        .new_end_point = new_end_point,
+    };
+    ts_tree_edit(buf->ts.tree, &edit);
+}
+
+void ts_buffer_reparse(Buffer *buf) {
+    if (!buf->ts.parser || !buf->ts.tree) return;
+
+    TSInput input = {
+        .payload  = buf->contents,
+        .read     = ts_read_gap,
+        .encoding = TSInputEncodingUTF8,
+    };
+
+    TSTree *old_tree = buf->ts.tree;
+    TSTree *new_tree = ts_parser_parse(buf->ts.parser, old_tree, input);
+
+    free(buf->ts.changed_ranges);
+    buf->ts.changed_ranges = ts_tree_get_changed_ranges(old_tree, new_tree,
+                                                         &buf->ts.changed_ranges_count);
+    ts_tree_delete(old_tree);
+    buf->ts.tree = new_tree;
 }
 
 void ts_buffer_init(Buffer *buf) {
@@ -65,6 +105,9 @@ sexp scm_ts_tree_string(sexp ctx, sexp self, sexp n) {
 }
 
 void ts_buffer_free(Buffer *buf) {
+    free(buf->ts.changed_ranges);
+    buf->ts.changed_ranges       = NULL;
+    buf->ts.changed_ranges_count = 0;
     if (buf->ts.tree)   { ts_tree_delete(buf->ts.tree);     buf->ts.tree   = NULL; }
     if (buf->ts.parser) { ts_parser_delete(buf->ts.parser); buf->ts.parser = NULL; }
 }

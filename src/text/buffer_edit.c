@@ -10,6 +10,7 @@
 #include "change.h"
 #include "gap.h"
 #include "line.h"
+#include "treesitter.h"
 #include "utf8.h"
 #include "../command/message.h"
 #include "../command/scheme_internal.h"
@@ -22,6 +23,12 @@ static void update_point(Buffer *buf) {
 
 void insert_char(Buffer *buf, char c) {
     size_t pos_before = point_get(buf).pos;
+    uint32_t pos = (uint32_t)pos_before;
+    TSPoint start_pt = ts_byte_to_point(&buf->lt, pos);
+    TSPoint new_end_pt = (c == '\n')
+        ? (TSPoint){ start_pt.row + 1, 0 }
+        : (TSPoint){ start_pt.row, start_pt.column + 1 };
+    ts_buffer_edit(buf, pos, pos, pos + 1, new_end_pt);
     if (c == '\n') {
         buf->num_lines++;
         buf->cur_line++;
@@ -34,6 +41,7 @@ void insert_char(Buffer *buf, char c) {
     line_insert_char(&buf->lt, point_get(buf).pos, c);
     update_point(buf);
     change_record_insert(buf, pos_before, &c, 1);
+    ts_buffer_reparse(buf);
 }
 
 void insert_codepoint(Buffer *buf, uint32_t cp) {
@@ -44,6 +52,10 @@ void insert_codepoint(Buffer *buf, uint32_t cp) {
     char bytes[4];
     int len = utf8_encode(cp, bytes);
     size_t pos_before = point_get(buf).pos;
+    uint32_t pos = (uint32_t)pos_before;
+    TSPoint start_pt = ts_byte_to_point(&buf->lt, pos);
+    TSPoint new_end_pt = { start_pt.row, start_pt.column + (uint32_t)len };
+    ts_buffer_edit(buf, pos, pos, pos + (uint32_t)len, new_end_pt);
     for (int i = 0; i < len; i++) {
         gb_insert(buf->contents, bytes[i]);
         line_insert_char(&buf->lt, pos_before + i, bytes[i]);
@@ -52,6 +64,7 @@ void insert_codepoint(Buffer *buf, uint32_t cp) {
     buf->num_chars = gb_used(buf->contents);
     update_point(buf);
     change_record_insert(buf, pos_before, bytes, len);
+    ts_buffer_reparse(buf);
 }
 
 void insert_string(Buffer *buf, const char *s) {
@@ -68,6 +81,9 @@ bool delete_chars(Buffer *buf, int count) {
     if (count > 0) {
         if (count > point)
             count = point;
+        uint32_t del_start = (uint32_t)(point - count);
+        TSPoint  del_start_pt = ts_byte_to_point(&buf->lt, del_start);
+        ts_buffer_edit(buf, del_start, (uint32_t)point, del_start, del_start_pt);
         // Record deleted chars before removal (backspace: chars before point)
         if (!buf->suppress_recording && buf->current_change) {
             char tmp[1];
@@ -92,10 +108,15 @@ bool delete_chars(Buffer *buf, int count) {
             }
         }
         gb_backspace(buf->contents, count);
+        ts_buffer_reparse(buf);
     }
     if (count < 0) {
         if (count < -(int)(gb_back(buf->contents)))
             count = -(int)(gb_back(buf->contents));
+        uint32_t del_start = (uint32_t)point;
+        uint32_t del_end   = (uint32_t)(point + (size_t)(-count));
+        TSPoint  del_start_pt = ts_byte_to_point(&buf->lt, del_start);
+        ts_buffer_edit(buf, del_start, del_end, del_start, del_start_pt);
         // Record deleted chars before removal (forward delete: chars after point)
         if (!buf->suppress_recording && buf->current_change) {
             char tmp[1];
@@ -116,6 +137,7 @@ bool delete_chars(Buffer *buf, int count) {
             }
         }
         gb_delete(buf->contents, -count);
+        ts_buffer_reparse(buf);
     }
     buf->num_chars = gb_used(buf->contents);
     update_point(buf);
