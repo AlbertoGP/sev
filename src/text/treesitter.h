@@ -11,6 +11,7 @@ typedef struct {
     TSRange          *changed_ranges;        // malloc'd by tree-sitter, freed by us
     uint32_t          changed_ranges_count;
     TSQuery          *hl_query;
+    uint32_t          last_edit_byte;        // start byte of most recent edit
 } TSState;
 
 typedef struct Buffer Buffer;

@@ -158,6 +158,7 @@ TSPoint ts_byte_to_point(const LineTable *lt, uint32_t byte) {
 void ts_buffer_edit(Buffer *buf,
                     uint32_t start_byte, uint32_t old_end_byte, uint32_t new_end_byte,
                     TSPoint new_end_point) {
+    buf->ts.last_edit_byte = start_byte;
     if (!buf->ts.tree) return;
     TSInputEdit edit = {
         .start_byte    = start_byte,
@@ -199,6 +200,11 @@ void ts_buffer_reparse(Buffer *buf) {
         for (size_t li = first; li <= last && li < lt->count; li++)
             lt->lines[li].hl_dirty = true;
     }
+    // Always mark the line containing the edit dirty. When typing within an
+    // existing token (e.g., extending a comment or string), tree-sitter reports
+    // no structural changed_ranges even though the visual span grew, so without
+    // this the highlight would only update on the next structural change.
+    lt->lines[line_index_at(lt, buf->ts.last_edit_byte)].hl_dirty = true;
 
     ts_buffer_highlight(buf);
 }
