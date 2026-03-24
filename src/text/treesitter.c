@@ -1,3 +1,7 @@
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "treesitter.h"
 #include "buffer.h"
 #include "buffer_type.h"
@@ -5,6 +9,120 @@
 #include "../../vendored/tree-sitter-scheme/bindings/c/tree-sitter-scheme.h"
 #include <chibi/eval.h>
 #include "../command/scheme_internal.h"
+
+// highlights.scm from vendored/tree-sitter-scheme/queries/highlights.scm
+// Embedded to avoid runtime file I/O (works on WASM too).
+static const char SCHEME_HIGHLIGHTS_SCM[] =
+    "[\"(\" \")\" \"[\" \"]\" \"{\" \"}\"] @punctuation.bracket\n"
+    "\n"
+    "(number) @number\n"
+    "(character) @constant.builtin\n"
+    "(boolean) @constant.builtin\n"
+    "(symbol) @variable\n"
+    "\n"
+    "(string) @string\n"
+    "\n"
+    "(escape_sequence) @escape\n"
+    "\n"
+    "(list\n"
+    "  .\n"
+    "  (symbol) @function)\n"
+    "\n"
+    "(list\n"
+    "  .\n"
+    "  \"[\"\n"
+    "  .\n"
+    "  (symbol)+ @variable\n"
+    "  .\n"
+    "  \"]\")\n"
+    "\n"
+    "((symbol) @operator\n"
+    " (#match? @operator \"^(\\\\+|-|\\\\*|/|=|>|<|>=|<=)$\"))\n"
+    "\n"
+    "(list\n"
+    "  .\n"
+    "  (symbol) @keyword\n"
+    "  (#match? @keyword\n"
+    "   \"^(define-syntax|let\\\\*|lambda|\xce\xbb|case|=>|quote-splicing|unquote-splicing|set!|let|letrec|letrec-syntax|let-values|let\\\\*-values|do|else|define|cond|syntax-rules|unquote|begin|quote|let-syntax|and|if|quasiquote|letrec|delay|or|when|unless|identifier-syntax|assert|library|export|import|rename|only|except|prefix)$\"\n"
+    "   ))\n"
+    "\n"
+    "(list\n"
+    "  .\n"
+    "  (symbol) @function.builtin\n"
+    "  (#match? @function.builtin\n"
+    "   \"^(caar|cadr|call-with-input-file|call-with-output-file|cdar|cddr|list|open-input-file|open-output-file|with-input-from-file|with-output-to-file|\\\\*|\\\\+|-|/|<|<=|=|>|>=|abs|acos|angle|append|apply|asin|assoc|assq|assv|atan|boolean\\\\?|caaaar|caaadr|caaar|caadar|caaddr|caadr|cadaar|cadadr|cadar|caddar|cadddr|caddr|call-with-current-continuation|call-with-values|car|cdaaar|cdaadr|cdaar|cdadar|cdaddr|cdadr|cddaar|cddadr|cddar|cdddar|cddddr|cdddr|cdr|ceiling|char->integer|char-alphabetic\\\\?|char-ci<=\\\\?|char-ci<\\\\?|char-ci=\\\\?|char-ci>=\\\\?|char-ci>\\\\?|char-downcase|char-lower-case\\\\?|char-numeric\\\\?|char-ready\\\\?|char-upcase|char-upper-case\\\\?|char-whitespace\\\\?|char<=\\\\?|char<\\\\?|char=\\\\?|char>=\\\\?|char>\\\\?|char\\\\?|close-input-port|close-output-port|complex\\\\?|cons|cos|current-error-port|current-input-port|current-output-port|denominator|display|dynamic-wind|eof-object\\\\?|eq\\\\?|equal\\\\?|eqv\\\\?|eval|even\\\\?|exact->inexact|exact\\\\?|exp|expt|floor|flush-output|for-each|force|gcd|imag-part|inexact->exact|inexact\\\\?|input-port\\\\?|integer->char|integer\\\\?|interaction-environment|lcm|length|list->string|list->vector|list-ref|list-tail|list\\\\?|load|log|magnitude|make-polar|make-rectangular|make-string|make-vector|map|max|member|memq|memv|min|modulo|negative\\\\?|newline|not|null-environment|null\\\\?|number->string|number\\\\?|numerator|odd\\\\?|output-port\\\\?|pair\\\\?|peek-char|positive\\\\?|procedure\\\\?|quotient|rational\\\\?|rationalize|read|read-char|real-part|real\\\\?|remainder|reverse|round|scheme-report-environment|set-car!|set-cdr!|sin|sqrt|string|string->list|string->number|string->symbol|string-append|string-ci<=\\\\?|string-ci<\\\\?|string-ci=\\\\?|string-ci>=\\\\?|string-ci>\\\\?|string-copy|string-fill!|string-length|string-ref|string-set!|string<=\\\\?|string<\\\\?|string=\\\\?|string>=\\\\?|string>\\\\?|string\\\\?|substring|symbol->string|symbol\\\\?|tan|transcript-off|transcript-on|truncate|values|vector|vector->list|vector-fill!|vector-length|vector-ref|vector-set!|vector\\\\?|write|write-char|zero\\\\?)$\"\n"
+    "   ))\n"
+    "\n"
+    ";; quote ;;\n"
+    "\n"
+    ";; hardcoded highlight four levels of nested structure\n"
+    "\n"
+    "; 'atom\n"
+    "(quote\n"
+    "  _ @constant)\n"
+    "\n"
+    "; '()\n"
+    "(quote\n"
+    "  (_ _* @constant))\n"
+    "\n"
+    "; '(())\n"
+    "(quote\n"
+    "  (_ (_ _* @constant)))\n"
+    "\n"
+    "; '((()))\n"
+    "(quote\n"
+    "  (_ (_ (_ _* @constant))))\n"
+    "\n"
+    ";; sexp comment ;;\n"
+    "\n"
+    ";; hardcoded highlight four levels of nested structure\n"
+    "\n"
+    "; #;atom\n"
+    "(comment\n"
+    "  _ @comment)\n"
+    "\n"
+    "; #;(list)\n"
+    "(comment\n"
+    "  (_ _* @comment))\n"
+    "\n"
+    "; #;(list (list))\n"
+    "(comment\n"
+    "  (_ (_ _* @comment)))\n"
+    "\n"
+    "; #;(list (list (list)))\n"
+    "(comment\n"
+    "  (_ (_ (_ _ @comment))))\n"
+    "\n"
+    "[(comment)\n"
+    " (block_comment)\n"
+    " (directive)] @comment\n";
+
+// Map a capture name (no leading @) to an HLKind.
+// Returns HL_DEFAULT for captures we don't assign a distinct color to.
+static HLKind capture_name_to_kind(const char *name, uint32_t len) {
+    switch (len) {
+    case 6:
+        if (memcmp(name, "number", 6) == 0) return HL_NUMBER;
+        if (memcmp(name, "string", 6) == 0) return HL_STRING;
+        break;
+    case 7:
+        if (memcmp(name, "comment", 7) == 0) return HL_COMMENT;
+        if (memcmp(name, "keyword", 7) == 0) return HL_KEYWORD;
+        break;
+    case 8:
+        if (memcmp(name, "constant", 8) == 0) return HL_CONSTANT;
+        if (memcmp(name, "function", 8) == 0) return HL_FUNCTION;
+        if (memcmp(name, "operator", 8) == 0) return HL_OPERATOR;
+        break;
+    case 16:
+        if (memcmp(name, "constant.builtin", 16) == 0) return HL_CONSTANT;
+        if (memcmp(name, "function.builtin", 16) == 0) return HL_BUILTIN;
+        break;
+    default:
+        break;
+    }
+    return HL_DEFAULT;
+}
 
 // Zero-copy read callback over the gap buffer's two-segment layout.
 // Logical byte index maps directly to physical storage in one of the two
@@ -69,6 +187,8 @@ void ts_buffer_reparse(Buffer *buf) {
                                                          &buf->ts.changed_ranges_count);
     ts_tree_delete(old_tree);
     buf->ts.tree = new_tree;
+
+    ts_buffer_highlight(buf);
 }
 
 void ts_buffer_init(Buffer *buf) {
@@ -77,6 +197,17 @@ void ts_buffer_init(Buffer *buf) {
     buf->ts.parser   = ts_parser_new();
     if (!buf->ts.parser) return;
     ts_parser_set_language(buf->ts.parser, buf->ts.language);
+
+    uint32_t err_offset;
+    TSQueryError err_type;
+    buf->ts.hl_query = ts_query_new(
+        buf->ts.language,
+        SCHEME_HIGHLIGHTS_SCM,
+        (uint32_t)strlen(SCHEME_HIGHLIGHTS_SCM),
+        &err_offset, &err_type);
+    if (!buf->ts.hl_query)
+        fprintf(stderr, "ts: highlight query failed at offset %u (error %d)\n",
+                err_offset, (int)err_type);
 }
 
 void ts_buffer_parse(Buffer *buf) {
@@ -91,6 +222,56 @@ void ts_buffer_parse(Buffer *buf) {
     TSTree *new_tree = ts_parser_parse(buf->ts.parser, NULL, input);
     if (buf->ts.tree) ts_tree_delete(buf->ts.tree);
     buf->ts.tree = new_tree;
+
+    ts_buffer_highlight(buf);
+}
+
+void ts_buffer_highlight(Buffer *buf) {
+    if (!buf->ts.hl_query || !buf->ts.tree) {
+        buf->ts.span_count = 0;
+        return;
+    }
+
+    buf->ts.span_count = 0;
+
+    TSNode root = ts_tree_root_node(buf->ts.tree);
+    TSQueryCursor *cursor = ts_query_cursor_new();
+    ts_query_cursor_exec(cursor, buf->ts.hl_query, root);
+
+    TSQueryMatch match;
+    uint32_t capture_idx;
+    while (ts_query_cursor_next_capture(cursor, &match, &capture_idx)) {
+        TSQueryCapture cap = match.captures[capture_idx];
+
+        uint32_t name_len;
+        const char *name = ts_query_capture_name_for_id(
+            buf->ts.hl_query, cap.index, &name_len);
+
+        HLKind kind = capture_name_to_kind(name, name_len);
+        if (kind == HL_DEFAULT) continue;
+
+        uint32_t s = ts_node_start_byte(cap.node);
+        uint32_t e = ts_node_end_byte(cap.node);
+        if (e <= s) continue;
+
+        // First-match wins: skip if this span overlaps the previous one.
+        if (buf->ts.span_count > 0 &&
+            s < buf->ts.spans[buf->ts.span_count - 1].end_byte)
+            continue;
+
+        // Grow spans array if needed.
+        if (buf->ts.span_count == buf->ts.span_cap) {
+            uint32_t new_cap = buf->ts.span_cap ? buf->ts.span_cap * 2 : 64;
+            HLSpan *new_spans = realloc(buf->ts.spans, new_cap * sizeof(HLSpan));
+            if (!new_spans) break;
+            buf->ts.spans    = new_spans;
+            buf->ts.span_cap = new_cap;
+        }
+
+        buf->ts.spans[buf->ts.span_count++] = (HLSpan){ s, e, kind };
+    }
+
+    ts_query_cursor_delete(cursor);
 }
 
 sexp scm_ts_tree_string(sexp ctx, sexp self, sexp n) {
@@ -108,6 +289,11 @@ void ts_buffer_free(Buffer *buf) {
     free(buf->ts.changed_ranges);
     buf->ts.changed_ranges       = NULL;
     buf->ts.changed_ranges_count = 0;
+    if (buf->ts.hl_query) { ts_query_delete(buf->ts.hl_query); buf->ts.hl_query = NULL; }
+    free(buf->ts.spans);
+    buf->ts.spans      = NULL;
+    buf->ts.span_count = 0;
+    buf->ts.span_cap   = 0;
     if (buf->ts.tree)   { ts_tree_delete(buf->ts.tree);     buf->ts.tree   = NULL; }
     if (buf->ts.parser) { ts_parser_delete(buf->ts.parser); buf->ts.parser = NULL; }
 }

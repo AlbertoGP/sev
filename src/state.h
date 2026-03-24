@@ -62,17 +62,41 @@ typedef struct {
 
 typedef struct CachedRoles {
     sexp ui_bg, pane_bg, border_inactive, border_active, border_bell;
-    sexp bar_bg, bar_text_active;
+    sexp bar_bg;
     sexp tab_bar, tab_active, tab_hover, tab_inactive;
-    sexp text_primary, text_faded;
+    sexp text_primary, text_faded, text_key, text_command, text_prefix;
     sexp selection;
+    sexp mode_normal, mode_insert, mode_replace, mode_select;
+    sexp mode_command, mode_pending, mode_minibuffer, mode_help;
+    sexp label_normal, label_insert, label_replace, label_select;
+    sexp label_command, label_pending, label_minibuffer, label_help;
+    sexp cursor_normal, cursor_insert, cursor_replace, cursor_select;
+    sexp cursor_command, cursor_pending, cursor_minibuffer, cursor_help;
+    sexp macro_indicator, macro_bg;
+    sexp hl_keyword, hl_string, hl_comment, hl_number;
+    sexp hl_constant, hl_function, hl_builtin, hl_operator;
 } CachedRoles;
+
+typedef struct CachedSymbols {
+    // plist keywords
+    sexp kw_color;    // ':color
+    sexp kw_font;     // ':font
+    sexp kw_size;     // ':size
+    // font name symbols
+    sexp buf_normal;  // 'buf-normal
+    sexp buf_bold;    // 'buf-bold
+    sexp buf_italic;  // 'buf-italic
+    sexp ui_normal;   // 'ui-normal
+    sexp ui_bold;     // 'ui-bold
+    sexp ui_italic;   // 'ui-italic
+} CachedSymbols;
 
 typedef struct UIState {
     sexp current_theme;       // symbol, e.g. 'gruvbox-dark
     VarTable role_table;      // role-symbol -> palette-index OR color
     VarTable palette_table;   // palette-symbol -> Color
     CachedRoles roles;        // pre-interned role symbols
+    CachedSymbols symbols;    // pre-interned misc symbols for theme resolution
     float scale_factor;       // global scaling factor
 } UIState;
 

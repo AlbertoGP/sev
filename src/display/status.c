@@ -30,6 +30,8 @@ void StatusBar(AppState *state) {
     Buffer *buf = buffer_get_current();
     if (!buf) return;
 
+    CachedRoles roles = state->ui.roles;
+
     sexp mode_symbol = sexp_intern(state->chibi.ctx, "mode-name", -1);
     sexp mode_val = vartable_get(buffer_get_locals(buf), mode_symbol, SEXP_FALSE);
     const char* modeStr = sexp_to_cstring(state->chibi.ctx, mode_val, "ERROR");
@@ -46,7 +48,7 @@ void StatusBar(AppState *state) {
          .chars = pos,
          .length = strlen(pos),
     };
-    Clay_Color textColor = ui_resolve_color(state, state->ui.roles.bar_text_active);
+    Clay_Color textColor = ui_resolve_color(state, roles.text_primary);
 
     CLAY(CLAY_ID("Status Bar"), {
         .layout = {
@@ -58,7 +60,7 @@ void StatusBar(AppState *state) {
             },
             .childGap = 10.0 * state->ui.scale_factor,
         },
-        .backgroundColor = ui_resolve_color(state, state->ui.roles.bar_bg),
+        .backgroundColor = ui_resolve_color(state, roles.bar_bg),
         .clip = {
             .horizontal = true
         }
@@ -66,8 +68,7 @@ void StatusBar(AppState *state) {
         ModeIconEntry *icon = mode_icon_for_current_buffer();
         Clay_Color mode_bg = icon
             ? ui_resolve_color(state, icon->role_mode_bg)
-            : ui_resolve_color(state,
-                  sexp_intern(state->chibi.ctx, "mode.normal", -1));
+            : ui_resolve_color(state, roles.mode_normal);
         Clay_Color label_color = icon
             ? ui_resolve_color(state, icon->role_label)
             : (Clay_Color){255, 0, 255, 255};
@@ -135,13 +136,13 @@ void StatusBar(AppState *state) {
                             }
                         },
                         .cornerRadius = CLAY_CORNER_RADIUS(radius),
-                        .backgroundColor = ui_resolve_color(state, sexp_intern(state->chibi.ctx, "macro.indicator", -1))
+                        .backgroundColor = ui_resolve_color(state, roles.macro_indicator)
                     }) {}
                 }
                 CLAY_TEXT(CLAY_STRING("REC"), CLAY_TEXT_CONFIG({
                     .fontId = FONT_UI_BOLD,
                     .fontSize = 12.0 * state->ui.scale_factor,
-                    .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
+                    .textColor = ui_resolve_color(state, roles.text_primary),
                 }));
             }
         }

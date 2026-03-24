@@ -120,17 +120,15 @@ static sexp scm_set_palette(sexp ctx, sexp self, sexp n, sexp key, sexp hexstr) 
     return hexstr;
 }
 
-static sexp scm_set_role(sexp ctx, sexp self, sexp n, sexp role, sexp palette_key) {
-    if (!sexp_symbolp(role)) {
-        return sexp_user_exception(ctx, self, "name must be a symbol", role);
-    }
-    if (!sexp_symbolp(palette_key)) {
-        return sexp_user_exception(ctx, self, "name must be a symbol", palette_key);
-    }
+static sexp scm_set_role(sexp ctx, sexp self, sexp n, sexp role, sexp val) {
+    if (!sexp_symbolp(role))
+        return sexp_user_exception(ctx, self, "role must be a symbol", role);
+    if (!sexp_symbolp(val) && !sexp_pairp(val))
+        return sexp_user_exception(ctx, self, "role value must be a symbol or plist", val);
 
-    sexp_preserve_object(ctx, palette_key);
-    vartable_set(&G->ui.role_table, role, palette_key);
-    return palette_key;
+    sexp_preserve_object(ctx, val);
+    vartable_set(&G->ui.role_table, role, val);
+    return val;
 }
 
 static sexp scm_clear_palette(sexp ctx, sexp self, sexp n) {
@@ -557,16 +555,81 @@ void scheme_init(AppState *state) {
     INTERN_ROLE(border_inactive, "border.inactive");
     INTERN_ROLE(border_bell, "border.bell");
     INTERN_ROLE(bar_bg, "bar.bg");
-    INTERN_ROLE(bar_text_active, "bar.text.active");
     INTERN_ROLE(tab_bar, "tab.bar");
     INTERN_ROLE(tab_active, "tab.active");
     INTERN_ROLE(tab_hover, "tab.hover");
     INTERN_ROLE(tab_inactive, "tab.inactive");
     INTERN_ROLE(text_primary, "text.primary");
     INTERN_ROLE(text_faded, "text.faded");
+    INTERN_ROLE(text_key, "text.key");
+    INTERN_ROLE(text_command, "text.command");
+    INTERN_ROLE(text_prefix, "text.prefix");
     INTERN_ROLE(selection, "selection");
+    INTERN_ROLE(mode_normal, "mode.normal");
+    INTERN_ROLE(mode_insert, "mode.insert");
+    INTERN_ROLE(mode_replace, "mode.replace");
+    INTERN_ROLE(mode_select, "mode.select");
+    INTERN_ROLE(mode_command, "mode.command");
+    INTERN_ROLE(mode_pending, "mode.pending");
+    INTERN_ROLE(mode_minibuffer, "mode.minibuffer");
+    INTERN_ROLE(mode_help, "mode.help");
+    INTERN_ROLE(label_normal, "label.normal");
+    INTERN_ROLE(label_insert, "label.insert");
+    INTERN_ROLE(label_replace, "label.replace");
+    INTERN_ROLE(label_select, "label.select");
+    INTERN_ROLE(label_command, "label.command");
+    INTERN_ROLE(label_pending, "label.pending");
+    INTERN_ROLE(label_minibuffer, "label.minibuffer");
+    INTERN_ROLE(label_help, "label.help");
+    INTERN_ROLE(cursor_normal, "cursor.normal");
+    INTERN_ROLE(cursor_insert, "cursor.insert");
+    INTERN_ROLE(cursor_replace, "cursor.replace");
+    INTERN_ROLE(cursor_select, "cursor.select");
+    INTERN_ROLE(cursor_command, "cursor.command");
+    INTERN_ROLE(cursor_pending, "cursor.pending");
+    INTERN_ROLE(cursor_minibuffer, "cursor.minibuffer");
+    INTERN_ROLE(cursor_help, "cursor.help");
+    INTERN_ROLE(macro_indicator, "macro.indicator");
+    INTERN_ROLE(macro_bg, "macro.bg");
+    INTERN_ROLE(hl_keyword,  "hl.keyword");
+    INTERN_ROLE(hl_string,   "hl.string");
+    INTERN_ROLE(hl_comment,  "hl.comment");
+    INTERN_ROLE(hl_number,   "hl.number");
+    INTERN_ROLE(hl_constant, "hl.constant");
+    INTERN_ROLE(hl_function, "hl.function");
+    INTERN_ROLE(hl_builtin,  "hl.builtin");
+    INTERN_ROLE(hl_operator, "hl.operator");
+
+    // bar_bg, bar_text_active;
+    // tab_bar, tab_active, tab_hover, tab_inactive;
+    // text_primary, text_faded, text_key, text_command, text_prefix;
+    // selection;
+    // mode_normal, mode_insert, mode_replace, mode_select;
+    // mode_command, mode_pending, mode_minibuffer, mode_help;
+    // label_normal, label_insert, label_replace, label_select;
+    // label_command, label_pending, label_minibuffer, label_help;
+    // cursor_normal, cursor_insert, cursor_replace, cursor_select;
+    // cursor_command, cursor_pending, cursor_minibuffer, cursor_help;
+    // macro_indicator, macro_bg;
+    // hl_keyword, hl_string, hl_comment, hl_number;
+    // hl_constant, hl_function, hl_builtin, hl_operator;
 
     #undef INTERN_ROLE
+
+    #define INTERN_SYM(field, name) \
+        state->ui.symbols.field = sexp_intern(ctx, name, -1)
+
+    INTERN_SYM(kw_color,   ":color");
+    INTERN_SYM(kw_font,    ":font");
+    INTERN_SYM(kw_size,    ":size");
+    INTERN_SYM(buf_normal, "buf-normal");
+    INTERN_SYM(buf_bold,   "buf-bold");
+    INTERN_SYM(buf_italic, "buf-italic");
+    INTERN_SYM(ui_normal,  "ui-normal");
+    INTERN_SYM(ui_bold,    "ui-bold");
+    INTERN_SYM(ui_italic,  "ui-italic");
+
+    #undef INTERN_SYM
 
     // Load init.scm — its (import ...) forms trigger library loading
     #define LOAD_SCRIPT(name) do { \

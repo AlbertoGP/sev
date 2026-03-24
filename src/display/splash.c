@@ -14,7 +14,8 @@ static void XSpacer(void) {
 
 static void SuggestionRow(AppState *state, Clay_String label, Clay_String key) {
     float font_size = 14 * state->ui.scale_factor;
-    sexp key_role = sexp_intern(state->chibi.ctx, "text.key", -1);
+    TextStyle key_style  = ui_resolve_text_style(state, state->ui.roles.text_key,
+                                                  FONT_BUF_NORMAL, font_size);
     CLAY_AUTO_ID({
         .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } }
     }) {
@@ -25,9 +26,9 @@ static void SuggestionRow(AppState *state, Clay_String label, Clay_String key) {
         }));
         XSpacer();
         CLAY_TEXT(key, CLAY_TEXT_CONFIG({
-            .fontId = FONT_BUF_NORMAL,
-            .fontSize = font_size,
-            .textColor = ui_resolve_color(state, key_role),
+            .fontId    = key_style.font_id,
+            .fontSize  = key_style.font_size,
+            .textColor = key_style.color,
         }));
     }
 }
@@ -62,8 +63,7 @@ void SplashPane(AppState *state) {
         CLAY_TEXT(CLAY_STRING("sev"), CLAY_TEXT_CONFIG({
             .fontId = FONT_UI_NORMAL,
             .fontSize = 22.0 * state->ui.scale_factor,
-            .textColor = ui_resolve_color(state,
-                      sexp_intern(state->chibi.ctx, "text.splash", -1)),
+            .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
         }));
         CLAY_AUTO_ID({
             .layout = { .sizing = { .height = CLAY_SIZING_FIXED(15 * state->ui.scale_factor) } }

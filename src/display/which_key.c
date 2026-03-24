@@ -101,16 +101,13 @@ void WhichKey(AppState *state) {
     uint16_t font_size = (uint16_t)(14.0f * scale);
     float pad = 8.0f * scale;
 
-    sexp ctx = state->chibi.ctx;
-    Clay_Color bg         = ui_resolve_color(state, state->ui.roles.tab_bar);
-    Clay_Color fg_header  = ui_resolve_color(state, state->ui.roles.text_primary);
-    Clay_Color fg_key     = ui_resolve_color(state,
-                                sexp_intern(ctx, "text.key", -1));
-    Clay_Color fg_label   = ui_resolve_color(state,
-                                sexp_intern(ctx, "text.command", -1));
-    Clay_Color fg_prefix  = ui_resolve_color(state,
-                                sexp_intern(ctx, "text.prefix", -1));
-    Clay_Color border_col = ui_resolve_color(state, state->ui.roles.border_inactive);
+    CachedRoles roles = state->ui.roles;
+    Clay_Color bg         = ui_resolve_color(state, roles.tab_bar);
+    Clay_Color fg_header  = ui_resolve_color(state, roles.text_primary);
+    Clay_Color fg_key     = ui_resolve_color(state, roles.text_key);
+    Clay_Color fg_label   = ui_resolve_color(state, roles.text_command);
+    Clay_Color fg_prefix  = ui_resolve_color(state, roles.text_prefix);
+    Clay_Color border_col = ui_resolve_color(state, roles.border_inactive);
 
     CLAY(CLAY_ID("WhichKey"), {
         .floating = {

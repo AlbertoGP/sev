@@ -4,12 +4,35 @@
 #include "gap.h"
 #include "line.h"
 
+typedef enum {
+    HL_DEFAULT = 0,
+    HL_KEYWORD,
+    HL_STRING,
+    HL_COMMENT,
+    HL_NUMBER,
+    HL_CONSTANT,   // booleans, chars, quoted forms
+    HL_FUNCTION,   // first symbol in a list
+    HL_BUILTIN,    // built-in functions
+    HL_OPERATOR,
+    HL_COUNT       // HL_VARIABLE / HL_PUNCTUATION / HL_ESCAPE → HL_DEFAULT
+} HLKind;
+
+typedef struct {
+    uint32_t start_byte;
+    uint32_t end_byte;
+    HLKind   kind;
+} HLSpan;
+
 typedef struct {
     TSParser         *parser;
     TSTree           *tree;
     const TSLanguage *language;
     TSRange          *changed_ranges;        // malloc'd by tree-sitter, freed by us
     uint32_t          changed_ranges_count;
+    TSQuery          *hl_query;
+    HLSpan           *spans;
+    uint32_t          span_count;
+    uint32_t          span_cap;
 } TSState;
 
 typedef struct Buffer Buffer;
@@ -30,4 +53,5 @@ void ts_buffer_reparse(Buffer *buf);
 
 void ts_buffer_init(Buffer *buf);
 void ts_buffer_parse(Buffer *buf);
+void ts_buffer_highlight(Buffer *buf);
 void ts_buffer_free(Buffer *buf);
