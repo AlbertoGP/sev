@@ -235,6 +235,10 @@ void ts_buffer_parse(Buffer *buf) {
     if (buf->ts.tree) ts_tree_delete(buf->ts.tree);
     buf->ts.tree = new_tree;
 
+    // Fresh parse — mark all lines dirty so ts_buffer_highlight rebuilds everything.
+    LineTable *lt = (LineTable *)buffer_get_line_table(buf);
+    for (size_t i = 0; i < lt->count; i++)
+        lt->lines[i].hl_dirty = true;
     ts_buffer_highlight(buf);
 }
 
@@ -254,16 +258,24 @@ void ts_buffer_highlight(Buffer *buf) {
     // highlight spans into the line table; cast away const here.
     LineTable *lt = (LineTable *)buffer_get_line_table(buf);
 
-    // Clear all per-line spans
+    // Find the byte range covering all dirty lines; clear only their spans.
+    uint32_t range_start = UINT32_MAX, range_end = 0;
+    bool any_dirty = false;
     for (size_t i = 0; i < lt->count; i++) {
+        if (!lt->lines[i].hl_dirty) continue;
+        any_dirty = true;
+        if ((uint32_t)lt->lines[i].start < range_start)
+            range_start = (uint32_t)lt->lines[i].start;
+        if ((uint32_t)lt->lines[i].end > range_end)
+            range_end = (uint32_t)lt->lines[i].end;
         lt->lines[i].hl_span_count = 0;
-        lt->lines[i].hl_dirty = false;
     }
 
-    if (!buf->ts.hl_query || !buf->ts.tree) return;
+    if (!any_dirty || !buf->ts.hl_query || !buf->ts.tree) return;
 
     TSNode root = ts_tree_root_node(buf->ts.tree);
     TSQueryCursor *cursor = ts_query_cursor_new();
+    ts_query_cursor_set_byte_range(cursor, range_start, range_end);
     ts_query_cursor_exec(cursor, buf->ts.hl_query, root);
 
     TSQueryMatch match;
@@ -282,12 +294,16 @@ void ts_buffer_highlight(Buffer *buf) {
         uint32_t e = ts_node_end_byte(cap.node);
         if (e <= s) continue;
 
-        // Split capture range across logical lines
+        // Clamp to dirty range and split across dirty lines only.
+        if (s < range_start) s = range_start;
+        if (e > range_end)   e = range_end;
+        if (s >= e) continue;
+
         size_t line_idx = line_index_at(lt, s);
         while (s < e && line_idx < lt->count) {
             Line *line = &lt->lines[line_idx];
             uint32_t seg_end = ((uint32_t)line->end < e) ? (uint32_t)line->end : e;
-            if (s < seg_end) {
+            if (s < seg_end && line->hl_dirty) {
                 // First-match wins within each line
                 if (line->hl_span_count == 0 ||
                     s >= line->hl_spans[line->hl_span_count - 1].end_byte) {
@@ -300,6 +316,10 @@ void ts_buffer_highlight(Buffer *buf) {
     }
 
     ts_query_cursor_delete(cursor);
+
+    // Clear dirty flags on processed lines.
+    for (size_t i = 0; i < lt->count; i++)
+        lt->lines[i].hl_dirty = false;
 }
 
 sexp scm_ts_tree_string(sexp ctx, sexp self, sexp n) {
