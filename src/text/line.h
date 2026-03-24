@@ -6,11 +6,21 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef struct {
+    uint32_t start_byte;
+    uint32_t end_byte;
+    uint16_t style;    // HLKind cast to uint16_t; 0 = HL_DEFAULT
+} HLSpan;
+
 // Data structure for storing information on logical lines in a buffer.
 typedef struct Line {
     uint64_t line_id;   // uniquely identifies line even if position changes.
     size_t start, end;  // indices into buffer.
     uint64_t version;   // dirty, needs_highlight, etc.
+    HLSpan  *hl_spans;
+    uint32_t hl_span_count;
+    uint32_t hl_span_cap;
+    bool     hl_dirty;  // true = spans need rebuild (Stage 6)
 } Line;
 
 // Vector of Line data type. Each buffer has its own LineTable.
@@ -20,6 +30,9 @@ typedef struct {
     size_t count;           // number of lines in vector.
     size_t cap;             // size of vector.
 } LineTable;
+
+// Free and zero-out a line's hl_spans array. Safe to call on a zeroed Line.
+void line_free_hl(Line *line);
 
 // Create a new LineTable with a single Line.
 LineTable line_table_create(void);

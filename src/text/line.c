@@ -25,9 +25,20 @@ LineTable line_table_create(void) {
     return lt;
 }
 
+void line_free_hl(Line *line) {
+    free(line->hl_spans);
+    line->hl_spans      = NULL;
+    line->hl_span_count = 0;
+    line->hl_span_cap   = 0;
+    line->hl_dirty      = true;
+}
+
 void line_table_destroy(LineTable *lt) {
-    if (lt->lines)
+    if (lt->lines) {
+        for (size_t i = 0; i < lt->count; i++)
+            line_free_hl(&lt->lines[i]);
         free(lt->lines);
+    }
 }
 
 size_t line_index_at(const LineTable *lt, size_t pos) {
@@ -120,10 +131,14 @@ bool line_insert_char(LineTable *lt, size_t pos, char ch) {
     // Newline insertion: split the line
     Line new_line;
 
-    new_line.line_id = lt->next_line_id++;
-    new_line.start = pos + 1;
-    new_line.end   = current_line->end + 1; // buffer already grew
-    new_line.version = 0;
+    new_line.line_id      = lt->next_line_id++;
+    new_line.start        = pos + 1;
+    new_line.end          = current_line->end + 1; // buffer already grew
+    new_line.version      = 0;
+    new_line.hl_spans     = NULL;
+    new_line.hl_span_count = 0;
+    new_line.hl_span_cap  = 0;
+    new_line.hl_dirty     = true;
 
     if (!line_table_insert(lt, line_number + 1, new_line))
         return false;
@@ -133,6 +148,7 @@ bool line_insert_char(LineTable *lt, size_t pos, char ch) {
 
     current_line->end = pos + 1;
     current_line->version++;
+    current_line->hl_dirty = true;
 
     // Update start/end indices for all subsequent lines
     for (size_t i = line_number + 2; i < lt->count; i++) {
@@ -167,7 +183,9 @@ void line_backspace_char(LineTable *lt, size_t pos, char ch) {
 
     prev_line->end = current_line->end - 1; // buffer already shrank
     prev_line->version++;
+    prev_line->hl_dirty = true;
 
+    line_free_hl(current_line);
     // remove current line
     memmove(current_line,
             current_line + 1,
@@ -210,7 +228,9 @@ void line_delete_char(LineTable *lt, size_t pos, char ch) {
 
     current_line->end = next_line->end - 1; // buffer already shrank
     current_line->version++;
+    current_line->hl_dirty = true;
 
+    line_free_hl(next_line);
     // remove next line
     memmove(next_line,
             next_line + 1,

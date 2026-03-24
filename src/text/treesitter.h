@@ -18,21 +18,12 @@ typedef enum {
 } HLKind;
 
 typedef struct {
-    uint32_t start_byte;
-    uint32_t end_byte;
-    HLKind   kind;
-} HLSpan;
-
-typedef struct {
     TSParser         *parser;
     TSTree           *tree;
     const TSLanguage *language;
     TSRange          *changed_ranges;        // malloc'd by tree-sitter, freed by us
     uint32_t          changed_ranges_count;
     TSQuery          *hl_query;
-    HLSpan           *spans;
-    uint32_t          span_count;
-    uint32_t          span_cap;
 } TSState;
 
 typedef struct Buffer Buffer;

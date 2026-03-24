@@ -226,13 +226,29 @@ void ts_buffer_parse(Buffer *buf) {
     ts_buffer_highlight(buf);
 }
 
+static void line_append_hl_span(Line *line, uint32_t s, uint32_t e, uint16_t style) {
+    if (line->hl_span_count == line->hl_span_cap) {
+        uint32_t new_cap = line->hl_span_cap ? line->hl_span_cap * 2 : 4;
+        HLSpan *new_spans = realloc(line->hl_spans, new_cap * sizeof(HLSpan));
+        if (!new_spans) return;
+        line->hl_spans    = new_spans;
+        line->hl_span_cap = new_cap;
+    }
+    line->hl_spans[line->hl_span_count++] = (HLSpan){ s, e, style };
+}
+
 void ts_buffer_highlight(Buffer *buf) {
-    if (!buf->ts.hl_query || !buf->ts.tree) {
-        buf->ts.span_count = 0;
-        return;
+    // SAFETY: ts_buffer_highlight is the one place that legitimately writes
+    // highlight spans into the line table; cast away const here.
+    LineTable *lt = (LineTable *)buffer_get_line_table(buf);
+
+    // Clear all per-line spans
+    for (size_t i = 0; i < lt->count; i++) {
+        lt->lines[i].hl_span_count = 0;
+        lt->lines[i].hl_dirty = false;
     }
 
-    buf->ts.span_count = 0;
+    if (!buf->ts.hl_query || !buf->ts.tree) return;
 
     TSNode root = ts_tree_root_node(buf->ts.tree);
     TSQueryCursor *cursor = ts_query_cursor_new();
@@ -254,21 +270,21 @@ void ts_buffer_highlight(Buffer *buf) {
         uint32_t e = ts_node_end_byte(cap.node);
         if (e <= s) continue;
 
-        // First-match wins: skip if this span overlaps the previous one.
-        if (buf->ts.span_count > 0 &&
-            s < buf->ts.spans[buf->ts.span_count - 1].end_byte)
-            continue;
-
-        // Grow spans array if needed.
-        if (buf->ts.span_count == buf->ts.span_cap) {
-            uint32_t new_cap = buf->ts.span_cap ? buf->ts.span_cap * 2 : 64;
-            HLSpan *new_spans = realloc(buf->ts.spans, new_cap * sizeof(HLSpan));
-            if (!new_spans) break;
-            buf->ts.spans    = new_spans;
-            buf->ts.span_cap = new_cap;
+        // Split capture range across logical lines
+        size_t line_idx = line_index_at(lt, s);
+        while (s < e && line_idx < lt->count) {
+            Line *line = &lt->lines[line_idx];
+            uint32_t seg_end = ((uint32_t)line->end < e) ? (uint32_t)line->end : e;
+            if (s < seg_end) {
+                // First-match wins within each line
+                if (line->hl_span_count == 0 ||
+                    s >= line->hl_spans[line->hl_span_count - 1].end_byte) {
+                    line_append_hl_span(line, s, seg_end, (uint16_t)kind);
+                }
+            }
+            s = seg_end;
+            line_idx++;
         }
-
-        buf->ts.spans[buf->ts.span_count++] = (HLSpan){ s, e, kind };
     }
 
     ts_query_cursor_delete(cursor);
@@ -290,10 +306,7 @@ void ts_buffer_free(Buffer *buf) {
     buf->ts.changed_ranges       = NULL;
     buf->ts.changed_ranges_count = 0;
     if (buf->ts.hl_query) { ts_query_delete(buf->ts.hl_query); buf->ts.hl_query = NULL; }
-    free(buf->ts.spans);
-    buf->ts.spans      = NULL;
-    buf->ts.span_count = 0;
-    buf->ts.span_cap   = 0;
-    if (buf->ts.tree)   { ts_tree_delete(buf->ts.tree);     buf->ts.tree   = NULL; }
-    if (buf->ts.parser) { ts_parser_delete(buf->ts.parser); buf->ts.parser = NULL; }
+    if (buf->ts.tree)     { ts_tree_delete(buf->ts.tree);      buf->ts.tree     = NULL; }
+    if (buf->ts.parser)   { ts_parser_delete(buf->ts.parser);  buf->ts.parser   = NULL; }
+    // Per-line hl_spans are freed by line_table_destroy() in buffer_free().
 }
