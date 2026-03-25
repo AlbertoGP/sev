@@ -779,20 +779,19 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                             size_t log_idx = line_index_at(lt, vl->byte_start);
                             const Line *log_line = &lt->lines[log_idx];
                             size_t pos = line_start;
-                            // x_prev tracks the measured pixel width from line_start to the
-                            // end of the last emitted run, matching how cursor_offset is
-                            // measured. This prevents sub-pixel rounding errors from
-                            // accumulating across segment boundaries.
-                            float x_prev = 0.0f;
 
+                            // Measure each segment with its own font so that the
+                            // Clay container width matches what is actually rendered.
+                            // Using the base (regular) font for all segments was wrong:
+                            // italic glyphs (e.g. 'f', '/') are wider, causing Clay to
+                            // word-wrap the overflow text onto a second row.
                             #define EMIT_RUN(from, to, role_expr) do { \
+                                TextStyle style = ui_resolve_text_style(state, (role_expr), FONT_BUF_NORMAL, 15); \
+                                TTF_Font *_sfont = SDL_Clay_GetRenderFont(&state->rendererData, style.font_id, (float)font_size); \
                                 int _wx = 0, _wh = 0; \
-                                TTF_GetStringSize(font, chars + line_start, \
-                                                  (to) - line_start, &_wx, &_wh); \
-                                float _sw = (float)_wx - x_prev; \
-                                x_prev = (float)_wx; \
+                                TTF_GetStringSize(_sfont, chars + (from), (to) - (from), &_wx, &_wh); \
+                                float _sw = (float)_wx; \
                                 if (_sw > 0.0f) { \
-                                    TextStyle style = ui_resolve_text_style(state, (role_expr), FONT_BUF_NORMAL, 15); \
                                     Clay_String _t = { .chars = chars + (from), \
                                                        .length = (to) - (from) }; \
                                     CLAY(CLAY_IDI_LOCAL("Seg", run_id++), { \
@@ -804,7 +803,8 @@ static void BufferPane(AppState *state, Pane *pane, int32_t index, float width, 
                                         CLAY_TEXT(_t, CLAY_TEXT_CONFIG({ \
                                             .fontId    = style.font_id, \
                                             .fontSize  = font_size, \
-                                            .textColor = style.color \
+                                            .textColor = style.color, \
+                                            .wrapMode  = CLAY_TEXT_WRAP_NONE \
                                         })); \
                                     } \
                                 } \
