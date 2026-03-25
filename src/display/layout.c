@@ -18,7 +18,7 @@ static void GlobalHeader(AppState *state) {
             .padding = CLAY_PADDING_ALL(5 * state->ui.scale_factor),
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
         },
-        .backgroundColor = ui_resolve_color(state, state->ui.roles.tab_bar),
+        .backgroundColor = ui_resolve_color(state, state->ui.roles.bar_bg),
     }) {
         SDL_Texture *app_tex = icon_get("tab-icon", state, (int)icon_size, (int)icon_size);
         CLAY(CLAY_ID("App Icon"), {
@@ -47,7 +47,7 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
             .sizing = layoutExpand,
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         },
-        .backgroundColor = ui_resolve_color(state, state->ui.roles.tab_bar)
+        .backgroundColor = ui_resolve_color(state, state->ui.roles.bar_bg)
     }) {
         GlobalHeader(state);
         Pane *root = pane_get_root();

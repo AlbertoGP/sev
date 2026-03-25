@@ -102,7 +102,7 @@ void WhichKey(AppState *state) {
     float pad = 8.0f * scale;
 
     CachedRoles roles = state->ui.roles;
-    Clay_Color bg         = ui_resolve_color(state, roles.tab_bar);
+    Clay_Color bg         = ui_resolve_color(state, roles.bar_bg);
     Clay_Color fg_header  = ui_resolve_color(state, roles.text_primary);
     Clay_Color fg_key     = ui_resolve_color(state, roles.text_key);
     Clay_Color fg_label   = ui_resolve_color(state, roles.text_command);

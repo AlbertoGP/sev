@@ -215,7 +215,7 @@ static bool CloseButton(AppState *state, Pane *dp, Tab *t) {
         },
         .cornerRadius = CLAY_CORNER_RADIUS(8 * state->ui.scale_factor),
         .backgroundColor = Clay_Hovered()
-            ? ui_resolve_color(state, state->ui.roles.bar_bg)
+            ? ui_resolve_color(state, state->ui.roles.tab_close)
             : (Clay_Color){0}
     }) {
         SDL_Texture *icon = icon_get("tab-close",   state, 7, 7);
@@ -242,7 +242,7 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
     CLAY(CLAY_IDI_LOCAL("Tab Bar", index), {
         .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } },
         .clip = { .horizontal = true },
-        .backgroundColor = ui_resolve_color(state, state->ui.roles.tab_bar),
+        .backgroundColor = ui_resolve_color(state, state->ui.roles.bar_bg),
         .border = {
             .width = { .betweenChildren = 1 },
             .color = ui_resolve_color(state, state->ui.roles.border_inactive)

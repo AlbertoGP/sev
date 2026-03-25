@@ -64,7 +64,8 @@
 
 ;; Scheme major mode — activates tree-sitter highlighting
 (define-major-mode 'scheme-mode)
-(define (scheme-mode)
+(defcommand (scheme-mode)
+  "Enable Scheme mode in the current buffer."
   (%ts-enable!)
   (%set-major-mode 'scheme-mode))
 

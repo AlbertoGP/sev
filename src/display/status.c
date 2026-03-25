@@ -25,6 +25,18 @@ void bar_strings_push(char *p) {
     }
 }
 
+void Divider(AppState *state) {
+    CLAY_AUTO_ID({
+        .layout = {
+            .sizing = {
+                .height = 12.0 * state->ui.scale_factor,
+                .width = CLAY_SIZING_FIXED(2),
+            }
+        },
+        .backgroundColor = ui_resolve_color(state, state->ui.roles.border_inactive)
+    }) {}
+}
+
 
 void StatusBar(AppState *state) {
     Buffer *buf = buffer_get_current();
@@ -59,6 +71,13 @@ void StatusBar(AppState *state) {
                  .right = 10.0 * state->ui.scale_factor,
             },
             .childGap = 10.0 * state->ui.scale_factor,
+            .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
+        },
+        .border = {
+            .width = {
+                .bottom = 2
+            },
+            .color = ui_resolve_color(state, roles.border_inactive)
         },
         .backgroundColor = ui_resolve_color(state, roles.bar_bg),
         .clip = {
@@ -149,6 +168,34 @@ void StatusBar(AppState *state) {
         CLAY_AUTO_ID({
             .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) }}
         }) {}
+        Mode *major = buffer_get_major_mode(buf);
+        if (major && strcmp(major->name, "scheme-mode") == 0) {
+            CLAY(CLAY_ID("Scheme Mode"), {
+                .layout = {
+                    .childGap = 3.0 * state->ui.scale_factor,
+                    .childAlignment = {
+                        .y = CLAY_ALIGN_Y_CENTER
+                    },
+                },
+            }){
+                SDL_Texture *tex = icon_get("scheme-icon", state, 14, 14);
+                CLAY(CLAY_ID("Scheme Mode Icon"), {
+                    .layout = {
+                        .sizing = {
+                            .width = 14.0 * state->ui.scale_factor,
+                            .height = 14.0 * state->ui.scale_factor
+                        },
+                    },
+                    .image = tex
+                }) {}
+                CLAY_TEXT(CLAY_STRING("Scheme"), CLAY_TEXT_CONFIG({
+                    .fontId = FONT_UI_NORMAL,
+                    .fontSize = 12.0 * state->ui.scale_factor,
+                    .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
+                }));
+            }
+            Divider(state);
+        }
         CLAY_TEXT(pointPos, CLAY_TEXT_CONFIG({
             .fontId = FONT_UI_NORMAL,
             .fontSize = 14.0 * state->ui.scale_factor,

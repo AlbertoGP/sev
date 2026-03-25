@@ -557,10 +557,10 @@ void scheme_init(AppState *state) {
     INTERN_ROLE(border_inactive, "border.inactive");
     INTERN_ROLE(border_bell, "border.bell");
     INTERN_ROLE(bar_bg, "bar.bg");
-    INTERN_ROLE(tab_bar, "tab.bar");
     INTERN_ROLE(tab_active, "tab.active");
     INTERN_ROLE(tab_hover, "tab.hover");
     INTERN_ROLE(tab_inactive, "tab.inactive");
+    INTERN_ROLE(tab_close, "tab.close");
     INTERN_ROLE(text_primary, "text.primary");
     INTERN_ROLE(text_faded, "text.faded");
     INTERN_ROLE(text_key, "text.key");
@@ -602,20 +602,6 @@ void scheme_init(AppState *state) {
     INTERN_ROLE(hl_builtin,  "hl.builtin");
     INTERN_ROLE(hl_operator, "hl.operator");
     INTERN_ROLE(hl_bracket,  "hl.bracket");
-
-    // bar_bg, bar_text_active;
-    // tab_bar, tab_active, tab_hover, tab_inactive;
-    // text_primary, text_faded, text_key, text_command, text_prefix;
-    // selection;
-    // mode_normal, mode_insert, mode_replace, mode_select;
-    // mode_command, mode_pending, mode_minibuffer, mode_help;
-    // label_normal, label_insert, label_replace, label_select;
-    // label_command, label_pending, label_minibuffer, label_help;
-    // cursor_normal, cursor_insert, cursor_replace, cursor_select;
-    // cursor_command, cursor_pending, cursor_minibuffer, cursor_help;
-    // macro_indicator, macro_bg;
-    // hl_keyword, hl_string, hl_comment, hl_number;
-    // hl_constant, hl_function, hl_builtin, hl_operator;
 
     #undef INTERN_ROLE
 
