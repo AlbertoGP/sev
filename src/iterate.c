@@ -4,6 +4,7 @@
 #include "display/layout.h"
 #include "display/pane.h"
 #include "display/status.h"
+#include "display/tab.h"
 
 /* Track callback rate mode to avoid redundant hint changes */
 static bool callback_rate_animating = false;
@@ -52,6 +53,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_RenderClear(state->rendererData.renderer);
     Clay_RenderCommandArray render_commands = create_app_layout(state);
     SDL_Clay_RenderClayCommands(&state->rendererData, &render_commands);
+    tab_free_strings();
     pane_free_strings();
     bar_free_strings();
     if (state->needs_extra_frame) {

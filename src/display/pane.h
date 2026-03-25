@@ -1,6 +1,6 @@
 // Pane data structures and functions.
-// Panes form a binary tree of splits and display leaves.
-// PANE_DISPLAY leaves each own a tab list.
+// Panes form a binary tree of splits and content leaves.
+// PANE_CONTENT leaves each own a tab list.
 
 #pragma once
 
@@ -16,12 +16,12 @@ typedef enum {
     DIR_RIGHT
 } Direction;
 
-// A display pane: owns a doubly-linked tab list and tracks which tab is active.
+// A content pane: owns a doubly-linked tab list and tracks which tab is active.
 // Also stores per-pane geometry for mouse hit-testing (updated each frame).
-typedef struct {
+typedef struct ContentPane {
     Tab  *list;          // head of tab list (NULL only while being constructed)
     Tab  *active_tab;    // currently displayed tab
-    bool  active;        // true if this is the focused display pane
+    bool  active;        // true if this is the focused content pane
 
     // Geometry updated each frame during rendering; used for mouse hit-testing.
     float    text_origin_x;
@@ -32,7 +32,7 @@ typedef struct {
     int      line_height_px;
     uint16_t render_font_id;
     uint16_t render_font_size;
-} DisplayContent;
+} ContentPane;
 
 // A vertical split node in a pane tree.
 typedef struct {
@@ -49,16 +49,16 @@ typedef struct {
 } HSplit;
 
 typedef enum {
-    PANE_DISPLAY,   // leaf: owns a tab list
+    PANE_CONTENT,   // leaf: owns a tab list
     PANE_V_SPLIT,
     PANE_H_SPLIT
 } PaneType;
 
-// A pane is either a display leaf (owns tabs) or a split node.
+// A pane is either a content leaf (owns tabs) or a split node.
 typedef struct Pane {
     PaneType type;
     union {
-        DisplayContent display;
+        ContentPane content;
         VSplit v_split;
         HSplit h_split;
     };
@@ -72,9 +72,9 @@ void pane_quit(void);
 // Get the global root pane (NULL if no panes open).
 Pane *pane_get_root(void);
 
-// Create a new PANE_DISPLAY with a single tab showing buf.
+// Create a new PANE_CONTENT with a single tab showing buf.
 // Does NOT link it into the tree or set root_pane; caller does that.
-Pane *pane_display_create(Buffer *buf);
+Pane *pane_content_create(Buffer *buf);
 // Recursively free resources allocated for a pane sub-tree.
 void pane_destroy(Pane *pane);
 // Close the active display pane (or just its active tab if multiple tabs).
@@ -121,7 +121,7 @@ Pane *pane_at_coords(Pane *root, float x, float y);
 // Clay component for rendering pane contents.
 void PaneContent(AppState *state, Pane *pane, int32_t index, float width, float height);
 
-// Free all strings allocated during layout. Call after rendering.
+// No-op kept for call-site compatibility; string cleanup now in tab_free_strings().
 void pane_free_strings(void);
 
 // Push current buffer position onto the active pane's active tab's jump list.

@@ -1,32 +1,49 @@
 // Tab data structures and functions.
-// Tabs are now thin wrappers owned by PANE_DISPLAY nodes.
-// Each tab holds a buffer view, vline cache, and jump list.
+// Tabs are linked-list nodes owned by ContentPane (PANE_CONTENT leaves).
+// Each tab wraps a TabContent, which holds the actual view state.
 
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "vline.h"
 #include "../text/buffer.h"
 #include "../text/jump_list.h"
 #include "../state.h"
 
-// A tab is a node in a doubly-linked list owned by a display pane.
-// It holds rendering state so switching tabs preserves scroll/cache.
+// Buffer-specific tab content: rendering state for a text buffer view.
+typedef struct {
+    Buffer    *buffer;
+    VLineCache vline_cache;
+    JumpList   jump_list;
+    float      width;           // last-rendered width  (vline cache invalidation)
+    float      height;          // last-rendered height
+    uint64_t   layout_version;
+} BufferContent;
+
+typedef enum {
+    TAB_BUFFER,
+} TabContentType;
+
+// Union wrapper making tabs extensible to non-buffer content in future.
+typedef struct {
+    TabContentType type;
+    union {
+        BufferContent buffer;
+    };
+} TabContent;
+
+// A tab is a node in a doubly-linked list owned by a content pane.
 typedef struct Tab {
     struct Tab *next;
     struct Tab *prev;
-
-    Buffer *buffer;
-    VLineCache vline_cache;
-    JumpList jump_list;
-    float width;           // last-rendered width  (vline cache invalidation)
-    float height;          // last-rendered height
-    uint64_t layout_version;
+    TabContent content;
 } Tab;
 
-// Forward-declare Pane (defined in pane.h, which includes this header).
+// Forward-declare Pane and ContentPane (defined in pane.h, which includes this header).
 struct Pane;
+struct ContentPane;
 
 // Initialise window pointer for title updates.
 bool tab_system_init(AppState *state);
@@ -61,8 +78,12 @@ void update_window_title(void);
 
 // Reset the tab callback slot pool. Call once per frame before layout.
 void tab_cb_reset(void);
+// Free strings allocated during tab rendering. Call after SDL_Clay_RenderClayCommands().
+void tab_free_strings(void);
 // Clay component: per-pane tab bar (no global app icon).
 void TabBar(AppState *state, struct Pane *dp, int32_t index);
+// Clay component: renders the buffer content area for a tab.
+void BufferContentRender(AppState *state, struct ContentPane *cp, Tab *tab, int32_t index);
 
 // --- Scheme bindings ---
 #include <chibi/sexp.h>

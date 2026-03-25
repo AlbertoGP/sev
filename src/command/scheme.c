@@ -55,7 +55,7 @@ static sexp scm_eval_buffer(sexp ctx, sexp self, sexp n) {
         insert_string(buf, ": ");
         insert_string(buf, sexp_string_data(str) + 1);
         delete_chars(buf, 1);
-        tab_set_buffer(pane->display.active_tab, buf);
+        tab_set_buffer(pane->content.active_tab, buf);
         pane_set_active(pane);
     } else {
         str = sexp_write_to_string(ctx, result);
@@ -86,7 +86,7 @@ static sexp scm_pop_to_buffer(sexp ctx, sexp self, sexp n, sexp sname) {
     } else {
         buffer_clear(buf);
     }
-    tab_set_buffer(pane->display.active_tab, buf);
+    tab_set_buffer(pane->content.active_tab, buf);
     pane_set_active(pane);
     G->needs_redraw = true;
     G->needs_extra_frame = true;
@@ -226,10 +226,10 @@ static sexp scm_tab_set_buffer(sexp ctx, sexp self, sexp n, sexp sname) {
     Buffer *buf = buffer_get_by_name(sexp_string_data(sname));
     if (!buf) return SEXP_FALSE;
     Pane *pane = pane_get_active();
-    if (!pane || !pane->display.active_tab) return SEXP_FALSE;
+    if (!pane || !pane->content.active_tab) return SEXP_FALSE;
     if (buf != buffer_get_current())
         pane_push_jump();
-    tab_set_buffer(pane->display.active_tab, buf);
+    tab_set_buffer(pane->content.active_tab, buf);
     sync_active_buffer();
     G->needs_redraw = true;
     return SEXP_TRUE;
