@@ -9,5 +9,6 @@
     set-local! get-local
     register-mode-icon register-mode-icon/full
     toggle-line-numbers toggle-relative-line-numbers
-    toggle-visual-line-numbers)
+    toggle-visual-line-numbers
+    scheme-mode)
   (include "mode.scm"))

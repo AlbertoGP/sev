@@ -133,8 +133,6 @@ Buffer *buffer_create(const char *name) {
     }
 
     reset_buffer_scale(G, buf);
-    ts_buffer_init(buf);
-    ts_buffer_parse(buf);
 
     return buf;
 }
@@ -315,10 +313,8 @@ bool buffer_insert(char *file_name) {
     }
 
     fclose(f);
-    if (inserted) {
+    if (inserted)
         buf->is_modified = true;
-        ts_buffer_parse(buf);
-    }
     return true;
 }
 
@@ -346,7 +342,7 @@ bool buffer_read(void) {
     buf->is_modified = false;
 
     point_set(count_to_location(0));
-    ts_buffer_parse(buf);
+    if (buf->ts.parser) ts_buffer_parse(buf);
 
     return true;
 }

@@ -34,3 +34,8 @@ void ts_buffer_init(Buffer *buf);
 void ts_buffer_parse(Buffer *buf);
 void ts_buffer_highlight(Buffer *buf);
 void ts_buffer_free(Buffer *buf);
+
+// Enable tree-sitter for buf (init + full parse). No-op if already enabled.
+void ts_buffer_enable(Buffer *buf);
+// Disable tree-sitter for buf (free parser/tree, clear all hl spans).
+void ts_buffer_disable(Buffer *buf);

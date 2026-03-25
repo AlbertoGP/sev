@@ -62,6 +62,12 @@
 ;; Define fundamental-mode as the default major mode
 (define-major-mode 'fundamental-mode)
 
+;; Scheme major mode — activates tree-sitter highlighting
+(define-major-mode 'scheme-mode)
+(define (scheme-mode)
+  (%ts-enable!)
+  (%set-major-mode 'scheme-mode))
+
 ;; Line number display
 (define-minor-mode 'display-line-numbers-mode)
 

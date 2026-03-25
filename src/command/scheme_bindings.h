@@ -170,3 +170,5 @@ sexp scm_which_key_toggle(sexp ctx, sexp self, sexp n);
 
 // --- text/treesitter.c ---
 sexp scm_ts_tree_string(sexp ctx, sexp self, sexp n);
+sexp scm_ts_enable(sexp ctx, sexp self, sexp n);
+sexp scm_ts_disable(sexp ctx, sexp self, sexp n);

@@ -63,6 +63,29 @@
   "Delete newline character between the current and subsequent line."
   (line-end) (delete-forward-char))
 
+;; Return the file extension (after last "."), or "" if none.
+(define (file-extension path)
+  (let loop ((i (- (string-length path) 1)))
+    (cond
+      ((< i 0) "")
+      ((char=? (string-ref path i) #\.) (substring path (+ i 1) (string-length path)))
+      (else (loop (- i 1))))))
+
+;; Alist mapping file extensions to mode-activation procedures.
+(define *auto-mode-alist*
+  (list (cons "scm" scheme-mode)
+        (cons "sld" scheme-mode)))
+
+;; Activate the appropriate major mode for the current buffer based on filename.
+(define (set-auto-mode!)
+  (let* ((name (%buffer-file-name))
+         (ext  (if name (file-extension name) "")))
+    (let loop ((alist *auto-mode-alist*))
+      (cond
+        ((null? alist) (%ts-disable!) (%set-major-mode 'fundamental-mode))
+        ((string=? (caar alist) ext) ((cdar alist)))
+        (else (loop (cdr alist)))))))
+
 (defcommand (save-buffer-as)
   "Save the current buffer under a new file name."
   (interactive)
@@ -73,6 +96,7 @@
           (begin
             (%set-buffer-file-name! filename)
             (%buffer-set-name! filename)
+            (set-auto-mode!)
             (if (%buffer-write)
                 (message (string-append "Saved " filename))
                 (message (string-append "Failed to save " filename))))))))
@@ -102,9 +126,11 @@
                     (begin
                       (%tab-set-buffer! filename)
                       (%set-buffer-file-name! filename)
+                      (begin
                       (if (%buffer-read)
                           (message (string-append "Opened " filename))
-                          (message (string-append "Failed to read " filename))))
+                          (message (string-append "Failed to read " filename)))
+                      (set-auto-mode!)))
                     (begin
                       (%tab-set-buffer! filename)
                       (message (string-append "Switched to buffer " filename))))))))))

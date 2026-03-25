@@ -5,7 +5,7 @@
           (scheme write)
           (scheme eval)
           (scheme repl)
-          (editor primitives) (editor command) (editor minibuffer))
+          (editor primitives) (editor command) (editor minibuffer) (editor mode))
   (export
     quit self-insert eval-buffer
     next-line prev-line forward-char backward-char

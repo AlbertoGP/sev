@@ -331,6 +331,31 @@ void ts_buffer_highlight(Buffer *buf) {
         lt->lines[i].hl_dirty = false;
 }
 
+void ts_buffer_enable(Buffer *buf) {
+    if (buf->ts.parser) return;
+    ts_buffer_init(buf);
+    ts_buffer_parse(buf);
+}
+
+void ts_buffer_disable(Buffer *buf) {
+    LineTable *lt = (LineTable *)buffer_get_line_table(buf);
+    for (size_t i = 0; i < lt->count; i++)
+        lt->lines[i].hl_span_count = 0;
+    ts_buffer_free(buf);
+}
+
+sexp scm_ts_enable(sexp ctx, sexp self, sexp n) {
+    Buffer *buf = buffer_get_current();
+    if (buf) ts_buffer_enable(buf);
+    return SEXP_VOID;
+}
+
+sexp scm_ts_disable(sexp ctx, sexp self, sexp n) {
+    Buffer *buf = buffer_get_current();
+    if (buf) ts_buffer_disable(buf);
+    return SEXP_VOID;
+}
+
 sexp scm_ts_tree_string(sexp ctx, sexp self, sexp n) {
     Buffer *buf = buffer_get_current();
     if (!buf || !buf->ts.tree)
