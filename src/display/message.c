@@ -7,6 +7,7 @@
 #include "message.h"
 #include "theme.h"
 #include "vline.h"
+#include "../clay/renderer.h"
 #include "../text/buffer.h"
 #include "../state.h"
 
@@ -46,8 +47,7 @@ void MinibufArea(AppState *state) {
 
     // Measure x offset for the cursor: width of (prompt + text[0..point_pos))
     uint16_t font_size = (uint16_t)(14.0f * state->ui.scale_factor);
-    TTF_Font *font = state->rendererData.fonts[FONT_BUF_NORMAL];
-    TTF_SetFontSize(font, font_size);
+    TTF_Font *font = SDL_Clay_GetRenderFont(&state->rendererData, FONT_BUF_NORMAL, (float)font_size);
 
     float cursor_x = 0.0f;
     size_t prefix_len = prompt_len + point_pos;
