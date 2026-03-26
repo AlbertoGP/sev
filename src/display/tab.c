@@ -424,8 +424,9 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
         .clip = { .vertical = true, .childOffset = { .x = 0, .y = -sub_offset } }
     }) {
         Clay_ElementData data = Clay_GetElementData(id);
-        if (!data.found) state->needs_extra_frame = true;
-        if (data.found) {
+        bool data_valid = data.found && data.boundingBox.width > 0;
+        if (!data_valid) state->needs_extra_frame = true;
+        if (data_valid) {
             Clay_BoundingBox box = data.boundingBox;
             float text_width  = box.width - (2 * padding);
             float text_height = box.height;
