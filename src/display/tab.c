@@ -390,10 +390,22 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
     const uint16_t font_id   = FONT_BUF_NORMAL;
     const uint16_t font_size = 15 * state->ui.scale_factor * buffer_get_scale(buf);
     const float padding      = 24.0f * state->ui.scale_factor;
+    float sub_offset         = 0.0f;
 
     Clay_ElementId outer_id = CLAY_IDI_LOCAL("BufWrap", index);
     Clay_ElementId track_id = CLAY_IDI_LOCAL("ScrollTrack", index);
     float bar_w = 12.0f * state->ui.scale_factor;
+
+    // Compute sub-line pixel offset early (before CLAY() config is evaluated).
+    // vline_get_line_height is a cheap cached lookup.
+    {
+        int _lh = vline_get_line_height(&state->rendererData, font_id, font_size);
+        VLineCache *_vc = &tab->content.buffer.vline_cache;
+        if (_lh > 0 && _vc->count > 0) {
+            size_t _first = (size_t)(_vc->scroll_offset / _lh);
+            sub_offset = _vc->scroll_offset - (float)_first * (float)_lh;
+        }
+    }
 
     CLAY(outer_id, {
         .layout = { .sizing = tab_layout_expand, .layoutDirection = CLAY_LEFT_TO_RIGHT }
@@ -406,7 +418,7 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
             .padding = { .left = padding, .right = padding, .top = 2, .bottom = 2 },
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
         },
-        .clip = { .vertical = true }
+        .clip = { .vertical = true, .childOffset = { .x = 0, .y = -sub_offset } }
     }) {
         Clay_ElementData data = Clay_GetElementData(id);
         if (data.found) {
@@ -475,10 +487,13 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
             cache->scroll_offset = fmaxf(0.0f, fminf(cache->scroll_offset, max_scroll));
 
             size_t first_vline = 0;
-            if (line_height > 0)
+            float sub_offset = 0.0f;
+            if (line_height > 0) {
                 first_vline = (size_t)(cache->scroll_offset / line_height);
+                sub_offset  = cache->scroll_offset - (float)first_vline * (float)line_height;
+            }
 
-            size_t visible_count = line_height > 0 ? (size_t)(text_height / line_height) + 1 : 1;
+            size_t visible_count = line_height > 0 ? (size_t)(text_height / line_height) + 2 : 1;
             size_t end_vline = first_vline + visible_count;
             if (end_vline > cache->count) end_vline = cache->count;
 

@@ -1,5 +1,6 @@
 // Visual line cache implementation.
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -388,34 +389,28 @@ void vline_scroll_to_cursor_pixels(VLineCache *cache, size_t byte_pos,
     if (cursor_vline >= cache->count)
         cursor_vline = cache->count - 1;
 
-    // Work in integer vline space so scroll always snaps to line boundaries.
-    size_t visible = (viewport_height > 0)
-        ? (size_t)(viewport_height / (float)line_height) : 1;
-    if (visible == 0) visible = 1;
+    float lh         = (float)line_height;
+    float cursor_top = (float)cursor_vline * lh;
+    float cursor_bot = cursor_top + lh;
+    float scroll     = cache->scroll_offset;
+    float max_scroll = (cache->count > 1) ? (float)(cache->count - 1) * lh : 0.0f;
 
-    size_t first = (size_t)(cache->scroll_offset / (float)line_height);
-    size_t max_first = cache->count - 1;
-
-    if (cursor_vline < first) {
-        size_t gap = first - cursor_vline;
-        first = (gap <= 1)
-            ? cursor_vline
-            : (cursor_vline > (size_t)margin_lines
-                ? cursor_vline - (size_t)margin_lines : 0);
-    } else if (cursor_vline >= first + visible) {
-        size_t gap = cursor_vline - (first + visible) + 1;
-        if (gap <= 1) {
-            first = cursor_vline - visible + 1;
-        } else {
-            first = (cursor_vline + (size_t)margin_lines + 1 >= visible)
-                ? cursor_vline + (size_t)margin_lines - visible + 1
-                : 0;
-        }
+    if (cursor_top < scroll) {
+        float gap = scroll - cursor_top;
+        scroll = (gap <= lh)
+            ? cursor_top
+            : fmaxf(0.0f, cursor_top - (float)margin_lines * lh);
+    } else if (cursor_bot > scroll + viewport_height) {
+        float gap = cursor_bot - (scroll + viewport_height);
+        scroll = (gap <= lh)
+            ? cursor_bot - viewport_height
+            : cursor_bot + (float)margin_lines * lh - viewport_height;
     }
 
-    if (first > max_first) first = max_first;
-    cache->scroll_offset = (float)first * (float)line_height;
-    cache->target_scroll = cache->scroll_offset;
+    if (scroll < 0.0f) scroll = 0.0f;
+    if (scroll > max_scroll) scroll = max_scroll;
+    cache->scroll_offset = scroll;
+    cache->target_scroll = scroll;
 }
 
 size_t vline_byte_pos_at_xy(const VLineCache *cache, const char *buf_text,
