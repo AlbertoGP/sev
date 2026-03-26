@@ -1,3 +1,4 @@
+#include "cursor.h"
 #include "icon.h"
 #include "message.h"
 #include "pane.h"
@@ -40,6 +41,7 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
     };
 
     tab_cb_reset();
+    cursor_cb_reset();
     Clay_BeginLayout();
 
     CLAY(CLAY_ID("Layout Background"), {

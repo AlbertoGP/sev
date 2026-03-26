@@ -613,7 +613,9 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
                             }
                         }
                         Cursor(state, (int32_t)i, cursor_offset + gutter_width,
-                               line_height, cursor_font_id, font_size);
+                               line_height,
+                               box.x, box.y, box.width, text_height,
+                               cursor_font_id, font_size);
                     }
 
                     if (buf->select_mode != SELECT_NONE && cp->active) {

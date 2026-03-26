@@ -413,6 +413,81 @@ void SDL_Clay_RenderClayCommands(Clay_SDL3RendererData *rendererData, Clay_Rende
                 SDL_RenderTexture(rendererData->renderer, texture, NULL, &dest);
                 break;
             }
+            case CLAY_RENDER_COMMAND_TYPE_CUSTOM: {
+                CursorRenderData *d = (CursorRenderData *)rcmd->renderData.custom.customData;
+                if (!d) break;
+
+                // Save current SDL clip state
+                SDL_Rect old_clip;
+                bool was_clipped = SDL_RenderClipEnabled(rendererData->renderer);
+                SDL_GetRenderClipRect(rendererData->renderer, &old_clip);
+
+                // Intersect provided clip rect with existing clip
+                SDL_Rect new_clip = {
+                    (int)d->clip_x, (int)d->clip_y,
+                    (int)d->clip_w, (int)d->clip_h
+                };
+                if (was_clipped) {
+                    // Intersect
+                    int x1 = SDL_max(new_clip.x, old_clip.x);
+                    int y1 = SDL_max(new_clip.y, old_clip.y);
+                    int x2 = SDL_min(new_clip.x + new_clip.w, old_clip.x + old_clip.w);
+                    int y2 = SDL_min(new_clip.y + new_clip.h, old_clip.y + old_clip.h);
+                    new_clip = (SDL_Rect){ x1, y1, SDL_max(0, x2 - x1), SDL_max(0, y2 - y1) };
+                }
+                SDL_SetRenderClipRect(rendererData->renderer, &new_clip);
+
+                SDL_SetRenderDrawBlendMode(rendererData->renderer, SDL_BLENDMODE_BLEND);
+                float cx = bounding_box.x;
+                float cy = bounding_box.y;
+
+                switch (d->cursor_type) {
+                case 1: { // CURSOR_HOLLOW
+                    float bw = d->border_width;
+                    SDL_SetRenderDrawColor(rendererData->renderer,
+                        d->border_color.r, d->border_color.g,
+                        d->border_color.b, d->border_color.a);
+                    SDL_FRect top   = { cx,                   cy,                    d->width, bw };
+                    SDL_FRect bot   = { cx,                   cy + d->height - bw,   d->width, bw };
+                    SDL_FRect left  = { cx,                   cy,                    bw, d->height };
+                    SDL_FRect right = { cx + d->width - bw,   cy,                    bw, d->height };
+                    SDL_RenderFillRect(rendererData->renderer, &top);
+                    SDL_RenderFillRect(rendererData->renderer, &bot);
+                    SDL_RenderFillRect(rendererData->renderer, &left);
+                    SDL_RenderFillRect(rendererData->renderer, &right);
+                    break;
+                }
+                default: { // CURSOR_SOLID (0), CURSOR_THIN (2), CURSOR_UNDER (3)
+                    SDL_SetRenderDrawColor(rendererData->renderer,
+                        d->bg_color.r, d->bg_color.g,
+                        d->bg_color.b, d->bg_color.a);
+                    SDL_FRect r = { cx, cy, d->width, d->height };
+                    SDL_RenderFillRect(rendererData->renderer, &r);
+                    // Character overlay (CURSOR_SOLID only)
+                    if (d->cursor_type == 0 && d->char_len > 0) {
+                        TTF_Font *font = SDL_Clay_GetRenderFont(rendererData, d->font_id, (float)d->font_size);
+                        if (font) {
+                            TTF_Text *txt = TTF_CreateText(rendererData->textEngine, font,
+                                                           d->char_buf, d->char_len);
+                            if (txt) {
+                                TTF_SetTextColorFloat(txt,
+                                    d->text_color.r / 255.0f,
+                                    d->text_color.g / 255.0f,
+                                    d->text_color.b / 255.0f,
+                                    d->text_color.a / 255.0f);
+                                TTF_DrawRendererText(txt, cx, cy);
+                                TTF_DestroyText(txt);
+                            }
+                        }
+                    }
+                    break;
+                }
+                }
+
+                // Restore SDL clip
+                SDL_SetRenderClipRect(rendererData->renderer, was_clipped ? &old_clip : NULL);
+                break;
+            }
             default:
                 SDL_Log("Unknown render command type: %d", rcmd->commandType);
         }
