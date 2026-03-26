@@ -836,7 +836,7 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
                 .layout = { .sizing = {
                     .width  = CLAY_SIZING_GROW(0),
                     .height = CLAY_SIZING_FIXED(thumb_h) } },
-                .backgroundColor = Clay_Hovered()
+                .backgroundColor = Clay_Hovered() && !state->input.mouse_button_down
                         ? ui_resolve_color(state, state->ui.roles.scrollbar_hover)
                         : ui_resolve_color(state, state->ui.roles.scrollbar)
             }) {}
