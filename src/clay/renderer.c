@@ -414,8 +414,34 @@ void SDL_Clay_RenderClayCommands(Clay_SDL3RendererData *rendererData, Clay_Rende
                 break;
             }
             case CLAY_RENDER_COMMAND_TYPE_CUSTOM: {
-                CursorRenderData *d = (CursorRenderData *)rcmd->renderData.custom.customData;
-                if (!d) break;
+                int *type_ptr = (int *)rcmd->renderData.custom.customData;
+                if (!type_ptr) break;
+
+                if (*type_ptr == CUSTOM_TYPE_SCISSORED_RECT) {
+                    ScissoredRectData *s = (ScissoredRectData *)type_ptr;
+                    SDL_Rect old_clip;
+                    bool was_clipped = SDL_RenderClipEnabled(rendererData->renderer);
+                    SDL_GetRenderClipRect(rendererData->renderer, &old_clip);
+                    SDL_Rect new_clip = { (int)s->clip_x, (int)s->clip_y,
+                                         (int)s->clip_w, (int)s->clip_h };
+                    if (was_clipped) {
+                        int x1 = SDL_max(new_clip.x, old_clip.x);
+                        int y1 = SDL_max(new_clip.y, old_clip.y);
+                        int x2 = SDL_min(new_clip.x + new_clip.w, old_clip.x + old_clip.w);
+                        int y2 = SDL_min(new_clip.y + new_clip.h, old_clip.y + old_clip.h);
+                        new_clip = (SDL_Rect){ x1, y1, SDL_max(0, x2-x1), SDL_max(0, y2-y1) };
+                    }
+                    SDL_SetRenderClipRect(rendererData->renderer, &new_clip);
+                    SDL_SetRenderDrawBlendMode(rendererData->renderer, SDL_BLENDMODE_BLEND);
+                    SDL_SetRenderDrawColor(rendererData->renderer,
+                        s->color.r, s->color.g, s->color.b, s->color.a);
+                    SDL_RenderFillRect(rendererData->renderer, &rect);
+                    SDL_SetRenderClipRect(rendererData->renderer, was_clipped ? &old_clip : NULL);
+                    break;
+                }
+
+                CursorRenderData *d = (CursorRenderData *)type_ptr;
+                if (d->type != CUSTOM_TYPE_CURSOR) break;
 
                 // Save current SDL clip state
                 SDL_Rect old_clip;

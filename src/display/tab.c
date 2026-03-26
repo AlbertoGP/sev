@@ -199,7 +199,10 @@ static void HandleClickTab(Clay_ElementId elementId, Clay_PointerData pointerInf
 static void *tab_cb_data[MAX_TAB_CB_DATA][2];
 static int   tab_cb_count = 0;
 
-void tab_cb_reset(void) { tab_cb_count = 0; }
+static ScissoredRectData sel_pool[SCISSORED_RECT_POOL_SIZE];
+static int sel_pool_idx = 0;
+
+void tab_cb_reset(void) { tab_cb_count = 0; sel_pool_idx = 0; }
 
 // String pool for buffer text and line-number allocations made during rendering.
 #define TAB_STRINGS_MAX 32
@@ -421,6 +424,7 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
         .clip = { .vertical = true, .childOffset = { .x = 0, .y = -sub_offset } }
     }) {
         Clay_ElementData data = Clay_GetElementData(id);
+        if (!data.found) state->needs_extra_frame = true;
         if (data.found) {
             Clay_BoundingBox box = data.boundingBox;
             float text_width  = box.width - (2 * padding);
@@ -697,7 +701,14 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
                             TTF_GetStringSize(font, chars + hl_start,
                                               hl_end - hl_start, &sw, &sh);
                             float sel_w = (float)sw;
-                            if (sel_w > 0) {
+                            if (sel_w > 0 && sel_pool_idx < SCISSORED_RECT_POOL_SIZE) {
+                                ScissoredRectData *s = &sel_pool[sel_pool_idx++];
+                                s->type  = CUSTOM_TYPE_SCISSORED_RECT;
+                                s->clip_x = box.x;
+                                s->clip_y = box.y;
+                                s->clip_w = box.width;
+                                s->clip_h = text_height;
+                                s->color = ui_resolve_color(state, state->ui.roles.selection);
                                 CLAY(CLAY_IDI_LOCAL("Sel", (int32_t)i), {
                                     .floating = {
                                         .attachTo = CLAY_ATTACH_TO_PARENT,
@@ -709,8 +720,7 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
                                             .height = CLAY_SIZING_FIXED(line_height)
                                         }
                                     },
-                                    .backgroundColor = ui_resolve_color(state,
-                                        state->ui.roles.selection),
+                                    .custom = { .customData = s },
                                 }) {}
                             }
                         }

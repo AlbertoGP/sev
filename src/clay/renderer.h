@@ -14,12 +14,14 @@ typedef struct {
 // ── Custom render types ───────────────────────────────────────────────────────
 typedef enum {
     CUSTOM_TYPE_CURSOR,
+    CUSTOM_TYPE_SCISSORED_RECT,
 } CustomRenderType;
 
 // Per-frame pool for cursor render data; up to CURSOR_POOL_SIZE cursors/frame.
 #define CURSOR_POOL_SIZE 16
 
 typedef struct {
+    int   type;           // CustomRenderType (must be first field)
     // Clip rect (screen coords, absolute)
     float clip_x, clip_y, clip_w, clip_h;
     // Cursor geometry (element bounding box gives x,y)
@@ -35,6 +37,15 @@ typedef struct {
     char  char_buf[5];    // UTF-8 + null
     int   char_len;
 } CursorRenderData;
+
+// Scissored filled rectangle — used for selection highlights.
+#define SCISSORED_RECT_POOL_SIZE 512
+
+typedef struct {
+    int        type;   // CUSTOM_TYPE_SCISSORED_RECT (must be first field)
+    float      clip_x, clip_y, clip_w, clip_h;
+    Clay_Color color;
+} ScissoredRectData;
 
 void SDL_Clay_RenderClayCommands(Clay_SDL3RendererData *rendererData, Clay_RenderCommandArray *rcommands);
 void SDL_Clay_DestroyTextCache(void);

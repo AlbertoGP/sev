@@ -21,6 +21,7 @@ void Cursor(AppState *state, int32_t index,
     if (cursor_pool_idx >= CURSOR_POOL_SIZE) return;
     CursorRenderData *d = &cursor_pool[cursor_pool_idx++];
 
+    d->type   = CUSTOM_TYPE_CURSOR;
     d->clip_x = clip_x;
     d->clip_y = clip_y;
     d->clip_w = clip_w;
