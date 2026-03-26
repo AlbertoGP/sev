@@ -40,6 +40,7 @@ VLineCache vline_cache_create(void) {
         cache.index_cap = MIN_CACHE_SIZE;
     }
     cache.full_rebuild = true;
+    cache.last_scroll_point = (size_t)-1;  // sentinel: force scroll-to-cursor on first render
     return cache;
 }
 
@@ -378,46 +379,43 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
     index_shrink(cache);
 }
 
-void vline_scroll_to_cursor(VLineCache *cache, size_t byte_pos, size_t visible_count) {
-    if (!cache || cache->count == 0 || visible_count == 0) return;
-
-    size_t cursor_vline = vline_for_byte_pos(cache, byte_pos);
-    if (cursor_vline >= cache->count) {
-        cursor_vline = cache->count - 1;
-    }
-
-    // Scroll up if cursor is above viewport
-    if (cursor_vline < cache->top_vline) {
-        cache->top_vline = cursor_vline;
-    }
-    // Scroll down if cursor is below viewport
-    else if (cursor_vline >= cache->top_vline + visible_count) {
-        cache->top_vline = cursor_vline - visible_count + 1;
-    }
-
-    // If entire buffer fits in the viewport, always show from top.
-    if (cache->count <= visible_count)
-        cache->top_vline = 0;
-}
-
-size_t vline_clamp_byte_pos_to_viewport(const VLineCache *cache,
-                                        size_t byte_pos,
-                                        size_t visible_count) {
-    if (!cache || cache->count == 0 || visible_count == 0) return byte_pos;
+void vline_scroll_to_cursor_pixels(VLineCache *cache, size_t byte_pos,
+                                    float viewport_height, int line_height,
+                                    int margin_lines) {
+    if (!cache || cache->count == 0 || line_height <= 0) return;
 
     size_t cursor_vline = vline_for_byte_pos(cache, byte_pos);
     if (cursor_vline >= cache->count)
         cursor_vline = cache->count - 1;
 
-    if (cursor_vline < cache->top_vline)
-        return cache->lines[cache->top_vline].byte_start;
+    // Work in integer vline space so scroll always snaps to line boundaries.
+    size_t visible = (viewport_height > 0)
+        ? (size_t)(viewport_height / (float)line_height) : 1;
+    if (visible == 0) visible = 1;
 
-    size_t last_visible = cache->top_vline + visible_count - 1;
-    if (last_visible >= cache->count) last_visible = cache->count - 1;
-    if (cursor_vline > last_visible)
-        return cache->lines[last_visible].byte_start;
+    size_t first = (size_t)(cache->scroll_offset / (float)line_height);
+    size_t max_first = cache->count - 1;
 
-    return byte_pos;
+    if (cursor_vline < first) {
+        size_t gap = first - cursor_vline;
+        first = (gap <= 1)
+            ? cursor_vline
+            : (cursor_vline > (size_t)margin_lines
+                ? cursor_vline - (size_t)margin_lines : 0);
+    } else if (cursor_vline >= first + visible) {
+        size_t gap = cursor_vline - (first + visible) + 1;
+        if (gap <= 1) {
+            first = cursor_vline - visible + 1;
+        } else {
+            first = (cursor_vline + (size_t)margin_lines + 1 >= visible)
+                ? cursor_vline + (size_t)margin_lines - visible + 1
+                : 0;
+        }
+    }
+
+    if (first > max_first) first = max_first;
+    cache->scroll_offset = (float)first * (float)line_height;
+    cache->target_scroll = cache->scroll_offset;
 }
 
 size_t vline_byte_pos_at_xy(const VLineCache *cache, const char *buf_text,
@@ -427,9 +425,7 @@ size_t vline_byte_pos_at_xy(const VLineCache *cache, const char *buf_text,
     if (!cache || cache->count == 0 || line_height <= 0) return 0;
 
     // Map rel_y to a visual line index.
-    size_t vline_idx = cache->top_vline;
-    if (rel_y > 0.0f)
-        vline_idx = cache->top_vline + (size_t)(rel_y / line_height);
+    size_t vline_idx = (size_t)((cache->scroll_offset + rel_y) / line_height);
     if (vline_idx >= cache->count)
         vline_idx = cache->count - 1;
 

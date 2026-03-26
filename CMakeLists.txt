@@ -214,6 +214,6 @@ else()
     find_package(SDL3_ttf REQUIRED)
 
     # Use system chibi-scheme (has correct module paths configured)
-    target_link_libraries(app PUBLIC SDL3::SDL3 SDL3_image::SDL3_image SDL3_ttf::SDL3_ttf chibi-scheme tree-sitter tree-sitter-scheme)
+    target_link_libraries(app PUBLIC SDL3::SDL3 SDL3_image::SDL3_image SDL3_ttf::SDL3_ttf chibi-scheme tree-sitter tree-sitter-scheme m)
 
 endif()

@@ -44,6 +44,7 @@ static void invoke_mouse_drag_cb(AppState *state, size_t pos, size_t start_pos) 
     sexp_gc_release1(ctx);
 }
 
+
 // Hit-test the screen point (x, y) against the pane tree, then compute the
 // buffer byte position.  Returns true and fills *pos_out on success.
 static bool pane_hit_to_buf_pos(AppState *state, Pane *pane,
@@ -91,6 +92,25 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         bool button_held = (event->motion.state & SDL_BUTTON_LMASK) != 0;
         Clay_SetPointerState((Clay_Vector2){x, y}, button_held);
 
+        if (state->input.scrollbar_drag_pane) {
+            Pane *sp = state->input.scrollbar_drag_pane;
+            VLineCache *sc = &sp->content.active_tab->content.buffer.vline_cache;
+            int slh = sp->content.line_height_px;
+            float track_top = sp->content.scrollbar_y;
+            float thumb_h   = sp->content.scrollbar_thumb_h;
+            float travel    = sp->content.scrollbar_track_h - thumb_h;
+            float max_sc    = (sc->count > 1) ? (float)(sc->count - 1) * slh : 0.0f;
+            if (travel > 0 && max_sc > 0) {
+                float frac = (y - state->input.scrollbar_drag_offset - track_top) / travel;
+                if (frac < 0) frac = 0;
+                if (frac > 1) frac = 1;
+                sc->scroll_offset = frac * max_sc;
+                sc->target_scroll = sc->scroll_offset;
+            }
+            state->needs_redraw = true;
+            break;
+        }
+
         if (state->input.mouse_button_down && state->input.mouse_down_pane) {
             float dx = x - state->input.mouse_down_x;
             float dy = y - state->input.mouse_down_y;
@@ -121,6 +141,37 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         Pane *hit = pane_at_coords(pane_get_root(), x, y);
         state->input.mouse_down_pane = hit;
 
+        // Check scrollbar hit before buffer hit.
+        if (hit && hit->type == PANE_CONTENT && hit->content.active_tab
+            && hit->content.has_scrollbar
+            && x >= hit->content.scrollbar_x
+            && y >= hit->content.scrollbar_y
+            && y <= hit->content.scrollbar_y + hit->content.scrollbar_track_h) {
+
+            float thumb_y = hit->content.scrollbar_thumb_y;
+            float thumb_h = hit->content.scrollbar_thumb_h;
+            bool  on_thumb = (y >= thumb_y && y < thumb_y + thumb_h);
+            state->input.scrollbar_drag_offset = on_thumb
+                ? (y - thumb_y)
+                : (thumb_h / 2.0f);
+
+            VLineCache *sc = &hit->content.active_tab->content.buffer.vline_cache;
+            int slh = hit->content.line_height_px;
+            float travel = hit->content.scrollbar_track_h - thumb_h;
+            float max_sc  = (sc->count > 1) ? (float)(sc->count - 1) * slh : 0.0f;
+            if (travel > 0 && max_sc > 0) {
+                float frac = (y - state->input.scrollbar_drag_offset - hit->content.scrollbar_y) / travel;
+                if (frac < 0) frac = 0;
+                if (frac > 1) frac = 1;
+                sc->scroll_offset = frac * max_sc;
+                sc->target_scroll = sc->scroll_offset;
+            }
+
+            state->input.scrollbar_drag_pane = hit;
+            state->needs_redraw = true;
+            break;
+        }
+
         if (hit && hit->type == PANE_CONTENT && hit->content.active_tab) {
             // Switch active pane so that Scheme point-set! targets the right buffer.
             if (!hit->content.active)
@@ -142,6 +193,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         state->input.mouse_button_down = false;
         state->input.mouse_drag_active = false;
         state->input.mouse_down_pane   = NULL;
+        state->input.scrollbar_drag_pane = NULL;
         break;
 
     case SDL_EVENT_MOUSE_WHEEL:
@@ -155,36 +207,18 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         if (scroll_hit && scroll_hit->type == PANE_CONTENT && scroll_hit->content.active_tab) {
             VLineCache *cache = &scroll_hit->content.active_tab->content.buffer.vline_cache;
             if (cache->count > 0) {
-                // wheel.y positive = away from user = scroll down (reveal lower lines).
-                int delta = (int)(event->wheel.y * 3.0f);
+                float px_per_line = (float)scroll_hit->content.line_height_px;
+                if (px_per_line <= 0) px_per_line = 20.0f;
+                float delta_px = event->wheel.y * px_per_line * 3.0f;
                 if (event->wheel.direction == SDL_MOUSEWHEEL_NORMAL)
-                    delta = -delta;
-                if (delta > 0) {
-                    size_t inc = (size_t)delta;
-                    cache->top_vline = (cache->top_vline + inc < cache->count)
-                                       ? cache->top_vline + inc : cache->count - 1;
-                } else if (delta < 0) {
-                    size_t dec = (size_t)(-delta);
-                    cache->top_vline = (dec < cache->top_vline) ? cache->top_vline - dec : 0;
-                }
+                    delta_px = -delta_px;
 
-                // For the active pane: move cursor into viewport rather than
-                // letting vline_scroll_to_cursor revert the scroll next frame.
-                if (scroll_hit->content.active) {
-                    Buffer *buf = scroll_hit->content.active_tab->content.buffer.buffer;
-                    int lh = scroll_hit->content.line_height_px;
-                    size_t vc = (lh > 0)
-                        ? (size_t)(scroll_hit->content.text_origin_h / lh) : 0;
-                    if (vc > 0) {
-                        size_t cur = point_get(buf).pos;
-                        size_t clamped = vline_clamp_byte_pos_to_viewport(cache, cur, vc);
-                        if (clamped != cur) {
-                            point_set((Location){ .pos = clamped });
-                            update_line(buf);
-                            save_current_column(buf);
-                        }
-                    }
-                }
+                cache->scroll_offset += delta_px;
+                float max_scroll = (cache->count > 1)
+                    ? (float)(cache->count - 1) * px_per_line : 0.0f;
+                if (cache->scroll_offset < 0.0f) cache->scroll_offset = 0.0f;
+                if (cache->scroll_offset > max_scroll) cache->scroll_offset = max_scroll;
+                cache->target_scroll = cache->scroll_offset;
             }
         }
         break;

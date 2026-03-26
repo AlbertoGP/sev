@@ -50,6 +50,8 @@ typedef struct {
     float        mouse_down_x, mouse_down_y;
     size_t       mouse_down_buf_pos;       // buffer byte pos at click
     bool         mouse_drag_active;        // true once motion exceeds 3px threshold
+    struct Pane *scrollbar_drag_pane;      // non-NULL while dragging a scrollbar
+    float        scrollbar_drag_offset;   // y distance from cursor to thumb top at click time
     FocusTarget  current_focus;
     struct Keymap *splash_map;             // NULL until registered from Scheme
 } InputState;
@@ -62,7 +64,7 @@ typedef struct {
 
 typedef struct CachedRoles {
     sexp ui_bg, pane_bg, border_inactive, border_active, border_bell;
-    sexp bar_bg;
+    sexp bar_bg, scrollbar, scrollbar_hover;
     sexp tab_active, tab_hover, tab_inactive, tab_close;
     sexp text_primary, text_faded, text_key, text_command, text_prefix;
     sexp selection;

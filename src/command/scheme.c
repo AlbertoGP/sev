@@ -557,6 +557,8 @@ void scheme_init(AppState *state) {
     INTERN_ROLE(border_inactive, "border.inactive");
     INTERN_ROLE(border_bell, "border.bell");
     INTERN_ROLE(bar_bg, "bar.bg");
+    INTERN_ROLE(scrollbar, "scrollbar");
+    INTERN_ROLE(scrollbar_hover, "scrollbar.hover");
     INTERN_ROLE(tab_active, "tab.active");
     INTERN_ROLE(tab_hover, "tab.hover");
     INTERN_ROLE(tab_inactive, "tab.inactive");

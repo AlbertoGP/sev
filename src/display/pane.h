@@ -32,6 +32,15 @@ typedef struct ContentPane {
     int      line_height_px;
     uint16_t render_font_id;
     uint16_t render_font_size;
+    float    pane_right;      // box.x + box.width of Buffer Text element (includes padding)
+
+    // Scrollbar hit-test region (updated each frame).
+    float scrollbar_x;        // left edge of hit-test strip
+    float scrollbar_y;        // top of track
+    float scrollbar_track_h;  // height of track (= text_origin_h)
+    bool  has_scrollbar;
+    float scrollbar_thumb_y;  // screen y of thumb top (absolute, updated each frame)
+    float scrollbar_thumb_h;  // thumb height in pixels
 } ContentPane;
 
 // A vertical split node in a pane tree.

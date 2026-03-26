@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -42,6 +43,9 @@ void tab_set_buffer(Tab *tab, Buffer *buf) {
     if (!tab || !buf) return;
     tab->content.buffer.buffer = buf;
     tab->content.buffer.vline_cache.full_rebuild = true;
+    tab->content.buffer.vline_cache.scroll_offset = 0.0f;
+    tab->content.buffer.vline_cache.target_scroll = 0.0f;
+    tab->content.buffer.vline_cache.last_scroll_point = (size_t)-1;
 }
 
 void tab_free(Tab *tab) {
@@ -387,6 +391,14 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
     const uint16_t font_size = 15 * state->ui.scale_factor * buffer_get_scale(buf);
     const float padding      = 24.0f * state->ui.scale_factor;
 
+    Clay_ElementId outer_id = CLAY_IDI_LOCAL("BufWrap", index);
+    Clay_ElementId track_id = CLAY_IDI_LOCAL("ScrollTrack", index);
+    float bar_w = 12.0f * state->ui.scale_factor;
+
+    CLAY(outer_id, {
+        .layout = { .sizing = tab_layout_expand, .layoutDirection = CLAY_LEFT_TO_RIGHT }
+    }) {
+
     Clay_ElementId id = CLAY_IDI_LOCAL("Buffer Text", index);
     CLAY(id, {
         .layout = {
@@ -443,12 +455,31 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
             cp->render_font_id   = font_id;
             cp->render_font_size = font_size;
 
-            size_t visible_count = line_height > 0 ? (size_t)(text_height / line_height) : 0;
-            if (visible_count > 0 && cp->active)
-                vline_scroll_to_cursor(cache, point, visible_count);
-            if (visible_count == 0) visible_count = 1;
+            Clay_ElementData outer_data = Clay_GetElementData(outer_id);
+            if (outer_data.found)
+                cp->pane_right = outer_data.boundingBox.x + outer_data.boundingBox.width;
+            Clay_ElementData track_data = Clay_GetElementData(track_id);
+            if (track_data.found)
+                cp->scrollbar_x = track_data.boundingBox.x;
+            cp->scrollbar_y     = box.y;
+            cp->scrollbar_track_h = text_height;
 
-            size_t end_vline = cache->top_vline + visible_count;
+            if (cp->active && point != cache->last_scroll_point) {
+                cache->last_scroll_point = point;
+                if (line_height > 0)
+                    vline_scroll_to_cursor_pixels(cache, point, text_height, line_height, 3);
+            }
+
+            float max_scroll = (cache->count > 1)
+                ? (float)(cache->count - 1) * line_height : 0.0f;
+            cache->scroll_offset = fmaxf(0.0f, fminf(cache->scroll_offset, max_scroll));
+
+            size_t first_vline = 0;
+            if (line_height > 0)
+                first_vline = (size_t)(cache->scroll_offset / line_height);
+
+            size_t visible_count = line_height > 0 ? (size_t)(text_height / line_height) + 1 : 1;
+            size_t end_vline = first_vline + visible_count;
             if (end_vline > cache->count) end_vline = cache->count;
 
             size_t cursor_logical_line = 0;
@@ -458,14 +489,14 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
             #define LNUM_STR_LEN 12
             char *lnum_strs = NULL;
             if (line_num_type) {
-                size_t num_visible = end_vline - cache->top_vline;
+                size_t num_visible = end_vline - first_vline;
                 lnum_strs = malloc(num_visible * LNUM_STR_LEN);
                 if (tab_strings_count < TAB_STRINGS_MAX)
                     tab_strings[tab_strings_count++] = lnum_strs;
             }
 
             int32_t run_id = 0;
-            for (size_t i = cache->top_vline; i < end_vline; i++) {
+            for (size_t i = first_vline; i < end_vline; i++) {
                 VisualLine *vl = &cache->lines[i];
                 size_t line_start = vl->byte_start;
                 size_t line_end   = vl->byte_end;
@@ -500,13 +531,13 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
                     }
                 }) {
                     if (line_num_type && lnum_strs) {
-                        size_t str_idx = i - cache->top_vline;
+                        size_t str_idx = i - first_vline;
                         char *str = lnum_strs + str_idx * LNUM_STR_LEN;
                         size_t slen = 0;
                         bool show_number = true;
 
                         if (line_num_type == 3) {
-                            slen = snprintf(str, LNUM_STR_LEN, "%zu", i - cache->top_vline + 1);
+                            slen = snprintf(str, LNUM_STR_LEN, "%zu", i - first_vline + 1);
                         } else if (vl->visual_index > 0) {
                             show_number = false;
                         } else {
@@ -726,6 +757,7 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
                     }
                 }
             }
+
         } else {
             CLAY_AUTO_ID({
                 .layout = {
@@ -746,6 +778,45 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
             }
         }
     }
+
+    CLAY(track_id, {
+        .layout = {
+            .sizing = { .width = CLAY_SIZING_FIXED(bar_w), .height = CLAY_SIZING_GROW(0) },
+            .layoutDirection = CLAY_TOP_TO_BOTTOM,
+        },
+        .backgroundColor = ui_resolve_color(state, state->ui.roles.bar_bg)
+    }) {
+        cp->has_scrollbar = (cp->line_height_px > 0 &&
+                             tab->content.buffer.vline_cache.count > 1);
+        if (cp->has_scrollbar) {
+            VLineCache *tc = &tab->content.buffer.vline_cache;
+            float th      = cp->text_origin_h;
+            float ms      = (float)(tc->count - 1) * cp->line_height_px;
+            float total   = th + ms;
+            float min_th  = fminf(20.0f * state->ui.scale_factor, th);
+            float thumb_h = fmaxf((th / total) * th, min_th);
+            float spacer_h = (ms > 0)
+                ? (tc->scroll_offset / ms) * (th - thumb_h)
+                : 0.0f;
+            cp->scrollbar_thumb_h = thumb_h;
+            cp->scrollbar_thumb_y = cp->scrollbar_y + spacer_h;
+            CLAY_AUTO_ID({
+                .layout = { .sizing = {
+                    .width  = CLAY_SIZING_GROW(0),
+                    .height = CLAY_SIZING_FIXED(spacer_h) } }
+            }) {}
+            CLAY_AUTO_ID({
+                .layout = { .sizing = {
+                    .width  = CLAY_SIZING_GROW(0),
+                    .height = CLAY_SIZING_FIXED(thumb_h) } },
+                .backgroundColor = Clay_Hovered()
+                        ? ui_resolve_color(state, state->ui.roles.scrollbar_hover)
+                        : ui_resolve_color(state, state->ui.roles.scrollbar)
+            }) {}
+        }
+    }
+
+    } // close outer BufWrap
 }
 
 // --- Scheme bindings ---

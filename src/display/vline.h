@@ -44,8 +44,10 @@ typedef struct VLineCache {
     uint16_t font_size;
 
     // Scroll state
-    size_t top_vline;       // first visible visual line index
-    bool full_rebuild;      // flag to force full rebuild
+    float scroll_offset;        // pixels scrolled from top (always ≥ 0)
+    float target_scroll;        // target for easing; equals scroll_offset when no easing
+    size_t last_scroll_point;   // byte_pos at which we last called scroll-to-cursor
+    bool full_rebuild;          // flag to force full rebuild
 } VLineCache;
 
 // Forward declarations
@@ -69,16 +71,12 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
                    Clay_SDL3RendererData *renderer,
                    float pane_width, uint16_t font_id, uint16_t font_size);
 
-// Adjust top_vline to ensure the cursor (at byte_pos) is visible.
-// visible_count is the number of visual lines that fit in the viewport.
-void vline_scroll_to_cursor(VLineCache *cache, size_t byte_pos, size_t visible_count);
-
-// If byte_pos is outside the visible viewport, return the byte_start of the
-// nearest visible line; otherwise return byte_pos unchanged.
-// Used when scrolling: cursor follows viewport rather than viewport following cursor.
-size_t vline_clamp_byte_pos_to_viewport(const VLineCache *cache,
-                                        size_t byte_pos,
-                                        size_t visible_count);
+// Adjust scroll_offset to ensure the cursor (at byte_pos) is visible,
+// with a margin of margin_lines extra lines' height.
+// max_scroll = (count - 1) * line_height.  Clamps result to [0, max_scroll].
+void vline_scroll_to_cursor_pixels(VLineCache *cache, size_t byte_pos,
+                                    float viewport_height, int line_height,
+                                    int margin_lines);
 
 // Find the visual line index containing a given byte position.
 // Returns the index, or cache->count if not found.

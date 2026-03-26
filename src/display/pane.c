@@ -84,7 +84,7 @@ Pane *pane_at_coords(Pane *root, float x, float y) {
     ContentPane *d = &root->content;
     if (d->line_height_px <= 0) return NULL;
     float left   = d->text_origin_x - d->gutter_width_px;
-    float right  = d->text_origin_x + d->text_origin_w;
+    float right  = (d->pane_right > 0) ? d->pane_right : d->text_origin_x + d->text_origin_w;
     float top    = d->text_origin_y;
     float bottom = d->text_origin_y + d->text_origin_h;
     if (x >= left && x <= right && y >= top && y <= bottom)
