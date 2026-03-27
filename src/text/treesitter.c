@@ -12,6 +12,10 @@
 
 // highlights.scm from vendored/tree-sitter-scheme/queries/highlights.scm
 // Embedded to avoid runtime file I/O (works on WASM too).
+//
+// Pattern order matters: tree-sitter returns captures in (start_byte, pattern_index) order,
+// and we use first-match-wins after evaluating #match? predicates.  More-specific patterns
+// (keyword, function.builtin) must therefore appear BEFORE the generic @function fallback.
 static const char SCHEME_HIGHLIGHTS_SCM[] =
     "[\"(\" \")\" \"[\" \"]\" \"{\" \"}\"] @punctuation.bracket\n"
     "\n"
@@ -23,10 +27,6 @@ static const char SCHEME_HIGHLIGHTS_SCM[] =
     "(string) @string\n"
     "\n"
     "(escape_sequence) @escape\n"
-    "\n"
-    "(list\n"
-    "  .\n"
-    "  (symbol) @function)\n"
     "\n"
     "(list\n"
     "  .\n"
@@ -52,6 +52,10 @@ static const char SCHEME_HIGHLIGHTS_SCM[] =
     "  (#match? @function.builtin\n"
     "   \"^(caar|cadr|call-with-input-file|call-with-output-file|cdar|cddr|list|open-input-file|open-output-file|with-input-from-file|with-output-to-file|\\\\*|\\\\+|-|/|<|<=|=|>|>=|abs|acos|angle|append|apply|asin|assoc|assq|assv|atan|boolean\\\\?|caaaar|caaadr|caaar|caadar|caaddr|caadr|cadaar|cadadr|cadar|caddar|cadddr|caddr|call-with-current-continuation|call-with-values|car|cdaaar|cdaadr|cdaar|cdadar|cdaddr|cdadr|cddaar|cddadr|cddar|cdddar|cddddr|cdddr|cdr|ceiling|char->integer|char-alphabetic\\\\?|char-ci<=\\\\?|char-ci<\\\\?|char-ci=\\\\?|char-ci>=\\\\?|char-ci>\\\\?|char-downcase|char-lower-case\\\\?|char-numeric\\\\?|char-ready\\\\?|char-upcase|char-upper-case\\\\?|char-whitespace\\\\?|char<=\\\\?|char<\\\\?|char=\\\\?|char>=\\\\?|char>\\\\?|char\\\\?|close-input-port|close-output-port|complex\\\\?|cons|cos|current-error-port|current-input-port|current-output-port|denominator|display|dynamic-wind|eof-object\\\\?|eq\\\\?|equal\\\\?|eqv\\\\?|eval|even\\\\?|exact->inexact|exact\\\\?|exp|expt|floor|flush-output|for-each|force|gcd|imag-part|inexact->exact|inexact\\\\?|input-port\\\\?|integer->char|integer\\\\?|interaction-environment|lcm|length|list->string|list->vector|list-ref|list-tail|list\\\\?|load|log|magnitude|make-polar|make-rectangular|make-string|make-vector|map|max|member|memq|memv|min|modulo|negative\\\\?|newline|not|null-environment|null\\\\?|number->string|number\\\\?|numerator|odd\\\\?|output-port\\\\?|pair\\\\?|peek-char|positive\\\\?|procedure\\\\?|quotient|rational\\\\?|rationalize|read|read-char|real-part|real\\\\?|remainder|reverse|round|scheme-report-environment|set-car!|set-cdr!|sin|sqrt|string|string->list|string->number|string->symbol|string-append|string-ci<=\\\\?|string-ci<\\\\?|string-ci=\\\\?|string-ci>=\\\\?|string-ci>\\\\?|string-copy|string-fill!|string-length|string-ref|string-set!|string<=\\\\?|string<\\\\?|string=\\\\?|string>=\\\\?|string>\\\\?|string\\\\?|substring|symbol->string|symbol\\\\?|tan|transcript-off|transcript-on|truncate|values|vector|vector->list|vector-fill!|vector-length|vector-ref|vector-set!|vector\\\\?|write|write-char|zero\\\\?)$\"\n"
     "   ))\n"
+    "\n"
+    "(list\n"
+    "  .\n"
+    "  (symbol) @function)\n"
     "\n"
     ";; quote ;;\n"
     "\n"
@@ -251,6 +255,106 @@ void ts_buffer_parse(Buffer *buf) {
     ts_buffer_highlight(buf);
 }
 
+// Read bytes [start, end) from the gap buffer into out (not null-terminated).
+// Uses ts_read_gap which handles the two-segment gap layout without copying.
+static size_t gap_copy_bytes(void *gb, uint32_t start, uint32_t end,
+                              char *out, size_t out_max) {
+    if (end <= start) return 0;
+    uint32_t want = end - start;
+    if ((size_t)want > out_max) want = (uint32_t)out_max;
+    size_t total = 0;
+    uint32_t pos = start;
+    while (total < want) {
+        uint32_t chunk_len;
+        const char *chunk = ts_read_gap(gb, pos, (TSPoint){0, 0}, &chunk_len);
+        if (!chunk || chunk_len == 0) break;
+        uint32_t copy = chunk_len < (want - total) ? chunk_len : (uint32_t)(want - total);
+        memcpy(out + total, chunk, copy);
+        total += copy;
+        pos   += copy;
+    }
+    return total;
+}
+
+// Returns true if `text` exactly matches any |-separated alternative in a
+// tree-sitter #match? pattern of the form "^(alt1|alt2|...)$".
+// Alternatives may contain \X escape sequences (interpreted as literal X).
+static bool match_ts_alternation(const char *text, size_t text_len,
+                                  const char *pattern, uint32_t pattern_len) {
+    (void)pattern_len;
+    if (pattern[0] != '^' || pattern[1] != '(') return false;
+    pattern += 2;
+    while (*pattern && *pattern != ')') {
+        // Attempt to match the current alternative against text.
+        size_t ti = 0;
+        const char *p = pattern;
+        bool ok = true;
+        while (*p && *p != '|' && *p != ')') {
+            char expected = (*p == '\\' && *(p + 1)) ? (p++, *p) : *p;
+            p++;
+            if (ti >= text_len || text[ti++] != expected) { ok = false; break; }
+        }
+        if (ok && ti == text_len) return true;
+        // Advance past the rest of this alternative.
+        while (*p && *p != '|' && *p != ')') {
+            if (*p == '\\' && *(p + 1)) p++;
+            p++;
+        }
+        if (*p == '|') p++;
+        pattern = p;
+    }
+    return false;
+}
+
+// Evaluate all #match? / #not-match? predicates for the given query match.
+// Returns false if any predicate fails; true if all pass (or there are none).
+static bool ts_check_match_predicates(TSQuery *query, TSQueryMatch *match, void *gb) {
+    uint32_t step_count;
+    const TSQueryPredicateStep *steps =
+        ts_query_predicates_for_pattern(query, match->pattern_index, &step_count);
+    if (!steps || step_count == 0) return true;
+
+    uint32_t i = 0;
+    while (i < step_count) {
+        if (steps[i].type != TSQueryPredicateStepTypeString) { i++; continue; }
+
+        uint32_t op_len;
+        const char *op = ts_query_string_value_for_id(query, steps[i].value_id, &op_len);
+        bool is_match     = (op_len == 6  && memcmp(op, "match?",     6)  == 0);
+        bool is_not_match = (op_len == 10 && memcmp(op, "not-match?", 10) == 0);
+
+        if ((is_match || is_not_match) && i + 2 < step_count &&
+            steps[i + 1].type == TSQueryPredicateStepTypeCapture &&
+            steps[i + 2].type == TSQueryPredicateStepTypeString) {
+
+            uint32_t cap_id = steps[i + 1].value_id;
+            uint32_t re_len;
+            const char *re = ts_query_string_value_for_id(query, steps[i + 2].value_id, &re_len);
+
+            // Find the node for cap_id in match->captures.
+            bool found = false;
+            for (uint16_t ci = 0; ci < match->capture_count; ci++) {
+                if (match->captures[ci].index != cap_id) continue;
+                char text[256];
+                uint32_t ns = ts_node_start_byte(match->captures[ci].node);
+                uint32_t ne = ts_node_end_byte(match->captures[ci].node);
+                size_t text_len = gap_copy_bytes(gb, ns, ne, text, sizeof(text));
+                bool matched = match_ts_alternation(text, text_len, re, re_len);
+                if (is_match && !matched) return false;
+                if (is_not_match &&  matched) return false;
+                found = true;
+                break;
+            }
+            if (!found && is_match) return false;
+        }
+
+        // Advance past this predicate to the next Done step.
+        while (i < step_count && steps[i].type != TSQueryPredicateStepTypeDone) i++;
+        i++;
+    }
+    return true;
+}
+
 static void line_append_hl_span(Line *line, uint32_t s, uint32_t e, uint16_t style) {
     if (line->hl_span_count == line->hl_span_cap) {
         uint32_t new_cap = line->hl_span_cap ? line->hl_span_cap * 2 : 4;
@@ -290,6 +394,8 @@ void ts_buffer_highlight(Buffer *buf) {
     TSQueryMatch match;
     uint32_t capture_idx;
     while (ts_query_cursor_next_capture(cursor, &match, &capture_idx)) {
+        if (!ts_check_match_predicates(buf->ts.hl_query, &match, buf->contents))
+            continue;
         TSQueryCapture cap = match.captures[capture_idx];
 
         uint32_t name_len;
