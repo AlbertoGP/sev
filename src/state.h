@@ -30,7 +30,7 @@ typedef enum Theme {
 
 typedef enum {
     FOCUS_PANE,
-    FOCUS_SPLASH,
+    FOCUS_WELCOME,
     FOCUS_MINIBUFFER,
 } FocusTarget;
 
@@ -53,7 +53,7 @@ typedef struct {
     struct Pane *scrollbar_drag_pane;      // non-NULL while dragging a scrollbar
     float        scrollbar_drag_offset;   // y distance from cursor to thumb top at click time
     FocusTarget  current_focus;
-    struct Keymap *splash_map;             // NULL until registered from Scheme
+    struct Keymap *welcome_map;             // NULL until registered from Scheme
 } InputState;
 
 typedef struct {

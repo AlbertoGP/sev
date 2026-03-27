@@ -97,7 +97,7 @@ void sync_active_buffer(void) {
     if (active && active->content.active_tab)
         buffer_set_current(active->content.active_tab->content.buffer.buffer);
     if (!G->minibuf.active)
-        G->input.current_focus = active ? FOCUS_PANE : FOCUS_SPLASH;
+        G->input.current_focus = active ? FOCUS_PANE : FOCUS_WELCOME;
 }
 
 Pane *pane_content_create(Buffer *buf) {
@@ -165,10 +165,10 @@ void pane_close(void) {
     // Single-tab pane: close the entire pane.
     Pane *parent = pane->parent;
     if (!parent) {
-        // Root pane: destroy it, set root to NULL → splash.
+        // Root pane: destroy it, set root to NULL → welcome.
         pane_destroy(pane);
         root_pane = NULL;
-        G->input.current_focus = FOCUS_SPLASH;
+        G->input.current_focus = FOCUS_WELCOME;
         buffer_set_current(NULL);
         update_window_title();
         return;

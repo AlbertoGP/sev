@@ -96,17 +96,17 @@
       (evil-select))
     (point-set! current-pos)))
 
-;; Splash keymap: minimal set of commands available when no panes/tabs are open.
+;; Welcome keymap: minimal set of commands available when no panes/tabs are open.
 ;; Intentionally excludes cursor motion and editing commands.
-(define splash-map (make-keymap))
-(%set-keymap-name! splash-map "splash")
-(bind-prefix! splash-map "SPC b" buffer-map)
-(bind-prefix! splash-map "SPC h" help-map)
-(set-key! splash-map "SPC t n" 'tab-new)
-(set-key! splash-map "M-x"     'execute-extended-command)
-(set-key! splash-map "C-q"     'quit)
-(set-key! splash-map "SPC f o" 'open-file)
-(%set-splash-keymap! splash-map)
+(define welcome-map (make-keymap))
+(%set-keymap-name! welcome-map "welcome")
+(bind-prefix! welcome-map "SPC b" buffer-map)
+(bind-prefix! welcome-map "SPC h" help-map)
+(set-key! welcome-map "SPC t n" 'tab-new)
+(set-key! welcome-map "M-x"     'execute-extended-command)
+(set-key! welcome-map "C-q"     'quit)
+(set-key! welcome-map "SPC f o" 'open-file)
+(%set-welcome-keymap! welcome-map)
 
 (reset-global-scale)
 (message-clear)

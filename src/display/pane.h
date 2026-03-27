@@ -74,7 +74,7 @@ typedef struct Pane {
     struct Pane *parent;
 } Pane;
 
-// Initialise pane system (store window pointer; root starts NULL → splash).
+// Initialise pane system (store window pointer; root starts NULL → welcome).
 bool pane_init(AppState *state);
 // Shutdown: destroy root pane tree.
 void pane_quit(void);

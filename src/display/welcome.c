@@ -1,6 +1,6 @@
 #include "icon.h"
-#include "splash.h"
 #include "theme.h"
+#include "welcome.h"
 
 static void XSpacer(void) {
     CLAY_AUTO_ID({
@@ -33,9 +33,9 @@ static void SuggestionRow(AppState *state, Clay_String label, Clay_String key) {
     }
 }
 
-void SplashPane(AppState *state) {
+void WelcomePane(AppState *state) {
     float icon_size = 80.0f * state->ui.scale_factor;
-    CLAY(CLAY_ID("Splash"), {
+    CLAY(CLAY_ID("Welcome"), {
         .layout = {
             .sizing = {
                 .width = CLAY_SIZING_GROW(0),
@@ -50,8 +50,8 @@ void SplashPane(AppState *state) {
         },
         .backgroundColor = ui_resolve_color(state, state->ui.roles.pane_bg)
     }) {
-        SDL_Texture *icon = icon_get("splash-icon", state, (int)icon_size, (int)icon_size);
-        CLAY(CLAY_ID("Splash Icon"), {
+        SDL_Texture *icon = icon_get("welcome-icon", state, (int)icon_size, (int)icon_size);
+        CLAY(CLAY_ID("Welcome Icon"), {
             .layout = {
                 .sizing = {
                     .width = CLAY_SIZING_FIXED(icon_size),

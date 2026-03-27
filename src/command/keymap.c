@@ -33,8 +33,8 @@ bool init_input(AppState *state) {
     state->input.mouse_button_down = false;
     state->input.mouse_down_pane   = NULL;
     state->input.mouse_drag_active = false;
-    state->input.current_focus     = FOCUS_SPLASH;
-    state->input.splash_map        = NULL;
+    state->input.current_focus     = FOCUS_WELCOME;
+    state->input.welcome_map        = NULL;
 
     state->which_key.enabled = true;
     state->which_key.prefix_str[0] = '\0';
@@ -192,8 +192,8 @@ static void key_dispatch_inner(AppState *state, const KeyEvent *ev) {
         b = keymap_lookup(state->input.current_map, ev);
     } else {
         // Start of sequence: use full chain lookup
-        if (state->input.current_focus == FOCUS_SPLASH && state->input.splash_map)
-            b = keymap_lookup(state->input.splash_map, ev);
+        if (state->input.current_focus == FOCUS_WELCOME && state->input.welcome_map)
+            b = keymap_lookup(state->input.welcome_map, ev);
         else
             b = keymap_lookup_chain(state, ev);
     }
@@ -213,7 +213,7 @@ static void key_dispatch_inner(AppState *state, const KeyEvent *ev) {
         }
         // Top-level unbound key
         if (ev->type == KEYEVENT_CHAR && ev->mods == MOD_NONE
-            && state->input.current_focus != FOCUS_SPLASH) {
+            && state->input.current_focus != FOCUS_WELCOME) {
             Buffer *buf = buffer_get_current();
             ModeList *minors = buffer_get_minor_modes(buf);
             if (minors && minors->head && minors->head->mode->allows_input) {

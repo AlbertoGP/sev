@@ -2,7 +2,7 @@
 #include "icon.h"
 #include "message.h"
 #include "pane.h"
-#include "splash.h"
+#include "welcome.h"
 #include "status.h"
 #include "theme.h"
 #include "which_key.h"
@@ -54,7 +54,7 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
         GlobalHeader(state);
         Pane *root = pane_get_root();
         if (!root) {
-            SplashPane(state);
+            WelcomePane(state);
         } else {
             CLAY(CLAY_ID("Root Pane Area"), {
                 .layout = { .sizing = layoutExpand },

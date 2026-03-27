@@ -2,4 +2,4 @@
 
 #include "../state.h"
 
-void SplashPane(AppState *state);
+void WelcomePane(AppState *state);

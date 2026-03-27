@@ -30,7 +30,7 @@ C primitives are exposed as the `(editor primitives)` module, registered synthet
 (editor evil)          ← imports primitives, command, mode
 (editor theme)         ← imports primitives only
 
-init.scm               ← imports all modules; sets global keybindings, mouse/splash handlers, runs startup
+init.scm               ← imports all modules; sets global keybindings, mouse/welcome handlers, runs startup
 ```
 
 ## Module Responsibilities
@@ -60,7 +60,7 @@ Vim-like modal editing. 7 keymaps (normal, insert, replace, select, command, pen
 Theme definitions. `define-theme` registers palette (~30 colors) + roles (~30 semantic mappings). `activate-theme` clears tables, sets palette/roles, updates icon colors. Three Catppuccin variants: mocha, macchiato (default), latte.
 
 ### init.scm (not a library)
-Top-level script loaded by `scheme.c`. Imports all `(editor ...)` modules. Sets global keybindings and prefix maps (buffer, help, line-numbers, split, tab). Binds M-x to `execute-extended-command`. Installs mouse click handler (exits visual mode, moves point) and drag handler (enters visual-char mode, tracks cursor). Registers `splash-map` (minimal keymap for when no panes are open) via `%set-splash-keymap!`. Runs startup: `reset-global-scale`, `message-clear`.
+Top-level script loaded by `scheme.c`. Imports all `(editor ...)` modules. Sets global keybindings and prefix maps (buffer, help, line-numbers, split, tab). Binds M-x to `execute-extended-command`. Installs mouse click handler (exits visual mode, moves point) and drag handler (enters visual-char mode, tracks cursor). Registers `welcome-map` (minimal keymap for when no panes are open) via `%set-welcome-keymap!`. Runs startup: `reset-global-scale`, `message-clear`.
 
 ## Key Invariants
 
@@ -90,7 +90,7 @@ Exposed as `(editor primitives)`. Convention: `%`-prefixed names are raw C primi
 - **Jump list**: `%jump-push!`, `%jump-backward!`, `%jump-forward!`
 - **Mouse**: `%set-mouse-click-handler!`, `%set-mouse-drag-handler!`
 - **Minibuffer**: `%minibuffer-activate`, `%minibuffer-submit`, `%minibuffer-cancel`
-- **Pane/Tab**: `split-vertical`, `split-horizontal`, `pane-navigate-*`, `pane-close`, `tab-next`, `tab-prev`, `tab-new`, `%set-splash-keymap!`, `no-panes?`
+- **Pane/Tab**: `split-vertical`, `split-horizontal`, `pane-navigate-*`, `pane-close`, `tab-next`, `tab-prev`, `tab-new`, `%set-welcome-keymap!`, `no-panes?`
 - **Theme**: `%set-palette!`, `%set-role!`, `%clear-palette!`, `%clear-roles!`, `%register-icon!`, `%update-icon-colors!`, `%register-mode-icon!`
 - **Which-key**: `%which-key-toggle`
 - **System**: `quit`, `eval-buffer`, `message`, `message-clear`, `message-echo`, `message-unlock`, `prefix-arg`, `ignore`

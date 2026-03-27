@@ -25,7 +25,7 @@ SDL_AppEvent (event.c)
     → key_dispatch (keymap.c)
       → record to macro_buf if macro_recording (skip first key via macro_skip_next)
       → if which_key.enabled: feed through intercept keymap, update popup state
-      → if focus == SPLASH: dispatch through splash_map only
+      → if focus == WELCOME: dispatch through welcome_map only
       → if minibuf.active: set current buffer = minibuf.buf, reset prefix state
         → key_dispatch_inner (minibuffer-mode keymap, isolated from editor keymaps)
         → restore previous buffer/focus (unless submit/cancel already did so)

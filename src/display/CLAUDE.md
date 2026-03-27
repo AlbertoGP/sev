@@ -6,7 +6,7 @@ UI component layer built on Clay. Each frame, declares the full layout hierarchy
 
 ## Files
 
-- **layout.c / layout.h** — Top-level layout. `create_app_layout(state)` returns `Clay_RenderCommandArray`. Hierarchy: `GlobalHeader` (app icon strip) → pane tree via `PaneContent` (or `SplashPane` when root is NULL) → global `StatusBar` → `MinibufArea`/`MessageArea` → `WhichKey` overlay. Called once per frame from `iterate.c`.
+- **layout.c / layout.h** — Top-level layout. `create_app_layout(state)` returns `Clay_RenderCommandArray`. Hierarchy: `GlobalHeader` (app icon strip) → pane tree via `PaneContent` (or `WelcomePane` when root is NULL) → global `StatusBar` → `MinibufArea`/`MessageArea` → `WhichKey` overlay. Called once per frame from `iterate.c`.
 - **pane.c / pane.h** — Pane tree: binary tree of `PANE_V_SPLIT`, `PANE_H_SPLIT`, and `PANE_DISPLAY` leaves. `PANE_DISPLAY` leaves own a doubly-linked tab list (`DisplayContent.list`, `DisplayContent.active_tab`). `DisplayContent` also stores per-frame geometry (origin, size, gutter width, line height, font) for mouse hit-testing via `pane_at_coords()`. `PaneContent()` recurses the tree: for splits it subdivides space, for display leaves it renders `TabBar` then `BufferPane`. `pane_free_strings()` **must** be called after each frame. `pane_push_jump()` pushes the current position onto the active tab's jump list.
 - **vline.c / vline.h** — Visual line cache. Maps logical lines → wrapped visual lines. Owned per-`Tab` (not per-pane). Full rebuild on cache key change (width, font_id, font_size); incremental when only text changes (uses `Line.version`). Word-boundary wrapping with 4-char tab stops. Doubles on growth, shrinks at <25%.
 - **tab.c / tab.h** — Tabs are thin nodes in a doubly-linked list **owned by each `PANE_DISPLAY`**; there is no global tab list. Each `Tab` holds a `Buffer*`, `VLineCache`, `JumpList`, and last-rendered geometry. `TabBar()` is a Clay component rendered per display-pane (not globally). `tab_cb_reset()` must be called once per frame before layout. `display_tab_new/close/next/prev` operate on a given display pane's list. `tab_new_with_buffer` creates a root pane if none exists.
@@ -14,7 +14,7 @@ UI component layer built on Clay. Each frame, declares the full layout hierarchy
 - **cursor.c / cursor.h** — Cursor rendering as a Clay floating element (overlay, doesn't affect text layout).
 - **status.c / status.h** — Single **global** status bar rendered once at the bottom of the layout (not per-pane). Shows a mode icon + mode name pill. When `state->macro_recording` is true, appends a macro indicator: colored dot + "REC" text. `bar_free_strings()` **must** be called after each frame.
 - **message.c / message.h** — Bottom strip components. `MessageArea` renders the echo area string. `MinibufArea` renders the minibuffer when active: concatenates the prompt with buffer text, measures cursor x-offset via `TTF_GetStringSize`, and overlays a `Cursor` element. Temporarily swaps `buffer_get_current()` to the minibuf so cursor helpers read the right buffer.
-- **splash.c / splash.h** — `SplashPane()` rendered in place of the pane tree when root is NULL. Controlled by `splash-map` registered from Scheme via `%set-splash-keymap!`.
+- **welcome.c / welcome.h** — `WelcomePane()` rendered in place of the pane tree when root is NULL. Controlled by `welcome-map` registered from Scheme via `%set-welcome-keymap!`.
 - **which_key.c / which_key.h** — `WhichKey()` popup overlay showing available key bindings for the current prefix. Rendered as a floating element when `state->which_key.active && state->which_key.enabled`.
 - **icon.c / icon.h** — SVG icon registry (64 slots). Textures rasterized lazily on first access or scale change. Colors reapplied after theme change.
 - **mode_icon.c / mode_icon.h** — Maps mode names → icon + 4 theme roles (bg, label, cursor color, cursor type). Searched by current buffer's minor modes.
@@ -28,7 +28,7 @@ UI component layer built on Clay. Each frame, declares the full layout hierarchy
 - **Cursor and selection are floating elements**: overlay text, don't affect layout flow
 - **VLineCache lives per-Tab**: cache keys are (tab_width, font_id, font_size) — any change triggers full rebuild
 - **Tabs are owned by `PANE_DISPLAY` nodes**: there is no global tab list; each display pane has its own circular doubly-linked list
-- **Pane tree is always a binary tree** of splits terminating in `PANE_DISPLAY` leaves; root NULL means splash
+- **Pane tree is always a binary tree** of splits terminating in `PANE_DISPLAY` leaves; root NULL means welcome
 - **Macro recording indicator**: driven by `state->macro_recording` (C flag), not `evil-recording-mode` minor mode — the minor mode is disabled during insert/replace while recording continues
 
 ## BufferPane Rendering Details

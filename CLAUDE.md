@@ -44,7 +44,7 @@ The app uses SDL3's main callbacks pattern (no `main()` function):
 
 - `Chibi` — Scheme context (`ctx`), global environment (`env`), cached `call_interactively`
 - `UIState` — current theme symbol, role/palette `VarTable`s, pre-interned `CachedRoles`, global `scale_factor`
-- `InputState` — active keymaps, last key event, mouse click/drag callbacks, `FocusTarget` (PANE / SPLASH / MINIBUFFER), which-key intercept state
+- `InputState` — active keymaps, last key event, mouse click/drag callbacks, `FocusTarget` (PANE / WELCOME / MINIBUFFER), which-key intercept state
 - `Minibuf` — active buffer, prompt, submit/cancel Scheme callbacks, push/pop frame stack (depth 8)
 - `WhichKeyState` — active flag, enabled flag, intercept keymap, accumulated prefix string
 - Macro recording fields — `macro_recording`, `macro_buf`, `macro_buf_len`, `macro_target_reg`
@@ -73,7 +73,7 @@ Clay immediate-mode UI with SDL3 renderer backend. Layout defined in `layout.c`:
 
 - Global header (app icon strip)
 - Pane tree: binary tree of splits and `PANE_DISPLAY` leaves; each leaf owns its own tab list and renders its own tab bar above the buffer view
-- Splash screen when no panes are open
+- Welcome screen when no panes are open
 - Global status bar (mode icon + mode name pill; macro indicator dot + "REC" when recording)
 - Which-key popup overlay when active
 - Bottom strip: minibuffer (prompt + editable text + cursor) when active, echo area otherwise

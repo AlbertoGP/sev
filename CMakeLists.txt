@@ -25,7 +25,7 @@ set(SRC_FILES
     src/display/mode_icon.c
     src/display/pane.c
     src/display/scale.c
-    src/display/splash.c
+    src/display/welcome.c
     src/display/status.c
     src/display/tab.c
     src/display/theme.c
