@@ -257,6 +257,32 @@ static void BufRender_LoadingPlaceholder(BufRenderCtx *ctx) {
 }
 
 // Renders the line-number gutter cell for visual line i.
+static bool vline_in_selection(BufRenderCtx *ctx, VisualLine *vl) {
+    if (ctx->buf->select_mode == SELECT_NONE || !ctx->cp->active) return false;
+    size_t sel_a   = ctx->buf->select_start.pos;
+    size_t sel_b   = ctx->point;
+    size_t sel_min = sel_a < sel_b ? sel_a : sel_b;
+    size_t sel_max = sel_a > sel_b ? sel_a + 1 : sel_b + 1;
+    switch (ctx->buf->select_mode) {
+    case SELECT_REGULAR:
+        return vl->byte_start < sel_max && vl->byte_end >= sel_min;
+    case SELECT_LINE: {
+        size_t lmin = line_index_at(ctx->lt, sel_min);
+        size_t lmax = line_index_at(ctx->lt, sel_max > 0 ? sel_max - 1 : 0);
+        size_t vll  = line_index_at(ctx->lt, vl->byte_start);
+        return vll >= lmin && vll <= lmax;
+    }
+    case SELECT_RECTANGLE:
+    case SELECT_RECTANGLE_RAGGED: {
+        size_t la  = line_index_at(ctx->lt, sel_a);
+        size_t lb  = line_index_at(ctx->lt, sel_b);
+        size_t vll = line_index_at(ctx->lt, vl->byte_start);
+        return vll >= (la < lb ? la : lb) && vll <= (la > lb ? la : lb);
+    }
+    default: return false;
+    }
+}
+
 static void BufRender_GutterCell(BufRenderCtx *ctx, size_t i, VisualLine *vl) {
     if (!ctx->line_num_type || !ctx->lnum_strs) return;
 
@@ -295,12 +321,13 @@ static void BufRender_GutterCell(BufRenderCtx *ctx, size_t i, VisualLine *vl) {
         if (show_number && slen > 0) {
             bool is_current = (ctx->line_num_type != 3) &&
                 (line_index_at(ctx->lt, vl->byte_start) == ctx->cursor_logical_line);
+            bool in_sel = vline_in_selection(ctx, vl);
             Clay_String numStr = { .chars = str, .length = slen };
             CLAY_TEXT(numStr, CLAY_TEXT_CONFIG({
                 .fontId    = ctx->font_id,
                 .fontSize  = ctx->font_size,
                 .textColor = ui_resolve_color(ctx->state,
-                    is_current && ctx->cp->active
+                    (is_current || in_sel) && ctx->cp->active
                         ? ctx->state->ui.roles.text_linenum
                         : ctx->state->ui.roles.text_faded),
             }));
