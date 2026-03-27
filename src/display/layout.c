@@ -1,3 +1,4 @@
+#include "buf_render.h"
 #include "cursor.h"
 #include "icon.h"
 #include "message.h"
@@ -41,6 +42,7 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
     };
 
     tab_cb_reset();
+    buf_render_reset();
     cursor_cb_reset();
     Clay_BeginLayout();
 

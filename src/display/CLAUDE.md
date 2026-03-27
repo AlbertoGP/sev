@@ -9,7 +9,8 @@ UI component layer built on Clay. Each frame, declares the full layout hierarchy
 - **layout.c / layout.h** — Top-level layout. `create_app_layout(state)` returns `Clay_RenderCommandArray`. Hierarchy: `GlobalHeader` (app icon strip) → pane tree via `PaneContent` (or `WelcomePane` when root is NULL) → global `StatusBar` → `MinibufArea`/`MessageArea` → `WhichKey` overlay. Called once per frame from `iterate.c`.
 - **pane.c / pane.h** — Pane tree: binary tree of `PANE_V_SPLIT`, `PANE_H_SPLIT`, and `PANE_DISPLAY` leaves. `PANE_DISPLAY` leaves own a doubly-linked tab list (`DisplayContent.list`, `DisplayContent.active_tab`). `DisplayContent` also stores per-frame geometry (origin, size, gutter width, line height, font) for mouse hit-testing via `pane_at_coords()`. `PaneContent()` recurses the tree: for splits it subdivides space, for display leaves it renders `TabBar` then `BufferPane`. `pane_free_strings()` **must** be called after each frame. `pane_push_jump()` pushes the current position onto the active tab's jump list.
 - **vline.c / vline.h** — Visual line cache. Maps logical lines → wrapped visual lines. Owned per-`Tab` (not per-pane). Full rebuild on cache key change (width, font_id, font_size); incremental when only text changes (uses `Line.version`). Word-boundary wrapping with 4-char tab stops. Doubles on growth, shrinks at <25%.
-- **tab.c / tab.h** — Tabs are thin nodes in a doubly-linked list **owned by each `PANE_DISPLAY`**; there is no global tab list. Each `Tab` holds a `Buffer*`, `VLineCache`, `JumpList`, and last-rendered geometry. `TabBar()` is a Clay component rendered per display-pane (not globally). `tab_cb_reset()` must be called once per frame before layout. `display_tab_new/close/next/prev` operate on a given display pane's list. `tab_new_with_buffer` creates a root pane if none exists.
+- **tab.c / tab.h** — Tabs are thin nodes in a doubly-linked list **owned by each `PANE_DISPLAY`**; there is no global tab list. Each `Tab` holds a `Buffer*`, `VLineCache`, `JumpList`, and last-rendered geometry. `TabBar()` is a Clay component rendered per display-pane (not globally). `tab_cb_reset()` must be called once per frame before layout. `display_tab_new/close/next/prev` operate on a given display pane's list. `tab_new_with_buffer` creates a root pane if none exists. `tab_register_string(s)` registers a heap-allocated string for deferred free by `tab_free_strings()`.
+- **buf_render.c / buf_render.h** — Buffer content rendering component. `BufferContentRender()` is the public entry point called from `pane.c`; internally it delegates to a set of focused static helpers via a `BufRenderCtx` context struct: `BufRender_SetupGeometry` (font/gutter/scroll/geometry), `BufRender_VLine` (per visual-line row), `BufRender_GutterCell` (line number), `BufRender_CursorCell` (cursor overlay), `BufRender_SelectionCell` (selection highlight), `BufRender_TextCell` (syntax-highlighted text), `BufRender_Scrollbar` (track and thumb). `buf_render_reset()` must be called once per frame before layout (resets the selection rect pool).
 - **theme.c / theme.h** — Two-level color resolution: role symbol → palette key → hex string → `Clay_Color`. `ui_resolve_color(state, role)` is the main lookup, used everywhere. Also provides `CursorType` enum (SOLID, HOLLOW, THIN, UNDER) and cursor color/type queries.
 - **cursor.c / cursor.h** — Cursor rendering as a Clay floating element (overlay, doesn't affect text layout).
 - **status.c / status.h** — Single **global** status bar rendered once at the bottom of the layout (not per-pane). Shows a mode icon + mode name pill. When `state->macro_recording` is true, appends a macro indicator: colored dot + "REC" text. `bar_free_strings()` **must** be called after each frame.
@@ -23,7 +24,7 @@ UI component layer built on Clay. Each frame, declares the full layout hierarchy
 ## Key Invariants
 
 - **String lifetime**: `pane_free_strings()` and `bar_free_strings()` must be called after `SDL_Clay_RenderClayCommands()` every frame — Clay doesn't own string data
-- **`tab_cb_reset()` must be called** once per frame before `create_app_layout()` — resets Clay hover-callback slots used by tab close buttons
+- **`tab_cb_reset()` and `buf_render_reset()` must be called** once per frame before `create_app_layout()` — reset Clay hover-callback slots and the selection rect pool respectively
 - **Active pane sync**: `sync_active_buffer()` must be called after any pane or tab switch
 - **Cursor and selection are floating elements**: overlay text, don't affect layout flow
 - **VLineCache lives per-Tab**: cache keys are (tab_width, font_id, font_size) — any change triggers full rebuild
@@ -33,8 +34,12 @@ UI component layer built on Clay. Each frame, declares the full layout hierarchy
 
 ## BufferPane Rendering Details
 
-- **Selection**: SELECT_REGULAR (char range per visual line), SELECT_LINE (whole logical lines), SELECT_RECTANGLE (column block)
-- **Line number gutter**: type 1 = absolute, type 2 = relative, type 3 = visual row; wrapped continuations show no number
+Implemented in `buf_render.c`. `BufferContentRender()` delegates to focused helpers via `BufRenderCtx`:
+
+- **Selection**: `BufRender_SelectionCell` handles SELECT_REGULAR (char range per visual line), SELECT_LINE (whole logical lines), SELECT_RECTANGLE/RECTANGLE_RAGGED (column block)
+- **Line number gutter**: `BufRender_GutterCell` — type 1 = absolute, type 2 = relative, type 3 = visual row; wrapped continuations show no number
+- **Cursor**: `BufRender_CursorCell` — resolves correct font variant from hl_spans, then calls `Cursor()` floating element
+- **Text**: `BufRender_TextCell` — iterates hl_spans, emits fixed-width Clay segments via `EMIT_RUN` macro
 
 ## Common Modification Workflows
 

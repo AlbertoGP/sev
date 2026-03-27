@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "buf_render.h"
 #include "pane.h"
 #include "tab.h"
 #include "theme.h"

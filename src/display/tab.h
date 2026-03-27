@@ -80,10 +80,11 @@ void update_window_title(void);
 void tab_cb_reset(void);
 // Free strings allocated during tab rendering. Call after SDL_Clay_RenderClayCommands().
 void tab_free_strings(void);
+// Register a heap-allocated string for deferred free via tab_free_strings().
+// Used by buf_render.c to register buffer text and line-number string slabs.
+void tab_register_string(char *s);
 // Clay component: per-pane tab bar (no global app icon).
 void TabBar(AppState *state, struct Pane *dp, int32_t index);
-// Clay component: renders the buffer content area for a tab.
-void BufferContentRender(AppState *state, struct ContentPane *cp, Tab *tab, int32_t index);
 
 // --- Scheme bindings ---
 #include <chibi/sexp.h>
