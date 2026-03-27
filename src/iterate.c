@@ -52,6 +52,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_SetRenderDrawColor(state->rendererData.renderer, 0, 0, 0, 255);
     SDL_RenderClear(state->rendererData.renderer);
     Clay_RenderCommandArray render_commands = create_app_layout(state);
+    tab_flush_pending_close();
     SDL_Clay_RenderClayCommands(&state->rendererData, &render_commands);
     tab_free_strings();
     pane_free_strings();

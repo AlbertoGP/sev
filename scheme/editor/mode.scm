@@ -107,8 +107,8 @@
 
 ;; Help buffer mode
 (define help-map (make-keymap))
-(set-key! help-map "ESC"   'pane-close)
-(set-key! help-map "q"     'pane-close)
+(set-key! help-map "ESC"   'tab-close)
+(set-key! help-map "q"     'tab-close)
 (set-key! help-map "j"     'next-line)
 (set-key! help-map "k"     'prev-line)
 (set-key! help-map "h"     'backward-char)

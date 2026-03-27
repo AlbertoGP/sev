@@ -25,6 +25,10 @@ Pane *pane_get_root(void) {
     return root_pane;
 }
 
+void pane_set_root(Pane *p) {
+    root_pane = p;
+}
+
 // --- Tree helpers ---
 
 static Pane *pane_first_child(Pane *pane) {
@@ -136,54 +140,13 @@ void pane_destroy(Pane *pane) {
 }
 
 // Descend into pane tree, activating the first PANE_CONTENT leaf found.
-static void descend_pane_tree(Pane *pane) {
+void descend_pane_tree(Pane *pane) {
     while (pane->type != PANE_CONTENT)
         pane = pane_first_child(pane);
     pane->content.active = true;
     sync_active_buffer();
 }
 
-static void usurp_parent(Pane *pane, Pane *parent) {
-    Pane *grandparent = parent->parent;
-    pane_replace_child(grandparent, parent, pane);
-    pane->parent = grandparent;
-    free(parent);
-}
-
-void pane_close(void) {
-    Pane *pane = pane_get_active();
-    if (!pane) return;
-
-    // If this content pane has more than one tab, just close the active tab.
-    if (pane->content.list && pane->content.list->next) {
-        bool empty = display_tab_close(pane);
-        (void)empty;  // cannot be true since we checked list->next above
-        sync_active_buffer();
-        update_window_title();
-        return;
-    }
-
-    // Single-tab pane: close the entire pane.
-    Pane *parent = pane->parent;
-    if (!parent) {
-        // Root pane: destroy it, set root to NULL → welcome.
-        pane_destroy(pane);
-        root_pane = NULL;
-        G->input.current_focus = FOCUS_WELCOME;
-        buffer_set_current(NULL);
-        update_window_title();
-        return;
-    }
-
-    Pane *sibling = pane_get_sibling(pane);
-    pane->content.active = false;
-    descend_pane_tree(sibling);
-    usurp_parent(sibling, parent);
-    // Destroy this pane's single tab then the pane node.
-    tab_free(pane->content.list);
-    free(pane);
-    update_window_title();
-}
 
 
 static Pane *pane_get_active_from(Pane *pane) {
@@ -562,13 +525,6 @@ sexp scm_split_horizontal(sexp ctx, sexp self, sexp n) {
     Pane *pane = pane_get_active();
     if (pane) pane_split_horizontal(pane);
     message_send("split-horizontal");
-    return SEXP_VOID;
-}
-
-sexp scm_pane_close(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true; G->needs_extra_frame = true;
-    pane_close();
-    message_send("pane-close");
     return SEXP_VOID;
 }
 

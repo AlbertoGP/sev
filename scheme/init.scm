@@ -55,7 +55,7 @@
 (set-key! pane-keymap "C-S-TAB" 'tab-prev)
 
 ;; Pane management
-(set-key! pane-keymap "C-w"     'pane-close)
+(set-key! pane-keymap "C-w"     'tab-close)
 
 ;; File save
 (set-key! pane-keymap "C-s"     'save-buffer)

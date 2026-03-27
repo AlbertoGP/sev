@@ -14,7 +14,7 @@
     tab-next tab-prev
     reset-global-scale increase-global-scale decrease-global-scale
     reset-buffer-scale increase-buffer-scale decrease-buffer-scale
-    split-horizontal split-vertical pane-close
+    split-horizontal split-vertical tab-close
     pane-navigate-up pane-navigate-down pane-navigate-left pane-navigate-right
     pane-h-split-increase pane-h-split-decrease
     pane-v-split-increase pane-v-split-decrease

@@ -353,7 +353,7 @@ void scheme_init(AppState *state) {
     SDEF("%decrease-buffer-scale", 0, scm_decrease_buffer_scale);
     SDEF("%split-vertical", 0, scm_split_vertical);
     SDEF("%split-horizontal", 0, scm_split_horizontal);
-    SDEF("%pane-close", 0, scm_pane_close);
+    SDEF("%tab-close", 0, scm_tab_close);
     SDEF("%pop-to-buffer", 1, scm_pop_to_buffer);
     SDEF("%pane-navigate-up", 0, scm_pane_navigate_up);
     SDEF("%pane-navigate-down", 0, scm_pane_navigate_down);
@@ -512,7 +512,7 @@ void scheme_init(AppState *state) {
         "last-key-char %set-replace-mode! %tab-next %tab-prev %tab-new! no-panes? "
         "reset-global-scale increase-global-scale decrease-global-scale "
         "%reset-buffer-scale %increase-buffer-scale %decrease-buffer-scale "
-        "%split-vertical %split-horizontal %pane-close %pop-to-buffer "
+        "%split-vertical %split-horizontal %tab-close %pop-to-buffer "
         "%pane-navigate-up %pane-navigate-down "
         "%pane-navigate-left %pane-navigate-right "
         "%pane-v-split-increase %pane-v-split-decrease "

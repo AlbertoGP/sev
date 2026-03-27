@@ -137,6 +137,8 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         state->input.mouse_down_x = x;
         state->input.mouse_down_y = y;
         state->input.mouse_drag_active = false;
+        if (event->button.button == SDL_BUTTON_MIDDLE)
+            state->input.middle_pressed_this_frame = true;
 
         Pane *hit = pane_at_coords(pane_get_root(), x, y);
         state->input.mouse_down_pane = hit;

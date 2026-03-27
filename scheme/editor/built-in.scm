@@ -38,8 +38,8 @@
   (unless (no-panes?) (%split-horizontal)))
 (defcommand (split-vertical) "Split the current pane vertically."
   (unless (no-panes?) (%split-vertical)))
-(defcommand (pane-close) "Close the current pane."
-  (unless (no-panes?) (%pane-close)))
+(defcommand (tab-close) "Close the current tab."
+  (unless (no-panes?) (%tab-close)))
 (defcommand (pane-navigate-up) "Navigate to the pane above."
   (unless (no-panes?) (%pane-navigate-up)))
 (defcommand (pane-navigate-down) "Navigate to the pane below."

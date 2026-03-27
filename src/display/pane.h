@@ -80,14 +80,16 @@ bool pane_init(AppState *state);
 void pane_quit(void);
 // Get the global root pane (NULL if no panes open).
 Pane *pane_get_root(void);
+// Set the global root pane.
+void pane_set_root(Pane *p);
 
 // Create a new PANE_CONTENT with a single tab showing buf.
 // Does NOT link it into the tree or set root_pane; caller does that.
 Pane *pane_content_create(Buffer *buf);
 // Recursively free resources allocated for a pane sub-tree.
 void pane_destroy(Pane *pane);
-// Close the active display pane (or just its active tab if multiple tabs).
-void pane_close(void);
+// Descend into pane tree, activating the first PANE_CONTENT leaf found.
+void descend_pane_tree(Pane *pane);
 
 // Returns the currently active PANE_DISPLAY in the pane tree.
 Pane *pane_get_active(void);
@@ -148,7 +150,6 @@ sexp scm_pane_h_split_increase(sexp ctx, sexp self, sexp n);
 sexp scm_pane_h_split_decrease(sexp ctx, sexp self, sexp n);
 sexp scm_split_vertical(sexp ctx, sexp self, sexp n);
 sexp scm_split_horizontal(sexp ctx, sexp self, sexp n);
-sexp scm_pane_close(sexp ctx, sexp self, sexp n);
 sexp scm_jump_push(sexp ctx, sexp self, sexp n);
 sexp scm_jump_backward(sexp ctx, sexp self, sexp n);
 sexp scm_jump_forward(sexp ctx, sexp self, sexp n);

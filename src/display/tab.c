@@ -142,14 +142,61 @@ bool tab_new_with_buffer(const char *buf_name) {
     return true;
 }
 
+// --- Tab close helpers ---
+
+static void usurp_parent(Pane *pane, Pane *parent) {
+    Pane *grandparent = parent->parent;
+    pane_replace_child(grandparent, parent, pane);
+    pane->parent = grandparent;
+    free(parent);
+}
+
+void tab_close(void) {
+    Pane *pane = pane_get_active();
+    if (!pane) return;
+
+    // If this content pane has more than one tab, just close the active tab.
+    if (pane->content.list && pane->content.list->next) {
+        bool empty = display_tab_close(pane);
+        (void)empty;  // cannot be true since we checked list->next above
+        sync_active_buffer();
+        update_window_title();
+        return;
+    }
+
+    // Single-tab pane: close the entire pane.
+    Pane *parent = pane->parent;
+    if (!parent) {
+        // Root pane: destroy it, set root to NULL → welcome.
+        pane_destroy(pane);
+        pane_set_root(NULL);
+        G->input.current_focus = FOCUS_WELCOME;
+        buffer_set_current(NULL);
+        update_window_title();
+        return;
+    }
+
+    Pane *sibling = pane_get_sibling(pane);
+    pane->content.active = false;
+    descend_pane_tree(sibling);
+    usurp_parent(sibling, parent);
+    // Destroy this pane's single tab then the pane node.
+    tab_free(pane->content.list);
+    free(pane);
+    update_window_title();
+}
+
+sexp scm_tab_close(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true; G->needs_extra_frame = true;
+    tab_close();
+    message_send("tab-close");
+    return SEXP_VOID;
+}
+
 // --- TabBar Clay rendering ---
 
-static void HandleCloseTab(Clay_ElementId elementId, Clay_PointerData pointerInfo, void *userData) {
-    if (pointerInfo.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
-    Pane *dp = ((void **)userData)[0];
-    Tab  *t  = ((void **)userData)[1];
-    if (!dp || !t) return;
-
+// Close a specific tab in a specific pane (handles last-tab pane collapse).
+static void close_tab(Pane *dp, Tab *t) {
     // Switch active if closing the current tab.
     if (dp->content.active_tab == t) {
         Tab *next = t->next ? t->next : t->prev;
@@ -163,7 +210,7 @@ static void HandleCloseTab(Clay_ElementId elementId, Clay_PointerData pointerInf
 
     if (!dp->content.list) {
         // No tabs left: close the pane entirely.
-        // Temporarily mark it active so pane_close() finds it.
+        // Temporarily mark it active so tab_close() finds it.
         // First clear the real active pane's flag to avoid pane_get_active()
         // finding the wrong pane (e.g. the left sibling) via depth-first search.
         bool was_active = dp->content.active;
@@ -172,11 +219,19 @@ static void HandleCloseTab(Clay_ElementId elementId, Clay_PointerData pointerInf
             if (current) current->content.active = false;
         }
         dp->content.active = true;
-        pane_close();
+        tab_close();
     } else {
         sync_active_buffer();
         update_window_title();
     }
+}
+
+static void HandleCloseTab(Clay_ElementId elementId, Clay_PointerData pointerInfo, void *userData) {
+    if (pointerInfo.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
+    Pane *dp = ((void **)userData)[0];
+    Tab  *t  = ((void **)userData)[1];
+    if (!dp || !t) return;
+    close_tab(dp, t);
 }
 
 static void HandleClickTab(Clay_ElementId elementId, Clay_PointerData pointerInfo, void *userData) {
@@ -196,7 +251,21 @@ static void HandleClickTab(Clay_ElementId elementId, Clay_PointerData pointerInf
 static void *tab_cb_data[MAX_TAB_CB_DATA][2];
 static int   tab_cb_count = 0;
 
-void tab_cb_reset(void) { tab_cb_count = 0; }
+static Pane *pending_close_pane = NULL;
+static Tab  *pending_close_tab  = NULL;
+
+void tab_cb_reset(void) {
+    tab_cb_count = 0;
+}
+
+void tab_flush_pending_close(void) {
+    if (pending_close_pane && pending_close_tab) {
+        close_tab(pending_close_pane, pending_close_tab);
+        pending_close_pane = NULL;
+        pending_close_tab  = NULL;
+    }
+    G->input.middle_pressed_this_frame = false;
+}
 
 // String pool for buffer text and line-number allocations made during rendering.
 #define TAB_STRINGS_MAX 32
@@ -339,7 +408,12 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
                         block_click = CloseButton(state, dp, t);
                     }
                 }
-                if (cb) Clay_OnHover(block_click ? NULL : HandleClickTab, cb);
+                if (show_cross && G->input.middle_pressed_this_frame) {
+                    pending_close_pane = dp;
+                    pending_close_tab  = t;
+                } else if (cb) {
+                    Clay_OnHover(block_click ? NULL : HandleClickTab, cb);
+                }
             }
         }
         CLAY(CLAY_ID_LOCAL("Tab bar space"), {

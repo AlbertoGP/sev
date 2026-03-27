@@ -78,6 +78,9 @@ void update_window_title(void);
 
 // Reset the tab callback slot pool. Call once per frame before layout.
 void tab_cb_reset(void);
+// Execute any pending middle-click tab close and clear the middle-click flag.
+// Call once per frame after layout (before rendering).
+void tab_flush_pending_close(void);
 // Free strings allocated during tab rendering. Call after SDL_Clay_RenderClayCommands().
 void tab_free_strings(void);
 // Register a heap-allocated string for deferred free via tab_free_strings().
@@ -86,8 +89,12 @@ void tab_register_string(char *s);
 // Clay component: per-pane tab bar (no global app icon).
 void TabBar(AppState *state, struct Pane *dp, int32_t index);
 
+// Close the active tab in the active pane (closes pane if last tab).
+void tab_close(void);
+
 // --- Scheme bindings ---
 #include <chibi/sexp.h>
+sexp scm_tab_close(sexp ctx, sexp self, sexp n);
 sexp scm_tab_next(sexp ctx, sexp self, sexp n);
 sexp scm_tab_prev(sexp ctx, sexp self, sexp n);
 sexp scm_tab_new(sexp ctx, sexp self, sexp n, sexp sbuf_name);
