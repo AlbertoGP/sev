@@ -430,8 +430,8 @@ size_t vline_byte_pos_at_xy(const VLineCache *cache, const char *buf_text,
 
     // Click left of text area → clamp to line start.
     if (rel_x <= 0.0f) return vl->byte_start;
-    // Click past end of line → clamp to line end.
-    if (len == 0 || rel_x >= vl->measured_width) return vl->byte_end;
+
+    if (len == 0) return vl->byte_start;
 
     // Linear scan: find which character was clicked.
     // With a block cursor the cursor covers the character it sits on, so
@@ -440,16 +440,20 @@ size_t vline_byte_pos_at_xy(const VLineCache *cache, const char *buf_text,
     // is strictly beyond its right edge.
     float x_accum = 0.0f;
     size_t byte_offset = 0;
+    size_t last_byte_offset = 0;
     while (byte_offset < len) {
         int seq = utf8_seq_len_fwd(line_text + byte_offset);
         float char_w = measure_text(renderer, font_id, font_size,
                                     line_text + byte_offset, seq);
         if (rel_x < x_accum + char_w)
             return vl->byte_start + byte_offset;
+        last_byte_offset = byte_offset;
         x_accum += char_w;
         byte_offset += seq;
     }
-    return vl->byte_end;
+    // Click past all characters: place cursor on the last character of this
+    // visual line rather than byte_end (which would land on the next line).
+    return vl->byte_start + last_byte_offset;
 }
 
 size_t vline_for_byte_pos(const VLineCache *cache, size_t byte_pos) {
