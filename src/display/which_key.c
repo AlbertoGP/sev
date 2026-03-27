@@ -50,11 +50,25 @@ static void key_event_to_str(char *buf, size_t sz, const KeyEvent *ev) {
     snprintf(buf, sz, "%s", tmp);
 }
 
-static void collect_entries(sexp ctx, Keymap *km, const char *prefix, int depth) {
+static bool key_seen(KeyEvent *seen, int nseen, const KeyEvent *ev) {
+    for (int i = 0; i < nseen; i++) {
+        if (seen[i].type == ev->type && seen[i].mods == ev->mods &&
+            seen[i].codepoint == ev->codepoint)
+            return true;
+    }
+    return false;
+}
+
+static void collect_entries(sexp ctx, Keymap *km, const char *prefix,
+                             int depth, KeyEvent *seen, int *nseen) {
     if (!km || wk_count >= WK_MAX || depth > 4) return;
 
     for (size_t i = 0; i < km->count && wk_count < WK_MAX; i++) {
         KeymapEntry *e = &km->entries[i];
+
+        // Skip keys already claimed by a more-specific (child) map
+        if (key_seen(seen, *nseen, &e->key)) continue;
+        if (*nseen < 64) seen[(*nseen)++] = e->key;
 
         char key_str[32];
         key_event_to_str(key_str, sizeof(key_str), &e->key);
@@ -85,16 +99,26 @@ static void collect_entries(sexp ctx, Keymap *km, const char *prefix, int depth)
                 wk_is_prefix[wk_count] = true;
                 wk_count++;
             } else {
-                // Anonymous prefix: recurse as before
-                collect_entries(ctx, child, full_path, depth + 1);
+                // Anonymous prefix: recurse
+                collect_entries(ctx, child, full_path, depth + 1, seen, nseen);
             }
         }
     }
+
+    // Traverse parent chain so inherited entries are visible
+    if (km->parent)
+        collect_entries(ctx, km->parent, prefix, depth, seen, nseen);
+}
+
+static void collect_entries_top(sexp ctx, Keymap *km, const char *prefix, int depth) {
+    KeyEvent seen[64];
+    int nseen = 0;
+    collect_entries(ctx, km, prefix, depth, seen, &nseen);
 }
 
 void WhichKey(AppState *state) {
     wk_count = 0;
-    collect_entries(state->chibi.ctx, state->which_key.keymap, "", 0);
+    collect_entries_top(state->chibi.ctx, state->which_key.keymap, "", 0);
     if (wk_count == 0) return;
 
     float scale = state->ui.scale_factor;

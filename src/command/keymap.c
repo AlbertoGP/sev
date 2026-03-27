@@ -9,6 +9,7 @@
 #include "mode.h"
 #include "scheme_internal.h"
 #include "../text/buffer.h"
+#include "../display/pane.h"
 
 KeyEvent last_event;
 
@@ -21,8 +22,11 @@ Keymap *keymap_create(void) {
 bool init_input(AppState *state) {
     Keymap *global = keymap_create();
     if (!global) return false;
+    Keymap *pane = keymap_create();
+    if (!pane) { free(global); return false; }
 
     state->input.global_map  = global;
+    state->input.pane_map    = pane;
     state->input.current_map = global;
     state->input.key_intercept_cb  = SEXP_FALSE;
     state->input.key_intercept_map = NULL;
@@ -154,7 +158,10 @@ Binding *keymap_lookup_chain(AppState *state, const KeyEvent *ev) {
     if (major && major->keymap && (b = keymap_lookup(major->keymap, ev)))
         return b;
 
-    // 4. Global keymap
+    // 4. Pane keymap (pane-dependent commands; parent chain reaches global)
+    if (state->input.pane_map && pane_get_root() != NULL)
+        return keymap_lookup(state->input.pane_map, ev);
+    // 5. Global keymap (base; always-available commands)
     return keymap_lookup(state->input.global_map, ev);
 }
 

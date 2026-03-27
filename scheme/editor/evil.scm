@@ -7,12 +7,14 @@
 (define command-map (make-keymap))
 (define pending-map (make-keymap))
 
-;; Set parent pointers so system bindings inherit from global-keymap
-(set-keymap-parent! normal-map  global-keymap)
-(set-keymap-parent! insert-map  global-keymap)
-(set-keymap-parent! select-map  global-keymap)
-(set-keymap-parent! pending-map global-keymap)
-(set-keymap-parent! command-map global-keymap)
+;; Set parent pointers so pane commands are found via parent chain traversal.
+;; pane-keymap's own parent is global-keymap, so the full chain is:
+;; mode-map → pane-keymap → global-keymap
+(set-keymap-parent! normal-map  pane-keymap)
+(set-keymap-parent! insert-map  pane-keymap)
+(set-keymap-parent! select-map  pane-keymap)
+(set-keymap-parent! pending-map pane-keymap)
+(set-keymap-parent! command-map pane-keymap)
 
 ;; Normal mode bindings
 (set-key! normal-map "0" 'evil-zero)
@@ -218,49 +220,50 @@
 ;; State transitions
 (defcommand (evil-normal)
   "Return to normal mode."
-  ;; Finalize insert/replace session change
-  (when (%change-active?)
-    (let ((typed (%change-current-inserts)))
-      (when evil-pending-repeat-info
-        (let ((ri evil-pending-repeat-info))
-          (%change-set-repeat-info!
-            (make-repeat-info (ri-op ri) (ri-op-count ri)
-                              (ri-motion ri) (ri-motion-count ri)
-                              (ri-text-object ri) (ri-text-object-kind ri)
-                              (ri-setup ri) typed))))
-      (set! evil-pending-repeat-info #f)
-      (when evil-rect-insert-info
-        (let* ((info evil-rect-insert-info)
-               (row-min (car info))
-               (row-max (cadr info))
-               (col     (car (cddr info)))
-               (ragged? (and (> (length info) 3) (list-ref info 3))))
-          (set! evil-rect-insert-info #f)
-          (when (> (string-length typed) 0)
-            (let loop ((line row-max))
-              (when (> line row-min)
-                (point-set! (if ragged?
-                                (line-content-end line)
-                                (min (+ (%line-start-position line) col)
-                                     (%line-end-position line))))
-                (%insert-string typed)
-                (loop (- line 1)))))))
-      (%end-change)))
-  (disable-minor-mode 'evil-insert-mode)
-  (disable-minor-mode 'evil-replace-mode)
-  (disable-minor-mode 'evil-select-mode)
-  (disable-minor-mode 'evil-command-mode)
-  (disable-minor-mode 'evil-pending-mode)
-  (%set-cursor-override! #f)
-  (enable-minor-mode 'evil-normal-mode)
-  (%select-mode-set! 0)
-  (%set-replace-mode! #f)
-  (evil-reset-count)
-  (set-local! 'mode-name "Normal") 
-  (message-clear)
-  (when (%macro-recording?)
-    (disable-minor-mode 'evil-recording-mode)
-    (enable-minor-mode 'evil-recording-mode)))
+  (unless (no-panes?)
+    ;; Finalize insert/replace session change
+    (when (%change-active?)
+      (let ((typed (%change-current-inserts)))
+        (when evil-pending-repeat-info
+          (let ((ri evil-pending-repeat-info))
+            (%change-set-repeat-info!
+              (make-repeat-info (ri-op ri) (ri-op-count ri)
+                                (ri-motion ri) (ri-motion-count ri)
+                                (ri-text-object ri) (ri-text-object-kind ri)
+                                (ri-setup ri) typed))))
+        (set! evil-pending-repeat-info #f)
+        (when evil-rect-insert-info
+          (let* ((info evil-rect-insert-info)
+                 (row-min (car info))
+                 (row-max (cadr info))
+                 (col     (car (cddr info)))
+                 (ragged? (and (> (length info) 3) (list-ref info 3))))
+            (set! evil-rect-insert-info #f)
+            (when (> (string-length typed) 0)
+              (let loop ((line row-max))
+                (when (> line row-min)
+                  (point-set! (if ragged?
+                                  (line-content-end line)
+                                  (min (+ (%line-start-position line) col)
+                                       (%line-end-position line))))
+                  (%insert-string typed)
+                  (loop (- line 1)))))))
+        (%end-change)))
+    (disable-minor-mode 'evil-insert-mode)
+    (disable-minor-mode 'evil-replace-mode)
+    (disable-minor-mode 'evil-select-mode)
+    (disable-minor-mode 'evil-command-mode)
+    (disable-minor-mode 'evil-pending-mode)
+    (%set-cursor-override! #f)
+    (enable-minor-mode 'evil-normal-mode)
+    (%select-mode-set! 0)
+    (%set-replace-mode! #f)
+    (evil-reset-count)
+    (set-local! 'mode-name "Normal")
+    (message-clear)
+    (when (%macro-recording?)
+      (disable-minor-mode 'evil-recording-mode)
+      (enable-minor-mode 'evil-recording-mode))))
 
 (defcommand (evil-insert)
   "Enter insert mode."
@@ -1526,10 +1529,10 @@
 ;;; Motion command wrappers (bound to keys)
 ;;;
 
-(defcommand (evil-motion-h) "Move left." (evil-execute-motion 'motion-h))
-(defcommand (evil-motion-j) "Move down." (evil-execute-motion 'motion-j))
-(defcommand (evil-motion-k) "Move up." (evil-execute-motion 'motion-k))
-(defcommand (evil-motion-l) "Move right." (evil-execute-motion 'motion-l))
+(defcommand (evil-motion-h) "Move left."  (unless (no-panes?) (evil-execute-motion 'motion-h)))
+(defcommand (evil-motion-j) "Move down." (unless (no-panes?) (evil-execute-motion 'motion-j)))
+(defcommand (evil-motion-k) "Move up."   (unless (no-panes?) (evil-execute-motion 'motion-k)))
+(defcommand (evil-motion-l) "Move right." (unless (no-panes?) (evil-execute-motion 'motion-l)))
 (defcommand (evil-motion-$) "Move to end of line." (evil-execute-motion 'motion-$))
 (defcommand (evil-motion-^) "Move to first non-blank." (evil-execute-motion 'motion-^))
 (defcommand (evil-motion-w) "Move forward one word." (evil-execute-motion 'motion-w))

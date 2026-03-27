@@ -21,25 +21,41 @@
 (defcommand move-cursor "Move cursor by COUNT characters.")
 (defcommand delete-char "Delete COUNT characters before cursor.")
 (defcommand insert-char "Insert character CH at cursor.")
-(defcommand tab-next "Switch to the next tab.")
-(defcommand tab-prev "Switch to the previous tab.")
+(defcommand (tab-next) "Switch to the next tab."
+  (unless (no-panes?) (%tab-next)))
+(defcommand (tab-prev) "Switch to the previous tab."
+  (unless (no-panes?) (%tab-prev)))
 (defcommand reset-global-scale "Reset global UI scaling factor.")
 (defcommand increase-global-scale "Increase global UI scaling factor.")
 (defcommand decrease-global-scale "Decrease global UI scaling factor.")
-(defcommand reset-buffer-scale "Reset buffer text scaling factor.")
-(defcommand increase-buffer-scale "Increase buffer text scaling factor.")
-(defcommand decrease-buffer-scale "Decrease buffer text scaling factor.")
-(defcommand split-horizontal "Split the current pane horizontally.")
-(defcommand split-vertical "Split the current pane vertically.")
-(defcommand pane-close "Close the current pane.")
-(defcommand pane-navigate-up "Navigate to the pane above.")
-(defcommand pane-navigate-down "Navigate to the pane below.")
-(defcommand pane-navigate-left "Navigate to the pane on the left.")
-(defcommand pane-navigate-right "Navigate to the pane on the right.")
-(defcommand pane-h-split-increase "Increase horizontal split size.")
-(defcommand pane-h-split-decrease "Decrease horizontal split size.")
-(defcommand pane-v-split-increase "Increase vertical split size.")
-(defcommand pane-v-split-decrease "Decrease vertical split size.")
+(defcommand (reset-buffer-scale) "Reset buffer text scaling factor."
+  (unless (no-panes?) (%reset-buffer-scale)))
+(defcommand (increase-buffer-scale) "Increase buffer text scaling factor."
+  (unless (no-panes?) (%increase-buffer-scale)))
+(defcommand (decrease-buffer-scale) "Decrease buffer text scaling factor."
+  (unless (no-panes?) (%decrease-buffer-scale)))
+(defcommand (split-horizontal) "Split the current pane horizontally."
+  (unless (no-panes?) (%split-horizontal)))
+(defcommand (split-vertical) "Split the current pane vertically."
+  (unless (no-panes?) (%split-vertical)))
+(defcommand (pane-close) "Close the current pane."
+  (unless (no-panes?) (%pane-close)))
+(defcommand (pane-navigate-up) "Navigate to the pane above."
+  (unless (no-panes?) (%pane-navigate-up)))
+(defcommand (pane-navigate-down) "Navigate to the pane below."
+  (unless (no-panes?) (%pane-navigate-down)))
+(defcommand (pane-navigate-left) "Navigate to the pane on the left."
+  (unless (no-panes?) (%pane-navigate-left)))
+(defcommand (pane-navigate-right) "Navigate to the pane on the right."
+  (unless (no-panes?) (%pane-navigate-right)))
+(defcommand (pane-h-split-increase) "Increase horizontal split size."
+  (unless (no-panes?) (%pane-h-split-increase)))
+(defcommand (pane-h-split-decrease) "Decrease horizontal split size."
+  (unless (no-panes?) (%pane-h-split-decrease)))
+(defcommand (pane-v-split-increase) "Increase vertical split size."
+  (unless (no-panes?) (%pane-v-split-increase)))
+(defcommand (pane-v-split-decrease) "Decrease vertical split size."
+  (unless (no-panes?) (%pane-v-split-decrease)))
 (defcommand clay-debug "Toggle Clay debug mode.")
 (defcommand exchange-point-and-mark "Swap point and selection anchor.")
 
@@ -89,27 +105,31 @@
 (defcommand (save-buffer-as)
   "Save the current buffer under a new file name."
   (interactive)
-  (minibuffer-read "Save as: "
-    (lambda (filename)
-      (if (string=? filename "")
-          (message "Filename cannot be empty")
-          (begin
-            (%set-buffer-file-name! filename)
-            (%buffer-set-name! filename)
-            (set-auto-mode!)
-            (if (%buffer-write)
-                (message (string-append "Saved " filename))
-                (message (string-append "Failed to save " filename))))))))
+  (if (no-panes?)
+      (message "No buffer to save")
+      (minibuffer-read "Save as: "
+        (lambda (filename)
+          (if (string=? filename "")
+              (message "Filename cannot be empty")
+              (begin
+                (%set-buffer-file-name! filename)
+                (%buffer-set-name! filename)
+                (set-auto-mode!)
+                (if (%buffer-write)
+                    (message (string-append "Saved " filename))
+                    (message (string-append "Failed to save " filename)))))))))
 
 (defcommand (save-buffer)
   "Save the current buffer. If no file name is set, prompt for one."
   (interactive)
-  (let ((filename (%buffer-file-name)))
-    (if (not (eq? filename #f))
-        (if (%buffer-write)
-            (message (string-append "Saved " filename))
-            (message (string-append "Failed to save " filename)))
-        (call-interactively 'save-buffer-as))))
+  (if (no-panes?)
+      (message "No buffer to save")
+      (let ((filename (%buffer-file-name)))
+        (if (not (eq? filename #f))
+            (if (%buffer-write)
+                (message (string-append "Saved " filename))
+                (message (string-append "Failed to save " filename)))
+            (call-interactively 'save-buffer-as)))))
 
 (defcommand (open-file)
   "Open an existing file into a new buffer, or switch to it if already open."
@@ -163,13 +183,15 @@
 (defcommand (buffer-rename)
   "Rename the current buffer."
   (interactive)
-  (minibuffer-read "Rename buffer to: "
-    (lambda (new-name)
-      (if (string=? new-name "")
-          (message "Buffer name cannot be empty")
-          (if (%buffer-set-name! new-name)
-              (message (string-append "Buffer renamed to " new-name))
-              (message (string-append "Name already in use: " new-name)))))))
+  (if (no-panes?)
+      (message "No buffer to rename")
+      (minibuffer-read "Rename buffer to: "
+        (lambda (new-name)
+          (if (string=? new-name "")
+              (message "Buffer name cannot be empty")
+              (if (%buffer-set-name! new-name)
+                  (message (string-append "Buffer renamed to " new-name))
+                  (message (string-append "Name already in use: " new-name))))))))
 
 (defcommand (scratch-buffer)
   "Switch to the *scratch* buffer, creating it if it does not exist."
@@ -184,13 +206,15 @@
 (defcommand (switch-to-buffer)
   "Switch the current pane to a named buffer."
   (interactive)
-  (minibuffer-read "Switch to buffer: "
-    (lambda (name)
-      (if (string=? name "")
-          (message "Buffer name cannot be empty")
-          (if (%tab-set-buffer! name)
-              (message (string-append "Switched to " name))
-              (message (string-append "No buffer named \"" name "\"")))))))
+  (if (no-panes?)
+      (message "No pane to switch buffer in")
+      (minibuffer-read "Switch to buffer: "
+        (lambda (name)
+          (if (string=? name "")
+              (message "Buffer name cannot be empty")
+              (if (%tab-set-buffer! name)
+                  (message (string-append "Switched to " name))
+                  (message (string-append "No buffer named \"" name "\""))))))))
 
 (defcommand (buffer-close)
   "Close a named buffer, removing all panes and tabs that display it."

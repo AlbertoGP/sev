@@ -274,8 +274,8 @@ void scheme_init(AppState *state) {
     state->chibi.ctx = ctx;
     state->chibi.env = env;
 
-    sexp_gc_var1(global_km);
-    sexp_gc_preserve1(ctx, global_km);
+    sexp_gc_var2(global_km, pane_km);
+    sexp_gc_preserve2(ctx, global_km, pane_km);
 
     // DON'T register custom types for now - just use built-in CPOINTER
     global_km = sexp_make_cpointer(
@@ -290,7 +290,19 @@ void scheme_init(AppState *state) {
                     sexp_intern(ctx, "global-keymap", -1),
                     global_km);
 
-    sexp_gc_release1(ctx);
+    pane_km = sexp_make_cpointer(
+        ctx,
+        SEXP_CPOINTER,
+        state->input.pane_map,
+        SEXP_FALSE,
+        0
+    );
+
+    sexp_env_define(ctx, env,
+                    sexp_intern(ctx, "pane-keymap", -1),
+                    pane_km);
+
+    sexp_gc_release2(ctx);
 
     #define SDEF(a, b, c) sexp_define_foreign(ctx, env, a, b, c)
 
@@ -329,28 +341,28 @@ void scheme_init(AppState *state) {
     SDEF("char-at", 1, scm_char_at);
     SDEF("last-key-char", 0, scm_last_key_char);
     SDEF("%set-replace-mode!", 1, scm_set_replace_mode);
-    SDEF("tab-next", 0, scm_tab_next);
-    SDEF("tab-prev", 0, scm_tab_prev);
+    SDEF("%tab-next", 0, scm_tab_next);
+    SDEF("%tab-prev", 0, scm_tab_prev);
     SDEF("%tab-new!", 1, scm_tab_new);
     SDEF("no-panes?", 0, scm_no_panes_p);
     SDEF("reset-global-scale", 0, scm_reset_global_scale);
     SDEF("increase-global-scale", 0, scm_increase_global_scale);
     SDEF("decrease-global-scale", 0, scm_decrease_global_scale);
-    SDEF("reset-buffer-scale", 0, scm_reset_buffer_scale);
-    SDEF("increase-buffer-scale", 0, scm_increase_buffer_scale);
-    SDEF("decrease-buffer-scale", 0, scm_decrease_buffer_scale);
-    SDEF("split-vertical", 0, scm_split_vertical);
-    SDEF("split-horizontal", 0, scm_split_horizontal);
-    SDEF("pane-close", 0, scm_pane_close);
+    SDEF("%reset-buffer-scale", 0, scm_reset_buffer_scale);
+    SDEF("%increase-buffer-scale", 0, scm_increase_buffer_scale);
+    SDEF("%decrease-buffer-scale", 0, scm_decrease_buffer_scale);
+    SDEF("%split-vertical", 0, scm_split_vertical);
+    SDEF("%split-horizontal", 0, scm_split_horizontal);
+    SDEF("%pane-close", 0, scm_pane_close);
     SDEF("%pop-to-buffer", 1, scm_pop_to_buffer);
-    SDEF("pane-navigate-up", 0, scm_pane_navigate_up);
-    SDEF("pane-navigate-down", 0, scm_pane_navigate_down);
-    SDEF("pane-navigate-left", 0, scm_pane_navigate_left);
-    SDEF("pane-navigate-right", 0, scm_pane_navigate_right);
-    SDEF("pane-v-split-increase", 0, scm_pane_v_split_increase);
-    SDEF("pane-v-split-decrease", 0, scm_pane_v_split_decrease);
-    SDEF("pane-h-split-increase", 0, scm_pane_h_split_increase);
-    SDEF("pane-h-split-decrease", 0, scm_pane_h_split_decrease);
+    SDEF("%pane-navigate-up", 0, scm_pane_navigate_up);
+    SDEF("%pane-navigate-down", 0, scm_pane_navigate_down);
+    SDEF("%pane-navigate-left", 0, scm_pane_navigate_left);
+    SDEF("%pane-navigate-right", 0, scm_pane_navigate_right);
+    SDEF("%pane-v-split-increase", 0, scm_pane_v_split_increase);
+    SDEF("%pane-v-split-decrease", 0, scm_pane_v_split_decrease);
+    SDEF("%pane-h-split-increase", 0, scm_pane_h_split_increase);
+    SDEF("%pane-h-split-decrease", 0, scm_pane_h_split_decrease);
     SDEF("eval-buffer", 0, scm_eval_buffer);
     SDEF("%ts-tree-string", 0, scm_ts_tree_string);
     SDEF("%ts-enable!", 0, scm_ts_enable);
@@ -497,14 +509,14 @@ void scheme_init(AppState *state) {
         "delete-backward-char delete-forward-char set-column "
         "line-start line-end skip-whitespace char-at-point "
         "point-get point-set! buffer-length delete-range char-at "
-        "last-key-char %set-replace-mode! tab-next tab-prev %tab-new! no-panes? "
+        "last-key-char %set-replace-mode! %tab-next %tab-prev %tab-new! no-panes? "
         "reset-global-scale increase-global-scale decrease-global-scale "
-        "reset-buffer-scale increase-buffer-scale decrease-buffer-scale "
-        "split-vertical split-horizontal pane-close %pop-to-buffer "
-        "pane-navigate-up pane-navigate-down "
-        "pane-navigate-left pane-navigate-right "
-        "pane-v-split-increase pane-v-split-decrease "
-        "pane-h-split-increase pane-h-split-decrease "
+        "%reset-buffer-scale %increase-buffer-scale %decrease-buffer-scale "
+        "%split-vertical %split-horizontal %pane-close %pop-to-buffer "
+        "%pane-navigate-up %pane-navigate-down "
+        "%pane-navigate-left %pane-navigate-right "
+        "%pane-v-split-increase %pane-v-split-decrease "
+        "%pane-h-split-increase %pane-h-split-decrease "
         "eval-buffer %ts-tree-string %ts-enable! %ts-disable! clay-debug prefix-arg "
         "%set-keymap-parent! %set-keymap-name! %bind-prefix! "
         "%read-key-binding %set-key-unbound-cb! %set-mode-allows-input! ignore "
@@ -537,7 +549,7 @@ void scheme_init(AppState *state) {
         "%which-key-toggle "
         "%jump-push! %jump-backward! %jump-forward! "
         "%set-mouse-click-handler! %set-mouse-drag-handler! "
-        "global-keymap eval) "
+        "global-keymap pane-keymap eval) "
         "%editor-env '()))",
         -1, meta);
     if (sexp_exceptionp(result)) {

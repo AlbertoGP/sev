@@ -36,6 +36,7 @@ typedef enum {
 
 typedef struct {
     struct Keymap *global_map;
+    struct Keymap *pane_map;       // searched only when pane_get_root() != NULL; parent = global_map
     struct Keymap *current_map;
     KeyEvent last_event;
     sexp         key_intercept_cb;         // SEXP_FALSE if inactive
