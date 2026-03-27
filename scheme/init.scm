@@ -44,7 +44,7 @@
 (set-key! global-keymap "C-S-DOWN" 'pane-h-split-increase)
 (set-key! global-keymap "C-S-UP" 'pane-h-split-decrease)
 (set-key! global-keymap "C-S-RIGHT" 'pane-v-split-increase)
-(set-key! global-keymap "C-k o" 'open-file)
+(set-key! global-keymap "SPC f o" 'open-file)
 (define buffer-map (make-keymap))
 (%set-keymap-name! buffer-map "buffer")
 (set-key! buffer-map "n" 'buffer-new)
@@ -105,6 +105,7 @@
 (set-key! splash-map "SPC t n" 'tab-new)
 (set-key! splash-map "M-x"     'execute-extended-command)
 (set-key! splash-map "C-q"     'quit)
+(set-key! splash-map "SPC f o" 'open-file)
 (%set-splash-keymap! splash-map)
 
 (reset-global-scale)

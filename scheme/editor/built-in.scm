@@ -122,6 +122,7 @@
               (message (string-append "File not found: " filename))
               (begin
                 (%jump-push!)
+                (when (no-panes?) (%tab-new! filename))
                 (if (%buffer-create filename)
                     (begin
                       (%tab-set-buffer! filename)
