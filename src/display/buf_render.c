@@ -599,7 +599,7 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
                                       .top = 2, .bottom = 2 },
                 .layoutDirection  = CLAY_TOP_TO_BOTTOM,
             },
-            .clip = { .vertical = true, .childOffset = { .x = 0, .y = -sub_offset } }
+            .clip = { .vertical = true, .horizontal = true, .childOffset = { .x = 0, .y = -sub_offset } }
         }) {
             if (BufRender_SetupGeometry(&ctx, id)) {
                 for (size_t i = ctx.first_vline; i < ctx.end_vline; i++)
