@@ -92,6 +92,30 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         bool button_held = (event->motion.state & SDL_BUTTON_LMASK) != 0;
         Clay_SetPointerState((Clay_Vector2){x, y}, button_held);
 
+        // Split divider drag.
+        if (state->input.split_drag_pane && state->input.mouse_button_down) {
+            pane_split_drag_update(state->input.split_drag_pane, x, y);
+            state->needs_redraw = true;
+            break;
+        }
+
+        // Update resize cursor when hovering over a split divider.
+        {
+            static SDL_Cursor *cursor_ew      = NULL;
+            static SDL_Cursor *cursor_ns      = NULL;
+            static SDL_Cursor *cursor_default = NULL;
+            if (!cursor_ew)      cursor_ew      = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_EW_RESIZE);
+            if (!cursor_ns)      cursor_ns      = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NS_RESIZE);
+            if (!cursor_default) cursor_default = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_DEFAULT);
+            Pane *split_hover = pane_split_at_coords(pane_get_root(), x, y);
+            if (split_hover && split_hover->type == PANE_V_SPLIT)
+                SDL_SetCursor(cursor_ew);
+            else if (split_hover && split_hover->type == PANE_H_SPLIT)
+                SDL_SetCursor(cursor_ns);
+            else
+                SDL_SetCursor(cursor_default);
+        }
+
         if (state->input.scrollbar_drag_pane) {
             Pane *sp = state->input.scrollbar_drag_pane;
             VLineCache *sc = &sp->content.active_tab->content.buffer.vline_cache;
@@ -139,6 +163,21 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         state->input.mouse_drag_active = false;
         if (event->button.button == SDL_BUTTON_MIDDLE)
             state->input.middle_pressed_this_frame = true;
+
+        // Check split divider before scrollbar/buffer.
+        Pane *split_hit = pane_split_at_coords(pane_get_root(), x, y);
+        if (split_hit) {
+            if (event->button.clicks == 2) {
+                if (split_hit->type == PANE_V_SPLIT) split_hit->v_split.left_width = 0.5f;
+                else                                 split_hit->h_split.top_height  = 0.5f;
+                state->needs_redraw = true;
+            } else {
+                state->input.split_drag_pane    = split_hit;
+                state->input.split_drag_start_x = x;
+                state->input.split_drag_start_y = y;
+            }
+            break;
+        }
 
         Pane *hit = pane_at_coords(pane_get_root(), x, y);
         state->input.mouse_down_pane = hit;
@@ -192,10 +231,11 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     case SDL_EVENT_MOUSE_BUTTON_UP:
         state->needs_redraw = true;
         Clay_SetPointerState((Clay_Vector2){event->button.x, event->button.y}, false);
-        state->input.mouse_button_down = false;
-        state->input.mouse_drag_active = false;
-        state->input.mouse_down_pane   = NULL;
+        state->input.mouse_button_down   = false;
+        state->input.mouse_drag_active   = false;
+        state->input.mouse_down_pane     = NULL;
         state->input.scrollbar_drag_pane = NULL;
+        state->input.split_drag_pane     = NULL;
         break;
 
     case SDL_EVENT_MOUSE_WHEEL:

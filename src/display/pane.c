@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -70,6 +71,91 @@ void pane_replace_child(Pane *parent, Pane *old_child, Pane *new_child) {
             parent->v_split.left = new_child;
         else
             parent->v_split.right = new_child;
+    }
+}
+
+#define SPLIT_GRAB_ZONE 4.0f
+
+// Geometry helpers: walk to edge leaves using stored content geometry.
+// Return -1 if geometry is not yet available (first frame).
+
+static float pane_leftmost_x(Pane *p) {
+    if (!p) return -1.0f;
+    if (p->type == PANE_CONTENT)
+        return p->content.line_height_px > 0 ? p->content.pane_left : -1.0f;
+    if (p->type == PANE_V_SPLIT) return pane_leftmost_x(p->v_split.left);
+    return pane_leftmost_x(p->h_split.top);
+}
+
+static float pane_rightmost_x(Pane *p) {
+    if (!p) return -1.0f;
+    if (p->type == PANE_CONTENT)
+        return p->content.line_height_px > 0 ? p->content.pane_right : -1.0f;
+    if (p->type == PANE_V_SPLIT) return pane_rightmost_x(p->v_split.right);
+    return pane_rightmost_x(p->h_split.top);
+}
+
+static float pane_topmost_y(Pane *p) {
+    if (!p) return -1.0f;
+    if (p->type == PANE_CONTENT)
+        return p->content.line_height_px > 0 ? p->content.pane_top : -1.0f;
+    if (p->type == PANE_H_SPLIT) return pane_topmost_y(p->h_split.top);
+    return pane_topmost_y(p->v_split.left);
+}
+
+static float pane_bottommost_y(Pane *p) {
+    if (!p) return -1.0f;
+    if (p->type == PANE_CONTENT)
+        return p->content.line_height_px > 0 ? p->content.pane_bottom : -1.0f;
+    if (p->type == PANE_H_SPLIT) return pane_bottommost_y(p->h_split.bottom);
+    return pane_bottommost_y(p->v_split.left);
+}
+
+Pane *pane_split_at_coords(Pane *root, float x, float y) {
+    if (!root) return NULL;
+    if (root->type == PANE_V_SPLIT) {
+        float lx = pane_leftmost_x(root->v_split.left);
+        float rx = pane_rightmost_x(root->v_split.right);
+        if (lx >= 0.0f && rx > lx) {
+            float div_x = lx + (rx - lx) * root->v_split.left_width;
+            if (fabsf(x - div_x) <= SPLIT_GRAB_ZONE) return root;
+        }
+        Pane *found = pane_split_at_coords(root->v_split.left, x, y);
+        return found ? found : pane_split_at_coords(root->v_split.right, x, y);
+    }
+    if (root->type == PANE_H_SPLIT) {
+        float ty = pane_topmost_y(root->h_split.top);
+        float by = pane_bottommost_y(root->h_split.bottom);
+        if (ty >= 0.0f && by > ty) {
+            float div_y = ty + (by - ty) * root->h_split.top_height;
+            if (fabsf(y - div_y) <= SPLIT_GRAB_ZONE) return root;
+        }
+        Pane *found = pane_split_at_coords(root->h_split.top, x, y);
+        return found ? found : pane_split_at_coords(root->h_split.bottom, x, y);
+    }
+    return NULL;
+}
+
+void pane_split_drag_update(Pane *split, float x, float y) {
+    if (!split) return;
+    if (split->type == PANE_V_SPLIT) {
+        float lx = pane_leftmost_x(split->v_split.left);
+        float rx = pane_rightmost_x(split->v_split.right);
+        if (lx >= 0.0f && rx > lx) {
+            float r = (x - lx) / (rx - lx);
+            if (r < 0.2f) r = 0.2f;
+            if (r > 0.8f) r = 0.8f;
+            split->v_split.left_width = r;
+        }
+    } else if (split->type == PANE_H_SPLIT) {
+        float ty = pane_topmost_y(split->h_split.top);
+        float by = pane_bottommost_y(split->h_split.bottom);
+        if (ty >= 0.0f && by > ty) {
+            float r = (y - ty) / (by - ty);
+            if (r < 0.2f) r = 0.2f;
+            if (r > 0.8f) r = 0.8f;
+            split->h_split.top_height = r;
+        }
     }
 }
 
@@ -403,7 +489,8 @@ void pane_free_strings(void) {
 }
 
 static void LeafPane(AppState *state, Pane *pane, int32_t index, float width, float height) {
-    CLAY(CLAY_IDI_LOCAL("ContentPane", index), {
+    Clay_ElementId cpane_id = CLAY_IDI_LOCAL("ContentPane", index);
+    CLAY(cpane_id, {
         .layout = {
             .sizing = {
                 .width  = width  ? CLAY_SIZING_PERCENT(width)  : CLAY_SIZING_GROW(0),
@@ -414,7 +501,7 @@ static void LeafPane(AppState *state, Pane *pane, int32_t index, float width, fl
         .backgroundColor = ui_resolve_color(state, state->ui.roles.pane_bg)
     }) {
         TabBar(state, pane, index);
-        BufferContentRender(state, &pane->content, pane->content.active_tab, index);
+        BufferContentRender(state, &pane->content, pane->content.active_tab, index, cpane_id);
     }
 }
 

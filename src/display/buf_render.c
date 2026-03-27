@@ -42,6 +42,7 @@ typedef struct {
     size_t           end_vline;
     Clay_ElementId   outer_id;
     Clay_ElementId   track_id;
+    Clay_ElementId   content_pane_id;
     int32_t          run_id;            // monotonically increasing Clay segment ID
 } BufRenderCtx;
 
@@ -185,8 +186,15 @@ static bool BufRender_SetupGeometry(BufRenderCtx *ctx, Clay_ElementId id) {
     cp->render_font_size = ctx->font_size;
 
     Clay_ElementData outer_data = Clay_GetElementData(ctx->outer_id);
-    if (outer_data.found)
+    if (outer_data.found) {
+        cp->pane_left  = outer_data.boundingBox.x;
         cp->pane_right = outer_data.boundingBox.x + outer_data.boundingBox.width;
+    }
+    Clay_ElementData cpane_data = Clay_GetElementData(ctx->content_pane_id);
+    if (cpane_data.found) {
+        cp->pane_top    = cpane_data.boundingBox.y;
+        cp->pane_bottom = cpane_data.boundingBox.y + cpane_data.boundingBox.height;
+    }
     Clay_ElementData track_data = Clay_GetElementData(ctx->track_id);
     if (track_data.found)
         cp->scrollbar_x = track_data.boundingBox.x;
@@ -548,7 +556,8 @@ static void BufRender_Scrollbar(BufRenderCtx *ctx) {
 
 // --- Public entry point ---
 
-void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t index) {
+void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t index,
+                         Clay_ElementId container_id) {
     if (!tab) return;
     Buffer *buf = tab->content.buffer.buffer;
     if (!buf) return;
@@ -573,8 +582,9 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
 
     Clay_ElementId outer_id = CLAY_IDI_LOCAL("BufWrap", index);
     Clay_ElementId track_id = CLAY_IDI_LOCAL("ScrollTrack", index);
-    ctx.outer_id = outer_id;
-    ctx.track_id = track_id;
+    ctx.outer_id        = outer_id;
+    ctx.track_id        = track_id;
+    ctx.content_pane_id = container_id;
 
     float sub_offset = BufRender_ComputeSubOffset(&ctx);
 

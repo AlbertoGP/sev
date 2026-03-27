@@ -32,7 +32,10 @@ typedef struct ContentPane {
     int      line_height_px;
     uint16_t render_font_id;
     uint16_t render_font_size;
-    float    pane_right;      // box.x + box.width of Buffer Text element (includes padding)
+    float    pane_left;       // left edge of outer pane container (updated each frame)
+    float    pane_right;      // right edge of outer pane container (updated each frame)
+    float    pane_top;        // top edge of full pane (including tab bar)
+    float    pane_bottom;     // bottom edge of full pane
 
     // Scrollbar hit-test region (updated each frame).
     float scrollbar_x;        // left edge of hit-test strip
@@ -128,6 +131,13 @@ void sync_active_buffer(void);
 // Walk the pane tree and return the PANE_DISPLAY leaf whose screen area
 // contains (x, y), or NULL if none match.
 Pane *pane_at_coords(Pane *root, float x, float y);
+
+// Walk the pane tree and return the split node whose divider is within
+// SPLIT_GRAB_ZONE pixels of (x, y), or NULL if none match.
+Pane *pane_split_at_coords(Pane *root, float x, float y);
+
+// Update a split node's ratio based on the current drag position (x, y).
+void pane_split_drag_update(Pane *split, float x, float y);
 
 // Clay component for rendering pane contents.
 void PaneContent(AppState *state, Pane *pane, int32_t index, float width, float height);

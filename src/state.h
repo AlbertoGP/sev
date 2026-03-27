@@ -54,6 +54,9 @@ typedef struct {
     bool         middle_pressed_this_frame; // true for one layout pass after middle-click
     struct Pane *scrollbar_drag_pane;      // non-NULL while dragging a scrollbar
     float        scrollbar_drag_offset;   // y distance from cursor to thumb top at click time
+    struct Pane *split_drag_pane;         // non-NULL while dragging a split divider
+    float        split_drag_start_x;      // mouse x at split drag start
+    float        split_drag_start_y;      // mouse y at split drag start
     FocusTarget  current_focus;
     struct Keymap *welcome_map;             // NULL until registered from Scheme
 } InputState;
