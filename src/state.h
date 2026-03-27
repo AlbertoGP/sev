@@ -69,9 +69,10 @@ typedef struct {
 
 typedef struct CachedRoles {
     sexp ui_bg, pane_bg, border_inactive, border_active, border_bell;
-    sexp bar_bg, scrollbar, scrollbar_hover;
+    sexp bar_bg, line_bg, scrollbar, scrollbar_hover;
     sexp tab_active, tab_hover, tab_inactive, tab_close;
     sexp text_primary, text_faded, text_key, text_command, text_prefix;
+    sexp text_linenum;
     sexp selection;
     sexp mode_normal, mode_insert, mode_replace, mode_select;
     sexp mode_command, mode_pending, mode_minibuffer, mode_help;

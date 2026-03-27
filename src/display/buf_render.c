@@ -282,14 +282,13 @@ static void BufRender_GutterCell(BufRenderCtx *ctx, size_t i, VisualLine *vl) {
         }
     }
 
-    float gutter_pad = 8.0f * ctx->state->ui.scale_factor;
     CLAY(CLAY_IDI_LOCAL("LineNum", (int32_t)i), {
         .layout = {
             .sizing = {
                 .width  = CLAY_SIZING_FIXED(ctx->gutter_width),
                 .height = CLAY_SIZING_FIXED(ctx->line_height)
             },
-            .padding        = { .left = gutter_pad, .right = gutter_pad },
+            .padding        = { .left = ctx->padding, .right = ctx->padding },
             .childAlignment = { .x = CLAY_ALIGN_X_RIGHT },
         },
     }) {
@@ -302,7 +301,7 @@ static void BufRender_GutterCell(BufRenderCtx *ctx, size_t i, VisualLine *vl) {
                 .fontSize  = ctx->font_size,
                 .textColor = ui_resolve_color(ctx->state,
                     is_current && ctx->cp->active
-                        ? ctx->state->ui.roles.text_primary
+                        ? ctx->state->ui.roles.text_linenum
                         : ctx->state->ui.roles.text_faded),
             }));
         }
@@ -407,12 +406,12 @@ static void BufRender_SelectionCell(BufRenderCtx *ctx, size_t i, VisualLine *vl)
 
     if (!do_highlight || hl_end <= hl_start) return;
 
-    float sel_x = 0;
+    float sel_x = ctx->padding;
     if (hl_start > line_start) {
         int w = 0, h = 0;
         TTF_GetStringSize(ctx->font, ctx->chars + line_start,
                           hl_start - line_start, &w, &h);
-        sel_x = (float)w;
+        sel_x += (float)w;
     }
     int sw = 0, sh = 0;
     TTF_GetStringSize(ctx->font, ctx->chars + hl_start,
@@ -485,24 +484,27 @@ static void BufRender_VLine(BufRenderCtx *ctx, size_t i) {
             cursor_on_line = true;
     }
 
-    float cursor_offset = 0;
+    float cursor_offset = ctx->padding;
     if (cursor_on_line) {
         size_t head_len = ctx->point - line_start;
         if (head_len > 0) {
             int w = 0, h = 0;
             TTF_GetStringSize(ctx->font, ctx->chars + line_start, head_len, &w, &h);
-            cursor_offset = (float)w;
+            cursor_offset += (float)w;
         }
     }
 
+    Clay_Color c = ui_resolve_color(ctx->state, ctx->state->ui.roles.line_bg);
     CLAY(CLAY_IDI_LOCAL("VLine", (int32_t)i), {
         .layout = {
             .sizing = {
                 .width  = CLAY_SIZING_GROW(0),
                 .height = CLAY_SIZING_FIXED(ctx->line_height)
             },
+            .padding = { .left = ctx->padding, .right = ctx->padding },
             .layoutDirection = CLAY_LEFT_TO_RIGHT,
-        }
+        },
+        .backgroundColor = (cursor_on_line && ctx->buf->select_mode == SELECT_NONE) ? (Clay_Color){ c.r, c.g, c.b, 128 } : (Clay_Color){0}
     }) {
         BufRender_GutterCell(ctx, i, vl);
         if (cursor_on_line && ctx->cp->active)
@@ -595,8 +597,7 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
         CLAY(id, {
             .layout = {
                 .sizing           = tab_layout_expand,
-                .padding          = { .left = ctx.padding, .right = ctx.padding,
-                                      .top = 2, .bottom = 2 },
+                .padding          = { .top = 2, .bottom = 2 },
                 .layoutDirection  = CLAY_TOP_TO_BOTTOM,
             },
             .clip = { .vertical = true, .horizontal = true, .childOffset = { .x = 0, .y = -sub_offset } }

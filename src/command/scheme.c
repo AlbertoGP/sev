@@ -569,6 +569,7 @@ void scheme_init(AppState *state) {
     INTERN_ROLE(border_inactive, "border.inactive");
     INTERN_ROLE(border_bell, "border.bell");
     INTERN_ROLE(bar_bg, "bar.bg");
+    INTERN_ROLE(line_bg, "line.bg");
     INTERN_ROLE(scrollbar, "scrollbar");
     INTERN_ROLE(scrollbar_hover, "scrollbar.hover");
     INTERN_ROLE(tab_active, "tab.active");
@@ -580,6 +581,7 @@ void scheme_init(AppState *state) {
     INTERN_ROLE(text_key, "text.key");
     INTERN_ROLE(text_command, "text.command");
     INTERN_ROLE(text_prefix, "text.prefix");
+    INTERN_ROLE(text_linenum, "text.linenum");
     INTERN_ROLE(selection, "selection");
     INTERN_ROLE(mode_normal, "mode.normal");
     INTERN_ROLE(mode_insert, "mode.insert");
