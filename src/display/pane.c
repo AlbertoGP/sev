@@ -189,6 +189,7 @@ void sync_active_buffer(void) {
         buffer_set_current(active->content.active_tab->content.buffer.buffer);
     if (!G->minibuf.active)
         G->input.current_focus = active ? FOCUS_PANE : FOCUS_WELCOME;
+    update_window_title();
 }
 
 Pane *pane_content_create(Buffer *buf) {

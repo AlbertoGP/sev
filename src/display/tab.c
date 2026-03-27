@@ -93,7 +93,6 @@ bool display_tab_next(Pane *dp) {
     if (!cur->next && !cur->prev) return false;
     dp->content.active_tab = cur->next ? cur->next : dp->content.list;
     sync_active_buffer();
-    update_window_title();
     return true;
 }
 
@@ -109,7 +108,6 @@ bool display_tab_prev(Pane *dp) {
         dp->content.active_tab = last;
     }
     sync_active_buffer();
-    update_window_title();
     return true;
 }
 
@@ -137,7 +135,6 @@ bool tab_new_with_buffer(const char *buf_name) {
     }
 
     sync_active_buffer();
-    update_window_title();
     G->needs_redraw = true;
     return true;
 }
@@ -160,7 +157,6 @@ void tab_close(void) {
         bool empty = display_tab_close(pane);
         (void)empty;  // cannot be true since we checked list->next above
         sync_active_buffer();
-        update_window_title();
         return;
     }
 
@@ -183,7 +179,6 @@ void tab_close(void) {
     // Destroy this pane's single tab then the pane node.
     tab_free(pane->content.list);
     free(pane);
-    update_window_title();
 }
 
 sexp scm_tab_close(sexp ctx, sexp self, sexp n) {
@@ -222,7 +217,6 @@ static void close_tab(Pane *dp, Tab *t) {
         tab_close();
     } else {
         sync_active_buffer();
-        update_window_title();
     }
 }
 
@@ -242,7 +236,6 @@ static void HandleClickTab(Clay_ElementId elementId, Clay_PointerData pointerInf
     dp->content.active_tab = t;
     if (!dp->content.active) pane_set_active(dp);
     else sync_active_buffer();
-    update_window_title();
 }
 
 // Static storage for close-button callback data.
