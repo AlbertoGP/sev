@@ -43,12 +43,13 @@
 (define user-settings-rules '())  ; list of (predicate . settings-alist)
 
 ;; Find the first matching value for KEY in a rule list.
+;; Returns (list value) when found (so #f values are distinguishable), #f when not found.
 (define (find-in-rules key rules)
   (let loop ((rs rules))
     (cond ((null? rs) #f)
           (((caar rs))  ; call predicate thunk
            (let ((entry (assq key (cdar rs))))
-             (if entry (cdr entry) (loop (cdr rs)))))
+             (if entry (list (cdr entry)) (loop (cdr rs)))))
           (else (loop (cdr rs))))))
 
 ;; Append two symbols together.
@@ -61,9 +62,9 @@
 (define (resolve-buffer-setting key fallback)
   (if (get-local (%sym-append key '/explicit?) #f)
       (get-local key fallback)
-      (or (find-in-rules key user-settings-rules)
-          (find-in-rules key %app-settings-rules)
-          fallback)))
+      (let ((r (or (find-in-rules key user-settings-rules)
+                   (find-in-rules key %app-settings-rules))))
+        (if r (car r) fallback))))
 
 ;; Apply all registered settings to the current buffer (skips explicit ones).
 (define (apply-buffer-settings)
@@ -159,6 +160,13 @@
 (%app-settings-rules-add!
   (lambda () (derived-mode? 'prog-mode))
   '((tab-width . 4)))
+
+;; indent-tabs-mode: #f = expand tabs to spaces on insert, #t = insert literal tab.
+;; Global default is #t (preserve); prog-mode enables expansion.
+(register-setting-default! 'indent-tabs-mode #t)
+(%app-settings-rules-add!
+  (lambda () (derived-mode? 'prog-mode))
+  '((indent-tabs-mode . #f)))
 
 ;; Scheme major mode — activates tree-sitter highlighting
 (define-major-mode 'scheme-mode)

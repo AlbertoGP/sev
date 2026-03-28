@@ -7,6 +7,7 @@
 
 #include "buffer.h"
 #include "buffer_type.h"
+#include "var.h"
 #include "change.h"
 #include "gap.h"
 #include "line.h"
@@ -197,8 +198,28 @@ sexp scm_delete_char(sexp ctx, sexp self, sexp n, sexp count) {
     return SEXP_VOID;
 }
 
-SCM_CMD(scm_newline,    (insert_char(buffer_get_current(), '\n'), message_clear()))
-SCM_CMD(scm_insert_tab, (insert_char(buffer_get_current(), '\t'), message_clear()))
+SCM_CMD(scm_newline, (insert_char(buffer_get_current(), '\n'), message_clear()))
+
+sexp scm_insert_tab(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    Buffer *buf = buffer_get_current();
+    sexp itm_sym = sexp_intern(ctx, "indent-tabs-mode", -1);
+    sexp itm_val = vartable_get(buffer_get_locals(buf), itm_sym, SEXP_TRUE);
+    if (sexp_truep(itm_val)) {
+        insert_char(buf, '\t');
+    } else {
+        sexp tw_sym = sexp_intern(ctx, "tab-width", -1);
+        sexp tw_val = vartable_get(buffer_get_locals(buf), tw_sym, SEXP_FALSE);
+        int tab_width = (sexp_fixnump(tw_val) && sexp_unbox_fixnum(tw_val) > 0)
+                        ? (int)sexp_unbox_fixnum(tw_val) : 4;
+        int col = buf->col - 1;  // buf->col is 1-indexed
+        int spaces = tab_width - (col % tab_width);
+        for (int i = 0; i < spaces; i++)
+            insert_char(buf, ' ');
+    }
+    message_clear();
+    return SEXP_VOID;
+}
 
 sexp scm_delete_backward_char(sexp ctx, sexp self, sexp n) {
     G->needs_redraw = true;

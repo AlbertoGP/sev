@@ -12,7 +12,7 @@
 (defcommand line-end "Move cursor to end of current line.")
 (defcommand skip-whitespace "Move cursor to next non-space, non-tab character.")
 (defcommand newline "Insert a newline at cursor.")
-(defcommand insert-tab "Insert a tab character at cursor.")
+(defcommand insert-tab "Insert tab or expand to spaces at next tab stop.")
 (defcommand delete-backward-char "Delete the character before cursor.")
 (defcommand delete-forward-char "Delete the character after cursor.")
 (defcommand move-cursor "Move cursor by COUNT characters.")

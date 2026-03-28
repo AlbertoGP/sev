@@ -37,6 +37,11 @@ void handle_text_input(AppState *state, const SDL_TextInputEvent *text) {
         int len = utf8_decode(utf8, &cp);
         utf8 += len;
 
+        // Skip control characters that are handled via KEY_DOWN (TAB, etc.).
+        // They arrive as both KEY_DOWN (special binding) and TEXT_INPUT, and
+        // the TEXT_INPUT path would otherwise self-insert the raw control char.
+        if (cp < 0x20) continue;
+
         KeyEvent ev = {
             .type = KEYEVENT_CHAR,
             .codepoint = cp,
