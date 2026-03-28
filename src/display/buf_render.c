@@ -33,6 +33,8 @@ typedef struct {
     TTF_Font        *font;
     int              line_num_type;     // 0=off 1=abs 2=rel 3=visual
     int              tab_width;
+    bool             wrap_lines;        // false = nowrap + hscroll
+    float            scroll_x;         // horizontal scroll offset (0 in wrap mode)
     float            gutter_width;
     size_t           cursor_logical_line;
     char            *lnum_strs;         // slab for formatted line number strings
@@ -210,9 +212,16 @@ static bool BufRender_SetupGeometry(BufRenderCtx *ctx, Clay_ElementId id) {
                     ? (int)sexp_unbox_fixnum(tabw_val) : 4;
     ctx->tab_width = tab_width;
 
+    // Read wrap-lines from buffer-local variable (default: true).
+    sexp wl_sym = sexp_intern(ctx->state->chibi.ctx, "wrap-lines", -1);
+    sexp wl_val = vartable_get(buffer_get_locals(ctx->buf), wl_sym, SEXP_TRUE);
+    bool wrap_lines = (wl_val != SEXP_FALSE);
+    ctx->wrap_lines = wrap_lines;
+
     VLineCache *cache = ctx->cache;
     vline_rebuild(cache, ctx->buf, &ctx->state->rendererData,
-                  text_width - gutter_width, ctx->font_id, ctx->font_size, tab_width);
+                  text_width - gutter_width, ctx->font_id, ctx->font_size,
+                  tab_width, wrap_lines);
 
     int line_height  = vline_get_line_height(&ctx->state->rendererData,
                                              ctx->font_id, ctx->font_size);
@@ -251,6 +260,22 @@ static bool BufRender_SetupGeometry(BufRenderCtx *ctx, Clay_ElementId id) {
         cache->last_scroll_point = point;
         if (line_height > 0)
             vline_scroll_to_cursor_pixels(cache, point, text_height, line_height, 3);
+
+        // Horizontal scroll-to-cursor in nowrap mode.
+        if (!wrap_lines) {
+            size_t cursor_vline = vline_for_byte_pos(cache, point);
+            if (cursor_vline < cache->count) {
+                const VisualLine *cvl = &cache->lines[cursor_vline];
+                size_t head_len = point > cvl->byte_start ? point - cvl->byte_start : 0;
+                float cursor_x = ctx->padding;
+                if (head_len > 0)
+                    cursor_x += measure_tab_aware(ctx->state, ctx->font_id, ctx->font_size,
+                                                  ctx->chars + cvl->byte_start,
+                                                  head_len, tab_width);
+                vline_scroll_x_to_cursor_pixels(cache, cursor_x,
+                                                text_width - gutter_width);
+            }
+        }
     }
 
     float max_scroll = (cache->count > 1)
@@ -630,6 +655,72 @@ static void BufRender_VLine(BufRenderCtx *ctx, size_t i) {
     }
 }
 
+// Renders a horizontal scrollbar below the text area (nowrap mode only).
+static void BufRender_HScrollbar(BufRenderCtx *ctx) {
+    ContentPane *cp = ctx->cp;
+    cp->has_hscrollbar = false;
+    if (ctx->wrap_lines) return;
+    float content_w = cp->text_origin_w;
+    float max_w = ctx->cache->max_line_width;
+    if (max_w <= content_w) return;
+
+    cp->has_hscrollbar = true;
+    float bar_h = 12.0f * ctx->state->ui.scale_factor;
+    float scroll_x = ctx->scroll_x;
+    float range    = max_w - content_w;
+
+    float thumb_w = fmaxf((content_w / max_w) * content_w,
+                          20.0f * ctx->state->ui.scale_factor);
+    float track_w = content_w;
+    float travel  = track_w - thumb_w;
+    float thumb_x = (range > 0.0f && travel > 0.0f)
+                    ? (scroll_x / range) * travel : 0.0f;
+
+    cp->hscrollbar_y       = ctx->box.y + ctx->text_height;
+    cp->hscrollbar_track_x = ctx->box.x + ctx->gutter_width;
+    cp->hscrollbar_track_w = track_w;
+    cp->hscrollbar_thumb_x = ctx->box.x + ctx->gutter_width + thumb_x;
+    cp->hscrollbar_thumb_w = thumb_w;
+
+    // Spacer at the left to push the thumb into position, then thumb, then remainder.
+    CLAY_AUTO_ID({
+        .layout = {
+            .sizing = {
+                .width  = CLAY_SIZING_GROW(0),
+                .height = CLAY_SIZING_FIXED(bar_h)
+            },
+            .layoutDirection = CLAY_LEFT_TO_RIGHT,
+        },
+        .backgroundColor = ui_resolve_color(ctx->state, ctx->state->ui.roles.bar_bg)
+    }) {
+        // Gutter-width spacer to align with text area.
+        if (ctx->gutter_width > 0.0f) {
+            CLAY_AUTO_ID({
+                .layout = { .sizing = {
+                    .width  = CLAY_SIZING_FIXED(ctx->gutter_width),
+                    .height = CLAY_SIZING_FIXED(bar_h) } }
+            }) {}
+        }
+        // Left spacer before thumb.
+        if (thumb_x > 0.0f) {
+            CLAY_AUTO_ID({
+                .layout = { .sizing = {
+                    .width  = CLAY_SIZING_FIXED(thumb_x),
+                    .height = CLAY_SIZING_FIXED(bar_h) } }
+            }) {}
+        }
+        // Thumb.
+        CLAY_AUTO_ID({
+            .layout = { .sizing = {
+                .width  = CLAY_SIZING_FIXED(thumb_w),
+                .height = CLAY_SIZING_FIXED(bar_h) } },
+            .backgroundColor = Clay_Hovered() && !ctx->state->input.mouse_button_down
+                ? ui_resolve_color(ctx->state, ctx->state->ui.roles.scrollbar_hover)
+                : ui_resolve_color(ctx->state, ctx->state->ui.roles.scrollbar)
+        }) {}
+    }
+}
+
 // Renders the scrollbar track and thumb alongside the buffer text area.
 static void BufRender_Scrollbar(BufRenderCtx *ctx) {
     float bar_w     = 12.0f * ctx->state->ui.scale_factor;
@@ -683,6 +774,13 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
     char *chars = buffer_text(buf);
     tab_register_string(chars);
 
+    // Pre-read horizontal scroll from cache before layout (same two-frame pattern as sub_offset).
+    // This value is used for both the clip childOffset and cursor/selection offsets so they
+    // are always in sync within the same frame.
+    float scroll_x_pre = tab->content.buffer.vline_cache.wrap_lines
+                         ? 0.0f
+                         : tab->content.buffer.vline_cache.scroll_x;
+
     BufRenderCtx ctx = {
         .state     = state,
         .cp        = cp,
@@ -696,6 +794,8 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
         .font_id   = FONT_BUF_NORMAL,
         .font_size = (uint16_t)(15 * state->ui.scale_factor * buffer_get_scale(buf)),
         .padding   = 24.0f * state->ui.scale_factor,
+        // scroll_x matches the clip childOffset so cursor/selection float correctly.
+        .scroll_x  = scroll_x_pre,
     };
 
     Clay_ElementId outer_id = CLAY_IDI_LOCAL("BufWrap", index);
@@ -707,25 +807,35 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
     float sub_offset = BufRender_ComputeSubOffset(&ctx);
 
     CLAY(outer_id, {
-        .layout = { .sizing = tab_layout_expand, .layoutDirection = CLAY_LEFT_TO_RIGHT }
+        .layout = { .sizing = tab_layout_expand, .layoutDirection = CLAY_TOP_TO_BOTTOM }
     }) {
-        Clay_ElementId id = CLAY_IDI_LOCAL("Buffer Text", index);
-        CLAY(id, {
-            .layout = {
-                .sizing           = tab_layout_expand,
-                .padding          = { .top = 2, .bottom = 2 },
-                .layoutDirection  = CLAY_TOP_TO_BOTTOM,
-            },
-            .clip = { .vertical = true, .horizontal = true, .childOffset = { .x = 0, .y = -sub_offset } }
+        // Inner row: text area + vertical scrollbar.
+        Clay_ElementId inner_row_id = CLAY_IDI_LOCAL("BufInner", index);
+        CLAY(inner_row_id, {
+            .layout = { .sizing = tab_layout_expand, .layoutDirection = CLAY_LEFT_TO_RIGHT }
         }) {
-            if (BufRender_SetupGeometry(&ctx, id)) {
-                for (size_t i = ctx.first_vline; i < ctx.end_vline; i++)
-                    BufRender_VLine(&ctx, i);
-            } else {
-                BufRender_LoadingPlaceholder(&ctx);
+            Clay_ElementId id = CLAY_IDI_LOCAL("Buffer Text", index);
+            CLAY(id, {
+                .layout = {
+                    .sizing           = tab_layout_expand,
+                    .padding          = { .top = 2, .bottom = 2 },
+                    .layoutDirection  = CLAY_TOP_TO_BOTTOM,
+                },
+                .clip = { .vertical = true, .horizontal = true,
+                          .childOffset = { .x = -scroll_x_pre, .y = -sub_offset } }
+            }) {
+                if (BufRender_SetupGeometry(&ctx, id)) {
+                    for (size_t i = ctx.first_vline; i < ctx.end_vline; i++)
+                        BufRender_VLine(&ctx, i);
+                } else {
+                    BufRender_LoadingPlaceholder(&ctx);
+                }
             }
+
+            BufRender_Scrollbar(&ctx);
         }
 
-        BufRender_Scrollbar(&ctx);
+        // Horizontal scrollbar (nowrap mode only, shown when content overflows).
+        BufRender_HScrollbar(&ctx);
     }
 }

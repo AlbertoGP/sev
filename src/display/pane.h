@@ -37,13 +37,21 @@ typedef struct ContentPane {
     float    pane_top;        // top edge of full pane (including tab bar)
     float    pane_bottom;     // bottom edge of full pane
 
-    // Scrollbar hit-test region (updated each frame).
+    // Vertical scrollbar hit-test region (updated each frame).
     float scrollbar_x;        // left edge of hit-test strip
     float scrollbar_y;        // top of track
     float scrollbar_track_h;  // height of track (= text_origin_h)
     bool  has_scrollbar;
     float scrollbar_thumb_y;  // screen y of thumb top (absolute, updated each frame)
     float scrollbar_thumb_h;  // thumb height in pixels
+
+    // Horizontal scrollbar hit-test region (updated each frame, nowrap mode only).
+    bool  has_hscrollbar;
+    float hscrollbar_y;        // top of horizontal scrollbar strip
+    float hscrollbar_track_x;  // screen x of left edge of usable track
+    float hscrollbar_track_w;  // usable track width (excluding gutter)
+    float hscrollbar_thumb_x;  // screen x of thumb left edge
+    float hscrollbar_thumb_w;  // thumb width in pixels
 } ContentPane;
 
 // A vertical split node in a pane tree.

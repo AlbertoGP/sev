@@ -53,8 +53,10 @@ typedef struct {
     bool         mouse_drag_active;        // true once motion exceeds 3px threshold
     bool         middle_pressed_this_frame;       // true for one layout pass after middle-click
     bool         left_double_click_this_frame;    // true for one layout pass after left double-click
-    struct Pane *scrollbar_drag_pane;      // non-NULL while dragging a scrollbar
+    struct Pane *scrollbar_drag_pane;      // non-NULL while dragging a vertical scrollbar
     float        scrollbar_drag_offset;   // y distance from cursor to thumb top at click time
+    struct Pane *hscrollbar_drag_pane;    // non-NULL while dragging a horizontal scrollbar
+    float        hscrollbar_drag_offset;  // x distance from cursor to thumb left at click time
     struct Pane *split_drag_pane;         // non-NULL while dragging a split divider
     float        split_drag_start_x;      // mouse x at split drag start
     float        split_drag_start_y;      // mouse y at split drag start

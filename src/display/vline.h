@@ -43,12 +43,18 @@ typedef struct VLineCache {
     uint16_t font_id;
     uint16_t font_size;
     int tab_width;
+    bool wrap_lines;            // true=word-wrap, false=nowrap+hscroll
 
-    // Scroll state
+    // Vertical scroll state
     float scroll_offset;        // pixels scrolled from top (always ≥ 0)
     float target_scroll;        // target for easing; equals scroll_offset when no easing
     size_t last_scroll_point;   // byte_pos at which we last called scroll-to-cursor
     bool full_rebuild;          // flag to force full rebuild
+
+    // Horizontal scroll state (nowrap mode only)
+    float scroll_x;             // pixels scrolled from left (always ≥ 0)
+    float target_scroll_x;      // target for easing
+    float max_line_width;       // max measured_width across all vlines
 } VLineCache;
 
 // Forward declarations
@@ -68,10 +74,12 @@ void vline_cache_destroy(VLineCache *cache);
 //   pane_width - available width for text in pixels
 //   font_id    - font to use for measurement
 //   font_size  - font size for measurement
+//   tab_width  - tab stop width in characters
+//   wrap_lines - true=word-wrap (existing), false=one vline per logical line
 void vline_rebuild(VLineCache *cache, struct Buffer *buf,
                    Clay_SDL3RendererData *renderer,
                    float pane_width, uint16_t font_id, uint16_t font_size,
-                   int tab_width);
+                   int tab_width, bool wrap_lines);
 
 // Adjust scroll_offset to ensure the cursor (at byte_pos) is visible,
 // with a margin of margin_lines extra lines' height.
@@ -79,6 +87,13 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
 void vline_scroll_to_cursor_pixels(VLineCache *cache, size_t byte_pos,
                                     float viewport_height, int line_height,
                                     int margin_lines);
+
+// Adjust scroll_x to ensure the cursor at cursor_x_in_line is visible.
+// cursor_x_in_line is the pixel offset of the cursor from the left edge of the
+// text area (including left padding). viewport_width is the visible text width.
+void vline_scroll_x_to_cursor_pixels(VLineCache *cache,
+                                      float cursor_x_in_line,
+                                      float viewport_width);
 
 // Find the visual line index containing a given byte position.
 // Returns the index, or cache->count if not found.
@@ -91,6 +106,7 @@ int vline_get_line_height(Clay_SDL3RendererData *renderer,
 // Given pixel coordinates relative to the top-left of the text area (after
 // padding and gutter), return the buffer byte offset of the character
 // nearest to (rel_x, rel_y).  Clamps to line boundaries.
+// In nowrap mode cache->scroll_x is added to rel_x before hit-testing.
 size_t vline_byte_pos_at_xy(const VLineCache *cache, const char *buf_text,
                              float rel_x, float rel_y, int line_height,
                              Clay_SDL3RendererData *renderer,

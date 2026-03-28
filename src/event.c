@@ -1,3 +1,4 @@
+#include <math.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_mouse.h>
 #include <chibi/eval.h>
@@ -175,6 +176,26 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             break;
         }
 
+        if (state->input.hscrollbar_drag_pane) {
+            Pane *sp = state->input.hscrollbar_drag_pane;
+            VLineCache *sc = &sp->content.active_tab->content.buffer.vline_cache;
+            float thumb_w  = sp->content.hscrollbar_thumb_w;
+            float track_w  = sp->content.hscrollbar_track_w;
+            float track_x  = sp->content.hscrollbar_track_x;
+            float travel   = track_w - thumb_w;
+            float max_sc   = sc->max_line_width > track_w
+                             ? sc->max_line_width - track_w : 0.0f;
+            if (travel > 0 && max_sc > 0) {
+                float frac = (x - state->input.hscrollbar_drag_offset - track_x) / travel;
+                if (frac < 0) frac = 0;
+                if (frac > 1) frac = 1;
+                sc->scroll_x = frac * max_sc;
+                sc->target_scroll_x = sc->scroll_x;
+            }
+            state->needs_redraw = true;
+            break;
+        }
+
         if (state->input.mouse_button_down && state->input.mouse_down_pane) {
             float dx = x - state->input.mouse_down_x;
             float dy = y - state->input.mouse_down_y;
@@ -224,7 +245,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         Pane *hit = pane_at_coords(pane_get_root(), x, y);
         state->input.mouse_down_pane = hit;
 
-        // Check scrollbar hit before buffer hit.
+        // Check vertical scrollbar hit before buffer hit.
         if (hit && hit->type == PANE_CONTENT && hit->content.active_tab
             && hit->content.has_scrollbar
             && x >= hit->content.scrollbar_x
@@ -255,6 +276,39 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             break;
         }
 
+        // Check horizontal scrollbar hit.
+        if (hit && hit->type == PANE_CONTENT && hit->content.active_tab
+            && hit->content.has_hscrollbar
+            && y >= hit->content.hscrollbar_y
+            && x >= hit->content.hscrollbar_track_x
+            && x <= hit->content.hscrollbar_track_x + hit->content.hscrollbar_track_w) {
+
+            float thumb_x = hit->content.hscrollbar_thumb_x;
+            float thumb_w = hit->content.hscrollbar_thumb_w;
+            bool  on_thumb = (x >= thumb_x && x < thumb_x + thumb_w);
+            state->input.hscrollbar_drag_offset = on_thumb
+                ? (x - thumb_x)
+                : (thumb_w / 2.0f);
+
+            VLineCache *sc = &hit->content.active_tab->content.buffer.vline_cache;
+            float track_w = hit->content.hscrollbar_track_w;
+            float travel  = track_w - thumb_w;
+            float max_sc  = sc->max_line_width > track_w
+                            ? sc->max_line_width - track_w : 0.0f;
+            if (travel > 0 && max_sc > 0) {
+                float frac = (x - state->input.hscrollbar_drag_offset
+                              - hit->content.hscrollbar_track_x) / travel;
+                if (frac < 0) frac = 0;
+                if (frac > 1) frac = 1;
+                sc->scroll_x = frac * max_sc;
+                sc->target_scroll_x = sc->scroll_x;
+            }
+
+            state->input.hscrollbar_drag_pane = hit;
+            state->needs_redraw = true;
+            break;
+        }
+
         if (hit && hit->type == PANE_CONTENT && hit->content.active_tab) {
             // Switch active pane so that Scheme point-set! targets the right buffer.
             if (!hit->content.active)
@@ -273,11 +327,12 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     case SDL_EVENT_MOUSE_BUTTON_UP:
         state->needs_redraw = true;
         Clay_SetPointerState((Clay_Vector2){event->button.x, event->button.y}, false);
-        state->input.mouse_button_down   = false;
-        state->input.mouse_drag_active   = false;
-        state->input.mouse_down_pane     = NULL;
-        state->input.scrollbar_drag_pane = NULL;
-        state->input.split_drag_pane     = NULL;
+        state->input.mouse_button_down    = false;
+        state->input.mouse_drag_active    = false;
+        state->input.mouse_down_pane      = NULL;
+        state->input.scrollbar_drag_pane  = NULL;
+        state->input.hscrollbar_drag_pane = NULL;
+        state->input.split_drag_pane      = NULL;
         break;
 
     case SDL_EVENT_MOUSE_WHEEL:
@@ -290,9 +345,11 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                                           event->wheel.mouse_x, event->wheel.mouse_y);
         if (scroll_hit && scroll_hit->type == PANE_CONTENT && scroll_hit->content.active_tab) {
             VLineCache *cache = &scroll_hit->content.active_tab->content.buffer.vline_cache;
-            if (cache->count > 0) {
-                float px_per_line = (float)scroll_hit->content.line_height_px;
-                if (px_per_line <= 0) px_per_line = 20.0f;
+            float px_per_line = (float)scroll_hit->content.line_height_px;
+            if (px_per_line <= 0) px_per_line = 20.0f;
+
+            // Vertical scroll.
+            if (cache->count > 0 && event->wheel.y != 0) {
                 float delta_px = event->wheel.y * px_per_line * 3.0f;
                 if (event->wheel.direction == SDL_MOUSEWHEEL_NORMAL)
                     delta_px = -delta_px;
@@ -303,6 +360,18 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 if (cache->scroll_offset < 0.0f) cache->scroll_offset = 0.0f;
                 if (cache->scroll_offset > max_scroll) cache->scroll_offset = max_scroll;
                 cache->target_scroll = cache->scroll_offset;
+            }
+
+            // Horizontal scroll (nowrap mode only).
+            if (!cache->wrap_lines && event->wheel.x != 0) {
+                float dx = event->wheel.x * px_per_line * 3.0f;
+                if (event->wheel.direction == SDL_MOUSEWHEEL_NORMAL)
+                    dx = -dx;
+                float text_w = scroll_hit->content.text_origin_w;
+                float max_scroll_x = cache->max_line_width > text_w
+                                     ? cache->max_line_width - text_w : 0.0f;
+                cache->scroll_x = fmaxf(0.0f, fminf(cache->scroll_x + dx, max_scroll_x));
+                cache->target_scroll_x = cache->scroll_x;
             }
         }
         break;

@@ -177,7 +177,10 @@ Pane *pane_at_coords(Pane *root, float x, float y) {
     float left   = d->text_origin_x - d->gutter_width_px;
     float right  = (d->pane_right > 0) ? d->pane_right : d->text_origin_x + d->text_origin_w;
     float top    = d->text_origin_y;
-    float bottom = d->text_origin_y + d->text_origin_h;
+    // Extend bottom to include horizontal scrollbar strip when present.
+    float bottom = (d->has_hscrollbar && d->pane_bottom > d->text_origin_y)
+                   ? d->pane_bottom
+                   : d->text_origin_y + d->text_origin_h;
     if (x >= left && x <= right && y >= top && y <= bottom)
         return root;
     return NULL;

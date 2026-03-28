@@ -145,6 +145,59 @@ static bool is_word_boundary(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\0';
 }
 
+// Emit a single non-wrapped visual line for a logical line.
+// Measures the full line width and records one VisualLine entry.
+// Updates cache->max_line_width if this line is wider.
+static size_t nowrap_logical_line(VLineCache *cache,
+                                  Clay_SDL3RendererData *renderer,
+                                  uint16_t font_id, uint16_t font_size,
+                                  const char *buf_text, const Line *line,
+                                  int tab_width) {
+    size_t vline_start = cache->count;
+    size_t start = line->start;
+    size_t end   = line->end;
+
+    // Measure full line width respecting tabs.
+    float space_w = measure_text(renderer, font_id, font_size, " ", 1);
+    float width   = 0.0f;
+    size_t pos    = start;
+    while (pos < end) {
+        char c = buf_text[pos];
+        int seq_len = utf8_seq_len_fwd(&buf_text[pos]);
+        if (c == '\t') {
+            width += tab_stop_px(width, tab_width, space_w);
+        } else {
+            width += measure_text(renderer, font_id, font_size, &buf_text[pos], seq_len);
+        }
+        pos += seq_len;
+    }
+
+    VisualLine vline = {
+        .line_id      = line->line_id,
+        .line_version = line->version,
+        .byte_start   = start,
+        .byte_end     = end,
+        .visual_index = 0,
+        .measured_width = width
+    };
+    size_t lines_added = 0;
+    if (vline_append(cache, vline))
+        lines_added = 1;
+
+    if (width > cache->max_line_width)
+        cache->max_line_width = width;
+
+    if (index_grow(cache, cache->index_count + 1)) {
+        cache->index[cache->index_count++] = (LogicalLineIndex){
+            .line_id    = line->line_id,
+            .version    = line->version,
+            .vline_start = vline_start,
+            .vline_count = lines_added
+        };
+    }
+    return lines_added;
+}
+
 // Wrap a single logical line into visual lines.
 // Appends to cache->lines starting at vline_start_out, returns count added.
 // Also records index entry at cache->index[cache->index_count].
@@ -276,7 +329,7 @@ static const LogicalLineIndex *find_old_index(const LogicalLineIndex *old_index,
 void vline_rebuild(VLineCache *cache, struct Buffer *buf,
                    Clay_SDL3RendererData *renderer,
                    float pane_width, uint16_t font_id, uint16_t font_size,
-                   int tab_width) {
+                   int tab_width, bool wrap_lines) {
     if (!cache || !buf || !renderer) return;
     if (tab_width <= 0) tab_width = 4;
 
@@ -285,12 +338,14 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
                         cache->pane_width != pane_width ||
                         cache->font_id != font_id ||
                         cache->font_size != font_size ||
-                        cache->tab_width != tab_width;
+                        cache->tab_width != tab_width ||
+                        cache->wrap_lines != wrap_lines;
 
     cache->pane_width = pane_width;
     cache->font_id = font_id;
     cache->font_size = font_size;
     cache->tab_width = tab_width;
+    cache->wrap_lines = wrap_lines;
     cache->full_rebuild = false;
 
     const LineTable *lt = buffer_get_line_table(buf);
@@ -303,10 +358,15 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
         // Full rebuild: reset and re-wrap everything
         cache->count = 0;
         cache->index_count = 0;
+        cache->max_line_width = 0.0f;
 
         for (size_t i = 0; i < lt->count; i++) {
-            wrap_logical_line(cache, renderer, font_id, font_size,
-                              text, &lt->lines[i], pane_width, tab_width);
+            if (wrap_lines)
+                wrap_logical_line(cache, renderer, font_id, font_size,
+                                  text, &lt->lines[i], pane_width, tab_width);
+            else
+                nowrap_logical_line(cache, renderer, font_id, font_size,
+                                    text, &lt->lines[i], tab_width);
         }
     } else {
         // Incremental rebuild: check line versions, copy valid entries
@@ -335,7 +395,7 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
             cache->index_cap = old_index_cap;
             cache->full_rebuild = true;
             free((char*)text);
-            vline_rebuild(cache, buf, renderer, pane_width, font_id, font_size, tab_width);
+            vline_rebuild(cache, buf, renderer, pane_width, font_id, font_size, tab_width, wrap_lines);
             return;
         }
 
@@ -371,14 +431,37 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
                 }
             } else {
                 // Version mismatch or not found - re-wrap
-                wrap_logical_line(cache, renderer, font_id, font_size,
-                                  text, line, pane_width, tab_width);
+                if (wrap_lines)
+                    wrap_logical_line(cache, renderer, font_id, font_size,
+                                      text, line, pane_width, tab_width);
+                else
+                    nowrap_logical_line(cache, renderer, font_id, font_size,
+                                        text, line, tab_width);
             }
         }
 
         // Free old arrays
         free(old_lines);
         free(old_index);
+
+        // Recompute max_line_width from all vlines (incremental path may have copied old widths)
+        if (!wrap_lines) {
+            cache->max_line_width = 0.0f;
+            for (size_t i = 0; i < cache->count; i++) {
+                if (cache->lines[i].measured_width > cache->max_line_width)
+                    cache->max_line_width = cache->lines[i].measured_width;
+            }
+        }
+    }
+
+    // Clamp horizontal scroll to valid range.
+    if (!wrap_lines) {
+        float max_scroll_x = cache->max_line_width > pane_width
+                             ? cache->max_line_width - pane_width : 0.0f;
+        if (cache->scroll_x > max_scroll_x) {
+            cache->scroll_x = max_scroll_x;
+            cache->target_scroll_x = max_scroll_x;
+        }
     }
 
     free((char*)text);
@@ -386,6 +469,22 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
     // Shrink if underutilized
     vline_cache_shrink(cache);
     index_shrink(cache);
+}
+
+void vline_scroll_x_to_cursor_pixels(VLineCache *cache,
+                                      float cursor_x_in_line,
+                                      float viewport_width) {
+    if (!cache || viewport_width <= 0.0f) return;
+    float margin = 40.0f;
+    float scroll = cache->scroll_x;
+    if (cursor_x_in_line < scroll + margin)
+        scroll = fmaxf(0.0f, cursor_x_in_line - margin);
+    else if (cursor_x_in_line > scroll + viewport_width - margin)
+        scroll = cursor_x_in_line - viewport_width + margin;
+    float max_scroll = cache->max_line_width > viewport_width
+                       ? cache->max_line_width - viewport_width : 0.0f;
+    cache->scroll_x = fmaxf(0.0f, fminf(scroll, max_scroll));
+    cache->target_scroll_x = cache->scroll_x;
 }
 
 void vline_scroll_to_cursor_pixels(VLineCache *cache, size_t byte_pos,
@@ -436,8 +535,11 @@ size_t vline_byte_pos_at_xy(const VLineCache *cache, const char *buf_text,
     const char *line_text = buf_text + vl->byte_start;
     size_t len = vl->byte_end - vl->byte_start;
 
+    // In nowrap mode, clicks are offset by the horizontal scroll.
+    float effective_x = rel_x + cache->scroll_x;
+
     // Click left of text area → clamp to line start.
-    if (rel_x <= 0.0f) return vl->byte_start;
+    if (effective_x <= 0.0f) return vl->byte_start;
 
     if (len == 0) return vl->byte_start;
 
@@ -455,7 +557,7 @@ size_t vline_byte_pos_at_xy(const VLineCache *cache, const char *buf_text,
         float char_w = (line_text[byte_offset] == '\t')
             ? tab_stop_px(x_accum, cache->tab_width, space_w)
             : measure_text(renderer, font_id, font_size, line_text + byte_offset, seq);
-        if (rel_x < x_accum + char_w)
+        if (effective_x < x_accum + char_w)
             return vl->byte_start + byte_offset;
         last_byte_offset = byte_offset;
         x_accum += char_w;

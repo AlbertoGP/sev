@@ -168,6 +168,18 @@
   (lambda () (derived-mode? 'prog-mode))
   '((indent-tabs-mode . #f)))
 
+;; wrap-lines: #t = word-wrap (default), #f = no-wrap with horizontal scroll.
+(register-setting-default! 'wrap-lines #t)
+(%app-settings-rules-add!
+  (lambda () (derived-mode? 'prog-mode))
+  '((wrap-lines . #f)))
+
+(defcommand (toggle-wrap-lines)
+  "Toggle line wrapping in the current buffer."
+  (unless (no-panes?)
+    (set-local! 'wrap-lines (not (get-local 'wrap-lines #t)))
+    (set-local! 'wrap-lines/explicit? #t)))
+
 ;; Scheme major mode — activates tree-sitter highlighting
 (define-major-mode 'scheme-mode)
 (set-mode-parent! 'scheme-mode 'prog-mode)
