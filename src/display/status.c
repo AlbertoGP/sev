@@ -1,12 +1,15 @@
 #include <SDL3/SDL_render.h>
 #include <chibi/sexp.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "icon.h"
 #include "mode_icon.h"
 #include "theme.h"
 #include "../state.h"
 #include "../text/buffer.h"
+#include "../text/buffer_type.h"
+#include "../text/line.h"
 
 #define BAR_STRINGS_MAX 256
 static char *bar_strings[BAR_STRINGS_MAX];
@@ -194,6 +197,51 @@ void StatusBar(AppState *state) {
                     .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
                 }));
             }
+            Divider(state);
+        }
+        if (buf->select_mode != SELECT_NONE) {
+            size_t sel_a    = buf->select_start.pos;
+            size_t sel_b    = buf->point.pos;
+            size_t sel_min  = sel_a < sel_b ? sel_a : sel_b;
+            size_t sel_max  = sel_a > sel_b ? sel_a : sel_b;
+            size_t line_a   = line_index_at(&buf->lt, sel_a);
+            size_t line_b   = line_index_at(&buf->lt, sel_b);
+            size_t row_min  = line_a < line_b ? line_a : line_b;
+            size_t row_max  = line_a > line_b ? line_a : line_b;
+            size_t num_lines = row_max - row_min + 1;
+
+            char *sel_str = malloc(64 * sizeof(char));
+            if (buf->select_mode == SELECT_LINE) {
+                snprintf(sel_str, 64, "(%zu %s)",
+                    num_lines, num_lines == 1 ? "line" : "lines");
+            } else if (buf->select_mode == SELECT_RECTANGLE ||
+                       buf->select_mode == SELECT_RECTANGLE_RAGGED) {
+                size_t col_a    = sel_a - buf->lt.lines[line_a].start;
+                size_t col_b    = sel_b - buf->lt.lines[line_b].start;
+                size_t col_min  = col_a < col_b ? col_a : col_b;
+                size_t col_max  = col_a > col_b ? col_a : col_b;
+                size_t num_cols = col_max - col_min + 1;
+                snprintf(sel_str, 64, "(%zu %s, %zu %s)",
+                    num_lines, num_lines == 1 ? "line" : "lines",
+                    num_cols,  num_cols  == 1 ? "column" : "columns");
+            } else {
+                size_t num_chars = sel_max - sel_min + 1;
+                if (num_lines > 1) {
+                    snprintf(sel_str, 64, "(%zu %s, %zu %s)",
+                        num_lines, num_lines == 1 ? "line" : "lines",
+                        num_chars, num_chars == 1 ? "character" : "characters");
+                } else {
+                    snprintf(sel_str, 64, "(%zu %s)",
+                        num_chars, num_chars == 1 ? "character" : "characters");
+                }
+            }
+            bar_strings_push(sel_str);
+            Clay_String selCount = { .chars = sel_str, .length = strlen(sel_str) };
+            CLAY_TEXT(selCount, CLAY_TEXT_CONFIG({
+                .fontId = FONT_UI_NORMAL,
+                .fontSize = 14.0 * state->ui.scale_factor,
+                .textColor = textColor,
+            }));
             Divider(state);
         }
         CLAY_TEXT(pointPos, CLAY_TEXT_CONFIG({
