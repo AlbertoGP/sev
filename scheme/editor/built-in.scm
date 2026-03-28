@@ -1,8 +1,5 @@
 ;;; build-in.scm - built-in editor command definitions.
 
-;; Counter for auto-naming new buffers (untitled-1, untitled-2, ...)
-(define *new-buffer-counter* 0)
-
 ;; C primitive commands
 (defcommand quit "Exit the editor.")
 (defcommand self-insert "Insert the character that invoked this command.")
@@ -169,10 +166,9 @@
                 (message (string-append "Could not read " filename))))))))
 
 (defcommand (buffer-new)
-  "Create a new empty buffer named untitled-n and display it in the current pane."
+  "Create a new untitled buffer and display it in the current tab."
   (interactive)
-  (set! *new-buffer-counter* (+ *new-buffer-counter* 1))
-  (let ((name (string-append "untitled-" (number->string *new-buffer-counter*))))
+  (let ((name "untitled"))
     (if (no-panes?)
         (%tab-new! name)
         (begin
@@ -204,7 +200,7 @@
   (message "Switched to *scratch*"))
 
 (defcommand (switch-to-buffer)
-  "Switch the current pane to a named buffer."
+  "Switch the current tab to a named buffer."
   (interactive)
   (if (no-panes?)
       (message "No pane to switch buffer in")
@@ -217,7 +213,7 @@
                   (message (string-append "No buffer named \"" name "\""))))))))
 
 (defcommand (buffer-close)
-  "Close a named buffer, removing all panes and tabs that display it."
+  "Close a named buffer, closing all tabs that currently display it."
   (interactive)
   (minibuffer-read "Close buffer: "
     (lambda (name)
@@ -228,15 +224,13 @@
               (message (string-append "No buffer named \"" name "\"")))))))
 
 (defcommand (tab-new)
-  "Create a new tab. Prompts for a buffer name; auto-generates untitled-n if left empty."
+  "Create a new tab. Prompts for a buffer name; untitled if left empty."
   (interactive)
   (minibuffer-read "Buffer name for new tab (empty for auto): "
     (lambda (name)
       (let ((buf-name
              (if (string=? name "")
-                 (begin
-                   (set! *new-buffer-counter* (+ *new-buffer-counter* 1))
-                   (string-append "untitled-" (number->string *new-buffer-counter*)))
+                 "untitled"
                  name)))
         (if (%tab-new! buf-name)
             (message (string-append "Opened tab " buf-name))
