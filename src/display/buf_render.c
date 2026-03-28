@@ -672,9 +672,9 @@ static void BufRender_HScrollbar(BufRenderCtx *ctx) {
     float scroll_x = ctx->scroll_x;
     float range    = max_w - content_w;
 
-    float thumb_w = fmaxf((content_w / max_w) * content_w,
+    float track_w = ctx->box.width - ctx->gutter_width;
+    float thumb_w = fmaxf((content_w / max_w) * track_w,
                           20.0f * ctx->state->ui.scale_factor);
-    float track_w = content_w;
     float travel  = track_w - thumb_w;
     float thumb_x = (range > 0.0f && travel > 0.0f)
                     ? (scroll_x / range) * travel : 0.0f;

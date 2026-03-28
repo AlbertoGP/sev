@@ -183,8 +183,9 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             float track_w  = sp->content.hscrollbar_track_w;
             float track_x  = sp->content.hscrollbar_track_x;
             float travel   = track_w - thumb_w;
-            float max_sc   = sc->max_line_width > track_w
-                             ? sc->max_line_width - track_w : 0.0f;
+            float content_w = sp->content.text_origin_w;
+            float max_sc   = sc->max_line_width > content_w
+                             ? sc->max_line_width - content_w : 0.0f;
             if (travel > 0 && max_sc > 0) {
                 float frac = (x - state->input.hscrollbar_drag_offset - track_x) / travel;
                 if (frac < 0) frac = 0;
@@ -291,10 +292,11 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 : (thumb_w / 2.0f);
 
             VLineCache *sc = &hit->content.active_tab->content.buffer.vline_cache;
-            float track_w = hit->content.hscrollbar_track_w;
-            float travel  = track_w - thumb_w;
-            float max_sc  = sc->max_line_width > track_w
-                            ? sc->max_line_width - track_w : 0.0f;
+            float track_w   = hit->content.hscrollbar_track_w;
+            float content_w = hit->content.text_origin_w;
+            float travel    = track_w - thumb_w;
+            float max_sc    = sc->max_line_width > content_w
+                              ? sc->max_line_width - content_w : 0.0f;
             if (travel > 0 && max_sc > 0) {
                 float frac = (x - state->input.hscrollbar_drag_offset
                               - hit->content.hscrollbar_track_x) / travel;
