@@ -42,6 +42,7 @@ typedef struct VLineCache {
     float pane_width;
     uint16_t font_id;
     uint16_t font_size;
+    int tab_width;
 
     // Scroll state
     float scroll_offset;        // pixels scrolled from top (always ≥ 0)
@@ -69,7 +70,8 @@ void vline_cache_destroy(VLineCache *cache);
 //   font_size  - font size for measurement
 void vline_rebuild(VLineCache *cache, struct Buffer *buf,
                    Clay_SDL3RendererData *renderer,
-                   float pane_width, uint16_t font_id, uint16_t font_size);
+                   float pane_width, uint16_t font_id, uint16_t font_size,
+                   int tab_width);
 
 // Adjust scroll_offset to ensure the cursor (at byte_pos) is visible,
 // with a margin of margin_lines extra lines' height.

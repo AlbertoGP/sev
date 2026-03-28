@@ -151,6 +151,15 @@
   (lambda () (derived-mode? 'text-mode))
   '((display-line-numbers-type . #f)))
 
+;; Tab width setting: buffer-local, resolved per mode.
+(register-setting-default! 'tab-width 4)
+(%app-settings-rules-add!
+  (lambda () (derived-mode? 'scheme-mode))
+  '((tab-width . 2)))
+(%app-settings-rules-add!
+  (lambda () (derived-mode? 'prog-mode))
+  '((tab-width . 4)))
+
 ;; Scheme major mode — activates tree-sitter highlighting
 (define-major-mode 'scheme-mode)
 (set-mode-parent! 'scheme-mode 'prog-mode)

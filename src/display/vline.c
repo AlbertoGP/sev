@@ -11,7 +11,14 @@
 #include "../clay/renderer.h"
 
 #define MIN_CACHE_SIZE 16
-#define TAB_WIDTH 4
+
+// Returns the pixel width of a tab character at position x_px.
+// Tab stops are defined as multiples of tab_width spaces.
+static float tab_stop_px(float x_px, int tab_width, float space_w) {
+    if (tab_width <= 0) tab_width = 4;
+    int col = (int)(x_px / space_w);
+    return (float)(((col / tab_width) + 1) * tab_width - col) * space_w;
+}
 
 // Measure the width of a substring using the font.
 static float measure_text(Clay_SDL3RendererData *renderer,
@@ -145,7 +152,7 @@ static size_t wrap_logical_line(VLineCache *cache,
                                 Clay_SDL3RendererData *renderer,
                                 uint16_t font_id, uint16_t font_size,
                                 const char *buf_text, const Line *line,
-                                float max_width) {
+                                float max_width, int tab_width) {
     size_t vline_start = cache->count;
     size_t start = line->start;
     size_t end = line->end;
@@ -184,13 +191,10 @@ static size_t wrap_logical_line(VLineCache *cache,
             float char_width = measure_text(renderer, font_id, font_size,
                                             &buf_text[line_end], seq_len);
 
-            // Handle tabs - approximate as spaces to next tab stop
+            // Handle tabs - expand to next tab stop
             if (c == '\t') {
-                // Calculate current column position
                 float space_width = measure_text(renderer, font_id, font_size, " ", 1);
-                int col = (int)(width / space_width);
-                int next_tab = ((col / TAB_WIDTH) + 1) * TAB_WIDTH;
-                char_width = (next_tab - col) * space_width;
+                char_width = tab_stop_px(width, tab_width, space_width);
             }
 
             // Would this character overflow?
@@ -271,18 +275,22 @@ static const LogicalLineIndex *find_old_index(const LogicalLineIndex *old_index,
 
 void vline_rebuild(VLineCache *cache, struct Buffer *buf,
                    Clay_SDL3RendererData *renderer,
-                   float pane_width, uint16_t font_id, uint16_t font_size) {
+                   float pane_width, uint16_t font_id, uint16_t font_size,
+                   int tab_width) {
     if (!cache || !buf || !renderer) return;
+    if (tab_width <= 0) tab_width = 4;
 
     // Check if we need a full rebuild (cache key changed)
     bool full_rebuild = cache->full_rebuild ||
                         cache->pane_width != pane_width ||
                         cache->font_id != font_id ||
-                        cache->font_size != font_size;
+                        cache->font_size != font_size ||
+                        cache->tab_width != tab_width;
 
     cache->pane_width = pane_width;
     cache->font_id = font_id;
     cache->font_size = font_size;
+    cache->tab_width = tab_width;
     cache->full_rebuild = false;
 
     const LineTable *lt = buffer_get_line_table(buf);
@@ -298,7 +306,7 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
 
         for (size_t i = 0; i < lt->count; i++) {
             wrap_logical_line(cache, renderer, font_id, font_size,
-                              text, &lt->lines[i], pane_width);
+                              text, &lt->lines[i], pane_width, tab_width);
         }
     } else {
         // Incremental rebuild: check line versions, copy valid entries
@@ -327,7 +335,7 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
             cache->index_cap = old_index_cap;
             cache->full_rebuild = true;
             free((char*)text);
-            vline_rebuild(cache, buf, renderer, pane_width, font_id, font_size);
+            vline_rebuild(cache, buf, renderer, pane_width, font_id, font_size, tab_width);
             return;
         }
 
@@ -364,7 +372,7 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
             } else {
                 // Version mismatch or not found - re-wrap
                 wrap_logical_line(cache, renderer, font_id, font_size,
-                                  text, line, pane_width);
+                                  text, line, pane_width, tab_width);
             }
         }
 
@@ -438,13 +446,15 @@ size_t vline_byte_pos_at_xy(const VLineCache *cache, const char *buf_text,
     // clicking anywhere within a character's pixel extent places the cursor
     // before that character.  Only advance past a character when the click
     // is strictly beyond its right edge.
+    float space_w = measure_text(renderer, font_id, font_size, " ", 1);
     float x_accum = 0.0f;
     size_t byte_offset = 0;
     size_t last_byte_offset = 0;
     while (byte_offset < len) {
         int seq = utf8_seq_len_fwd(line_text + byte_offset);
-        float char_w = measure_text(renderer, font_id, font_size,
-                                    line_text + byte_offset, seq);
+        float char_w = (line_text[byte_offset] == '\t')
+            ? tab_stop_px(x_accum, cache->tab_width, space_w)
+            : measure_text(renderer, font_id, font_size, line_text + byte_offset, seq);
         if (rel_x < x_accum + char_w)
             return vl->byte_start + byte_offset;
         last_byte_offset = byte_offset;

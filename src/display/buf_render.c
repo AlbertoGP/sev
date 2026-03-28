@@ -32,6 +32,7 @@ typedef struct {
     float            padding;
     TTF_Font        *font;
     int              line_num_type;     // 0=off 1=abs 2=rel 3=visual
+    int              tab_width;
     float            gutter_width;
     size_t           cursor_logical_line;
     char            *lnum_strs;         // slab for formatted line number strings
@@ -45,6 +46,40 @@ typedef struct {
     Clay_ElementId   content_pane_id;
     int32_t          run_id;            // monotonically increasing Clay segment ID
 } BufRenderCtx;
+
+// Measure pixel width of a text span that may contain tab characters.
+// Tabs are expanded to the next tab stop based on accumulated x position.
+static float measure_tab_aware(AppState *state, uint16_t font_id, uint16_t font_size,
+                                const char *text, size_t len, int tab_width) {
+    if (len == 0) return 0.0f;
+    TTF_Font *font = SDL_Clay_GetRenderFont(&state->rendererData, font_id, (float)font_size);
+    float space_w = 0.0f;
+    {
+        int sw = 0, sh = 0;
+        TTF_GetStringSize(font, " ", 1, &sw, &sh);
+        space_w = (float)sw;
+    }
+    if (tab_width <= 0) tab_width = 4;
+
+    float x = 0.0f;
+    size_t i = 0;
+    while (i < len) {
+        if (text[i] == '\t') {
+            int col = (int)(x / space_w);
+            x += (float)(((col / tab_width) + 1) * tab_width - col) * space_w;
+            i++;
+        } else {
+            // Find extent of non-tab run
+            size_t j = i;
+            while (j < len && text[j] != '\t') j++;
+            int w = 0, h = 0;
+            TTF_GetStringSize(font, text + i, j - i, &w, &h);
+            x += (float)w;
+            i = j;
+        }
+    }
+    return x;
+}
 
 // --- File-local state ---
 
@@ -79,26 +114,28 @@ static sexp hl_kind_to_role(AppState *state, uint16_t kind) {
 
 // Emit one syntax-highlighted text segment into the current Clay VLine container.
 // Relies on `ctx` being in scope at the call site.
-#define EMIT_RUN(from, to, role_expr) do { \
-    TextStyle _style = ui_resolve_text_style(ctx->state, (role_expr), \
-                                             FONT_BUF_NORMAL, 15); \
-    TTF_Font *_sfont = SDL_Clay_GetRenderFont(&ctx->state->rendererData, \
-                                              _style.font_id, (float)ctx->font_size); \
-    int _wx = 0, _wh = 0; \
-    TTF_GetStringSize(_sfont, ctx->chars + (from), (to) - (from), &_wx, &_wh); \
-    float _sw = (float)_wx; \
-    if (_sw > 0.0f) { \
-        Clay_String _t = { .chars = ctx->chars + (from), .length = (to) - (from) }; \
+// x_accum_ptr is a float* that receives the emitted width (for tab tracking).
+#define EMIT_RUN(from, to, role_expr, x_accum_ptr) do { \
+    TextStyle _er_style = ui_resolve_text_style(ctx->state, (role_expr), \
+                                                FONT_BUF_NORMAL, 15); \
+    TTF_Font *_er_font = SDL_Clay_GetRenderFont(&ctx->state->rendererData, \
+                                                _er_style.font_id, (float)ctx->font_size); \
+    int _er_wx = 0, _er_wh = 0; \
+    TTF_GetStringSize(_er_font, ctx->chars + (from), (to) - (from), &_er_wx, &_er_wh); \
+    float _er_sw = (float)_er_wx; \
+    if (x_accum_ptr) *(x_accum_ptr) += _er_sw; \
+    if (_er_sw > 0.0f) { \
+        Clay_String _er_cs = { .chars = ctx->chars + (from), .length = (to) - (from) }; \
         CLAY(CLAY_IDI_LOCAL("Seg", ctx->run_id++), { \
             .layout = { .sizing = { \
-                .width  = CLAY_SIZING_FIXED(_sw), \
+                .width  = CLAY_SIZING_FIXED(_er_sw), \
                 .height = CLAY_SIZING_FIXED(ctx->line_height) \
             }}, \
         }) { \
-            CLAY_TEXT(_t, CLAY_TEXT_CONFIG({ \
-                .fontId    = _style.font_id, \
+            CLAY_TEXT(_er_cs, CLAY_TEXT_CONFIG({ \
+                .fontId    = _er_style.font_id, \
                 .fontSize  = ctx->font_size, \
-                .textColor = _style.color, \
+                .textColor = _er_style.color, \
                 .wrapMode  = CLAY_TEXT_WRAP_NONE \
             })); \
         } \
@@ -166,9 +203,16 @@ static bool BufRender_SetupGeometry(BufRenderCtx *ctx, Clay_ElementId id) {
     }
     ctx->gutter_width = gutter_width;
 
+    // Read tab-width from buffer-local variable.
+    sexp tabw_sym = sexp_intern(ctx->state->chibi.ctx, "tab-width", -1);
+    sexp tabw_val = vartable_get(buffer_get_locals(ctx->buf), tabw_sym, SEXP_FALSE);
+    int tab_width = (sexp_fixnump(tabw_val) && sexp_unbox_fixnum(tabw_val) > 0)
+                    ? (int)sexp_unbox_fixnum(tabw_val) : 4;
+    ctx->tab_width = tab_width;
+
     VLineCache *cache = ctx->cache;
     vline_rebuild(cache, ctx->buf, &ctx->state->rendererData,
-                  text_width - gutter_width, ctx->font_id, ctx->font_size);
+                  text_width - gutter_width, ctx->font_id, ctx->font_size, tab_width);
 
     int line_height  = vline_get_line_height(&ctx->state->rendererData,
                                              ctx->font_id, ctx->font_size);
@@ -435,15 +479,13 @@ static void BufRender_SelectionCell(BufRenderCtx *ctx, size_t i, VisualLine *vl)
 
     float sel_x = ctx->padding;
     if (hl_start > line_start) {
-        int w = 0, h = 0;
-        TTF_GetStringSize(ctx->font, ctx->chars + line_start,
-                          hl_start - line_start, &w, &h);
-        sel_x += (float)w;
+        sel_x += measure_tab_aware(ctx->state, ctx->font_id, ctx->font_size,
+                                   ctx->chars + line_start,
+                                   hl_start - line_start, ctx->tab_width);
     }
-    int sw = 0, sh = 0;
-    TTF_GetStringSize(ctx->font, ctx->chars + hl_start,
-                      hl_end - hl_start, &sw, &sh);
-    float sel_w = (float)sw;
+    float sel_w = measure_tab_aware(ctx->state, ctx->font_id, ctx->font_size,
+                                    ctx->chars + hl_start,
+                                    hl_end - hl_start, ctx->tab_width);
     if (sel_w > 0 && sel_pool_idx < SCISSORED_RECT_POOL_SIZE) {
         ScissoredRectData *s = &sel_pool[sel_pool_idx++];
         s->type   = CUSTOM_TYPE_SCISSORED_RECT;
@@ -468,11 +510,58 @@ static void BufRender_SelectionCell(BufRenderCtx *ctx, size_t i, VisualLine *vl)
     }
 }
 
+// Emit a tab spacer at the current x_accum position, updating x_accum.
+// Relies on `ctx` being in scope at the call site.
+#define EMIT_TAB(x_accum_ptr, space_w_val) do { \
+    int _col = (int)(*(x_accum_ptr) / (space_w_val)); \
+    int _tw  = ctx->tab_width > 0 ? ctx->tab_width : 4; \
+    float _tab_px = (float)(((_col / _tw) + 1) * _tw - _col) * (space_w_val); \
+    *(x_accum_ptr) += _tab_px; \
+    if (_tab_px > 0.0f) { \
+        CLAY(CLAY_IDI_LOCAL("Tab", ctx->run_id++), { \
+            .layout = { .sizing = { \
+                .width  = CLAY_SIZING_FIXED(_tab_px), \
+                .height = CLAY_SIZING_FIXED(ctx->line_height) \
+            }}, \
+        }) {} \
+    } \
+} while(0)
+
+// Emit a segment [seg_s, seg_e) that may contain tab characters, splitting at each tab.
+// Relies on `ctx`, `x_accum`, `space_w` being in scope.
+#define EMIT_SEGMENT(seg_s, seg_e, role_expr) do { \
+    size_t _s = (seg_s), _e = (seg_e); \
+    size_t _p = _s; \
+    while (_p < _e) { \
+        /* find next tab in [_p, _e) */ \
+        size_t _t = _p; \
+        while (_t < _e && ctx->chars[_t] != '\t') _t++; \
+        if (_t > _p) \
+            EMIT_RUN(_p, _t, (role_expr), &x_accum); \
+        if (_t < _e) { \
+            EMIT_TAB(&x_accum, space_w); \
+            _t++; \
+        } \
+        _p = _t; \
+    } \
+} while(0)
+
 // Renders syntax-highlighted text segments for one visual line.
+// Tabs are rendered as variable-width spacers aligned to tab stops.
 static void BufRender_TextCell(BufRenderCtx *ctx, VisualLine *vl) {
     size_t line_start = vl->byte_start;
     size_t line_end   = vl->byte_end;
     if (line_end == line_start) return;
+
+    // Compute space width once for tab stop calculations.
+    TTF_Font *_sfont0 = SDL_Clay_GetRenderFont(&ctx->state->rendererData,
+                                               ctx->font_id, (float)ctx->font_size);
+    int _sw0 = 0, _sh0 = 0;
+    TTF_GetStringSize(_sfont0, " ", 1, &_sw0, &_sh0);
+    float space_w = (float)_sw0;
+
+    // x_accum tracks pixel offset from the left edge of the visual line.
+    float x_accum = 0.0f;
 
     size_t log_idx       = line_index_at(ctx->lt, vl->byte_start);
     const Line *log_line = &ctx->lt->lines[log_idx];
@@ -487,12 +576,12 @@ static void BufRender_TextCell(BufRenderCtx *ctx, VisualLine *vl) {
         size_t seg_e = (size_t)span->end_byte < line_end
                      ? (size_t)span->end_byte  : line_end;
         if (pos < seg_s)
-            EMIT_RUN(pos, seg_s, ctx->state->ui.roles.text_primary);
-        EMIT_RUN(seg_s, seg_e, hl_kind_to_role(ctx->state, span->style));
+            EMIT_SEGMENT(pos, seg_s, ctx->state->ui.roles.text_primary);
+        EMIT_SEGMENT(seg_s, seg_e, hl_kind_to_role(ctx->state, span->style));
         pos = seg_e;
     }
     if (pos < line_end)
-        EMIT_RUN(pos, line_end, ctx->state->ui.roles.text_primary);
+        EMIT_SEGMENT(pos, line_end, ctx->state->ui.roles.text_primary);
 }
 
 // Renders a single visual line: gutter cell, cursor overlay, selection overlay,
@@ -515,9 +604,9 @@ static void BufRender_VLine(BufRenderCtx *ctx, size_t i) {
     if (cursor_on_line) {
         size_t head_len = ctx->point - line_start;
         if (head_len > 0) {
-            int w = 0, h = 0;
-            TTF_GetStringSize(ctx->font, ctx->chars + line_start, head_len, &w, &h);
-            cursor_offset += (float)w;
+            cursor_offset += measure_tab_aware(ctx->state, ctx->font_id, ctx->font_size,
+                                               ctx->chars + line_start, head_len,
+                                               ctx->tab_width);
         }
     }
 
