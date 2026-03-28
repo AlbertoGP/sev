@@ -18,7 +18,7 @@
     evil-motion-W evil-motion-B evil-motion-E evil-motion-gg evil-motion-G
     evil-op-delete evil-op-change evil-op-yank evil-D evil-C evil-S evil-x evil-X
     evil-char-replace evil-visual-char-replace evil-char-replace-setup
-    evil-visual-delete evil-visual-change evil-visual-yank
+    evil-visual-delete evil-visual-change evil-visual-yank evil-visual-paste
     evil-visual-rect-insert evil-visual-rect-append
     evil-paste-after evil-paste-before evil-insert-paste-clipboard
     evil-use-register current-evil-register
