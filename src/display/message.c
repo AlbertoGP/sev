@@ -78,9 +78,10 @@ void MinibufArea(AppState *state) {
             .fontSize  = font_size,
             .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
         }));
-        Cursor(state, 0, cursor_x + left_pad, line_h,
-               0.0f, 0.0f, 65535.0f, 65535.0f,
-               FONT_BUF_NORMAL, font_size);
+        if (state->cursor_visible)
+            Cursor(state, 0, cursor_x + left_pad, line_h,
+                   0.0f, 0.0f, 65535.0f, 65535.0f,
+                   FONT_BUF_NORMAL, font_size);
     }
 
     buffer_set_current(saved);

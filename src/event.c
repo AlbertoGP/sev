@@ -3,10 +3,37 @@
 #include <chibi/eval.h>
 
 #include "state.h"
+#include "cursor_flash.h"
 #include "command/keyboard.h"
 #include "display/pane.h"
 #include "display/vline.h"
 #include "text/buffer.h"
+
+#define CURSOR_FLASH_EVENT 1
+
+static Uint32 cursor_flash_cb(void *ud, SDL_TimerID id, Uint32 interval) {
+    (void)id; (void)interval;
+    SDL_Event ev = {0};
+    ev.type = SDL_EVENT_USER;
+    ev.user.code = CURSOR_FLASH_EVENT;
+    SDL_PushEvent(&ev);
+    return 0; // one-shot
+}
+
+static bool cursor_blink_enabled(AppState *state) {
+    sexp sym = sexp_intern(state->chibi.ctx, "cursor-blink", -1);
+    sexp val = sexp_env_ref(state->chibi.ctx, state->chibi.env, sym, SEXP_TRUE);
+    return val != SEXP_FALSE;
+}
+
+void cursor_flash_reset(AppState *state) {
+    SDL_RemoveTimer(state->cursor_flash_timer);
+    state->cursor_flash_timer = 0;
+    state->cursor_visible = true;
+    state->needs_redraw = true;
+    if (cursor_blink_enabled(state))
+        state->cursor_flash_timer = SDL_AddTimer(500, cursor_flash_cb, state);
+}
 
 // Invoke (mouse-click-cb button buf-pos clicks) on the Scheme side.
 static void invoke_mouse_click_cb(AppState *state, int button,
@@ -77,6 +104,19 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     AppState *state = (AppState*) appstate;
 
     switch (event->type) {
+    case SDL_EVENT_USER:
+        if (event->user.code == CURSOR_FLASH_EVENT) {
+            if (cursor_blink_enabled(state)) {
+                state->cursor_visible = !state->cursor_visible;
+                state->needs_redraw = true;
+                state->cursor_flash_timer = SDL_AddTimer(500, cursor_flash_cb, state);
+            } else {
+                state->cursor_flash_timer = 0;
+                state->cursor_visible = true;
+            }
+        }
+        break;
+
     case SDL_EVENT_TEXT_INPUT:
         handle_text_input(state, &event->text);
         break;
@@ -152,7 +192,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     }
 
     case SDL_EVENT_MOUSE_BUTTON_DOWN: {
-        state->needs_redraw = true;
+        cursor_flash_reset(state);
         float x = event->button.x;
         float y = event->button.y;
         Clay_SetPointerState((Clay_Vector2){x, y}, true);
@@ -241,7 +281,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         break;
 
     case SDL_EVENT_MOUSE_WHEEL:
-        state->needs_redraw = true;
+        cursor_flash_reset(state);
         float deltaTime = ((float) SDL_GetTicksNS() - state->last_frame_ns) / 1e9;
         Clay_UpdateScrollContainers(true, (Clay_Vector2) { event->wheel.x, event->wheel.y }, deltaTime);
 

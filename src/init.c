@@ -7,6 +7,7 @@
 #include <chibi/eval.h>
 
 #include "state.h"
+#include "cursor_flash.h"
 #include "clay/init.h"
 #include "command/keymap.h"
 #include "command/minibuf.h"
@@ -118,6 +119,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     state->needs_extra_frame = true;
     state->animating = false;
     state->last_frame_ns = 0;
+    cursor_flash_reset(state);
 
     /* Start in event-driven mode; iterate.c switches to 60fps during animations */
     SDL_SetHint(SDL_HINT_MAIN_CALLBACK_RATE, "waitevent");

@@ -158,6 +158,10 @@ typedef struct AppState {
 
     WhichKeyState which_key;
 
+    // Cursor flashing
+    bool        cursor_visible;
+    SDL_TimerID cursor_flash_timer;
+
     // Macro recording
     bool macro_recording;
     bool macro_skip_next;       // skip recording the key that triggered start-macro

@@ -1,5 +1,9 @@
 ;;; init.scm - Editor initialization and keybindings
 
+;; ── Global settings ───────────────────────────────────────────────────────────
+
+(define cursor-blink #t)
+
 (import (editor command) (editor mode) (editor icon)
         (editor built-in) (editor evil) (editor theme)
         (editor minibuffer) (editor which-key))

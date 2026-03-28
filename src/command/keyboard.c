@@ -3,6 +3,7 @@
 #include "keyboard.h"
 #include "keyevent.h"
 #include "keymap.h"
+#include "../cursor_flash.h"
 
 static int utf8_decode(const char *s, uint32_t *out) {
     unsigned char c = s[0];
@@ -43,7 +44,7 @@ void handle_text_input(AppState *state, const SDL_TextInputEvent *text) {
         };
 
         key_dispatch(state, &ev);
-        state->needs_redraw = true;
+        cursor_flash_reset(state);
     }
 }
 
@@ -208,6 +209,7 @@ void handle_key_down(AppState *state, const SDL_KeyboardEvent *key) {
             .mods = mods
         };
         key_dispatch(state, &ev);
+        cursor_flash_reset(state);
     } else if (mods != MOD_SHIFT && mods != MOD_NONE) {
         KeyEvent ev = {
             .type = KEYEVENT_CHAR,
@@ -215,6 +217,7 @@ void handle_key_down(AppState *state, const SDL_KeyboardEvent *key) {
             .mods = mods
         };
         key_dispatch(state, &ev);
+        cursor_flash_reset(state);
     }
     return;
 }

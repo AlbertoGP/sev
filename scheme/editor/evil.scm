@@ -196,7 +196,7 @@
 (register-mode-icon/full 'evil-replace-mode "icon-replace.svg"
                          'mode.replace 'label.replace 'cursor.replace 'under)
 (register-mode-icon/full 'evil-select-mode  "icon-select.svg"
-                         'mode.select  'label.select  'cursor.select  'hollow)
+                         'mode.select  'label.select  'cursor.select  'solid)
 (register-mode-icon/full 'evil-command-mode "icon-command.svg"
                          'mode.command 'label.command 'cursor.command  'solid)
 (register-mode-icon/full 'evil-pending-mode "icon-pending.svg"

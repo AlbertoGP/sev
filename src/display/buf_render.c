@@ -534,7 +534,7 @@ static void BufRender_VLine(BufRenderCtx *ctx, size_t i) {
         .backgroundColor = (cursor_on_line && ctx->buf->select_mode == SELECT_NONE) ? (Clay_Color){ c.r, c.g, c.b, 128 } : (Clay_Color){0}
     }) {
         BufRender_GutterCell(ctx, i, vl);
-        if (cursor_on_line && ctx->cp->active)
+        if (cursor_on_line && ctx->cp->active && ctx->state->cursor_visible)
             BufRender_CursorCell(ctx, i, cursor_offset);
         BufRender_SelectionCell(ctx, i, vl);
         BufRender_TextCell(ctx, vl);
