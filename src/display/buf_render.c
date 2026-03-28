@@ -272,8 +272,11 @@ static bool BufRender_SetupGeometry(BufRenderCtx *ctx, Clay_ElementId id) {
                     cursor_x += measure_tab_aware(ctx->state, ctx->font_id, ctx->font_size,
                                                   ctx->chars + cvl->byte_start,
                                                   head_len, tab_width);
+                float old_scroll_x = cache->scroll_x;
                 vline_scroll_x_to_cursor_pixels(cache, cursor_x,
                                                 text_width - gutter_width);
+                if (cache->scroll_x != old_scroll_x)
+                    ctx->state->needs_extra_frame = true;
             }
         }
     }
