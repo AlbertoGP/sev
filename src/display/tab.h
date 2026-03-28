@@ -65,10 +65,11 @@ bool display_tab_next(struct Pane *dp);
 // Cycle to the previous tab in dp's list (circular).
 bool display_tab_prev(struct Pane *dp);
 
-// Create a new tab backed by the named buffer (creating buffer if needed)
-// and open it in the active display pane (creating a root pane if none exists).
+// Create a new tab backed by the named buffer and open it in the active display
+// pane (creating a root pane if none exists). If always_create is false, reuses
+// an existing buffer with the same name; if true, always allocates a fresh buffer.
 // Returns true on success.
-bool tab_new_with_buffer(const char *buf_name);
+bool tab_new_with_buffer(const char *buf_name, bool always_create);
 
 // Set a tab's buffer and invalidate its vline cache.
 void tab_set_buffer(Tab *tab, Buffer *buf);
@@ -98,5 +99,6 @@ sexp scm_tab_close(sexp ctx, sexp self, sexp n);
 sexp scm_tab_next(sexp ctx, sexp self, sexp n);
 sexp scm_tab_prev(sexp ctx, sexp self, sexp n);
 sexp scm_tab_new(sexp ctx, sexp self, sexp n, sexp sbuf_name);
+sexp scm_tab_new_fresh(sexp ctx, sexp self, sexp n, sexp sbuf_name);
 sexp scm_no_panes_p(sexp ctx, sexp self, sexp n);
 sexp scm_buffer_close(sexp ctx, sexp self, sexp n, sexp sname);

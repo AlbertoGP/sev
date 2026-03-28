@@ -170,7 +170,7 @@
   (interactive)
   (let ((name "untitled"))
     (if (no-panes?)
-        (%tab-new! name)
+        (%tab-new-fresh! name)
         (begin
           (%buffer-create name)
           (%tab-set-buffer! name)))
@@ -227,7 +227,7 @@
   "Create a new tab. Prompts for a buffer name; untitled if left empty."
   (interactive)
   (let ((buf-name "untitled"))
-    (if (%tab-new! buf-name)
+    (if (%tab-new-fresh! buf-name)
         (message (string-append "Opened tab " buf-name))
         (message (string-append "Failed to create tab " buf-name)))))
 

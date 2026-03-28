@@ -111,8 +111,10 @@ bool display_tab_prev(Pane *dp) {
     return true;
 }
 
-bool tab_new_with_buffer(const char *buf_name) {
-    Buffer *buf = buffer_get_by_name(buf_name);
+bool tab_new_with_buffer(const char *buf_name, bool always_create) {
+    Buffer *buf = NULL;
+    if (!always_create)
+        buf = buffer_get_by_name(buf_name);
     if (!buf) {
         buf = buffer_create(buf_name);
         if (!buf) return false;
@@ -459,7 +461,14 @@ sexp scm_tab_prev(sexp ctx, sexp self, sexp n) {
 sexp scm_tab_new(sexp ctx, sexp self, sexp n, sexp sbuf_name) {
     if (!sexp_stringp(sbuf_name))
         return sexp_user_exception(ctx, self, "buffer name must be a string", sbuf_name);
-    bool ok = tab_new_with_buffer(sexp_string_data(sbuf_name));
+    bool ok = tab_new_with_buffer(sexp_string_data(sbuf_name), false);
+    return ok ? SEXP_TRUE : SEXP_FALSE;
+}
+
+sexp scm_tab_new_fresh(sexp ctx, sexp self, sexp n, sexp sbuf_name) {
+    if (!sexp_stringp(sbuf_name))
+        return sexp_user_exception(ctx, self, "buffer name must be a string", sbuf_name);
+    bool ok = tab_new_with_buffer(sexp_string_data(sbuf_name), true);
     return ok ? SEXP_TRUE : SEXP_FALSE;
 }
 
