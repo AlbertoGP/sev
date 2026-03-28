@@ -163,6 +163,8 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         state->input.mouse_drag_active = false;
         if (event->button.button == SDL_BUTTON_MIDDLE)
             state->input.middle_pressed_this_frame = true;
+        if (event->button.button == SDL_BUTTON_LEFT && event->button.clicks == 2)
+            state->input.left_double_click_this_frame = true;
 
         // Check split divider before scrollbar/buffer.
         Pane *split_hit = pane_split_at_coords(pane_get_root(), x, y);

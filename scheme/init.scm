@@ -29,6 +29,12 @@
 (set-key! base-buffer-map "n" 'buffer-new)
 (bind-prefix! base-spc-map "b" base-buffer-map)
 
+;; SPC t — tab operations
+(define base-tab-map (make-keymap))
+(%set-keymap-name! base-tab-map "tab")
+(set-key! base-tab-map "n" 'tab-new)
+(bind-prefix! base-spc-map "t" base-tab-map)
+
 ;; SPC h — help (always available)
 (define help-map (make-keymap))
 (%set-keymap-name! help-map "help")
@@ -125,9 +131,6 @@
 (set-key! line-numbers-map "r" 'toggle-relative-line-numbers)
 (set-key! line-numbers-map "v" 'toggle-visual-line-numbers)
 (bind-prefix! pane-spc-map "l" line-numbers-map)
-
-;; SPC t — tab operations
-(set-key! pane-spc-map "t n" 'tab-new)
 
 ;; ── Mouse handlers ────────────────────────────────────────────────────────────
 

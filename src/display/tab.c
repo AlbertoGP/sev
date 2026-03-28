@@ -246,6 +246,7 @@ static int   tab_cb_count = 0;
 
 static Pane *pending_close_pane = NULL;
 static Tab  *pending_close_tab  = NULL;
+static Pane *pending_new_tab_pane = NULL;
 
 void tab_cb_reset(void) {
     tab_cb_count = 0;
@@ -257,7 +258,17 @@ void tab_flush_pending_close(void) {
         pending_close_pane = NULL;
         pending_close_tab  = NULL;
     }
+    if (pending_new_tab_pane) {
+        if (!pending_new_tab_pane->content.active) pane_set_active(pending_new_tab_pane);
+        sexp ctx = G->chibi.ctx;
+        sexp sym = sexp_intern(ctx, "tab-new", -1);
+        sexp result = sexp_apply(ctx, G->chibi.call_interactively, sexp_list1(ctx, sym));
+        if (sexp_exceptionp(result))
+            sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+        pending_new_tab_pane = NULL;
+    }
     G->input.middle_pressed_this_frame = false;
+    G->input.left_double_click_this_frame = false;
 }
 
 // String pool for buffer text and line-number allocations made during rendering.
@@ -420,7 +431,10 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
                 .width = { .bottom = 2 },
                 .color = ui_resolve_color(state, state->ui.roles.border_inactive)
             }
-        }) {}
+        }) {
+            if (Clay_Hovered() && G->input.left_double_click_this_frame)
+                pending_new_tab_pane = dp;
+        }
     }
 }
 

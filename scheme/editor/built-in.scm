@@ -226,13 +226,8 @@
 (defcommand (tab-new)
   "Create a new tab. Prompts for a buffer name; untitled if left empty."
   (interactive)
-  (minibuffer-read "Buffer name for new tab (empty for auto): "
-    (lambda (name)
-      (let ((buf-name
-             (if (string=? name "")
-                 "untitled"
-                 name)))
-        (if (%tab-new! buf-name)
-            (message (string-append "Opened tab " buf-name))
-            (message (string-append "Failed to create tab " buf-name)))))))
+  (let ((buf-name "untitled"))
+    (if (%tab-new! buf-name)
+        (message (string-append "Opened tab " buf-name))
+        (message (string-append "Failed to create tab " buf-name)))))
 
