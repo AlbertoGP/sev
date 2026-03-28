@@ -10,5 +10,8 @@
     register-mode-icon register-mode-icon/full
     toggle-line-numbers toggle-relative-line-numbers
     toggle-visual-line-numbers
-    scheme-mode)
+    scheme-mode
+    set-mode-parent! derived-mode?
+    user-settings-rules apply-buffer-settings
+    register-setting-default!)
   (include "mode.scm"))

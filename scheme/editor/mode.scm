@@ -1,7 +1,83 @@
 ;; Mode system wrapper functions
 
+;; ---------------------------------------------------------------------------
+;; Mode parent registry (for derived-mode? checks)
+;; ---------------------------------------------------------------------------
+
+(define %mode-parents '())  ; alist: child-symbol → parent-symbol
+
+(define (set-mode-parent! child parent)
+  (set! %mode-parents (cons (cons child parent) %mode-parents)))
+
+(define (mode-parent mode)
+  (let ((entry (assq mode %mode-parents)))
+    (and entry (cdr entry))))
+
+;; Returns #t if the current buffer's major mode is BASE or derives from it.
+(define (derived-mode? base)
+  (let loop ((m (%buffer-major-mode)))
+    (cond ((not m) #f)
+          ((eq? m base) #t)
+          (else (loop (mode-parent m))))))
+
+;; ---------------------------------------------------------------------------
+;; Settings resolution system
+;; ---------------------------------------------------------------------------
+
+;; Registered settings: alist of (key . global-fallback)
+(define %resolvable-settings '())
+
+(define (register-setting-default! key fallback)
+  (unless (assq key %resolvable-settings)
+    (set! %resolvable-settings
+          (cons (cons key fallback) %resolvable-settings))))
+
+;; App-supplied defaults (lower priority than user rules)
+(define %app-settings-rules '())  ; list of (predicate . settings-alist)
+
+(define (%app-settings-rules-add! pred settings)
+  (set! %app-settings-rules
+        (append %app-settings-rules (list (cons pred settings)))))
+
+;; User overrides — set this in your config file
+(define user-settings-rules '())  ; list of (predicate . settings-alist)
+
+;; Find the first matching value for KEY in a rule list.
+(define (find-in-rules key rules)
+  (let loop ((rs rules))
+    (cond ((null? rs) #f)
+          (((caar rs))  ; call predicate thunk
+           (let ((entry (assq key (cdar rs))))
+             (if entry (cdr entry) (loop (cdr rs)))))
+          (else (loop (cdr rs))))))
+
+;; Append two symbols together.
+(define (%sym-append a b)
+  (string->symbol (string-append (symbol->string a) (symbol->string b))))
+
+;; Resolve a single setting for the current buffer.
+;; If the buffer has an explicit interactive override, returns that; otherwise
+;; walks user-rules → app-rules → fallback.
+(define (resolve-buffer-setting key fallback)
+  (if (get-local (%sym-append key '/explicit?) #f)
+      (get-local key fallback)
+      (or (find-in-rules key user-settings-rules)
+          (find-in-rules key %app-settings-rules)
+          fallback)))
+
+;; Apply all registered settings to the current buffer (skips explicit ones).
+(define (apply-buffer-settings)
+  (for-each
+    (lambda (key/default)
+      (unless (get-local (%sym-append (car key/default) '/explicit?) #f)
+        (set-local! (car key/default)
+                    (resolve-buffer-setting (car key/default) (cdr key/default)))))
+    %resolvable-settings))
+
+;; ---------------------------------------------------------------------------
 ;; Register a major mode with an optional keymap
 ;; Returns the mode object or #f on failure
+;; ---------------------------------------------------------------------------
 (define (define-major-mode name . args)
   (let ((keymap (if (pair? args) (car args) #f)))
     (%register-mode name 'major keymap)))
@@ -19,9 +95,10 @@
 (define (set-keymap-parent! keymap parent)
   (%set-keymap-parent! keymap parent))
 
-;; Set the major mode of the current buffer
+;; Set the major mode of the current buffer and re-apply settings defaults.
 (define (set-major-mode! name)
-  (%set-major-mode name))
+  (%set-major-mode name)
+  (apply-buffer-settings))
 
 ;; Enable a minor mode in the current buffer
 (define (enable-minor-mode name)
@@ -62,15 +139,31 @@
 ;; Define fundamental-mode as the default major mode
 (define-major-mode 'fundamental-mode)
 
+;; Base categories for settings inheritance
+(define-major-mode 'prog-mode)
+(define-major-mode 'text-mode)
+
+;; App-supplied line-number defaults per category
+(%app-settings-rules-add!
+  (lambda () (derived-mode? 'prog-mode))
+  '((display-line-numbers-type . #t)))
+(%app-settings-rules-add!
+  (lambda () (derived-mode? 'text-mode))
+  '((display-line-numbers-type . #f)))
+
 ;; Scheme major mode — activates tree-sitter highlighting
 (define-major-mode 'scheme-mode)
+(set-mode-parent! 'scheme-mode 'prog-mode)
 (defcommand (scheme-mode)
   "Enable Scheme mode in the current buffer."
   (%ts-enable!)
-  (%set-major-mode 'scheme-mode))
+  (set-major-mode! 'scheme-mode))
 
 ;; Line number display
 (define-minor-mode 'display-line-numbers-mode)
+
+;; Register display-line-numbers-type as a resolvable setting (default: off).
+(register-setting-default! 'display-line-numbers-type #f)
 
 (defun (display-line-numbers-mode enable)
   "Set line number display mode in the current buffer."
@@ -86,24 +179,25 @@
 (defcommand (toggle-line-numbers)
   "Toggle display of line numbers in the current buffer."
   (unless (no-panes?)
-    (display-line-numbers-mode
-      (not (get-local 'display-line-numbers-type)))))
+    (let ((next (not (get-local 'display-line-numbers-type))))
+      (set-local! 'display-line-numbers-type next)
+      (set-local! 'display-line-numbers-type/explicit? #t))))
 
 (defcommand (toggle-relative-line-numbers)
   "Toggle relative line numbering in the current buffer."
   (unless (no-panes?)
-    (set-local! 'display-line-numbers-type
-      (if (eq? (get-local 'display-line-numbers-type)
-               'relative)
-          #t 'relative))))
+    (let ((next (if (eq? (get-local 'display-line-numbers-type) 'relative)
+                    #t 'relative)))
+      (set-local! 'display-line-numbers-type next)
+      (set-local! 'display-line-numbers-type/explicit? #t))))
 
 (defcommand (toggle-visual-line-numbers)
   "Toggle visual line numbering in the current buffer."
   (unless (no-panes?)
-    (set-local! 'display-line-numbers-type
-      (if (eq? (get-local 'display-line-numbers-type)
-               'visual)
-          #t 'visual))))
+    (let ((next (if (eq? (get-local 'display-line-numbers-type) 'visual)
+                    #t 'visual)))
+      (set-local! 'display-line-numbers-type next)
+      (set-local! 'display-line-numbers-type/explicit? #t))))
 
 ;; Help buffer mode
 (define help-map (make-keymap))
