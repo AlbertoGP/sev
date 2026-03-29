@@ -743,7 +743,10 @@ static void BufRender_Scrollbar(BufRenderCtx *ctx) {
                              ctx->tab->content.buffer.vline_cache.count > 1);
         if (cp->has_scrollbar) {
             VLineCache *tc = &ctx->tab->content.buffer.vline_cache;
-            float th       = cp->text_origin_h;
+            Clay_ElementData track_bb = Clay_GetElementData(ctx->track_id);
+            float th = (track_bb.found && track_bb.boundingBox.height > 0)
+                ? track_bb.boundingBox.height : cp->text_origin_h;
+            cp->scrollbar_track_h = th;
             float ms       = (float)(tc->count - 1) * cp->line_height_px;
             float total    = th + ms;
             float min_th   = fminf(20.0f * ctx->state->ui.scale_factor, th);
