@@ -669,7 +669,8 @@ static void BufRender_HScrollbar(BufRenderCtx *ctx) {
     float scroll_x = ctx->scroll_x;
     float range    = max_w - content_w;
 
-    float track_w = ctx->box.width - ctx->gutter_width;
+    float gutter_col_w = ctx->padding + ctx->gutter_width;
+    float track_w = ctx->box.width - gutter_col_w;
     float thumb_w = fmaxf((content_w / max_w) * track_w,
                           20.0f * ctx->state->ui.scale_factor);
     float travel  = track_w - thumb_w;
@@ -677,51 +678,53 @@ static void BufRender_HScrollbar(BufRenderCtx *ctx) {
                     ? (scroll_x / range) * travel : 0.0f;
 
     cp->hscrollbar_y       = ctx->box.y + ctx->text_height;
-    cp->hscrollbar_track_x = ctx->box.x + ctx->gutter_width;
+    cp->hscrollbar_track_x = ctx->box.x + gutter_col_w;
     cp->hscrollbar_track_w = track_w;
-    cp->hscrollbar_thumb_x = ctx->box.x + ctx->gutter_width + thumb_x;
+    cp->hscrollbar_thumb_x = ctx->box.x + gutter_col_w + thumb_x;
     cp->hscrollbar_thumb_w = thumb_w;
 
-    // Spacer at the left to push the thumb into position, then thumb, then remainder.
     CLAY_AUTO_ID({
         .layout = {
-            .sizing = {
-                .width  = CLAY_SIZING_GROW(0),
-                .height = CLAY_SIZING_FIXED(bar_h)
-            },
+            .sizing = { .width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(bar_h) },
             .layoutDirection = CLAY_LEFT_TO_RIGHT,
-        },
-        .backgroundColor = ui_resolve_color(ctx->state, ctx->state->ui.roles.bar_bg),
-        .border = {
-            .width = { .right = 2 },
-            .color = ui_resolve_color(ctx->state, ctx->state->ui.roles.border_inactive)
         }
     }) {
-        // Gutter-width spacer to align with text area.
-        if (ctx->gutter_width > 0.0f) {
-            CLAY_AUTO_ID({
-                .layout = { .sizing = {
-                    .width  = CLAY_SIZING_FIXED(ctx->gutter_width),
-                    .height = CLAY_SIZING_FIXED(bar_h) } }
-            }) {}
-        }
-        // Left spacer before thumb.
-        if (thumb_x > 0.0f) {
-            CLAY_AUTO_ID({
-                .layout = { .sizing = {
-                    .width  = CLAY_SIZING_FIXED(thumb_x),
-                    .height = CLAY_SIZING_FIXED(bar_h) } }
-            }) {}
-        }
-        // Thumb.
+        // Transparent spacer so the bar background doesn't cover the gutter.
         CLAY_AUTO_ID({
             .layout = { .sizing = {
-                .width  = CLAY_SIZING_FIXED(thumb_w),
-                .height = CLAY_SIZING_FIXED(bar_h) } },
-            .backgroundColor = Clay_Hovered() && !ctx->state->input.mouse_button_down
-                ? ui_resolve_color(ctx->state, ctx->state->ui.roles.scrollbar_hover)
-                : ui_resolve_color(ctx->state, ctx->state->ui.roles.scrollbar)
+                .width  = CLAY_SIZING_FIXED(gutter_col_w),
+                .height = CLAY_SIZING_FIXED(bar_h) } }
         }) {}
+        // Track (text column width only): background, border, and thumb.
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = { .width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(bar_h) },
+                .layoutDirection = CLAY_LEFT_TO_RIGHT,
+            },
+            .backgroundColor = ui_resolve_color(ctx->state, ctx->state->ui.roles.bar_bg),
+            .border = {
+                .width = { .left = 2, .right = 2 },
+                .color = ui_resolve_color(ctx->state, ctx->state->ui.roles.border_inactive)
+            }
+        }) {
+            // Left spacer before thumb.
+            if (thumb_x > 0.0f) {
+                CLAY_AUTO_ID({
+                    .layout = { .sizing = {
+                        .width  = CLAY_SIZING_FIXED(thumb_x),
+                        .height = CLAY_SIZING_FIXED(bar_h) } }
+                }) {}
+            }
+            // Thumb.
+            CLAY_AUTO_ID({
+                .layout = { .sizing = {
+                    .width  = CLAY_SIZING_FIXED(thumb_w),
+                    .height = CLAY_SIZING_FIXED(bar_h) } },
+                .backgroundColor = Clay_Hovered() && !ctx->state->input.mouse_button_down
+                    ? ui_resolve_color(ctx->state, ctx->state->ui.roles.scrollbar_hover)
+                    : ui_resolve_color(ctx->state, ctx->state->ui.roles.scrollbar)
+            }) {}
+        }
     }
 }
 
