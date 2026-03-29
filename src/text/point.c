@@ -553,6 +553,7 @@ bool buffer_jump_to_matching_bracket(Buffer *buf) {
     if (match == (size_t)-1) return false;
     point_set((Location){.pos = match});
     update_line(buf);
+    save_current_column(buf);
     return true;
 }
 
