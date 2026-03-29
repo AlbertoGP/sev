@@ -296,10 +296,12 @@ static void SDL_Clay_RenderArc(Clay_SDL3RendererData *rendererData, const SDL_FP
 }
 
 
-SDL_Rect currentClippingRectangle;
+static SDL_Rect scissor_stack[8];
+static int      scissor_depth = 0;
 
 void SDL_Clay_RenderClayCommands(Clay_SDL3RendererData *rendererData, Clay_RenderCommandArray *rcommands)
 {
+    scissor_depth = 0;
     for (int32_t i = 0; i < rcommands->length; i++) {
         Clay_RenderCommand *rcmd = Clay_RenderCommandArray_Get(rcommands, i);
         const Clay_BoundingBox bounding_box = rcmd->boundingBox;
@@ -393,18 +395,26 @@ void SDL_Clay_RenderClayCommands(Clay_SDL3RendererData *rendererData, Clay_Rende
 
             } break;
             case CLAY_RENDER_COMMAND_TYPE_SCISSOR_START: {
-                Clay_BoundingBox boundingBox = rcmd->boundingBox;
-                currentClippingRectangle = (SDL_Rect) {
-                        .x = boundingBox.x,
-                        .y = boundingBox.y,
-                        .w = boundingBox.width,
-                        .h = boundingBox.height,
-                };
-                SDL_SetRenderClipRect(rendererData->renderer, &currentClippingRectangle);
+                Clay_BoundingBox bb = rcmd->boundingBox;
+                SDL_Rect r = { (int)bb.x, (int)bb.y, (int)bb.width, (int)bb.height };
+                if (scissor_depth > 0) {
+                    SDL_Rect *prev = &scissor_stack[scissor_depth - 1];
+                    int x1 = SDL_max(r.x, prev->x);
+                    int y1 = SDL_max(r.y, prev->y);
+                    int x2 = SDL_min(r.x + r.w, prev->x + prev->w);
+                    int y2 = SDL_min(r.y + r.h, prev->y + prev->h);
+                    r = (SDL_Rect){ x1, y1, SDL_max(0, x2 - x1), SDL_max(0, y2 - y1) };
+                }
+                if (scissor_depth < 8) scissor_stack[scissor_depth++] = r;
+                SDL_SetRenderClipRect(rendererData->renderer, &scissor_stack[scissor_depth - 1]);
                 break;
             }
             case CLAY_RENDER_COMMAND_TYPE_SCISSOR_END: {
-                SDL_SetRenderClipRect(rendererData->renderer, NULL);
+                if (scissor_depth > 0) scissor_depth--;
+                if (scissor_depth > 0)
+                    SDL_SetRenderClipRect(rendererData->renderer, &scissor_stack[scissor_depth - 1]);
+                else
+                    SDL_SetRenderClipRect(rendererData->renderer, NULL);
                 break;
             }
             case CLAY_RENDER_COMMAND_TYPE_IMAGE: {

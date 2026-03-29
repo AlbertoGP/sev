@@ -383,7 +383,7 @@ static void BufRender_GutterCell(BufRenderCtx *ctx, size_t i, VisualLine *vl) {
     CLAY(CLAY_IDI_LOCAL("LineNum", (int32_t)i), {
         .layout = {
             .sizing = {
-                .width  = CLAY_SIZING_FIXED(ctx->gutter_width),
+                .width  = CLAY_SIZING_GROW(0),
                 .height = CLAY_SIZING_FIXED(ctx->line_height)
             },
             .padding        = { .left = ctx->padding, .right = ctx->padding },
@@ -424,7 +424,7 @@ static void BufRender_CursorCell(BufRenderCtx *ctx, size_t i, float cursor_offse
             break;
         }
     }
-    Cursor(ctx->state, (int32_t)i, cursor_offset + ctx->gutter_width,
+    Cursor(ctx->state, (int32_t)i, cursor_offset,
            ctx->line_height,
            ctx->box.x, ctx->box.y, ctx->box.width, ctx->text_height,
            cursor_font_id, ctx->font_size);
@@ -505,7 +505,7 @@ static void BufRender_SelectionCell(BufRenderCtx *ctx, size_t i, VisualLine *vl)
 
     if (!do_highlight || hl_end <= hl_start) return;
 
-    float sel_x = ctx->padding;
+    float sel_x = 0.0f;
     if (hl_start > line_start) {
         sel_x += measure_tab_aware(ctx->state, ctx->font_id, ctx->font_size,
                                    ctx->chars + line_start,
@@ -525,7 +525,7 @@ static void BufRender_SelectionCell(BufRenderCtx *ctx, size_t i, VisualLine *vl)
         CLAY(CLAY_IDI_LOCAL("Sel", (int32_t)i), {
             .floating = {
                 .attachTo = CLAY_ATTACH_TO_PARENT,
-                .offset   = { .x = sel_x + ctx->gutter_width, .y = 0 }
+                .offset   = { .x = sel_x, .y = 0 }
             },
             .layout = {
                 .sizing = {
@@ -614,7 +614,9 @@ static void BufRender_TextCell(BufRenderCtx *ctx, VisualLine *vl) {
 
 // Renders a single visual line: gutter cell, cursor overlay, selection overlay,
 // and syntax-highlighted text.
-static void BufRender_VLine(BufRenderCtx *ctx, size_t i) {
+// Renders cursor, selection, and text for one visual line inside the text column.
+// The gutter is rendered separately in BufRender_GutterCell.
+static void BufRender_TextRow(BufRenderCtx *ctx, size_t i) {
     VisualLine *vl    = &ctx->cache->lines[i];
     size_t line_start = vl->byte_start;
     size_t line_end   = vl->byte_end;
@@ -628,7 +630,7 @@ static void BufRender_VLine(BufRenderCtx *ctx, size_t i) {
             cursor_on_line = true;
     }
 
-    float cursor_offset = ctx->padding;
+    float cursor_offset = 0.0f;
     if (cursor_on_line) {
         size_t head_len = ctx->point - line_start;
         if (head_len > 0) {
@@ -639,18 +641,13 @@ static void BufRender_VLine(BufRenderCtx *ctx, size_t i) {
     }
 
     Clay_Color c = ui_resolve_color(ctx->state, ctx->state->ui.roles.line_bg);
-    CLAY(CLAY_IDI_LOCAL("VLine", (int32_t)i), {
+    CLAY(CLAY_IDI_LOCAL("TextRow", (int32_t)i), {
         .layout = {
-            .sizing = {
-                .width  = CLAY_SIZING_GROW(0),
-                .height = CLAY_SIZING_FIXED(ctx->line_height)
-            },
-            .padding = { .left = ctx->padding, .right = ctx->padding },
+            .sizing = { .width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(ctx->line_height) },
             .layoutDirection = CLAY_LEFT_TO_RIGHT,
         },
         .backgroundColor = (cursor_on_line && ctx->buf->select_mode == SELECT_NONE) ? (Clay_Color){ c.r, c.g, c.b, 128 } : (Clay_Color){0}
     }) {
-        BufRender_GutterCell(ctx, i, vl);
         if (cursor_on_line && ctx->cp->active && ctx->state->cursor_visible)
             BufRender_CursorCell(ctx, i, cursor_offset);
         BufRender_SelectionCell(ctx, i, vl);
@@ -827,16 +824,39 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
             Clay_ElementId id = CLAY_IDI_LOCAL("Buffer Text", index);
             CLAY(id, {
                 .layout = {
-                    .sizing           = tab_layout_expand,
-                    .padding          = { .top = 2, .bottom = 2 },
-                    .layoutDirection  = CLAY_TOP_TO_BOTTOM,
+                    .sizing          = tab_layout_expand,
+                    .padding         = { .top = 2, .bottom = 2 },
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT,
                 },
                 .clip = { .vertical = true, .horizontal = true,
-                          .childOffset = { .x = -scroll_x_pre, .y = -sub_offset } }
+                          .childOffset = { .y = -sub_offset } }
             }) {
                 if (BufRender_SetupGeometry(&ctx, id)) {
-                    for (size_t i = ctx.first_vline; i < ctx.end_vline; i++)
-                        BufRender_VLine(&ctx, i);
+                    // Gutter column: fixed width, not scrolled horizontally.
+                    float gutter_col_w = ctx.padding + ctx.gutter_width;
+                    CLAY(CLAY_IDI_LOCAL("GutterCol", index), {
+                        .layout = {
+                            .sizing = { .width  = CLAY_SIZING_FIXED(gutter_col_w),
+                                        .height = CLAY_SIZING_GROW(0) },
+                            .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                        }
+                    }) {
+                        for (size_t i = ctx.first_vline; i < ctx.end_vline; i++)
+                            BufRender_GutterCell(&ctx, i, &ctx.cache->lines[i]);
+                    }
+                    // Text column: scrolled horizontally.
+                    CLAY(CLAY_IDI_LOCAL("TextCol", index), {
+                        .layout = {
+                            .sizing = { .width  = CLAY_SIZING_GROW(0),
+                                        .height = CLAY_SIZING_GROW(0) },
+                            .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                        },
+                        .clip = { .horizontal = true,
+                                  .childOffset = { .x = -scroll_x_pre } }
+                    }) {
+                        for (size_t i = ctx.first_vline; i < ctx.end_vline; i++)
+                            BufRender_TextRow(&ctx, i);
+                    }
                 } else {
                     BufRender_LoadingPlaceholder(&ctx);
                 }
