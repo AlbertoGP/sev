@@ -620,7 +620,9 @@ void scheme_init(AppState *state) {
     INTERN_ROLE(hl_function, "hl.function");
     INTERN_ROLE(hl_builtin,  "hl.builtin");
     INTERN_ROLE(hl_operator, "hl.operator");
-    INTERN_ROLE(hl_bracket,  "hl.bracket");
+    INTERN_ROLE(hl_bracket,          "hl.bracket");
+    INTERN_ROLE(hl_bracket_match,    "hl.bracket.match");
+    INTERN_ROLE(hl_bracket_match_bg, "hl.bracket.match.bg");
 
     #undef INTERN_ROLE
 

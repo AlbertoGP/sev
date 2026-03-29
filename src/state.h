@@ -87,6 +87,8 @@ typedef struct CachedRoles {
     sexp hl_keyword, hl_string, hl_comment, hl_number;
     sexp hl_constant, hl_function, hl_builtin, hl_operator;
     sexp hl_bracket;
+    sexp hl_bracket_match;
+    sexp hl_bracket_match_bg;
 } CachedRoles;
 
 typedef struct CachedSymbols {

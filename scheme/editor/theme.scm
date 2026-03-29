@@ -44,7 +44,8 @@
    (text-0    . "#cdd6f4")
    (text-1    . "#bac2de")
    (text-2    . "#a6adc8")
-   (select    . "#9399b240")
+   (select         . "#9399b240")
+   (bracket-hl-bg  . "#cba6f760")
    (lavender  . "#b4befe")
    (blue      . "#89b4fa")
    (sapphire  . "#74c7ec")
@@ -115,7 +116,9 @@
    (hl.function       . (:color blue))
    (hl.builtin        . (:color sky))
    (hl.operator       . (:color text-0))
-   (hl.bracket        . (:color accent-0))))
+   (hl.bracket        . (:color accent-0))
+   (hl.bracket.match    . (:color rosewater :font buf-bold))
+   (hl.bracket.match.bg . bracket-hl-bg)))
 
 (define-theme
  'catppuccin-macchiato
@@ -133,7 +136,8 @@
    (text-0    . "#cad3f5")
    (text-1    . "#b8c0e0")
    (text-2    . "#a5adcb")
-   (select    . "#939ab740")
+   (select         . "#939ab740")
+   (bracket-hl-bg  . "#c6a0f660")
    (lavender  . "#b7bdf8")
    (blue      . "#8aadf4")
    (sapphire  . "#7dc4e4")
@@ -204,7 +208,9 @@
    (hl.function       . (:color blue))
    (hl.builtin        . (:color sky))
    (hl.operator       . (:color text-0))
-   (hl.bracket        . (:color accent-0))))
+   (hl.bracket        . (:color accent-0))
+   (hl.bracket.match    . (:color rosewater :font buf-bold))
+   (hl.bracket.match.bg . bracket-hl-bg)))
 
 (define-theme
  'catppuccin-latte
@@ -222,7 +228,8 @@
    (text-0    . "#4c4f69")
    (text-1    . "#5c5f77")
    (text-2    . "#6c6f85")
-   (select    . "#7c7f9340")
+   (select         . "#7c7f9340")
+   (bracket-hl-bg  . "#8839ef50")
    (lavender  . "#7287fd")
    (blue      . "#1e66f5")
    (sapphire  . "#209fb5")
@@ -293,7 +300,9 @@
    (hl.function       . (:color blue))
    (hl.builtin        . (:color sky))
    (hl.operator       . (:color text-0))
-   (hl.bracket        . (:color accent-0))))
+   (hl.bracket        . (:color accent-0))
+   (hl.bracket.match    . (:color rosewater :font buf-bold))
+   (hl.bracket.match.bg . bracket-hl-bg)))
 
 (activate-theme 'catppuccin-macchiato)
 
