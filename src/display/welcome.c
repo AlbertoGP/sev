@@ -13,7 +13,7 @@ static void XSpacer(void) {
 }
 
 static void SuggestionRow(AppState *state, Clay_String label, Clay_String key) {
-    float font_size = 14 * state->ui.scale_factor;
+    float font_size = 12 * state->ui.scale_factor;
     TextStyle key_style  = ui_resolve_text_style(state, state->ui.roles.text_key,
                                                   FONT_BUF_NORMAL, font_size);
     CLAY_AUTO_ID({
@@ -34,7 +34,7 @@ static void SuggestionRow(AppState *state, Clay_String label, Clay_String key) {
 }
 
 void WelcomePane(AppState *state) {
-    float icon_size = 80.0f * state->ui.scale_factor;
+    float icon_size = 64.0f * state->ui.scale_factor;
     CLAY(CLAY_ID("Welcome"), {
         .layout = {
             .sizing = {
@@ -51,27 +51,48 @@ void WelcomePane(AppState *state) {
         .backgroundColor = ui_resolve_color(state, state->ui.roles.pane_bg)
     }) {
         SDL_Texture *icon = icon_get("welcome-icon", state, (int)icon_size, (int)icon_size);
-        CLAY(CLAY_ID("Welcome Icon"), {
+        CLAY(CLAY_ID("Banner"), {
             .layout = {
-                .sizing = {
-                    .width = CLAY_SIZING_FIXED(icon_size),
-                    .height = CLAY_SIZING_FIXED(icon_size)
-                }
+                .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                .childGap = 8.0 * state->ui.scale_factor,
+                .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
             },
-            .image = icon
-        }) {}
-        CLAY_TEXT(CLAY_STRING("sev"), CLAY_TEXT_CONFIG({
-            .fontId = FONT_UI_NORMAL,
-            .fontSize = 22.0 * state->ui.scale_factor,
-            .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
-        }));
+        }){
+            CLAY(CLAY_ID("Welcome Icon"), {
+                .layout = {
+                    .sizing = {
+                        .width = CLAY_SIZING_FIXED(icon_size),
+                        .height = CLAY_SIZING_FIXED(icon_size)
+                    }
+                },
+                .image = icon
+            }) {}
+            CLAY(CLAY_ID("Banner Text"), {
+                .layout = {
+                    .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                    .childGap = 4.0 * state->ui.scale_factor,
+                    .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
+                },
+            }){
+                CLAY_TEXT(CLAY_STRING("Welcome back to sev"), CLAY_TEXT_CONFIG({
+                    .fontId = FONT_UI_NORMAL,
+                    .fontSize = 16.0 * state->ui.scale_factor,
+                    .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
+                }));
+                CLAY_TEXT(CLAY_STRING("An extensible text editor."), CLAY_TEXT_CONFIG({
+                    .fontId = FONT_UI_ITALIC,
+                    .fontSize = 10.0 * state->ui.scale_factor,
+                    .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
+                }));
+            }
+        }
         CLAY_AUTO_ID({
             .layout = { .sizing = { .height = CLAY_SIZING_FIXED(15 * state->ui.scale_factor) } }
         }) {}
         CLAY(CLAY_ID("Suggestions"), {
             .layout = {
                 .sizing = {
-                    .width = CLAY_SIZING_FIXED(300 * state->ui.scale_factor)
+                    .width = CLAY_SIZING_FIXED(400 * state->ui.scale_factor)
                 },
                 .layoutDirection = CLAY_TOP_TO_BOTTOM,
                 .childGap = 5.0 * state->ui.scale_factor,
