@@ -622,7 +622,6 @@ void scheme_init(AppState *state) {
     INTERN_ROLE(hl_operator, "hl.operator");
     INTERN_ROLE(hl_bracket,          "hl.bracket");
     INTERN_ROLE(hl_bracket_match,    "hl.bracket.match");
-    INTERN_ROLE(hl_bracket_match_bg, "hl.bracket.match.bg");
 
     #undef INTERN_ROLE
 
@@ -632,6 +631,7 @@ void scheme_init(AppState *state) {
     INTERN_SYM(kw_color,   ":color");
     INTERN_SYM(kw_font,    ":font");
     INTERN_SYM(kw_size,    ":size");
+    INTERN_SYM(kw_bg,      ":bg");
     INTERN_SYM(buf_normal, "buf-normal");
     INTERN_SYM(buf_bold,   "buf-bold");
     INTERN_SYM(buf_italic, "buf-italic");

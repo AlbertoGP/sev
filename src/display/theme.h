@@ -11,6 +11,7 @@ typedef enum CursorType {
 
 typedef struct {
     Clay_Color color;
+    Clay_Color bg_color;   // background fill; {0,0,0,0} = transparent (no fill)
     uint16_t   font_id;    // FontID
     uint16_t   font_size;  // final computed size (base_font_size × :size multiplier)
 } TextStyle;

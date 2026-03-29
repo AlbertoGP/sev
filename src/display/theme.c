@@ -84,6 +84,7 @@ TextStyle ui_resolve_text_style(AppState *G, sexp role,
                                 uint16_t default_font_id, uint16_t base_font_size) {
     TextStyle style = {
         .color     = (Clay_Color){255, 0, 255, 255},
+        .bg_color  = (Clay_Color){0, 0, 0, 0},
         .font_id   = default_font_id,
         .font_size = base_font_size,
     };
@@ -110,6 +111,10 @@ TextStyle ui_resolve_text_style(AppState *G, sexp role,
         style.font_size = (uint16_t)(sexp_flonum_value(size_val) * base_font_size);
     else if (sexp_fixnump(size_val))
         style.font_size = (uint16_t)(sexp_unbox_fixnum(size_val) * base_font_size);
+
+    sexp bg_val = plist_get(role_val, G->ui.symbols.kw_bg);
+    if (sexp_symbolp(bg_val))
+        style.bg_color = resolve_palette_color(G, bg_val);
 
     return style;
 }

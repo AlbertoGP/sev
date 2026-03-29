@@ -136,6 +136,7 @@ static sexp hl_kind_to_role(AppState *state, uint16_t kind) {
                 .width  = CLAY_SIZING_FIXED(_er_sw), \
                 .height = CLAY_SIZING_FIXED(ctx->line_height) \
             }}, \
+            .backgroundColor = _er_style.bg_color, \
         }) { \
             CLAY_TEXT(_er_cs, CLAY_TEXT_CONFIG({ \
                 .fontId    = _er_style.font_id, \
@@ -555,45 +556,6 @@ static void BufRender_SelectionCell(BufRenderCtx *ctx, size_t i, VisualLine *vl)
     }
 }
 
-// Renders background highlight rects for the two bracket positions (if on this vline).
-static void BufRender_BracketHighlightCell(BufRenderCtx *ctx, size_t i, VisualLine *vl) {
-    if (ctx->bracket_hl_a == (size_t)-1) return;
-    size_t bk[2] = { ctx->bracket_hl_a, ctx->bracket_hl_b };
-    for (int k = 0; k < 2; k++) {
-        size_t bp = bk[k];
-        if (bp == (size_t)-1) continue;
-        if (bp < vl->byte_start || bp >= vl->byte_end) continue;
-        float bk_x = 0.0f;
-        if (bp > vl->byte_start)
-            bk_x = measure_tab_aware(ctx->state, ctx->font_id, ctx->font_size,
-                                     ctx->chars + vl->byte_start,
-                                     bp - vl->byte_start, ctx->tab_width);
-        float bk_w = measure_tab_aware(ctx->state, ctx->font_id, ctx->font_size,
-                                       ctx->chars + bp, 1, ctx->tab_width);
-        if (bk_w > 0 && sel_pool_idx < SCISSORED_RECT_POOL_SIZE) {
-            ScissoredRectData *s = &sel_pool[sel_pool_idx++];
-            s->type   = CUSTOM_TYPE_SCISSORED_RECT;
-            s->clip_x = ctx->box.x;
-            s->clip_y = ctx->box.y;
-            s->clip_w = ctx->box.width;
-            s->clip_h = ctx->text_height;
-            s->color  = ui_resolve_color(ctx->state, ctx->state->ui.roles.hl_bracket_match_bg);
-            CLAY(CLAY_IDI_LOCAL("BkHL", (int32_t)(i * 2 + k)), {
-                .floating = {
-                    .attachTo = CLAY_ATTACH_TO_PARENT,
-                    .offset   = { .x = bk_x, .y = 0 }
-                },
-                .layout = {
-                    .sizing = {
-                        .width  = CLAY_SIZING_FIXED(bk_w),
-                        .height = CLAY_SIZING_FIXED(ctx->line_height)
-                    }
-                },
-                .custom = { .customData = s },
-            }) {}
-        }
-    }
-}
 
 // Emit a tab spacer at the current x_accum position, updating x_accum.
 // Relies on `ctx` being in scope at the call site.
@@ -732,10 +694,9 @@ static void BufRender_TextRow(BufRenderCtx *ctx, size_t i) {
         },
         .backgroundColor = (cursor_on_line && ctx->buf->select_mode == SELECT_NONE) ? (Clay_Color){ c.r, c.g, c.b, 128 } : (Clay_Color){0}
     }) {
-        BufRender_BracketHighlightCell(ctx, i, vl);
-        BufRender_SelectionCell(ctx, i, vl);
         if (cursor_on_line && ctx->cp->active && ctx->state->cursor_visible)
             BufRender_CursorCell(ctx, i, cursor_offset);
+        BufRender_SelectionCell(ctx, i, vl);
         BufRender_TextCell(ctx, vl);
     }
 }

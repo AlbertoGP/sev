@@ -88,7 +88,6 @@ typedef struct CachedRoles {
     sexp hl_constant, hl_function, hl_builtin, hl_operator;
     sexp hl_bracket;
     sexp hl_bracket_match;
-    sexp hl_bracket_match_bg;
 } CachedRoles;
 
 typedef struct CachedSymbols {
@@ -96,6 +95,7 @@ typedef struct CachedSymbols {
     sexp kw_color;    // ':color
     sexp kw_font;     // ':font
     sexp kw_size;     // ':size
+    sexp kw_bg;       // ':bg
     // font name symbols
     sexp buf_normal;  // 'buf-normal
     sexp buf_bold;    // 'buf-bold

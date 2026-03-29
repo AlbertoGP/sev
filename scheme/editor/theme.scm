@@ -117,8 +117,7 @@
    (hl.builtin        . (:color sky))
    (hl.operator       . (:color text-0))
    (hl.bracket        . (:color accent-0))
-   (hl.bracket.match    . (:color rosewater :font buf-bold))
-   (hl.bracket.match.bg . bracket-hl-bg)))
+   (hl.bracket.match    . (:color rosewater :font buf-bold :bg bracket-hl-bg))))
 
 (define-theme
  'catppuccin-macchiato
@@ -209,8 +208,7 @@
    (hl.builtin        . (:color sky))
    (hl.operator       . (:color text-0))
    (hl.bracket        . (:color accent-0))
-   (hl.bracket.match    . (:color rosewater :font buf-bold))
-   (hl.bracket.match.bg . bracket-hl-bg)))
+   (hl.bracket.match    . (:color rosewater :font buf-bold :bg bracket-hl-bg))))
 
 (define-theme
  'catppuccin-latte
@@ -301,8 +299,7 @@
    (hl.builtin        . (:color sky))
    (hl.operator       . (:color text-0))
    (hl.bracket        . (:color accent-0))
-   (hl.bracket.match    . (:color rosewater :font buf-bold))
-   (hl.bracket.match.bg . bracket-hl-bg)))
+   (hl.bracket.match    . (:color rosewater :font buf-bold :bg bracket-hl-bg))))
 
 (activate-theme 'catppuccin-macchiato)
 
