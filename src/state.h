@@ -109,7 +109,9 @@ typedef struct UIState {
     VarTable palette_table;   // palette-symbol -> Color
     CachedRoles roles;        // pre-interned role symbols
     CachedSymbols symbols;    // pre-interned misc symbols for theme resolution
-    float scale_factor;       // global scaling factor
+    float dpi_scale;          // display pixel density (e.g. 2.0 on retina)
+    float user_scale;         // user zoom level (default from Scheme)
+    float scale_factor;       // effective scale = dpi_scale * user_scale
 } UIState;
 
 #define MINIBUF_PROMPT_MAX 256
