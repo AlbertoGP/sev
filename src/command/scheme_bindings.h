@@ -32,6 +32,7 @@ sexp scm_char_at(sexp ctx, sexp self, sexp n, sexp pos);
 sexp scm_last_key_char(sexp ctx, sexp self, sexp n);
 sexp scm_goto_line(sexp ctx, sexp self, sexp n, sexp line_num);
 sexp scm_line_count(sexp ctx, sexp self, sexp n);
+sexp scm_jump_to_matching_bracket(sexp ctx, sexp self, sexp n);
 
 // --- display/pane.c ---
 sexp scm_pane_navigate_up(sexp ctx, sexp self, sexp n);

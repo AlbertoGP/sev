@@ -310,6 +310,12 @@
 (defcommand (evil-motion-B) "Move backward one WORD." (evil-execute-motion 'motion-B))
 (defcommand (evil-motion-E) "Move to end of WORD." (evil-execute-motion 'motion-E))
 
+;; Bracket matching motion
+(register-motion! 'motion-%
+  (lambda (count) (jump-to-matching-bracket)))
+
+(defcommand (evil-motion-%) "Jump to matching bracket." (evil-execute-motion 'motion-%))
+
 (defcommand (evil-motion-gg)
   "Go to first line."
   (when (eq? evil-sm-state 'normal) (%jump-push!))

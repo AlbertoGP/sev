@@ -340,6 +340,7 @@ void scheme_init(AppState *state) {
     SDEF("delete-range", 2, scm_delete_range);
     SDEF("char-at", 1, scm_char_at);
     SDEF("last-key-char", 0, scm_last_key_char);
+    SDEF("jump-to-matching-bracket", 0, scm_jump_to_matching_bracket);
     SDEF("%set-replace-mode!", 1, scm_set_replace_mode);
     SDEF("%tab-next", 0, scm_tab_next);
     SDEF("%tab-prev", 0, scm_tab_prev);
@@ -549,6 +550,7 @@ void scheme_init(AppState *state) {
         "%minibuffer-cancel %minibuffer-active? "
         "%which-key-toggle "
         "%jump-push! %jump-backward! %jump-forward! "
+        "jump-to-matching-bracket "
         "%set-mouse-click-handler! %set-mouse-drag-handler! "
         "global-keymap pane-keymap eval) "
         "%editor-env '()))",

@@ -331,5 +331,6 @@
 (set-key! select-map "W" 'evil-motion-W)
 (set-key! select-map "B" 'evil-motion-B)
 (set-key! select-map "E" 'evil-motion-E)
+(set-key! select-map "%" 'evil-motion-%)
 (set-key! select-map "g g" 'evil-motion-gg)
 (set-key! select-map "G" 'evil-motion-G)

@@ -202,6 +202,7 @@ char char_at_point(void);
 char char_from_point(int n);
 int buf_char_at(Buffer *buf, size_t index);
 int buf_size(Buffer *buf);
+bool buffer_jump_to_matching_bracket(Buffer *buf);
 
 // Returns a pointer to the buffer's LineTable for read-only access.
 const LineTable *buffer_get_line_table(Buffer *buf);

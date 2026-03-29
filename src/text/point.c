@@ -477,3 +477,93 @@ sexp scm_buffer_substring(sexp ctx, sexp self, sexp n, sexp sstart, sexp send) {
     free(text);
     return result;
 }
+
+// --- Bracket matching ---
+
+static const char BRACKET_OPEN[]  = "([{";
+static const char BRACKET_CLOSE[] = ")]}";
+
+static bool is_in_ignored_span(const LineTable *lt, size_t li, size_t pos) {
+    const Line *line = &lt->lines[li];
+    uint32_t byte_in_line = (uint32_t)(pos - line->start);
+    for (uint32_t i = 0; i < line->hl_span_count; i++) {
+        const HLSpan *s = &line->hl_spans[i];
+        if (s->style != HL_STRING && s->style != HL_COMMENT) continue;
+        if (byte_in_line >= s->start_byte && byte_in_line < s->end_byte)
+            return true;
+    }
+    return false;
+}
+
+bool buffer_jump_to_matching_bracket(Buffer *buf) {
+    if (!buf) return false;
+    const LineTable *lt = buffer_get_line_table(buf);
+    size_t start = buf->point.pos;
+    size_t buf_len = get_char_count(buf);
+
+    char ch = (char)buf_char_at(buf, start);
+
+    // Determine bracket kind and scan direction
+    int bracket_idx = -1;
+    bool forward = false;
+    for (int i = 0; i < 3; i++) {
+        if (ch == BRACKET_OPEN[i])  { bracket_idx = i; forward = true;  break; }
+        if (ch == BRACKET_CLOSE[i]) { bracket_idx = i; forward = false; break; }
+    }
+    if (bracket_idx < 0) return false;
+
+    char open  = BRACKET_OPEN[bracket_idx];
+    char close = BRACKET_CLOSE[bracket_idx];
+
+    // Cache line index to avoid binary search per step
+    size_t li = line_index_at(lt, start);
+
+    if (forward) {
+        int depth = 1;
+        size_t pos = start + 1;
+        while (pos < buf_len) {
+            // Advance cached line index
+            while (li + 1 < lt->count && pos >= lt->lines[li + 1].start)
+                li++;
+
+            if (!is_in_ignored_span(lt, li, pos)) {
+                char c = (char)buf_char_at(buf, pos);
+                if (c == open)  depth++;
+                if (c == close) { depth--; if (depth == 0) goto found; }
+            }
+            pos++;
+        }
+        return false;
+    found:
+        point_set((Location){.pos = pos});
+        update_line(buf);
+        return true;
+    } else {
+        int depth = 1;
+        if (start == 0) return false;
+        size_t pos = start - 1;
+        for (;;) {
+            // Retreat cached line index
+            while (li > 0 && pos < lt->lines[li].start)
+                li--;
+
+            if (!is_in_ignored_span(lt, li, pos)) {
+                char c = (char)buf_char_at(buf, pos);
+                if (c == close) depth++;
+                if (c == open)  { depth--; if (depth == 0) goto found_back; }
+            }
+            if (pos == 0) return false;
+            pos--;
+        }
+    found_back:
+        point_set((Location){.pos = pos});
+        update_line(buf);
+        return true;
+    }
+}
+
+sexp scm_jump_to_matching_bracket(sexp ctx, sexp self, sexp n) {
+    G->needs_redraw = true;
+    Buffer *buf = buffer_get_current();
+    return buffer_jump_to_matching_bracket(buf) ? SEXP_TRUE : SEXP_FALSE;
+}

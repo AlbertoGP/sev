@@ -15,7 +15,7 @@
     make-range range-start range-end range-type
     evil-motion-h evil-motion-j evil-motion-k evil-motion-l
     evil-motion-$ evil-motion-^ evil-motion-w evil-motion-b evil-motion-e
-    evil-motion-W evil-motion-B evil-motion-E evil-motion-gg evil-motion-G
+    evil-motion-W evil-motion-B evil-motion-E evil-motion-% evil-motion-gg evil-motion-G
     evil-op-delete evil-op-change evil-op-yank evil-D evil-C evil-S evil-x evil-X
     evil-char-replace evil-visual-char-replace evil-char-replace-setup
     evil-visual-delete evil-visual-change evil-visual-yank evil-visual-paste
