@@ -78,6 +78,7 @@ void StatusBar(AppState *state) {
         },
         .border = {
             .width = {
+                .top = 2,
                 .bottom = 2
             },
             .color = ui_resolve_color(state, roles.border_inactive)
@@ -99,6 +100,9 @@ void StatusBar(AppState *state) {
 
         CLAY(CLAY_ID("Mode Name"), {
             .layout = {
+                .sizing = {
+                    .height = CLAY_SIZING_FIXED(16.0 * state->ui.scale_factor)
+                },
                 .padding = {
                     .left = 8.0 * state->ui.scale_factor,
                     .right = 14.0 * state->ui.scale_factor
@@ -115,12 +119,12 @@ void StatusBar(AppState *state) {
             .backgroundColor = mode_bg
         }){
             if (icon) {
-                SDL_Texture *tex = icon_get(icon->icon_name, state, 16, 16);
+                SDL_Texture *tex = icon_get(icon->icon_name, state, 14, 14);
                 CLAY(CLAY_ID("Mode Icon"), {
                     .layout = {
                         .sizing = {
-                            .width = 16.0 * state->ui.scale_factor,
-                            .height = 16.0 * state->ui.scale_factor
+                            .width = 14.0 * state->ui.scale_factor,
+                            .height = 14.0 * state->ui.scale_factor
                         },
                     },
                     .image = tex
@@ -128,7 +132,7 @@ void StatusBar(AppState *state) {
             }
             CLAY_TEXT(modeName, CLAY_TEXT_CONFIG({
                 .fontId = FONT_UI_BOLD,
-                .fontSize = 14.0 * state->ui.scale_factor,
+                .fontSize = 12.0 * state->ui.scale_factor,
                 .textColor = label_color,
             }));
         }
@@ -163,7 +167,7 @@ void StatusBar(AppState *state) {
                 }
                 CLAY_TEXT(CLAY_STRING("REC"), CLAY_TEXT_CONFIG({
                     .fontId = FONT_UI_BOLD,
-                    .fontSize = 12.0 * state->ui.scale_factor,
+                    .fontSize = 10.0 * state->ui.scale_factor,
                     .textColor = ui_resolve_color(state, roles.text_primary),
                 }));
             }
@@ -181,19 +185,19 @@ void StatusBar(AppState *state) {
                     },
                 },
             }){
-                SDL_Texture *tex = icon_get("scheme-icon", state, 14, 14);
+                SDL_Texture *tex = icon_get("scheme-icon", state, 12, 12);
                 CLAY(CLAY_ID("Scheme Mode Icon"), {
                     .layout = {
                         .sizing = {
-                            .width = 14.0 * state->ui.scale_factor,
-                            .height = 14.0 * state->ui.scale_factor
+                            .width = 12.0 * state->ui.scale_factor,
+                            .height = 12.0 * state->ui.scale_factor
                         },
                     },
                     .image = tex
                 }) {}
                 CLAY_TEXT(CLAY_STRING("Scheme"), CLAY_TEXT_CONFIG({
                     .fontId = FONT_UI_NORMAL,
-                    .fontSize = 12.0 * state->ui.scale_factor,
+                    .fontSize = 10.0 * state->ui.scale_factor,
                     .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
                 }));
             }
@@ -239,14 +243,14 @@ void StatusBar(AppState *state) {
             Clay_String selCount = { .chars = sel_str, .length = strlen(sel_str) };
             CLAY_TEXT(selCount, CLAY_TEXT_CONFIG({
                 .fontId = FONT_UI_NORMAL,
-                .fontSize = 14.0 * state->ui.scale_factor,
+                .fontSize = 10.0 * state->ui.scale_factor,
                 .textColor = textColor,
             }));
             Divider(state);
         }
         CLAY_TEXT(pointPos, CLAY_TEXT_CONFIG({
             .fontId = FONT_UI_NORMAL,
-            .fontSize = 14.0 * state->ui.scale_factor,
+            .fontSize = 10.0 * state->ui.scale_factor,
             .textColor = textColor,
         }));
     }

@@ -694,7 +694,11 @@ static void BufRender_HScrollbar(BufRenderCtx *ctx) {
             },
             .layoutDirection = CLAY_LEFT_TO_RIGHT,
         },
-        .backgroundColor = ui_resolve_color(ctx->state, ctx->state->ui.roles.bar_bg)
+        .backgroundColor = ui_resolve_color(ctx->state, ctx->state->ui.roles.bar_bg),
+        .border = {
+            .width = { .right = 2 },
+            .color = ui_resolve_color(ctx->state, ctx->state->ui.roles.border_inactive)
+        }
     }) {
         // Gutter-width spacer to align with text area.
         if (ctx->gutter_width > 0.0f) {
@@ -795,7 +799,7 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
         .lt        = buffer_get_line_table(buf),
         .cache     = &tab->content.buffer.vline_cache,
         .font_id   = FONT_BUF_NORMAL,
-        .font_size = (uint16_t)(15 * state->ui.scale_factor * buffer_get_scale(buf)),
+        .font_size = (uint16_t)(14 * state->ui.scale_factor * buffer_get_scale(buf)),
         .padding   = 24.0f * state->ui.scale_factor,
         // scroll_x matches the clip childOffset so cursor/selection float correctly.
         .scroll_x  = scroll_x_pre,
@@ -810,12 +814,12 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
     float sub_offset = BufRender_ComputeSubOffset(&ctx);
 
     CLAY(outer_id, {
-        .layout = { .sizing = tab_layout_expand, .layoutDirection = CLAY_TOP_TO_BOTTOM }
+        .layout = { .sizing = tab_layout_expand, .layoutDirection = CLAY_LEFT_TO_RIGHT }
     }) {
         // Inner row: text area + vertical scrollbar.
         Clay_ElementId inner_row_id = CLAY_IDI_LOCAL("BufInner", index);
         CLAY(inner_row_id, {
-            .layout = { .sizing = tab_layout_expand, .layoutDirection = CLAY_LEFT_TO_RIGHT }
+            .layout = { .sizing = tab_layout_expand, .layoutDirection = CLAY_TOP_TO_BOTTOM }
         }) {
             Clay_ElementId id = CLAY_IDI_LOCAL("Buffer Text", index);
             CLAY(id, {
@@ -834,11 +838,9 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
                     BufRender_LoadingPlaceholder(&ctx);
                 }
             }
-
-            BufRender_Scrollbar(&ctx);
+            // Horizontal scrollbar (nowrap mode only, shown when content overflows).
+            BufRender_HScrollbar(&ctx);
         }
-
-        // Horizontal scrollbar (nowrap mode only, shown when content overflows).
-        BufRender_HScrollbar(&ctx);
+        BufRender_Scrollbar(&ctx);
     }
 }
