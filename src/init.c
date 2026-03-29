@@ -25,7 +25,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     }
     *appstate = state;
 
-    if (!SDL_CreateWindowAndRenderer("sev", 800, 600, SDL_WINDOW_RESIZABLE,
+    if (!SDL_CreateWindowAndRenderer("sev", 800, 600,
+                                     SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY,
                                      &state->window, &state->rendererData.renderer)) {
         SDL_Log("Failed to create window and renderer = %s", SDL_GetError());
         return SDL_APP_FAILURE;
@@ -97,7 +98,10 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
-    state->ui.scale_factor = 1.0;
+    float dpi = SDL_GetWindowDisplayScale(state->window);
+    state->ui.dpi_scale = (dpi > 0.0f) ? dpi : 1.0f;
+    state->ui.user_scale = 1.0f;
+    state->ui.scale_factor = state->ui.dpi_scale * state->ui.user_scale;
     scheme_init(state);
 
     if (!buffer_list_init()) {

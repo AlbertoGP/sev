@@ -25,7 +25,7 @@ bool clay_init(AppState *state) {
         return false;
 
     int width, height;
-    SDL_GetWindowSize(state->window, &width, &height);
+    SDL_GetWindowSizeInPixels(state->window, &width, &height);
     Clay_Initialize(clayMemory, (Clay_Dimensions) { (float) width, (float) height }, (Clay_ErrorHandler) { HandleClayErrors });
     Clay_SetMeasureTextFunction(SDL_MeasureText, &state->rendererData);
 

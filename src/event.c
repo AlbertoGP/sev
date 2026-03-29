@@ -104,6 +104,9 @@ static bool pane_hit_to_buf_pos(AppState *state, Pane *pane,
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     AppState *state = (AppState*) appstate;
 
+    // Convert mouse/touch coordinates from window space to render (pixel) space
+    SDL_ConvertEventToRenderCoordinates(state->rendererData.renderer, event);
+
     switch (event->type) {
     case SDL_EVENT_USER:
         if (event->user.code == CURSOR_FLASH_EVENT) {
@@ -378,12 +381,24 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         }
         break;
 
-    case SDL_EVENT_WINDOW_RESIZED:
+    case SDL_EVENT_WINDOW_RESIZED: {
         state->needs_redraw = true;
         int width, height;
-        SDL_GetWindowSize(state->window, &width, &height);
+        SDL_GetWindowSizeInPixels(state->window, &width, &height);
         Clay_SetLayoutDimensions((Clay_Dimensions) {(float) width, (float) height});
         break;
+    }
+
+    case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: {
+        float dpi = SDL_GetWindowDisplayScale(state->window);
+        state->ui.dpi_scale = (dpi > 0.0f) ? dpi : 1.0f;
+        state->ui.scale_factor = state->ui.dpi_scale * state->ui.user_scale;
+        int width, height;
+        SDL_GetWindowSizeInPixels(state->window, &width, &height);
+        Clay_SetLayoutDimensions((Clay_Dimensions) {(float) width, (float) height});
+        state->needs_redraw = true;
+        break;
+    }
 
     case SDL_EVENT_QUIT:
         return SDL_APP_SUCCESS;
