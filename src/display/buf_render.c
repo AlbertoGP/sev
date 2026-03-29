@@ -356,27 +356,37 @@ static bool vline_in_selection(BufRenderCtx *ctx, VisualLine *vl) {
 }
 
 static void BufRender_GutterCell(BufRenderCtx *ctx, size_t i, VisualLine *vl) {
-    if (!ctx->line_num_type || !ctx->lnum_strs) return;
+    bool cursor_on_line = (ctx->point >= vl->byte_start) && (ctx->point < vl->byte_end)
+                          && !ctx->state->minibuf.active;
+    bool is_last = (i + 1 == ctx->cache->count) ||
+                   (ctx->cache->lines[i + 1].line_id != vl->line_id);
+    if (!cursor_on_line && ctx->point == vl->byte_end && is_last) {
+        if (i + 1 == ctx->cache->count || ctx->cache->lines[i + 1].byte_start != ctx->point)
+            cursor_on_line = true;
+    }
+    Clay_Color bg = ui_resolve_color(ctx->state, ctx->state->ui.roles.line_bg);
 
     size_t str_idx    = i - ctx->first_vline;
-    char  *str        = ctx->lnum_strs + str_idx * LNUM_STR_LEN;
+    char  *str        = ctx->lnum_strs ? ctx->lnum_strs + str_idx * LNUM_STR_LEN : NULL;
     size_t slen       = 0;
-    bool   show_number = true;
+    bool   show_number = ctx->line_num_type && str;
 
-    if (ctx->line_num_type == 3) {
-        slen = snprintf(str, LNUM_STR_LEN, "%zu", i - ctx->first_vline + 1);
-    } else if (vl->visual_index > 0) {
-        show_number = false;
-    } else {
-        size_t logical = line_index_at(ctx->lt, vl->byte_start);
-        if (ctx->line_num_type == 1) {
-            slen = snprintf(str, LNUM_STR_LEN, "%zu", logical + 1);
+    if (show_number) {
+        if (ctx->line_num_type == 3) {
+            slen = snprintf(str, LNUM_STR_LEN, "%zu", i - ctx->first_vline + 1);
+        } else if (vl->visual_index > 0) {
+            show_number = false;
         } else {
-            size_t rel = (logical > ctx->cursor_logical_line)
-                ? logical - ctx->cursor_logical_line
-                : ctx->cursor_logical_line - logical;
-            slen = snprintf(str, LNUM_STR_LEN, "%zu",
-                            rel == 0 ? logical + 1 : rel);
+            size_t logical = line_index_at(ctx->lt, vl->byte_start);
+            if (ctx->line_num_type == 1) {
+                slen = snprintf(str, LNUM_STR_LEN, "%zu", logical + 1);
+            } else {
+                size_t rel = (logical > ctx->cursor_logical_line)
+                    ? logical - ctx->cursor_logical_line
+                    : ctx->cursor_logical_line - logical;
+                slen = snprintf(str, LNUM_STR_LEN, "%zu",
+                                rel == 0 ? logical + 1 : rel);
+            }
         }
     }
 
@@ -386,9 +396,13 @@ static void BufRender_GutterCell(BufRenderCtx *ctx, size_t i, VisualLine *vl) {
                 .width  = CLAY_SIZING_GROW(0),
                 .height = CLAY_SIZING_FIXED(ctx->line_height)
             },
-            .padding        = { .left = ctx->padding, .right = ctx->padding },
+            .padding        = ctx->line_num_type
+                ? (Clay_Padding){ .left = ctx->padding, .right = ctx->padding }
+                : (Clay_Padding){0},
             .childAlignment = { .x = CLAY_ALIGN_X_RIGHT },
         },
+        .backgroundColor = (cursor_on_line && ctx->buf->select_mode == SELECT_NONE)
+            ? (Clay_Color){ bg.r, bg.g, bg.b, 128 } : (Clay_Color){0},
     }) {
         if (show_number && slen > 0) {
             bool is_current = (ctx->line_num_type != 3) &&
