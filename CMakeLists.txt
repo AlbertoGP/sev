@@ -197,9 +197,18 @@ if(EMSCRIPTEN)
 
 else()
     # ------------------------------------------------------------
-    # Desktop build (Linux)
+    # Desktop build
     # ------------------------------------------------------------
-    message(STATUS "Configuring for desktop build")
+
+    # Default to vendored deps on macOS (no system SDL3 packages),
+    # system packages on Linux
+    if(APPLE)
+        option(USE_VENDORED "Build vendored SDL3/chibi instead of using system packages" ON)
+    else()
+        option(USE_VENDORED "Build vendored SDL3/chibi instead of using system packages" OFF)
+    endif()
+
+    message(STATUS "Configuring for desktop build (vendored=${USE_VENDORED})")
 
     # Copy resources and scheme folders for desktop builds
     add_custom_command(TARGET app POST_BUILD
@@ -209,12 +218,68 @@ else()
         ${CMAKE_SOURCE_DIR}/scheme $<TARGET_FILE_DIR:app>/scheme
     )
 
-    # Use system SDL3 packages
-    find_package(SDL3 REQUIRED)
-    find_package(SDL3_image REQUIRED)
-    find_package(SDL3_ttf REQUIRED)
+    if(USE_VENDORED)
+        # Build SDL3, SDL3_image, SDL3_ttf, and chibi-scheme from vendored submodules
+        add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
 
-    # Use system chibi-scheme (has correct module paths configured)
-    target_link_libraries(app PUBLIC SDL3::SDL3 SDL3_image::SDL3_image SDL3_ttf::SDL3_ttf chibi-scheme tree-sitter tree-sitter-scheme m)
+        set(SDLIMAGE_VENDORED ON CACHE BOOL "" FORCE)
+        set(SDLIMAGE_AVIF OFF CACHE BOOL "" FORCE)
+        set(SDLIMAGE_ANI OFF CACHE BOOL "" FORCE)
+        set(SDLIMAGE_BMP OFF CACHE BOOL "" FORCE)
+        set(SDLIMAGE_GIF OFF CACHE BOOL "" FORCE)
+        set(SDLIMAGE_JPG OFF CACHE BOOL "" FORCE)
+        set(SDLIMAGE_JXL OFF CACHE BOOL "" FORCE)
+        set(SDLIMAGE_LBM OFF CACHE BOOL "" FORCE)
+        set(SDLIMAGE_PCX OFF CACHE BOOL "" FORCE)
+        set(SDLIMAGE_PNG OFF CACHE BOOL "" FORCE)
+        set(SDLIMAGE_PNM OFF CACHE BOOL "" FORCE)
+        set(SDLIMAGE_QOI OFF CACHE BOOL "" FORCE)
+        set(SDLIMAGE_TGA OFF CACHE BOOL "" FORCE)
+        set(SDLIMAGE_TIF OFF CACHE BOOL "" FORCE)
+        set(SDLIMAGE_WEBP OFF CACHE BOOL "" FORCE)
+        set(SDLIMAGE_XCF OFF CACHE BOOL "" FORCE)
+        set(SDLIMAGE_XPM OFF CACHE BOOL "" FORCE)
+        set(SDLIMAGE_XV OFF CACHE BOOL "" FORCE)
+        add_subdirectory(vendored/SDL_image EXCLUDE_FROM_ALL)
+
+        set(SDLTTF_VENDORED ON CACHE BOOL "" FORCE)
+        set(SDLTTF_PLUTOSVG OFF CACHE BOOL "" FORCE)
+        add_subdirectory(vendored/SDL_ttf EXCLUDE_FROM_ALL)
+
+        target_include_directories(app PUBLIC
+            vendored/SDL/include
+            vendored/SDL_image/include
+            vendored/SDL_ttf/include
+        )
+
+        # Build chibi-scheme from vendored source
+        add_subdirectory(
+            vendored/chibi-scheme
+            ${CMAKE_BINARY_DIR}/chibi-build
+            EXCLUDE_FROM_ALL
+        )
+
+        target_link_libraries(app PUBLIC
+            SDL3::SDL3-static
+            SDL3_image::SDL3_image-static
+            SDL3_ttf::SDL3_ttf-static
+            chibi::libchibi-scheme
+            tree-sitter
+            tree-sitter-scheme
+        )
+
+        # Copy vendored chibi-scheme stdlib next to binary so it can find modules
+        add_custom_command(TARGET app POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/vendored/chibi-scheme/lib $<TARGET_FILE_DIR:app>/lib
+        )
+    else()
+        # Use system SDL3 packages (Linux)
+        find_package(SDL3 REQUIRED)
+        find_package(SDL3_image REQUIRED)
+        find_package(SDL3_ttf REQUIRED)
+
+        target_link_libraries(app PUBLIC SDL3::SDL3 SDL3_image::SDL3_image SDL3_ttf::SDL3_ttf chibi-scheme tree-sitter tree-sitter-scheme m)
+    endif()
 
 endif()
