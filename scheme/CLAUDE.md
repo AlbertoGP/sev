@@ -53,8 +53,22 @@ Minibuffer keymap and mode (`minibuffer-mode`). Submit/cancel bindings, cursor s
 ### (editor which-key)
 `which-key-toggle` command wrapping `%which-key-toggle` C primitive.
 
-### (editor evil) — largest module
-Vim-like modal editing. 7 keymaps (normal, insert, replace, select, command, pending, recording; all inherit from `global-keymap` except recording which has no parent). State machine (`evil-sm-state`: `'normal` or `'operator-pending`; accumulates count). Motion and operator registries. Visual mode with char/line/rectangle submodes. Dot repeat. Word classification for `w` vs `W`. Vim macro recording/playback: `q<reg>` starts recording (sets `evil-recording-mode` minor mode and `macro-char` buffer-local), `q` stops; `@<reg>` plays back. Jump list: `C-o`/`C-i` via `%jump-backward!`/`%jump-forward!`.
+### (editor evil)
+Vim-like modal editing. Implementation is split across `scheme/editor/evil/` and included in order by `evil.sld`. All files share one scope so earlier definitions are visible to later ones.
+
+- **`core.scm`** — Keymap declarations and all static key bindings (normal, insert, select, pending, command maps). Mode registration and icons for the 6 evil minor modes. UTF-8 helpers (`utf8-byte-len-at`, `count-chars-in-range`). Mode transition commands (`evil-normal`, `evil-insert`, `evil-replace`, `evil-select*`, `evil-command`, `evil-mode`, `evil-state`). State machine records (`<range>`, `<repeat-info>`), state variables, motion/operator/text-object hash-table registries, character classification (`evil-word-char?` etc.), and the three core dispatch functions (`evil-execute-motion`, `evil-enter-operator`, `evil-execute-text-object`).
+
+- **`undo.scm`** — `evil-undo`, `evil-redo`, `evil-line-restore`. Dot-repeat infrastructure: `evil-replay-setup`, `evil-insert-text`, `evil-repeat`. Count helpers: `evil-digit-argument`, `evil-zero`.
+
+- **`motion.scm`** — Motion registrations for h/j/k/l/0/$/^/w/b/e/W/B/E/goto-line/current-line (the lambdas passed to `register-motion!`). Command wrappers bound to keys, plus mark commands (`evil-set-mark`, `evil-goto-mark-*`), jump list commands, and f/F/t/T character-seek commands.
+
+- **`operator.scm`** — Register helpers (`strip-trailing-newline`, `string-split/join-newlines`, `evil-paste-block`, `evil-register-write!`). Operator registrations (delete/change/yank). Operator command wrappers (`evil-op-*`, `evil-D/C/S`). Count-aware `evil-x`/`evil-X`. Character replace (`evil-char-replace-setup`, `evil-char-replace`, `evil-visual-char-replace`). Compound entry commands (`open-line-below/above`, `insert-at-start`, `append-char/line`, `substitute-char`). Yank/paste commands (`evil-paste-after`, `evil-paste-before`, `evil-insert-paste-clipboard`) and their key bindings.
+
+- **`text-object.scm`** — Pair/quote/tag search helpers (`find-enclosing-pair`, `find-quote-pair`, `find-enclosing-tag`). Text object registrations for word/WORD/sentence/paragraph/bracket/paren/brace/angle/dquote/squote/backtick/tag. `evil-in-text-object` and `evil-around-text-object` commands and their dynamic `i`/`a` key bindings.
+
+- **`visual.scm`** — Visual selection helpers (`evil-visual-range`, `line-content-end`, `evil-rect-bounds`, `evil-rect-apply`). Visual operator commands (delete/change/yank/paste, rect insert/append). Visual mode key bindings for operators and motions.
+
+- **`macro.scm`** — `evil-recording-mode` keymap and minor mode. Macro commands (`evil-start-macro`, `evil-stop-macro`, `evil-play-macro`, `evil-play-last-macro`). Dynamic `q`/`@` key bindings. `(evil-mode)` and `(evil-normal)` activation calls.
 
 ### (editor theme)
 Theme definitions. `define-theme` registers palette (~30 colors) + roles (~30 semantic mappings). `activate-theme` clears tables, sets palette/roles, updates icon colors. Three Catppuccin variants: mocha, macchiato (default), latte.
@@ -105,15 +119,15 @@ Exposed as `(editor primitives)`. Convention: `%`-prefixed names are raw C primi
 5. Bind with `(set-key! keymap "key" 'name)`
 
 ### Adding a new evil motion
-1. Define motion proc in `evil.scm`: `(lambda (count) ...)`; must move point, return `(cons start end)` range
-2. Register: `(register-motion! 'name proc)`
-3. Bind in `normal-map`, `pending-map`, and `select-map`
+1. Register in `evil/motion.scm`: `(register-motion! 'name (lambda (count) ...))`; must move point
+2. Add a `defcommand` wrapper in the same file calling `(evil-execute-motion 'name)`
+3. Bind the wrapper in `normal-map`, `pending-map`, and `select-map` (bindings live in `evil/core.scm` or inline in `motion.scm`)
 4. Export from `editor/evil.sld`
 
 ### Adding a new evil operator
-1. Define operator proc in `evil.scm`: `(lambda (start end) ...)`; operates on range
-2. Register: `(register-operator! 'name proc)`
-3. Bind in `normal-map` (enters pending), `select-map` (applies to selection)
+1. Register in `evil/operator.scm`: `(register-operator! 'name (lambda (range) ...))`; operates on range
+2. Add a `defcommand` wrapper calling `(evil-enter-operator 'name)`
+3. Bind in `normal-map` (enters pending); visual binding goes in `evil/visual.scm`
 4. Export from `editor/evil.sld`
 
 ### Adding a new mode

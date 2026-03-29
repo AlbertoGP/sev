@@ -29,4 +29,10 @@
     append-char append-line substitute-char
     evil-start-macro evil-stop-macro evil-play-macro evil-play-last-macro
     evil-jump-backward evil-jump-forward)
-  (include "evil.scm"))
+  (include "evil/core.scm")
+  (include "evil/undo.scm")
+  (include "evil/motion.scm")
+  (include "evil/operator.scm")
+  (include "evil/text-object.scm")
+  (include "evil/visual.scm")
+  (include "evil/macro.scm"))
