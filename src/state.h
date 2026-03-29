@@ -146,6 +146,12 @@ typedef struct {
     char prefix_str[256];   // accumulated display string, e.g. "SPC h"
 } WhichKeyState;
 
+typedef struct {
+    uint32_t    tracked_id;  // unique_id+1 of hovered element (0 = none)
+    bool        visible;
+    SDL_TimerID timer;       // pending show timer (0 = none)
+} TooltipState;
+
 typedef struct AppState {
     SDL_Window *window;
     Clay_SDL3RendererData rendererData;
@@ -163,6 +169,7 @@ typedef struct AppState {
     Minibuf minibuf;
 
     WhichKeyState which_key;
+    TooltipState  tooltip;
 
     // Cursor flashing
     bool        cursor_visible;

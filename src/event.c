@@ -7,6 +7,7 @@
 #include "cursor_flash.h"
 #include "command/keyboard.h"
 #include "display/pane.h"
+#include "display/tooltip.h"
 #include "display/vline.h"
 #include "text/buffer.h"
 
@@ -118,6 +119,8 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 state->cursor_flash_timer = 0;
                 state->cursor_visible = true;
             }
+        } else if (event->user.code == TOOLTIP_SHOW_EVENT) {
+            tooltip_handle_show(state);
         }
         break;
 

@@ -4,6 +4,7 @@
 #include "icon.h"
 #include "pane.h"
 #include "tab.h"
+#include "tooltip.h"
 #include "../text/buffer_type.h"
 #include "theme.h"
 #include "../command/message.h"
@@ -385,7 +386,7 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
                         }) {}
                     }
                 }
-                CLAY_AUTO_ID({
+                CLAY(CLAY_IDI_LOCAL("Tab Name", i), {
                     .layout = {
                         .sizing = {
                             .width  = CLAY_SIZING_FIT(0),
@@ -400,6 +401,9 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
                         .fontSize = 12 * state->ui.scale_factor,
                         .textColor = c
                     }));
+                    const char *tip = t->content.buffer.buffer->file_name;
+                    if (!tip[0]) tip = t->content.buffer.buffer->name;
+                    TextTooltip(state, Clay_Hovered(), index * 256 + i, tip);
                 }
                 void **cb = tab_cb_alloc(dp, t);
                 bool show_cross = Clay_Hovered();

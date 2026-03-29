@@ -30,6 +30,7 @@ set(SRC_FILES
     src/display/status.c
     src/display/tab.c
     src/display/theme.c
+    src/display/tooltip.c
     src/display/vline.c
     src/display/which_key.c
     src/text/buffer.c
