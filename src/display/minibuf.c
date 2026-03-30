@@ -30,37 +30,39 @@ void MinibufPalette(AppState *state) {
 
     size_t prompt_len = strlen(state->minibuf.prompt);
 
-    // Build display string: prompt + full text (no cursor marker)
-    static char minibuf_display[4096 + MINIBUF_PROMPT_MAX + 1];
-    char *dst = minibuf_display;
-    memcpy(dst, state->minibuf.prompt, prompt_len);
-    dst += prompt_len;
-    memcpy(dst, text, text_len);
-    dst += text_len;
-    *dst = '\0';
-
+    // Copy text into static buffer before freeing raw, so display_str stays valid.
+    static char minibuf_text[4096 + 1];
+    if (text_len > sizeof(minibuf_text) - 1) text_len = sizeof(minibuf_text) - 1;
+    memcpy(minibuf_text, text, text_len);
+    minibuf_text[text_len] = '\0';
     free(raw);
 
-    Clay_String display_str = {
-        .chars  = minibuf_display,
-        .length = (int32_t)(prompt_len + text_len)
-    };
+    // When empty, show the prompt as faded placeholder text.
+    // When non-empty, show only the user's input in the normal color.
+    bool placeholder = (text_len == 0);
+
+    Clay_String display_str = placeholder
+        ? (Clay_String){ .chars = state->minibuf.prompt, .length = (int32_t)prompt_len }
+        : (Clay_String){ .chars = minibuf_text,          .length = (int32_t)text_len   };
 
     float scale = state->ui.scale_factor;
     uint16_t font_size = (uint16_t)(12.0f * scale);
     TTF_Font *font = SDL_Clay_GetRenderFont(&state->rendererData, FONT_UI_NORMAL, (float)font_size);
 
-    // Measure x offset for the cursor: width of (prompt + text[0..point_pos))
+    // Cursor x: measure width of text[0..point_pos) (no prompt prefix).
     float cursor_x = 0.0f;
-    size_t prefix_len = prompt_len + point_pos;
-    if (prefix_len > 0) {
+    if (!placeholder && point_pos > 0) {
         int w = 0, h = 0;
-        TTF_GetStringSize(font, minibuf_display, prefix_len, &w, &h);
+        TTF_GetStringSize(font, minibuf_text, point_pos, &w, &h);
         cursor_x = (float)w;
     }
 
     float pad    = 12.0f * scale;
     int   line_h = vline_get_line_height(&state->rendererData, FONT_UI_NORMAL, font_size);
+
+    Clay_Color text_color = placeholder
+        ? ui_resolve_color(state, state->ui.roles.text_faded)
+        : ui_resolve_color(state, state->ui.roles.text_primary);
 
     CLAY(CLAY_ID("MinibufPalette"), {
         .floating = {
@@ -99,7 +101,7 @@ void MinibufPalette(AppState *state) {
             CLAY_TEXT(display_str, CLAY_TEXT_CONFIG({
                 .fontId    = FONT_UI_NORMAL,
                 .fontSize  = font_size,
-                .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
+                .textColor = text_color,
                 .wrapMode  = CLAY_TEXT_WRAP_NONE
             }));
             if (state->cursor_visible)
