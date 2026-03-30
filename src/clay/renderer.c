@@ -270,29 +270,57 @@ static void SDL_Clay_RenderFillRoundedRect(Clay_SDL3RendererData *rendererData, 
     }
 }
 
-static void SDL_Clay_RenderArc(Clay_SDL3RendererData *rendererData, const SDL_FPoint center, const float radius, const float startAngle, const float endAngle, const float thickness, const Clay_Color color) {
-    SDL_SetRenderDrawColor(rendererData->renderer, color.r, color.g, color.b, color.a);
+// Render a border arc as a triangle-mesh annular sector with an outer alpha-feathered
+// corona, matching the antialiasing approach used for filled rounded rects.
+// start_rad / end_rad are in radians.
+static void SDL_Clay_RenderBorderArc(
+    Clay_SDL3RendererData *rendererData,
+    float cx, float cy,
+    float outer_radius,
+    float border_width,
+    float start_rad,
+    float end_rad,
+    SDL_FColor color)
+{
+    SDL_SetRenderDrawBlendMode(rendererData->renderer, SDL_BLENDMODE_BLEND);
+    const SDL_FColor color_fade = { color.r, color.g, color.b, 0.0f };
 
-    const float radStart = startAngle * (SDL_PI_F / 180.0f);
-    const float radEnd = endAngle * (SDL_PI_F / 180.0f);
+    const float inner_r = SDL_max(0.0f, outer_radius - border_width);
+    const int segs = SDL_max(NUM_CIRCLE_SEGMENTS, (int)(outer_radius * 2.0f));
+    const float step = (end_rad - start_rad) / segs;
 
-    const int numCircleSegments = SDL_max(NUM_CIRCLE_SEGMENTS, (int)(radius * 1.5f)); //increase circle segments for larger circles, 1.5 is arbitrary.
+    const int sv_count = (segs + 1) * 2;
+    const int si_count = segs * 6;
+    SDL_Vertex sv[sv_count];
+    int        si[si_count];
 
-    const float angleStep = (radEnd - radStart) / (float)numCircleSegments;
-    const float thicknessStep = 0.4f; //arbitrary value to avoid overlapping lines. Changing THICKNESS_STEP or numCircleSegments might cause artifacts.
-
-    for (float t = thicknessStep; t < thickness - thicknessStep; t += thicknessStep) {
-        SDL_FPoint points[numCircleSegments + 1];
-        const float clampedRadius = SDL_max(radius - t, 1.0f);
-
-        for (int i = 0; i <= numCircleSegments; i++) {
-            const float angle = radStart + i * angleStep;
-            points[i] = (SDL_FPoint){
-                    center.x + SDL_cosf(angle) * clampedRadius,
-                    center.y + SDL_sinf(angle) * clampedRadius };
-        }
-        SDL_RenderLines(rendererData->renderer, points, numCircleSegments + 1);
+    // Filled annular sector: inner_r → outer_radius
+    for (int i = 0; i <= segs; i++) {
+        const float a = start_rad + i * step;
+        const float ca = SDL_cosf(a), sa = SDL_sinf(a);
+        sv[i*2]   = (SDL_Vertex){{ cx + ca * inner_r,       cy + sa * inner_r       }, color, {0,0}};
+        sv[i*2+1] = (SDL_Vertex){{ cx + ca * outer_radius,  cy + sa * outer_radius  }, color, {0,0}};
     }
+    int idx = 0;
+    for (int i = 0; i < segs; i++) {
+        si[idx++] = i*2;   si[idx++] = i*2+1;   si[idx++] = (i+1)*2;
+        si[idx++] = i*2+1; si[idx++] = (i+1)*2+1; si[idx++] = (i+1)*2;
+    }
+    SDL_RenderGeometry(rendererData->renderer, NULL, sv, sv_count, si, si_count);
+
+    // Outer feather corona: outer_radius → outer_radius+1, fading to transparent
+    for (int i = 0; i <= segs; i++) {
+        const float a = start_rad + i * step;
+        const float ca = SDL_cosf(a), sa = SDL_sinf(a);
+        sv[i*2]   = (SDL_Vertex){{ cx + ca * outer_radius,         cy + sa * outer_radius         }, color,      {0,0}};
+        sv[i*2+1] = (SDL_Vertex){{ cx + ca * (outer_radius + 1.0f), cy + sa * (outer_radius + 1.0f) }, color_fade, {0,0}};
+    }
+    idx = 0;
+    for (int i = 0; i < segs; i++) {
+        si[idx++] = i*2;   si[idx++] = i*2+1;   si[idx++] = (i+1)*2;
+        si[idx++] = i*2+1; si[idx++] = (i+1)*2+1; si[idx++] = (i+1)*2;
+    }
+    SDL_RenderGeometry(rendererData->renderer, NULL, sv, sv_count, si, si_count);
 }
 
 
@@ -338,59 +366,84 @@ void SDL_Clay_RenderClayCommands(Clay_SDL3RendererData *rendererData, Clay_Rende
                     .bottomLeft = SDL_min(config->cornerRadius.bottomLeft, minRadius),
                     .bottomRight = SDL_min(config->cornerRadius.bottomRight, minRadius)
                 };
-                //edges
+                const SDL_FColor fcolor = { config->color.r/255.0f, config->color.g/255.0f, config->color.b/255.0f, config->color.a/255.0f };
+                const SDL_FColor fcolor_fade = { fcolor.r, fcolor.g, fcolor.b, 0.0f };
+                const float rTL = clampedRadii.topLeft,    rTR = clampedRadii.topRight;
+                const float rBL = clampedRadii.bottomLeft, rBR = clampedRadii.bottomRight;
+
+                SDL_SetRenderDrawBlendMode(rendererData->renderer, SDL_BLENDMODE_BLEND);
                 SDL_SetRenderDrawColor(rendererData->renderer, config->color.r, config->color.g, config->color.b, config->color.a);
+
+                // Straight edge fills — positioned flush with the bounding box so arc
+                // endpoints (which now use the same centre convention as the fill function)
+                // connect without gaps.
                 if (config->width.left > 0) {
-                    const float starting_y = rect.y + clampedRadii.topLeft;
-                    const float length = rect.h - clampedRadii.topLeft - clampedRadii.bottomLeft;
-                    SDL_FRect line = { rect.x - 1, starting_y, config->width.left, length };
+                    SDL_FRect line = { rect.x, rect.y + rTL,
+                                       config->width.left, rect.h - rTL - rBL };
                     SDL_RenderFillRect(rendererData->renderer, &line);
                 }
                 if (config->width.right > 0) {
-                    const float starting_x = rect.x + rect.w - (float)config->width.right + 1;
-                    const float starting_y = rect.y + clampedRadii.topRight;
-                    const float length = rect.h - clampedRadii.topRight - clampedRadii.bottomRight;
-                    SDL_FRect line = { starting_x, starting_y, config->width.right, length };
+                    SDL_FRect line = { rect.x + rect.w - config->width.right, rect.y + rTR,
+                                       config->width.right, rect.h - rTR - rBR };
                     SDL_RenderFillRect(rendererData->renderer, &line);
                 }
                 if (config->width.top > 0) {
-                    const float starting_x = rect.x + clampedRadii.topLeft;
-                    const float length = rect.w - clampedRadii.topLeft - clampedRadii.topRight;
-                    SDL_FRect line = { starting_x, rect.y - 1, length, config->width.top };
+                    SDL_FRect line = { rect.x + rTL, rect.y,
+                                       rect.w - rTL - rTR, config->width.top };
                     SDL_RenderFillRect(rendererData->renderer, &line);
                 }
                 if (config->width.bottom > 0) {
-                    const float starting_x = rect.x + clampedRadii.bottomLeft;
-                    const float starting_y = rect.y + rect.h - (float)config->width.bottom + 1;
-                    const float length = rect.w - clampedRadii.bottomLeft - clampedRadii.bottomRight;
-                    SDL_FRect line = { starting_x, starting_y, length, config->width.bottom };
-                    SDL_SetRenderDrawColor(rendererData->renderer, config->color.r, config->color.g, config->color.b, config->color.a);
+                    SDL_FRect line = { rect.x + rBL, rect.y + rect.h - config->width.bottom,
+                                       rect.w - rBL - rBR, config->width.bottom };
                     SDL_RenderFillRect(rendererData->renderer, &line);
                 }
-                //corners
-                if (config->cornerRadius.topLeft > 0) {
-                    const float centerX = rect.x + clampedRadii.topLeft -1;
-                    const float centerY = rect.y + clampedRadii.topLeft - 1;
-                    SDL_Clay_RenderArc(rendererData, (SDL_FPoint){centerX, centerY}, clampedRadii.topLeft,
-                        180.0f, 270.0f, config->width.top, config->color);
+
+                // Outward feather strips on straight edges (only where both flanking
+                // corners are rounded, so the strip meets the arc corona seamlessly).
+                const struct { float x0,y0,x1,y1,nx,ny; int active; } fedges[4] = {
+                    { rect.x+rTL, rect.y,        rect.x+rect.w-rTR, rect.y,        0,-1, rTL>0&&rTR>0 }, // top
+                    { rect.x+rect.w, rect.y+rTR, rect.x+rect.w, rect.y+rect.h-rBR, 1, 0, rTR>0&&rBR>0 }, // right
+                    { rect.x+rect.w-rBR, rect.y+rect.h, rect.x+rBL, rect.y+rect.h, 0, 1, rBR>0&&rBL>0 }, // bottom
+                    { rect.x, rect.y+rect.h-rBL, rect.x, rect.y+rTL,              -1, 0, rBL>0&&rTL>0 }, // left
+                };
+                for (int e = 0; e < 4; e++) {
+                    if (!fedges[e].active) continue;
+                    if (fedges[e].x0 == fedges[e].x1 && fedges[e].y0 == fedges[e].y1) continue;
+                    SDL_Vertex ev[4] = {
+                        { { fedges[e].x0,                fedges[e].y0                }, fcolor,      {0,0} },
+                        { { fedges[e].x0+fedges[e].nx,   fedges[e].y0+fedges[e].ny   }, fcolor_fade, {0,0} },
+                        { { fedges[e].x1,                fedges[e].y1                }, fcolor,      {0,0} },
+                        { { fedges[e].x1+fedges[e].nx,   fedges[e].y1+fedges[e].ny   }, fcolor_fade, {0,0} },
+                    };
+                    int ei[6] = { 0,1,2, 1,3,2 };
+                    SDL_RenderGeometry(rendererData->renderer, NULL, ev, 4, ei, 6);
                 }
-                if (config->cornerRadius.topRight > 0) {
-                    const float centerX = rect.x + rect.w - clampedRadii.topRight;
-                    const float centerY = rect.y + clampedRadii.topRight - 1;
-                    SDL_Clay_RenderArc(rendererData, (SDL_FPoint){centerX, centerY}, clampedRadii.topRight,
-                        270.0f, 360.0f, config->width.top, config->color);
+
+                // Corner arcs — centres match the fill function (no -1 offsets) so
+                // arc endpoints land exactly on the straight edge start/end points.
+                if (rTL > 0) {
+                    SDL_Clay_RenderBorderArc(rendererData,
+                        rect.x + rTL, rect.y + rTL,
+                        rTL, config->width.top,
+                        SDL_PI_F, SDL_PI_F * 1.5f, fcolor);
                 }
-                if (config->cornerRadius.bottomLeft > 0) {
-                    const float centerX = rect.x + clampedRadii.bottomLeft -1;
-                    const float centerY = rect.y + rect.h - clampedRadii.bottomLeft;
-                    SDL_Clay_RenderArc(rendererData, (SDL_FPoint){centerX, centerY}, clampedRadii.bottomLeft,
-                        90.0f, 180.0f, config->width.bottom, config->color);
+                if (rTR > 0) {
+                    SDL_Clay_RenderBorderArc(rendererData,
+                        rect.x + rect.w - rTR, rect.y + rTR,
+                        rTR, config->width.top,
+                        SDL_PI_F * 1.5f, SDL_PI_F * 2.0f, fcolor);
                 }
-                if (config->cornerRadius.bottomRight > 0) {
-                    const float centerX = rect.x + rect.w - clampedRadii.bottomRight;
-                    const float centerY = rect.y + rect.h - clampedRadii.bottomRight;
-                    SDL_Clay_RenderArc(rendererData, (SDL_FPoint){centerX, centerY}, clampedRadii.bottomRight,
-                        0.0f, 90.0f, config->width.bottom, config->color);
+                if (rBL > 0) {
+                    SDL_Clay_RenderBorderArc(rendererData,
+                        rect.x + rBL, rect.y + rect.h - rBL,
+                        rBL, config->width.bottom,
+                        SDL_PI_F * 0.5f, SDL_PI_F, fcolor);
+                }
+                if (rBR > 0) {
+                    SDL_Clay_RenderBorderArc(rendererData,
+                        rect.x + rect.w - rBR, rect.y + rect.h - rBR,
+                        rBR, config->width.bottom,
+                        0.0f, SDL_PI_F * 0.5f, fcolor);
                 }
 
             } break;

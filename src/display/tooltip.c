@@ -65,7 +65,7 @@ void Tooltip(AppState *state, bool is_hovered, int unique_id,
             .padding = { .left = pad_x, .right = pad_x, .top = pad_y, .bottom = pad_y }
         },
         .backgroundColor = ui_resolve_color(state, state->ui.roles.pane_bg),
-        .cornerRadius = CLAY_CORNER_RADIUS(3 * scale),
+        .cornerRadius = CLAY_CORNER_RADIUS(4 * scale),
         .border = {
             .color = ui_resolve_color(state, state->ui.roles.border_active),
             .width = { .top = 1, .bottom = 1, .left = 1, .right = 1 }
