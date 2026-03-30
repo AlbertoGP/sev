@@ -49,7 +49,7 @@
 
 (defcommand (execute-extended-command)
   "Read command name and execute it."
-  (minibuffer-read "M-x: "
+  (minibuffer-read "Execute a command: "
     (lambda (name)
       (let ((sym (string->symbol name)))
         (if (interactive? sym)

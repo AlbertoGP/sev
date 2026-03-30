@@ -22,6 +22,7 @@ set(SRC_FILES
     src/display/icon.c
     src/display/layout.c
     src/display/message.c
+    src/display/minibuf.c
     src/display/mode_icon.c
     src/display/buf_render.c
     src/display/pane.c

@@ -1,6 +1,7 @@
 #include "buf_render.h"
 #include "cursor.h"
 #include "icon.h"
+#include "minibuf.h"
 #include "message.h"
 #include "pane.h"
 #include "welcome.h"
