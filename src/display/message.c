@@ -48,8 +48,8 @@ void MinibufPalette(AppState *state) {
     };
 
     float scale = state->ui.scale_factor;
-    uint16_t font_size = (uint16_t)(14.0f * scale);
-    TTF_Font *font = SDL_Clay_GetRenderFont(&state->rendererData, FONT_BUF_NORMAL, (float)font_size);
+    uint16_t font_size = (uint16_t)(12.0f * scale);
+    TTF_Font *font = SDL_Clay_GetRenderFont(&state->rendererData, FONT_UI_NORMAL, (float)font_size);
 
     // Measure x offset for the cursor: width of (prompt + text[0..point_pos))
     float cursor_x = 0.0f;
@@ -61,7 +61,7 @@ void MinibufPalette(AppState *state) {
     }
 
     float pad    = 12.0f * scale;
-    int   line_h = vline_get_line_height(&state->rendererData, FONT_BUF_NORMAL, font_size);
+    int   line_h = vline_get_line_height(&state->rendererData, FONT_UI_NORMAL, font_size);
 
     CLAY(CLAY_ID("MinibufPalette"), {
         .floating = {
@@ -70,7 +70,7 @@ void MinibufPalette(AppState *state) {
                 .element = CLAY_ATTACH_POINT_CENTER_TOP,
                 .parent  = CLAY_ATTACH_POINT_CENTER_TOP
             },
-            .offset = { 0, 48.0f * scale },
+            .offset = { 0, 64.0f * scale },
             .zIndex = 150
         },
         .layout = {
@@ -87,16 +87,27 @@ void MinibufPalette(AppState *state) {
         },
         .cornerRadius = CLAY_CORNER_RADIUS(6.0f * scale)
     }) {
-        CLAY_TEXT(display_str, CLAY_TEXT_CONFIG({
-            .fontId    = FONT_BUF_NORMAL,
-            .fontSize  = font_size,
-            .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
-            .wrapMode  = CLAY_TEXT_WRAP_NONE
-        }));
-        if (state->cursor_visible)
-            Cursor(state, 0, cursor_x + pad, line_h,
-                   0.0f, 0.0f, 65535.0f, 65535.0f,
-                   FONT_BUF_NORMAL, font_size);
+        // Inner wrapper with no padding so Cursor()'s CLAY_ATTACH_TO_PARENT
+        // origin aligns with the text baseline (not the outer padding box).
+        CLAY(CLAY_ID("MinibufPaletteContent"), {
+            .layout = {
+                .sizing = {
+                    .width  = CLAY_SIZING_GROW(0),
+                    .height = CLAY_SIZING_FIT(0)
+                }
+            }
+        }) {
+            CLAY_TEXT(display_str, CLAY_TEXT_CONFIG({
+                .fontId    = FONT_UI_NORMAL,
+                .fontSize  = font_size,
+                .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
+                .wrapMode  = CLAY_TEXT_WRAP_NONE
+            }));
+            if (state->cursor_visible)
+                Cursor(state, 0, cursor_x, line_h,
+                       0.0f, 0.0f, 65535.0f, 65535.0f,
+                       FONT_UI_NORMAL, font_size, 151);
+        }
     }
 
     buffer_set_current(saved);
@@ -118,7 +129,7 @@ void MessageArea(AppState *state) {
     }){
         CLAY_TEXT(message_string, CLAY_TEXT_CONFIG({
             .fontId = FONT_BUF_NORMAL,
-            .fontSize = 14.0 * state->ui.scale_factor,
+            .fontSize = 12.0 * state->ui.scale_factor,
             .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
         }));
     }

@@ -446,7 +446,7 @@ static void BufRender_CursorCell(BufRenderCtx *ctx, size_t i, float cursor_offse
            ctx->line_height,
            ctx->box.x + ctx->padding + ctx->gutter_width, ctx->box.y,
            ctx->box.width - ctx->padding - ctx->gutter_width, ctx->text_height,
-           cursor_font_id, ctx->font_size);
+           cursor_font_id, ctx->font_size, 0);
 }
 
 // Renders the selection highlight overlay for the current line.

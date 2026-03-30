@@ -16,7 +16,7 @@ void cursor_cb_reset(void) { cursor_pool_idx = 0; }
 void Cursor(AppState *state, int32_t index,
             float offset, int line_height,
             float clip_x, float clip_y, float clip_w, float clip_h,
-            FontID font_id, uint16_t font_size) {
+            FontID font_id, uint16_t font_size, int16_t zIndex) {
 
     if (cursor_pool_idx >= CURSOR_POOL_SIZE) return;
     CursorRenderData *d = &cursor_pool[cursor_pool_idx++];
@@ -83,7 +83,8 @@ void Cursor(AppState *state, int32_t index,
     CLAY(CLAY_IDI_LOCAL("Cursor", index), {
         .floating = {
             .attachTo = CLAY_ATTACH_TO_PARENT,
-            .offset = { .x = offset, .y = y_off }
+            .offset = { .x = offset, .y = y_off },
+            .zIndex = zIndex
         },
         .layout = {
             .sizing = {
