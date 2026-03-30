@@ -66,14 +66,12 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
             }
         }
         StatusBar(state);
-        if (state->minibuf.active)
-            MinibufArea(state);
-        else
-            MessageArea(state);
+        MessageArea(state);
     }
 
     if (state->which_key.active && state->which_key.enabled)
         WhichKey(state);
+    MinibufPalette(state);
 
     return Clay_EndLayout();
 }

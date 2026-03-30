@@ -13,7 +13,9 @@
 
 extern Clay_String message_string;
 
-void MinibufArea(AppState *state) {
+void MinibufPalette(AppState *state) {
+    if (!state->minibuf.active) return;
+
     Buffer *buf = state->minibuf.buf;
 
     // Temporarily make the minibuf the current buffer so that char_at_point()
@@ -45,10 +47,11 @@ void MinibufArea(AppState *state) {
         .length = (int32_t)(prompt_len + text_len)
     };
 
-    // Measure x offset for the cursor: width of (prompt + text[0..point_pos))
-    uint16_t font_size = (uint16_t)(14.0f * state->ui.scale_factor);
+    float scale = state->ui.scale_factor;
+    uint16_t font_size = (uint16_t)(14.0f * scale);
     TTF_Font *font = SDL_Clay_GetRenderFont(&state->rendererData, FONT_BUF_NORMAL, (float)font_size);
 
+    // Measure x offset for the cursor: width of (prompt + text[0..point_pos))
     float cursor_x = 0.0f;
     size_t prefix_len = prompt_len + point_pos;
     if (prefix_len > 0) {
@@ -57,29 +60,41 @@ void MinibufArea(AppState *state) {
         cursor_x = (float)w;
     }
 
-    float left_pad  = 10.0f * state->ui.scale_factor;
-    int   line_h    = vline_get_line_height(&state->rendererData,
-                                            FONT_BUF_NORMAL, font_size);
+    float pad    = 12.0f * scale;
+    int   line_h = vline_get_line_height(&state->rendererData, FONT_BUF_NORMAL, font_size);
 
-    CLAY(CLAY_ID("Minibuf Area"), {
+    CLAY(CLAY_ID("MinibufPalette"), {
+        .floating = {
+            .attachTo = CLAY_ATTACH_TO_ROOT,
+            .attachPoints = {
+                .element = CLAY_ATTACH_POINT_CENTER_TOP,
+                .parent  = CLAY_ATTACH_POINT_CENTER_TOP
+            },
+            .offset = { 0, 48.0f * scale },
+            .zIndex = 150
+        },
         .layout = {
             .sizing = {
-                .width  = CLAY_SIZING_GROW(0),
-                .height = CLAY_SIZING_FIT(16.0 * state->ui.scale_factor + 8)
+                .width  = CLAY_SIZING_FIXED(520.0f * scale),
+                .height = CLAY_SIZING_FIT(0)
             },
-            .padding = {
-                .left  = left_pad,
-                .right = left_pad
-            }
+            .padding = { .left = pad, .right = pad, .top = pad, .bottom = pad }
         },
+        .backgroundColor = ui_resolve_color(state, state->ui.roles.bar_bg),
+        .border = {
+            .color = ui_resolve_color(state, state->ui.roles.border_active),
+            .width = { .top = 1, .bottom = 1, .left = 1, .right = 1 }
+        },
+        .cornerRadius = CLAY_CORNER_RADIUS(6.0f * scale)
     }) {
         CLAY_TEXT(display_str, CLAY_TEXT_CONFIG({
             .fontId    = FONT_BUF_NORMAL,
             .fontSize  = font_size,
             .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
+            .wrapMode  = CLAY_TEXT_WRAP_NONE
         }));
         if (state->cursor_visible)
-            Cursor(state, 0, cursor_x + left_pad, line_h,
+            Cursor(state, 0, cursor_x + pad, line_h,
                    0.0f, 0.0f, 65535.0f, 65535.0f,
                    FONT_BUF_NORMAL, font_size);
     }
