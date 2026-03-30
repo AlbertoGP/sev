@@ -53,6 +53,7 @@ void WelcomePane(AppState *state) {
         SDL_Texture *icon = icon_get("welcome-icon", state, (int)icon_size, (int)icon_size);
         CLAY(CLAY_ID("Banner"), {
             .layout = {
+                .padding = { .right = 8.0 * state->ui.scale_factor },
                 .layoutDirection = CLAY_LEFT_TO_RIGHT,
                 .childGap = 8.0 * state->ui.scale_factor,
                 .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
