@@ -205,7 +205,7 @@ static bool BufRender_SetupGeometry(BufRenderCtx *ctx, Clay_ElementId id) {
         num_buf[ndigits] = '\0';
         int w = 0, h = 0;
         TTF_GetStringSize(font, num_buf, ndigits, &w, &h);
-        gutter_width = (float)w + 16.0f * ctx->state->ui.scale_factor;
+        gutter_width = (float)w + ctx->padding;
     }
     ctx->gutter_width = gutter_width;
 
@@ -850,7 +850,7 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
         .cache     = &tab->content.buffer.vline_cache,
         .font_id   = FONT_BUF_NORMAL,
         .font_size = (uint16_t)(14 * state->ui.scale_factor * buffer_get_scale(buf)),
-        .padding   = 24.0f * state->ui.scale_factor,
+        .padding   = 32.0f * state->ui.scale_factor,
         // scroll_x matches the clip childOffset so cursor/selection float correctly.
         .scroll_x  = scroll_x_pre,
     };
