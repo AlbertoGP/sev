@@ -15,9 +15,11 @@
 
 static Uint32 cursor_flash_cb(void *ud, SDL_TimerID id, Uint32 interval) {
     (void)id; (void)interval;
+    AppState *state = ud;
     SDL_Event ev = {0};
     ev.type = SDL_EVENT_USER;
     ev.user.code = CURSOR_FLASH_EVENT;
+    ev.user.data1 = (void *)(uintptr_t)state->cursor_flash_gen;
     SDL_PushEvent(&ev);
     return 0; // one-shot
 }
@@ -31,6 +33,7 @@ static bool cursor_blink_enabled(AppState *state) {
 void cursor_flash_reset(AppState *state) {
     SDL_RemoveTimer(state->cursor_flash_timer);
     state->cursor_flash_timer = 0;
+    state->cursor_flash_gen++;
     state->cursor_visible = true;
     state->needs_redraw = true;
     if (cursor_blink_enabled(state))
@@ -111,13 +114,17 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     switch (event->type) {
     case SDL_EVENT_USER:
         if (event->user.code == CURSOR_FLASH_EVENT) {
-            if (cursor_blink_enabled(state)) {
-                state->cursor_visible = !state->cursor_visible;
-                state->needs_redraw = true;
-                state->cursor_flash_timer = SDL_AddTimer(500, cursor_flash_cb, state);
-            } else {
-                state->cursor_flash_timer = 0;
-                state->cursor_visible = true;
+            uint32_t gen = (uint32_t)(uintptr_t)event->user.data1;
+            if (gen == state->cursor_flash_gen) {
+                if (cursor_blink_enabled(state)) {
+                    state->cursor_visible = !state->cursor_visible;
+                    state->needs_redraw = true;
+                    state->cursor_flash_gen++;
+                    state->cursor_flash_timer = SDL_AddTimer(500, cursor_flash_cb, state);
+                } else {
+                    state->cursor_flash_timer = 0;
+                    state->cursor_visible = true;
+                }
             }
         } else if (event->user.code == TOOLTIP_SHOW_EVENT) {
             tooltip_handle_show(state);

@@ -176,6 +176,7 @@ typedef struct AppState {
     // Cursor flashing
     bool        cursor_visible;
     SDL_TimerID cursor_flash_timer;
+    uint32_t    cursor_flash_gen;
 
     // Macro recording
     bool macro_recording;
