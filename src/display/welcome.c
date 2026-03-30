@@ -1,6 +1,9 @@
+#include <string.h>
+
 #include "icon.h"
 #include "theme.h"
 #include "welcome.h"
+#include "../command/keymap.h"
 
 static void XSpacer(void) {
     CLAY_AUTO_ID({
@@ -90,6 +93,11 @@ void WelcomePane(AppState *state) {
         CLAY_AUTO_ID({
             .layout = { .sizing = { .height = CLAY_SIZING_FIXED(15 * state->ui.scale_factor) } }
         }) {}
+        static char kb_new_tab[64] = "SPC t n";
+        static char kb_help[64]   = "SPC h";
+        static char kb_command[64] = ":";
+        keymap_where_is_first(state, "tab-new",                  kb_new_tab,  sizeof(kb_new_tab));
+        keymap_where_is_first(state, "execute-extended-command", kb_command,  sizeof(kb_command));
         CLAY(CLAY_ID("Suggestions"), {
             .layout = {
                 .sizing = {
@@ -99,12 +107,12 @@ void WelcomePane(AppState *state) {
                 .childGap = 5.0 * state->ui.scale_factor,
             }
         }) {
-            SuggestionRow(state, CLAY_STRING("Create a new empty buffer"),
-                                 CLAY_STRING("SPC b n"));
+            SuggestionRow(state, CLAY_STRING("Create a new untitled tab"),
+                                 (Clay_String){ .length = strlen(kb_new_tab), .chars = kb_new_tab });
             SuggestionRow(state, CLAY_STRING("Help commands"),
-                                 CLAY_STRING("SPC h"));
+                                 (Clay_String){ .length = strlen(kb_help),    .chars = kb_help    });
             SuggestionRow(state, CLAY_STRING("Invoke command"),
-                                 CLAY_STRING("M-x"));
+                                 (Clay_String){ .length = strlen(kb_command), .chars = kb_command });
         }
     }
 }

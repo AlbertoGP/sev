@@ -612,6 +612,23 @@ sexp scm_read_key_binding(sexp ctx, sexp self, sexp n, sexp callback) {
     return SEXP_VOID;
 }
 
+// Returns the first keybinding string for the named command, writing into buf.
+// Returns buf on success, NULL if the command has no bindings or on error.
+const char *keymap_where_is_first(AppState *state, const char *cmd_name,
+                                   char *buf, size_t buf_len) {
+    sexp ctx = state->chibi.ctx;
+    sexp env = state->chibi.env;
+    sexp fn  = sexp_env_ref(ctx, env, sexp_intern(ctx, "where-is", -1), SEXP_FALSE);
+    if (!sexp_procedurep(fn)) return NULL;
+    sexp result = sexp_apply(ctx, fn, sexp_list1(ctx, sexp_intern(ctx, cmd_name, -1)));
+    if (sexp_exceptionp(result) || !sexp_pairp(result)) return NULL;
+    sexp first = sexp_car(result);
+    if (!sexp_stringp(first)) return NULL;
+    strncpy(buf, sexp_string_data(first), buf_len - 1);
+    buf[buf_len - 1] = '\0';
+    return buf;
+}
+
 // (%set-key-unbound-cb! sym-or-#f) -> void
 // When set to a symbol, that command is called via call-interactively
 // whenever a key is silently ignored (no binding found, no self-insert).

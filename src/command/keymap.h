@@ -70,6 +70,11 @@ void keymap_bind_sequence(Keymap *km, KeyEvent *seq, int n, Binding final);
 // Lookup a key in a single keymap
 Binding *keymap_lookup(Keymap *km, const KeyEvent *ev);
 
+// Returns the first keybinding string for the named command, writing into buf.
+// Returns buf on success, NULL if the command has no bindings or on error.
+const char *keymap_where_is_first(AppState *state, const char *cmd_name,
+                                   char *buf, size_t buf_len);
+
 // Lookup a key through the mode chain:
 // 1. Minor mode keymaps (most-recently-enabled first)
 // 2. Buffer-local keymap

@@ -59,7 +59,6 @@
 (set-key! normal-map "v" 'evil-select)
 (set-key! normal-map "V" 'evil-select-line)
 (set-key! normal-map "C-v" 'evil-select-rectangle)
-(set-key! normal-map ":" 'evil-command)
 (set-key! normal-map "g g" 'evil-motion-gg)
 (set-key! normal-map "G" 'evil-motion-G)
 (set-key! normal-map "C-o" 'evil-jump-backward)
