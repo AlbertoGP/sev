@@ -50,6 +50,7 @@ typedef struct VLineCache {
     float target_scroll;        // target for easing; equals scroll_offset when no easing
     size_t last_scroll_point;   // byte_pos at which we last called scroll-to-cursor
     bool full_rebuild;          // flag to force full rebuild
+    uint32_t last_full_rebuild_gen; // render_gen when last full rebuild ran
 
     // Horizontal scroll state (nowrap mode only)
     float scroll_x;             // pixels scrolled from left (always ≥ 0)
@@ -79,7 +80,7 @@ void vline_cache_destroy(VLineCache *cache);
 void vline_rebuild(VLineCache *cache, struct Buffer *buf,
                    Clay_SDL3RendererData *renderer,
                    float pane_width, uint16_t font_id, uint16_t font_size,
-                   int tab_width, bool wrap_lines);
+                   int tab_width, bool wrap_lines, uint32_t render_gen);
 
 // Adjust scroll_offset to ensure the cursor (at byte_pos) is visible,
 // with a margin of margin_lines extra lines' height.

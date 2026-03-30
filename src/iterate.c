@@ -19,6 +19,7 @@ static void set_callback_rate(bool animating) {
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
     AppState *state = (AppState*) appstate;
+    state->render_gen++;
 
     Uint64 now = SDL_GetTicksNS();
 

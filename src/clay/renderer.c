@@ -19,6 +19,7 @@ static struct {
     float     size;
 } render_font_cache[RENDER_FONT_CACHE_SIZE];
 static int render_font_cache_count = 0;
+static int render_font_cache_evict = 0; /* next slot to evict (round-robin) */
 
 static void flush_text_cache_for_font(uint16_t font_id, float size);
 
@@ -31,14 +32,20 @@ TTF_Font *SDL_Clay_GetRenderFont(Clay_SDL3RendererData *rd, uint16_t font_id, fl
     TTF_Font *f = TTF_OpenFont(rd->font_paths[font_id], size);
     if (!f) return rd->fonts[font_id]; /* fallback */
 
+    int idx;
     if (render_font_cache_count < RENDER_FONT_CACHE_SIZE) {
-        render_font_cache[render_font_cache_count++] = (typeof(render_font_cache[0])){f, font_id, size};
+        idx = render_font_cache_count++;
     } else {
-        /* Evict slot 0 — flush dependent text cache entries first */
-        flush_text_cache_for_font(render_font_cache[0].font_id, render_font_cache[0].size);
-        TTF_CloseFont(render_font_cache[0].font);
-        render_font_cache[0] = (typeof(render_font_cache[0])){f, font_id, size};
+        /* Round-robin eviction: rotate through all slots so no slot is permanent.
+         * Previously always evicting slot 0 caused stale fonts from before a scale
+         * change to occupy slots 1-7 indefinitely, forcing repeated TTF_OpenFont
+         * calls (and cold FreeType glyph caches) for every new-size font. */
+        idx = render_font_cache_evict;
+        render_font_cache_evict = (render_font_cache_evict + 1) % RENDER_FONT_CACHE_SIZE;
+        flush_text_cache_for_font(render_font_cache[idx].font_id, render_font_cache[idx].size);
+        TTF_CloseFont(render_font_cache[idx].font);
     }
+    render_font_cache[idx] = (typeof(render_font_cache[0])){f, font_id, size};
     return f;
 }
 
@@ -128,6 +135,7 @@ void SDL_Clay_DestroyTextCache(void) {
         render_font_cache[i].font = NULL;
     }
     render_font_cache_count = 0;
+    render_font_cache_evict = 0;
 }
 
 //all rendering is performed by a single SDL call, avoiding multiple RenderRect + plumbing choice for circles.

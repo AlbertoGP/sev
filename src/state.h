@@ -161,6 +161,7 @@ typedef struct AppState {
     bool needs_redraw;
     bool needs_extra_frame;
     bool animating;
+    uint32_t render_gen;
     Uint64 last_frame_ns;
     bool debug_open;
     Chibi chibi;

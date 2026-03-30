@@ -329,7 +329,7 @@ static const LogicalLineIndex *find_old_index(const LogicalLineIndex *old_index,
 void vline_rebuild(VLineCache *cache, struct Buffer *buf,
                    Clay_SDL3RendererData *renderer,
                    float pane_width, uint16_t font_id, uint16_t font_size,
-                   int tab_width, bool wrap_lines) {
+                   int tab_width, bool wrap_lines, uint32_t render_gen) {
     if (!cache || !buf || !renderer) return;
     if (tab_width <= 0) tab_width = 4;
 
@@ -340,6 +340,16 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
                         cache->font_size != font_size ||
                         cache->tab_width != tab_width ||
                         cache->wrap_lines != wrap_lines;
+
+    // Suppress a second key-change-triggered full rebuild within the same
+    // SDL_AppIterate frame.  When needs_extra_frame causes a second layout pass,
+    // Clay's updated bounding boxes can produce a slightly different pane_width,
+    // which would otherwise trigger a redundant O(chars) full rebuild.
+    // Explicit cache->full_rebuild requests (alloc failure, external flag) bypass
+    // this guard so they are never suppressed.
+    if (full_rebuild && !cache->full_rebuild &&
+        cache->last_full_rebuild_gen == render_gen)
+        full_rebuild = false;
 
     cache->pane_width = pane_width;
     cache->font_id = font_id;
@@ -368,6 +378,7 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
                 nowrap_logical_line(cache, renderer, font_id, font_size,
                                     text, &lt->lines[i], tab_width);
         }
+        cache->last_full_rebuild_gen = render_gen;
     } else {
         // Incremental rebuild: check line versions, copy valid entries
         // Save old arrays
@@ -395,7 +406,7 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
             cache->index_cap = old_index_cap;
             cache->full_rebuild = true;
             free((char*)text);
-            vline_rebuild(cache, buf, renderer, pane_width, font_id, font_size, tab_width, wrap_lines);
+            vline_rebuild(cache, buf, renderer, pane_width, font_id, font_size, tab_width, wrap_lines, render_gen);
             return;
         }
 

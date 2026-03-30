@@ -225,7 +225,7 @@ static bool BufRender_SetupGeometry(BufRenderCtx *ctx, Clay_ElementId id) {
     VLineCache *cache = ctx->cache;
     vline_rebuild(cache, ctx->buf, &ctx->state->rendererData,
                   text_width - gutter_width, ctx->font_id, ctx->font_size,
-                  tab_width, wrap_lines);
+                  tab_width, wrap_lines, ctx->state->render_gen);
 
     int line_height  = vline_get_line_height(&ctx->state->rendererData,
                                              ctx->font_id, ctx->font_size);
