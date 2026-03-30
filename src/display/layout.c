@@ -2,7 +2,6 @@
 #include "cursor.h"
 #include "icon.h"
 #include "minibuf.h"
-#include "message.h"
 #include "pane.h"
 #include "welcome.h"
 #include "status.h"
@@ -67,7 +66,6 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
             }
         }
         StatusBar(state);
-        MessageArea(state);
     }
 
     if (state->which_key.active && state->which_key.enabled)

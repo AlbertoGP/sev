@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "icon.h"
+#include "message.h"
 #include "mode_icon.h"
 #include "theme.h"
 #include "../state.h"
@@ -79,7 +80,6 @@ void StatusBar(AppState *state) {
         .border = {
             .width = {
                 .top = 2,
-                .bottom = 2
             },
             .color = ui_resolve_color(state, roles.border_inactive)
         },
@@ -171,10 +171,13 @@ void StatusBar(AppState *state) {
                     .textColor = ui_resolve_color(state, roles.text_primary),
                 }));
             }
+            Divider(state);
         }
         CLAY_AUTO_ID({
             .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) }}
         }) {}
+        MessageArea(state);
+        Divider(state);
         Mode *major = buffer_get_major_mode(buf);
         if (major && strcmp(major->name, "scheme-mode") == 0) {
             CLAY(CLAY_ID("Scheme Mode"), {
