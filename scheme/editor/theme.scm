@@ -9,7 +9,7 @@
 
 (defcommand (activate-theme input)
   "Switch to the named theme."
-  (interactive (minibuffer-read "Theme: "))
+  (interactive (minibuffer-read "Select a theme..."))
   (let* ((sym   (if (string? input) (string->symbol input) input))
          (theme (hash-table-ref *themes* sym))
          (palette (car theme))

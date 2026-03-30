@@ -35,8 +35,9 @@
 
 ;; SPC t — tab operations
 (define base-tab-map (make-keymap))
-(%set-keymap-name! base-tab-map "tab")
+(%set-keymap-name! base-tab-map "tabs/theme")
 (set-key! base-tab-map "n" 'tab-new)
+(set-key! base-tab-map "h" 'activate-theme)
 (bind-prefix! base-spc-map "t" base-tab-map)
 
 ;; SPC h — help (always available)

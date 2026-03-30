@@ -44,12 +44,12 @@
 ;; Register minibuffer-read as an interactive spec handler
 (register-spec-handler! 'minibuffer-read
   (lambda (form-args done)
-    (let ((prompt (if (pair? form-args) (car form-args) "Input: ")))
+    (let ((prompt (if (pair? form-args) (car form-args) "Input...")))
       (minibuffer-read prompt done))))
 
 (defcommand (execute-extended-command)
   "Read command name and execute it."
-  (minibuffer-read "Execute a command: "
+  (minibuffer-read "Execute a command..."
     (lambda (name)
       (let ((sym (string->symbol name)))
         (if (interactive? sym)

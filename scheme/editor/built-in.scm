@@ -60,7 +60,7 @@
 (defcommand (eval-expression)
   "Evaluate a Scheme expression from the minibuffer and display the result."
   (interactive)
-  (minibuffer-read "Eval: "
+  (minibuffer-read "Evaluate a Scheme expression..."
     (lambda (expr-str)
       (unless (string=? expr-str "")
         (let* ((expr   (read (open-input-string expr-str)))
@@ -131,7 +131,7 @@
 (defcommand (open-file)
   "Open an existing file into a new buffer, or switch to it if already open."
   (interactive)
-  (minibuffer-read "Find file: "
+  (minibuffer-read "Open a file..."
     (lambda (filename)
       (if (string=? filename "")
           (message "Filename cannot be empty")

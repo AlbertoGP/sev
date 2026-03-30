@@ -95,7 +95,7 @@ static void collect_entries(sexp ctx, Keymap *km, const char *prefix,
                 snprintf(wk_key_strs[wk_count], sizeof(wk_key_strs[0]),
                          "%s", full_path);
                 snprintf(wk_label_strs[wk_count], sizeof(wk_label_strs[0]),
-                         "+%s", child->name);
+                         "%s...", child->name);
                 wk_is_prefix[wk_count] = true;
                 wk_count++;
             } else {
