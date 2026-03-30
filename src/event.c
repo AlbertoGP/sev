@@ -136,6 +136,8 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         state->needs_redraw = true;
         float x = event->motion.x;
         float y = event->motion.y;
+        state->input.mouse_x = x;
+        state->input.mouse_y = y;
         bool button_held = (event->motion.state & SDL_BUTTON_LMASK) != 0;
         Clay_SetPointerState((Clay_Vector2){x, y}, button_held);
 

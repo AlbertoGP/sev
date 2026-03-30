@@ -46,6 +46,7 @@ typedef struct {
     // Mouse
     sexp         mouse_click_cb;           // (lambda (button buf-pos clicks) ...) or SEXP_FALSE
     sexp         mouse_drag_cb;            // (lambda (current-pos start-pos) ...) or SEXP_FALSE
+    float        mouse_x, mouse_y;           // current pointer position in render coords
     bool         mouse_button_down;
     struct Pane *mouse_down_pane;          // locked pane for drag; NULL if not dragging
     float        mouse_down_x, mouse_down_y;
@@ -150,6 +151,7 @@ typedef struct {
     uint32_t    tracked_id;  // unique_id+1 of hovered element (0 = none)
     bool        visible;
     SDL_TimerID timer;       // pending show timer (0 = none)
+    float       spawn_x, spawn_y; // pointer position at the moment tooltip became visible
 } TooltipState;
 
 typedef struct AppState {

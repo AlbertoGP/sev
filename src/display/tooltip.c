@@ -19,7 +19,9 @@ void tooltip_handle_show(AppState *state) {
     TooltipState *ts = &state->tooltip;
     if (ts->tracked_id != 0) {
         ts->visible = true;
-        ts->timer = 0;
+        ts->timer   = 0;
+        ts->spawn_x = state->input.mouse_x;
+        ts->spawn_y = state->input.mouse_y;
         state->needs_redraw = true;
     }
 }
@@ -53,12 +55,12 @@ void Tooltip(AppState *state, bool is_hovered, int unique_id,
 
     CLAY(CLAY_IDI_LOCAL("Tooltip", unique_id), {
         .floating = {
-            .attachTo = CLAY_ATTACH_TO_PARENT,
+            .attachTo = CLAY_ATTACH_TO_ROOT,
             .attachPoints = {
                 .element = CLAY_ATTACH_POINT_LEFT_TOP,
-                .parent  = CLAY_ATTACH_POINT_LEFT_BOTTOM
+                .parent  = CLAY_ATTACH_POINT_LEFT_TOP
             },
-            .offset = { 0, 4.0f * scale },
+            .offset = { ts->spawn_x + 12, ts->spawn_y + 20 },
             .zIndex = 200
         },
         .layout = {
