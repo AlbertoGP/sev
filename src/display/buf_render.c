@@ -262,8 +262,11 @@ static bool BufRender_SetupGeometry(BufRenderCtx *ctx, Clay_ElementId id) {
     size_t point = ctx->point;
     if (cp->active && point != cache->last_scroll_point) {
         cache->last_scroll_point = point;
+        float old_scroll_offset = cache->scroll_offset;
         if (line_height > 0)
             vline_scroll_to_cursor_pixels(cache, point, text_height, line_height, 3);
+        if (cache->scroll_offset != old_scroll_offset)
+            ctx->state->needs_extra_frame = true;
 
         // Horizontal scroll-to-cursor in nowrap mode.
         if (!wrap_lines) {
