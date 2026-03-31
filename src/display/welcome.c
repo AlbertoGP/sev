@@ -87,6 +87,56 @@ static void SuggestionRow(AppState *state, Clay_String label, Clay_String key, c
     }
 }
 
+static void ProjectRow(AppState *state, Clay_String label, Clay_String key, const char *cmd) {
+    float font_size = 12 * state->ui.scale_factor;
+    TextStyle key_style  = ui_resolve_text_style(state, state->ui.roles.text_key,
+                                                  FONT_BUF_NORMAL, font_size);
+    int icon_size = 11.0 * state->ui.scale_factor;
+    SDL_Texture *icon = icon_get("project-icon",   state, icon_size, icon_size);
+    Clay_Color bg = ui_resolve_color(state, state->ui.roles.line_bg);
+    Clay_Color hover_bg = { bg.r, bg.g, bg.b, 128 };
+    CLAY_AUTO_ID({
+        .layout = { 
+            .sizing = { .width = CLAY_SIZING_GROW(0) },
+            .padding = {
+                .left = 5 * state->ui.scale_factor,
+                .right = 5 * state->ui.scale_factor,
+                .top = 3 * state->ui.scale_factor,
+                .bottom = 3 * state->ui.scale_factor,
+            },
+            .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
+            .childGap = 7.0 * state->ui.scale_factor
+        },
+        .backgroundColor = Clay_Hovered() && cmd ? hover_bg : (Clay_Color){0},
+        .cornerRadius = CLAY_CORNER_RADIUS(3 * state->ui.scale_factor)
+    }) {
+        if (cmd) {
+            if (Clay_Hovered()) state->input.welcome_row_hovered = true;
+            Clay_OnHover(HandleWelcomeRowClick, (void *)cmd);
+        }
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {
+                    .width  = icon_size,
+                    .height = icon_size
+                }
+            },
+            .image = { .imageData = icon },
+        }) {}
+        CLAY_TEXT(label, CLAY_TEXT_CONFIG({
+            .fontId = FONT_UI_NORMAL,
+            .fontSize = font_size,
+            .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
+        }));
+        XSpacer();
+        CLAY_TEXT(key, CLAY_TEXT_CONFIG({
+            .fontId    = key_style.font_id,
+            .fontSize  = key_style.font_size,
+            .textColor = key_style.color,
+        }));
+    }
+}
+
 void WelcomePane(AppState *state) {
     state->input.welcome_row_hovered = false;
     float icon_size = 64.0f * state->ui.scale_factor;
@@ -108,7 +158,7 @@ void WelcomePane(AppState *state) {
         SDL_Texture *icon = icon_get("welcome-icon", state, (int)icon_size, (int)icon_size);
         CLAY(CLAY_ID("Banner"), {
             .layout = {
-                .padding = { .right = 8.0 * state->ui.scale_factor },
+                .padding = { .right = 8.0 * state->ui.scale_factor, .bottom = 15.0 * state->ui.scale_factor },
                 .layoutDirection = CLAY_LEFT_TO_RIGHT,
                 .childGap = 8.0 * state->ui.scale_factor,
                 .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
@@ -142,16 +192,14 @@ void WelcomePane(AppState *state) {
                 }));
             }
         }
-        CLAY_AUTO_ID({
-            .layout = { .sizing = { .height = CLAY_SIZING_FIXED(15 * state->ui.scale_factor) } }
-        }) {}
         static char kb_new_tab[64] = "SPC t n";
         static char kb_open_project[64] = "SPC p o";
-        static char kb_help[64]   = "SPC h";
+        static char kb_help[64]   = "SPC h k";
         static char kb_command[64] = ":";
         keymap_where_is_first(state, "tab-new",                  kb_new_tab,       sizeof(kb_new_tab));
         keymap_where_is_first(state, "open-project",             kb_open_project,  sizeof(kb_open_project));
         keymap_where_is_first(state, "execute-extended-command", kb_command,       sizeof(kb_command));
+        keymap_where_is_first(state, "describe-key",             kb_help,          sizeof(kb_help));
         CLAY(CLAY_ID("Get Started Title"), {
             .layout = {
                 .sizing = {
@@ -177,6 +225,7 @@ void WelcomePane(AppState *state) {
                 .sizing = {
                     .width = CLAY_SIZING_FIXED(400 * state->ui.scale_factor)
                 },
+                .padding = { .bottom = 15.0 * state->ui.scale_factor },
                 .layoutDirection = CLAY_TOP_TO_BOTTOM,
             }
         }) {
@@ -186,12 +235,43 @@ void WelcomePane(AppState *state) {
             SuggestionRow(state, CLAY_STRING("Open Project"),
                                  (Clay_String){ .length = strlen(kb_open_project), .chars = kb_open_project }, "open-icon",
                                  "open-project");
+            SuggestionRow(state, CLAY_STRING("Describe Key"),
+                                 (Clay_String){ .length = strlen(kb_help),    .chars = kb_help    }, "help-icon",
+                                 "describe-key");
             SuggestionRow(state, CLAY_STRING("Open Command Palette"),
                                  (Clay_String){ .length = strlen(kb_command), .chars = kb_command }, "palette-icon",
                                  "execute-extended-command");
-            SuggestionRow(state, CLAY_STRING("Help Commands"),
-                                 (Clay_String){ .length = strlen(kb_help),    .chars = kb_help    }, "help-icon",
-                                 NULL);
+        }
+        CLAY(CLAY_ID("Recent Projects Title"), {
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_FIXED(400 * state->ui.scale_factor)
+                },
+                .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
+                .childGap = 5.0 * state->ui.scale_factor,
+            }
+        }) {
+            CLAY_TEXT(CLAY_STRING("RECENT PROJECTS"), CLAY_TEXT_CONFIG({
+                .fontId = FONT_UI_NORMAL,
+                .fontSize = 9.0 * state->ui.scale_factor,
+                .textColor = ui_resolve_color(state, state->ui.roles.text_primary)
+            }));
+            CLAY(CLAY_ID_LOCAL("Recent Projects Divider"), {
+                .layout = { .sizing = { .width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(1) } },
+                .border = { .width = { .top = 1 }, .color = ui_resolve_color(state, state->ui.roles.border_active)   }
+            }) {}
+        }
+        CLAY(CLAY_ID("Recent Projects"), {
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_FIXED(400 * state->ui.scale_factor)
+                },
+                .layoutDirection = CLAY_TOP_TO_BOTTOM,
+            }
+        }) {
+            ProjectRow(state, CLAY_STRING("Test Project"),
+                                 CLAY_STRING("1"), "tab-new");
         }
     }
 }
