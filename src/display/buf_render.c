@@ -367,7 +367,7 @@ static void BufRender_GutterCell(BufRenderCtx *ctx, size_t i, VisualLine *vl) {
                           && !ctx->state->minibuf.active;
     bool is_last = (i + 1 == ctx->cache->count) ||
                    (ctx->cache->lines[i + 1].line_id != vl->line_id);
-    if (!cursor_on_line && ctx->point == vl->byte_end && is_last) {
+    if (!cursor_on_line && ctx->point == vl->byte_end && is_last && !ctx->state->minibuf.active) {
         if (i + 1 == ctx->cache->count || ctx->cache->lines[i + 1].byte_start != ctx->point)
             cursor_on_line = true;
     }
@@ -675,7 +675,7 @@ static void BufRender_TextRow(BufRenderCtx *ctx, size_t i) {
                           && !ctx->state->minibuf.active;
     bool is_last = (i + 1 == ctx->cache->count) ||
                    (ctx->cache->lines[i + 1].line_id != vl->line_id);
-    if (!cursor_on_line && ctx->point == line_end && is_last) {
+    if (!cursor_on_line && ctx->point == line_end && is_last && !ctx->state->minibuf.active) {
         if (i + 1 == ctx->cache->count || ctx->cache->lines[i + 1].byte_start != ctx->point)
             cursor_on_line = true;
     }
