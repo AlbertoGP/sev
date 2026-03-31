@@ -14,3 +14,7 @@ bool state_io_save(const AppState *state);
 // Record that a command was invoked from the minibuffer.
 // Increments freq and updates last_used for the named command.
 void state_io_record_command(AppState *state, const char *name);
+
+// Upsert path into recent_projects: update last_opened if found,
+// otherwise append (or evict the least recently accessed entry).
+void state_io_update_recent_project(AppState *state, const char *path);

@@ -1,13 +1,16 @@
 #include <string.h>
+#include <unistd.h>
 
 #include "icon.h"
 #include "theme.h"
 #include "welcome.h"
 #include "../command/keymap.h"
+#include "../command/message.h"
 #include "../command/scheme_internal.h"
+#include "../state_io.h"
 
-#define MAX_WELCOME_CB 3
 static const char *pending_welcome_cmd = NULL;
+static const char *pending_project_path = NULL;
 
 static void HandleWelcomeRowClick(Clay_ElementId id, Clay_PointerData p, void *userData) {
     (void)id;
@@ -17,7 +20,30 @@ static void HandleWelcomeRowClick(Clay_ElementId id, Clay_PointerData p, void *u
     G->needs_extra_frame = true;
 }
 
+static void HandleProjectRowClick(Clay_ElementId id, Clay_PointerData p, void *userData) {
+    (void)id;
+    if (p.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
+    pending_project_path = (const char *)userData;
+    G->needs_redraw = true;
+    G->needs_extra_frame = true;
+}
+
 void welcome_flush_pending(void) {
+    if (pending_project_path) {
+        const char *path = pending_project_path;
+        pending_project_path = NULL;
+        if (chdir(path) == 0) {
+            state_io_update_recent_project(G, path);
+            static char msg[PATH_MAX + 32];
+            snprintf(msg, sizeof(msg), "Opened project %s", path);
+            message_echo(msg);
+        } else {
+            static char msg[PATH_MAX + 32];
+            snprintf(msg, sizeof(msg), "Cannot open project: %s", path);
+            message_echo(msg);
+        }
+        return;
+    }
     if (!pending_welcome_cmd) return;
     sexp ctx = G->chibi.ctx;
     sexp sym = sexp_intern(ctx, pending_welcome_cmd, -1);
@@ -87,16 +113,16 @@ static void SuggestionRow(AppState *state, Clay_String label, Clay_String key, c
     }
 }
 
-static void ProjectRow(AppState *state, Clay_String label, Clay_String key, const char *cmd) {
+static void ProjectRow(AppState *state, Clay_String label, Clay_String key, const char *path) {
     float font_size = 12 * state->ui.scale_factor;
     TextStyle key_style  = ui_resolve_text_style(state, state->ui.roles.text_key,
                                                   FONT_BUF_NORMAL, font_size);
     int icon_size = 11.0 * state->ui.scale_factor;
-    SDL_Texture *icon = icon_get("project-icon",   state, icon_size, icon_size);
+    SDL_Texture *icon = icon_get("project-icon", state, icon_size, icon_size);
     Clay_Color bg = ui_resolve_color(state, state->ui.roles.line_bg);
     Clay_Color hover_bg = { bg.r, bg.g, bg.b, 128 };
     CLAY_AUTO_ID({
-        .layout = { 
+        .layout = {
             .sizing = { .width = CLAY_SIZING_GROW(0) },
             .padding = {
                 .left = 5 * state->ui.scale_factor,
@@ -107,13 +133,11 @@ static void ProjectRow(AppState *state, Clay_String label, Clay_String key, cons
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
             .childGap = 7.0 * state->ui.scale_factor
         },
-        .backgroundColor = Clay_Hovered() && cmd ? hover_bg : (Clay_Color){0},
+        .backgroundColor = Clay_Hovered() ? hover_bg : (Clay_Color){0},
         .cornerRadius = CLAY_CORNER_RADIUS(3 * state->ui.scale_factor)
     }) {
-        if (cmd) {
-            if (Clay_Hovered()) state->input.welcome_row_hovered = true;
-            Clay_OnHover(HandleWelcomeRowClick, (void *)cmd);
-        }
+        if (Clay_Hovered()) state->input.welcome_row_hovered = true;
+        Clay_OnHover(HandleProjectRowClick, (void *)path);
         CLAY_AUTO_ID({
             .layout = {
                 .sizing = {
@@ -242,36 +266,62 @@ void WelcomePane(AppState *state) {
                                  (Clay_String){ .length = strlen(kb_command), .chars = kb_command }, "palette-icon",
                                  "execute-extended-command");
         }
-        CLAY(CLAY_ID("Recent Projects Title"), {
-            .layout = {
-                .sizing = {
-                    .width = CLAY_SIZING_FIXED(400 * state->ui.scale_factor)
-                },
-                .layoutDirection = CLAY_LEFT_TO_RIGHT,
-                .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
-                .childGap = 5.0 * state->ui.scale_factor,
+        if (state->recent_projects_count > 0) {
+            // Build a display order sorted by last_opened descending
+            int order[RECENT_PROJECTS_MAX];
+            int n = state->recent_projects_count;
+            for (int i = 0; i < n; i++) order[i] = i;
+            // Simple insertion sort (n <= 5)
+            for (int i = 1; i < n; i++) {
+                int tmp = order[i];
+                int j = i - 1;
+                while (j >= 0 && state->recent_projects[order[j]].last_opened <
+                                  state->recent_projects[tmp].last_opened) {
+                    order[j + 1] = order[j];
+                    j--;
+                }
+                order[j + 1] = tmp;
             }
-        }) {
-            CLAY_TEXT(CLAY_STRING("RECENT PROJECTS"), CLAY_TEXT_CONFIG({
-                .fontId = FONT_UI_NORMAL,
-                .fontSize = 9.0 * state->ui.scale_factor,
-                .textColor = ui_resolve_color(state, state->ui.roles.text_primary)
-            }));
-            CLAY(CLAY_ID_LOCAL("Recent Projects Divider"), {
-                .layout = { .sizing = { .width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(1) } },
-                .border = { .width = { .top = 1 }, .color = ui_resolve_color(state, state->ui.roles.border_active)   }
-            }) {}
-        }
-        CLAY(CLAY_ID("Recent Projects"), {
-            .layout = {
-                .sizing = {
-                    .width = CLAY_SIZING_FIXED(400 * state->ui.scale_factor)
-                },
-                .layoutDirection = CLAY_TOP_TO_BOTTOM,
+
+            CLAY(CLAY_ID("Recent Projects Title"), {
+                .layout = {
+                    .sizing = {
+                        .width = CLAY_SIZING_FIXED(400 * state->ui.scale_factor)
+                    },
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                    .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
+                    .childGap = 5.0 * state->ui.scale_factor,
+                }
+            }) {
+                CLAY_TEXT(CLAY_STRING("RECENT PROJECTS"), CLAY_TEXT_CONFIG({
+                    .fontId = FONT_UI_NORMAL,
+                    .fontSize = 9.0 * state->ui.scale_factor,
+                    .textColor = ui_resolve_color(state, state->ui.roles.text_primary)
+                }));
+                CLAY(CLAY_ID_LOCAL("Recent Projects Divider"), {
+                    .layout = { .sizing = { .width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(1) } },
+                    .border = { .width = { .top = 1 }, .color = ui_resolve_color(state, state->ui.roles.border_active) }
+                }) {}
             }
-        }) {
-            ProjectRow(state, CLAY_STRING("Test Project"),
-                                 CLAY_STRING("1"), "tab-new");
+            CLAY(CLAY_ID("Recent Projects"), {
+                .layout = {
+                    .sizing = {
+                        .width = CLAY_SIZING_FIXED(400 * state->ui.scale_factor)
+                    },
+                    .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                }
+            }) {
+                static const char *key_labels[] = { "1", "2", "3", "4", "5" };
+                for (int i = 0; i < n; i++) {
+                    const RecentProject *rp = &state->recent_projects[order[i]];
+                    // Last path segment for display
+                    const char *slash = strrchr(rp->path, '/');
+                    const char *name  = (slash && slash[1]) ? slash + 1 : rp->path;
+                    Clay_String label = { .length = (int)strlen(name), .chars = name };
+                    Clay_String key   = { .length = 1, .chars = key_labels[i] };
+                    ProjectRow(state, label, key, rp->path);
+                }
+            }
         }
     }
 }

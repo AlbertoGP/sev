@@ -287,32 +287,22 @@ sexp scm_record_command_usage(sexp ctx, sexp self, sexp n, sexp sym) {
     return SEXP_VOID;
 }
 
-// (%update-recent-project! path) — upsert path into recent_projects.
-// Updates last_opened to now. If not found, evicts the least recently
-// accessed entry (or appends if under cap).
-sexp scm_update_recent_project(sexp ctx, sexp self, sexp n, sexp spath) {
-    if (!sexp_stringp(spath)) return SEXP_VOID;
-    const char *path = sexp_string_data(spath);
+void state_io_update_recent_project(AppState *state, const char *path) {
     int64_t now = (int64_t)time(NULL);
-    AppState *state = G;
 
-    // Search for existing entry
     for (int i = 0; i < state->recent_projects_count; i++) {
         if (strcmp(state->recent_projects[i].path, path) == 0) {
             state->recent_projects[i].last_opened = now;
-            return SEXP_VOID;
+            return;
         }
     }
 
-    // Not found — find slot to occupy
     if (state->recent_projects_count < RECENT_PROJECTS_MAX) {
-        // Still have room
         RecentProject *rp = &state->recent_projects[state->recent_projects_count++];
         strncpy(rp->path, path, sizeof(rp->path) - 1);
         rp->path[sizeof(rp->path) - 1] = '\0';
         rp->last_opened = now;
     } else {
-        // Evict least recently accessed
         int oldest = 0;
         for (int i = 1; i < state->recent_projects_count; i++) {
             if (state->recent_projects[i].last_opened <
@@ -324,6 +314,13 @@ sexp scm_update_recent_project(sexp ctx, sexp self, sexp n, sexp spath) {
         state->recent_projects[oldest].path[sizeof(state->recent_projects[oldest].path) - 1] = '\0';
         state->recent_projects[oldest].last_opened = now;
     }
+}
+
+// (%update-recent-project! path) — Scheme binding
+sexp scm_update_recent_project(sexp ctx, sexp self, sexp n, sexp spath) {
+    (void)ctx; (void)self; (void)n;
+    if (!sexp_stringp(spath)) return SEXP_VOID;
+    state_io_update_recent_project(G, sexp_string_data(spath));
     return SEXP_VOID;
 }
 
