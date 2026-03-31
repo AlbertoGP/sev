@@ -153,6 +153,19 @@
                       (%tab-set-buffer! filename)
                       (message (string-append "Switched to buffer " filename))))))))))
 
+(defcommand (open-project)
+  "Open a project directory, changing the working directory to it."
+  (interactive)
+  (minibuffer-read "Open project: "
+    (lambda (path)
+      (if (string=? path "")
+          (message "Path cannot be empty")
+          (if (not (%chdir path))
+              (message (string-append "Cannot open project: " path))
+              (begin
+                (%update-recent-project! path)
+                (message (string-append "Opened project " path))))))))
+
 (defcommand (read-file)
   "Insert the contents of a file at the point in the current buffer without moving point or other text."
   (interactive)

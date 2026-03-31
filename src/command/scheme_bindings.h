@@ -171,6 +171,8 @@ sexp scm_which_key_toggle(sexp ctx, sexp self, sexp n);
 
 // --- state_io.c ---
 sexp scm_record_command_usage(sexp ctx, sexp self, sexp n, sexp sym);
+sexp scm_update_recent_project(sexp ctx, sexp self, sexp n, sexp spath);
+sexp scm_chdir(sexp ctx, sexp self, sexp n, sexp spath);
 
 // --- text/treesitter.c ---
 sexp scm_ts_tree_string(sexp ctx, sexp self, sexp n);

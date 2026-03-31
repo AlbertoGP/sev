@@ -454,7 +454,9 @@ void scheme_init(AppState *state) {
     SDEF("%which-key-toggle", 0, scm_which_key_toggle);
 
     // State I/O primitives
-    SDEF("%record-command-usage", 1, scm_record_command_usage);
+    SDEF("%record-command-usage",  1, scm_record_command_usage);
+    SDEF("%update-recent-project!", 1, scm_update_recent_project);
+    SDEF("%chdir",                  1, scm_chdir);
 
     // Jump list primitives
     SDEF("%jump-push!",     0, scm_jump_push);
@@ -552,7 +554,7 @@ void scheme_init(AppState *state) {
         "%minibuffer-activate %minibuffer-submit "
         "%minibuffer-cancel %minibuffer-active? "
         "%which-key-toggle "
-        "%record-command-usage "
+        "%record-command-usage %update-recent-project! %chdir "
         "%jump-push! %jump-backward! %jump-forward! "
         "jump-to-matching-bracket "
         "%set-mouse-click-handler! %set-mouse-drag-handler! "

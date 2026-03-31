@@ -20,7 +20,7 @@
     pane-v-split-increase pane-v-split-decrease
     clay-debug exchange-point-and-mark
     line-start-skip-whitespace join-line
-    save-buffer save-buffer-as open-file read-file
+    save-buffer save-buffer-as open-file open-project read-file
     buffer-new buffer-rename scratch-buffer switch-to-buffer buffer-close tab-new
     eval-expression)
   (include "built-in.scm"))

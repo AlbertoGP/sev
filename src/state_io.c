@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 #include <chibi/eval.h>
 #include "../vendored/jsmn.h"
@@ -276,7 +277,7 @@ bool state_io_load(AppState *state) {
 }
 
 // ---------------------------------------------------------------------------
-// Scheme binding
+// Scheme bindings
 // ---------------------------------------------------------------------------
 
 sexp scm_record_command_usage(sexp ctx, sexp self, sexp n, sexp sym) {
@@ -284,4 +285,53 @@ sexp scm_record_command_usage(sexp ctx, sexp self, sexp n, sexp sym) {
     const char *name = sexp_string_data(sexp_symbol_to_string(ctx, sym));
     state_io_record_command(G, name);
     return SEXP_VOID;
+}
+
+// (%update-recent-project! path) — upsert path into recent_projects.
+// Updates last_opened to now. If not found, evicts the least recently
+// accessed entry (or appends if under cap).
+sexp scm_update_recent_project(sexp ctx, sexp self, sexp n, sexp spath) {
+    if (!sexp_stringp(spath)) return SEXP_VOID;
+    const char *path = sexp_string_data(spath);
+    int64_t now = (int64_t)time(NULL);
+    AppState *state = G;
+
+    // Search for existing entry
+    for (int i = 0; i < state->recent_projects_count; i++) {
+        if (strcmp(state->recent_projects[i].path, path) == 0) {
+            state->recent_projects[i].last_opened = now;
+            return SEXP_VOID;
+        }
+    }
+
+    // Not found — find slot to occupy
+    if (state->recent_projects_count < RECENT_PROJECTS_MAX) {
+        // Still have room
+        RecentProject *rp = &state->recent_projects[state->recent_projects_count++];
+        strncpy(rp->path, path, sizeof(rp->path) - 1);
+        rp->path[sizeof(rp->path) - 1] = '\0';
+        rp->last_opened = now;
+    } else {
+        // Evict least recently accessed
+        int oldest = 0;
+        for (int i = 1; i < state->recent_projects_count; i++) {
+            if (state->recent_projects[i].last_opened <
+                    state->recent_projects[oldest].last_opened)
+                oldest = i;
+        }
+        strncpy(state->recent_projects[oldest].path, path,
+                sizeof(state->recent_projects[oldest].path) - 1);
+        state->recent_projects[oldest].path[sizeof(state->recent_projects[oldest].path) - 1] = '\0';
+        state->recent_projects[oldest].last_opened = now;
+    }
+    return SEXP_VOID;
+}
+
+// (%chdir path) — change the process working directory.
+// Returns #t on success, #f on failure.
+sexp scm_chdir(sexp ctx, sexp self, sexp n, sexp spath) {
+    if (!sexp_stringp(spath)) return SEXP_FALSE;
+    if (chdir(sexp_string_data(spath)) == 0)
+        return SEXP_TRUE;
+    return SEXP_FALSE;
 }

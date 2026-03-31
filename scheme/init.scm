@@ -27,6 +27,12 @@
 ;; SPC f — file operations (always available: open creates a pane if none)
 (set-key! base-spc-map "f o" 'open-file)
 
+;; SPC p — project operations (always available)
+(define project-map (make-keymap))
+(%set-keymap-name! project-map "project")
+(set-key! project-map "o" 'open-project)
+(bind-prefix! base-spc-map "p" project-map)
+
 ;; SPC b — buffer operations available on welcome screen
 (define base-buffer-map (make-keymap))
 (%set-keymap-name! base-buffer-map "buffer")
