@@ -229,9 +229,17 @@
       (set-local! 'display-line-numbers-type/explicit? #t))))
 
 ;; Help buffer mode
+(defcommand (help-quit)
+  "Close the help buffer and restore normal mode."
+  (%tab-close)
+  (%disable-minor-mode 'help-mode)
+  (%enable-minor-mode 'evil-normal-mode)
+  (%set-local! 'mode-name "Normal"))
+
 (define help-map (make-keymap))
-(set-key! help-map "ESC"   'tab-close)
-(set-key! help-map "q"     'tab-close)
+(set-key! help-map "ESC"   'help-quit)
+(set-key! help-map "q"     'help-quit)
+(set-key! help-map "C-w"   'help-quit)
 (set-key! help-map "j"     'next-line)
 (set-key! help-map "k"     'prev-line)
 (set-key! help-map "h"     'backward-char)

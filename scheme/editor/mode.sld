@@ -10,7 +10,7 @@
     register-mode-icon register-mode-icon/full
     toggle-line-numbers toggle-relative-line-numbers
     toggle-visual-line-numbers toggle-wrap-lines
-    scheme-mode
+    scheme-mode help-quit
     set-mode-parent! derived-mode?
     user-settings-rules apply-buffer-settings
     register-setting-default!)
