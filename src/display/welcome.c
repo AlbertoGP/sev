@@ -162,7 +162,6 @@ static void ProjectRow(AppState *state, Clay_String label, Clay_String key, cons
 }
 
 void WelcomePane(AppState *state) {
-    state->input.welcome_row_hovered = false;
     float icon_size = 64.0f * state->ui.scale_factor;
     CLAY(CLAY_ID("Welcome"), {
         .layout = {

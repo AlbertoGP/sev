@@ -20,6 +20,7 @@ static void set_callback_rate(bool animating) {
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
     AppState *state = (AppState*) appstate;
+    state->input.welcome_row_hovered = false;
     state->render_gen++;
 
     Uint64 now = SDL_GetTicksNS();
@@ -61,11 +62,35 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     pane_free_strings();
     bar_free_strings();
     if (state->needs_extra_frame) {
+        state->input.welcome_row_hovered = false;
         Clay_RenderCommandArray render_commands = create_app_layout(state);
         SDL_Clay_RenderClayCommands(&state->rendererData, &render_commands);
         pane_free_strings();
         bar_free_strings();
     }
+
+    /* Update system cursor based on final layout's hover state */
+    {
+        static SDL_Cursor *cursor_ew      = NULL;
+        static SDL_Cursor *cursor_ns      = NULL;
+        static SDL_Cursor *cursor_default = NULL;
+        static SDL_Cursor *cursor_hand    = NULL;
+        if (!cursor_ew)      cursor_ew      = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_EW_RESIZE);
+        if (!cursor_ns)      cursor_ns      = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NS_RESIZE);
+        if (!cursor_default) cursor_default = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_DEFAULT);
+        if (!cursor_hand)    cursor_hand    = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_POINTER);
+        Pane *split_hover = pane_split_at_coords(pane_get_root(),
+                                state->input.mouse_x, state->input.mouse_y);
+        if (split_hover && split_hover->type == PANE_V_SPLIT)
+            SDL_SetCursor(cursor_ew);
+        else if (split_hover && split_hover->type == PANE_H_SPLIT)
+            SDL_SetCursor(cursor_ns);
+        else if (state->input.welcome_row_hovered)
+            SDL_SetCursor(cursor_hand);
+        else
+            SDL_SetCursor(cursor_default);
+    }
+
     SDL_RenderPresent(state->rendererData.renderer);
 
     /* Reset dirty flag */
