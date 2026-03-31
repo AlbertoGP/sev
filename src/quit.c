@@ -2,6 +2,7 @@
 #include <chibi/eval.h>
 
 #include "state.h"
+#include "state_io.h"
 #include "clay/renderer.h"
 #include "display/pane.h"
 #include "text/buffer.h"
@@ -19,6 +20,8 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     AppState *state = appstate;
 
     if (state) {
+        state_io_save(state);
+
         if (state->minibuf.buf) {
             if (state->minibuf.on_submit != SEXP_FALSE)
                 sexp_release_object(state->chibi.ctx, state->minibuf.on_submit);

@@ -169,6 +169,9 @@ sexp scm_minibuffer_activep(sexp ctx, sexp self, sexp n);
 // --- display/which_key.c ---
 sexp scm_which_key_toggle(sexp ctx, sexp self, sexp n);
 
+// --- state_io.c ---
+sexp scm_record_command_usage(sexp ctx, sexp self, sexp n, sexp sym);
+
 // --- text/treesitter.c ---
 sexp scm_ts_tree_string(sexp ctx, sexp self, sexp n);
 sexp scm_ts_enable(sexp ctx, sexp self, sexp n);

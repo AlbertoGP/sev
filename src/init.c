@@ -7,6 +7,7 @@
 #include <chibi/eval.h>
 
 #include "state.h"
+#include "state_io.h"
 #include "cursor_flash.h"
 #include "clay/init.h"
 #include "command/keymap.h"
@@ -103,6 +104,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     state->ui.user_scale = 1.0f;
     state->ui.scale_factor = state->ui.dpi_scale * state->ui.user_scale;
     scheme_init(state);
+
+    if (!state_io_load(state)) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+                    "state_io_load failed; starting with empty state");
+    }
 
     if (!buffer_list_init()) {
         fprintf(stderr, "Failed to initialise buffer list.");

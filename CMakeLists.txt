@@ -9,6 +9,7 @@ set(SRC_FILES
     src/iterate.c
     src/event.c
     src/quit.c
+    src/state_io.c
     src/clay/renderer.c
     src/clay/init.c
     src/command/keyboard.c

@@ -1,6 +1,9 @@
 #pragma once
 
 #include <stddef.h>
+#include <limits.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 #include <SDL3/SDL.h>
 #include <chibi/eval.h>
@@ -9,6 +12,20 @@
 #include "command/keyevent.h"
 #include "text/register.h"
 #include "text/var.h"
+
+#define RECENT_PROJECTS_MAX 5
+#define COMMAND_STATS_MAX   256
+
+typedef struct {
+    char    path[PATH_MAX];
+    int64_t last_opened;
+} RecentProject;
+
+typedef struct {
+    char    name[64];
+    int     freq;
+    int64_t last_used;
+} CommandStat;
 
 // Forward declaration — pane.h includes state.h, so we can't include it here.
 struct Pane;
@@ -187,4 +204,11 @@ typedef struct AppState {
     KeyEvent *macro_buf;
     size_t macro_buf_len;
     size_t macro_buf_cap;
+
+    // Persistence
+    bool          first_launch;
+    RecentProject recent_projects[RECENT_PROJECTS_MAX];
+    int           recent_projects_count;
+    CommandStat   command_stats[COMMAND_STATS_MAX];
+    int           command_stats_count;
 } AppState;

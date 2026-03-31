@@ -453,6 +453,9 @@ void scheme_init(AppState *state) {
     // Which-key primitives
     SDEF("%which-key-toggle", 0, scm_which_key_toggle);
 
+    // State I/O primitives
+    SDEF("%record-command-usage", 1, scm_record_command_usage);
+
     // Jump list primitives
     SDEF("%jump-push!",     0, scm_jump_push);
     SDEF("%jump-backward!", 0, scm_jump_backward);
@@ -549,6 +552,7 @@ void scheme_init(AppState *state) {
         "%minibuffer-activate %minibuffer-submit "
         "%minibuffer-cancel %minibuffer-active? "
         "%which-key-toggle "
+        "%record-command-usage "
         "%jump-push! %jump-backward! %jump-forward! "
         "jump-to-matching-bracket "
         "%set-mouse-click-handler! %set-mouse-drag-handler! "
