@@ -176,5 +176,17 @@
 (%set-keymap-name!   welcome-map "welcome")
 (%set-welcome-keymap! welcome-map)
 
+(defcommand (open-recent-1) "Open most recent project." (interactive) (%open-recent-project! 1))
+(defcommand (open-recent-2) "Open 2nd most recent project." (interactive) (%open-recent-project! 2))
+(defcommand (open-recent-3) "Open 3rd most recent project." (interactive) (%open-recent-project! 3))
+(defcommand (open-recent-4) "Open 4th most recent project." (interactive) (%open-recent-project! 4))
+(defcommand (open-recent-5) "Open 5th most recent project." (interactive) (%open-recent-project! 5))
+
+(set-key! welcome-map "1" 'open-recent-1)
+(set-key! welcome-map "2" 'open-recent-2)
+(set-key! welcome-map "3" 'open-recent-3)
+(set-key! welcome-map "4" 'open-recent-4)
+(set-key! welcome-map "5" 'open-recent-5)
+
 (reset-global-scale)
 (message-clear)

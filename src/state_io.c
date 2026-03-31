@@ -10,6 +10,7 @@
 #include "../vendored/jsmn.h"
 
 #include "state_io.h"
+#include "command/message.h"
 #include "command/scheme_internal.h"
 
 #define STATE_IO_MAX_TOKENS 2048
@@ -327,8 +328,41 @@ sexp scm_update_recent_project(sexp ctx, sexp self, sexp n, sexp spath) {
 // (%chdir path) — change the process working directory.
 // Returns #t on success, #f on failure.
 sexp scm_chdir(sexp ctx, sexp self, sexp n, sexp spath) {
+    (void)ctx; (void)self; (void)n;
     if (!sexp_stringp(spath)) return SEXP_FALSE;
     if (chdir(sexp_string_data(spath)) == 0)
         return SEXP_TRUE;
     return SEXP_FALSE;
+}
+
+// (%open-recent-project! n) — open the nth (1-based) most recently accessed
+// project in display order (sorted by last_opened desc). Returns #f silently
+// if n is out of range or chdir fails.
+sexp scm_open_recent_project(sexp ctx, sexp self, sexp n, sexp sidx) {
+    (void)ctx; (void)self; (void)n;
+    if (!sexp_fixnump(sidx)) return SEXP_FALSE;
+    int idx = (int)sexp_unbox_fixnum(sidx);
+    AppState *state = G;
+    int count = state->recent_projects_count;
+    if (idx < 1 || idx > count) return SEXP_FALSE;
+
+    int order[RECENT_PROJECTS_MAX];
+    for (int i = 0; i < count; i++) order[i] = i;
+    for (int i = 1; i < count; i++) {
+        int tmp = order[i], j = i - 1;
+        while (j >= 0 && state->recent_projects[order[j]].last_opened <
+                         state->recent_projects[tmp].last_opened) {
+            order[j + 1] = order[j];
+            j--;
+        }
+        order[j + 1] = tmp;
+    }
+
+    const char *path = state->recent_projects[order[idx - 1]].path;
+    if (chdir(path) != 0) return SEXP_FALSE;
+    state_io_update_recent_project(state, path);
+    static char msg[PATH_MAX + 32];
+    snprintf(msg, sizeof(msg), "Opened project %s", path);
+    message_echo(msg);
+    return SEXP_TRUE;
 }

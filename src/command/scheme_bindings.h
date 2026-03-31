@@ -173,6 +173,7 @@ sexp scm_which_key_toggle(sexp ctx, sexp self, sexp n);
 sexp scm_record_command_usage(sexp ctx, sexp self, sexp n, sexp sym);
 sexp scm_update_recent_project(sexp ctx, sexp self, sexp n, sexp spath);
 sexp scm_chdir(sexp ctx, sexp self, sexp n, sexp spath);
+sexp scm_open_recent_project(sexp ctx, sexp self, sexp n, sexp sidx);
 
 // --- text/treesitter.c ---
 sexp scm_ts_tree_string(sexp ctx, sexp self, sexp n);
