@@ -4,6 +4,28 @@
 #include "theme.h"
 #include "welcome.h"
 #include "../command/keymap.h"
+#include "../command/scheme_internal.h"
+
+#define MAX_WELCOME_CB 3
+static const char *pending_welcome_cmd = NULL;
+
+static void HandleWelcomeRowClick(Clay_ElementId id, Clay_PointerData p, void *userData) {
+    (void)id;
+    if (p.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
+    pending_welcome_cmd = (const char *)userData;
+    G->needs_redraw = true;
+    G->needs_extra_frame = true;
+}
+
+void welcome_flush_pending(void) {
+    if (!pending_welcome_cmd) return;
+    sexp ctx = G->chibi.ctx;
+    sexp sym = sexp_intern(ctx, pending_welcome_cmd, -1);
+    sexp result = sexp_apply(ctx, G->chibi.call_interactively, sexp_list1(ctx, sym));
+    if (sexp_exceptionp(result))
+        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+    pending_welcome_cmd = NULL;
+}
 
 static void XSpacer(void) {
     CLAY_AUTO_ID({
@@ -15,20 +37,33 @@ static void XSpacer(void) {
     }){}
 }
 
-static void SuggestionRow(AppState *state, Clay_String label, Clay_String key, const char *icon_name) {
+static void SuggestionRow(AppState *state, Clay_String label, Clay_String key, const char *icon_name, const char *cmd) {
     float font_size = 12 * state->ui.scale_factor;
     TextStyle key_style  = ui_resolve_text_style(state, state->ui.roles.text_key,
                                                   FONT_BUF_NORMAL, font_size);
     int icon_size = 11.0 * state->ui.scale_factor;
     SDL_Texture *icon = icon_get(icon_name,   state, icon_size, icon_size);
+    Clay_Color bg = ui_resolve_color(state, state->ui.roles.line_bg);
+    Clay_Color hover_bg = { bg.r, bg.g, bg.b, 128 };
     CLAY_AUTO_ID({
         .layout = { 
             .sizing = { .width = CLAY_SIZING_GROW(0) },
-            .padding = { .right = 5.0 * state->ui.scale_factor, .left = 5.0 * state->ui.scale_factor },
+            .padding = {
+                .left = 5 * state->ui.scale_factor,
+                .right = 5 * state->ui.scale_factor,
+                .top = 3 * state->ui.scale_factor,
+                .bottom = 3 * state->ui.scale_factor,
+            },
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
             .childGap = 7.0 * state->ui.scale_factor
-        }
+        },
+        .backgroundColor = Clay_Hovered() && cmd ? hover_bg : (Clay_Color){0},
+        .cornerRadius = CLAY_CORNER_RADIUS(3 * state->ui.scale_factor)
     }) {
+        if (cmd) {
+            if (Clay_Hovered()) state->input.welcome_row_hovered = true;
+            Clay_OnHover(HandleWelcomeRowClick, (void *)cmd);
+        }
         CLAY_AUTO_ID({
             .layout = {
                 .sizing = {
@@ -53,6 +88,7 @@ static void SuggestionRow(AppState *state, Clay_String label, Clay_String key, c
 }
 
 void WelcomePane(AppState *state) {
+    state->input.welcome_row_hovered = false;
     float icon_size = 64.0f * state->ui.scale_factor;
     CLAY(CLAY_ID("Welcome"), {
         .layout = {
@@ -110,10 +146,12 @@ void WelcomePane(AppState *state) {
             .layout = { .sizing = { .height = CLAY_SIZING_FIXED(15 * state->ui.scale_factor) } }
         }) {}
         static char kb_new_tab[64] = "SPC t n";
+        static char kb_open_project[64] = "SPC p o";
         static char kb_help[64]   = "SPC h";
         static char kb_command[64] = ":";
-        keymap_where_is_first(state, "tab-new",                  kb_new_tab,  sizeof(kb_new_tab));
-        keymap_where_is_first(state, "execute-extended-command", kb_command,  sizeof(kb_command));
+        keymap_where_is_first(state, "tab-new",                  kb_new_tab,       sizeof(kb_new_tab));
+        keymap_where_is_first(state, "open-project",             kb_open_project,  sizeof(kb_open_project));
+        keymap_where_is_first(state, "execute-extended-command", kb_command,       sizeof(kb_command));
         CLAY(CLAY_ID("Get Started Title"), {
             .layout = {
                 .sizing = {
@@ -140,15 +178,20 @@ void WelcomePane(AppState *state) {
                     .width = CLAY_SIZING_FIXED(400 * state->ui.scale_factor)
                 },
                 .layoutDirection = CLAY_TOP_TO_BOTTOM,
-                .childGap = 5.0 * state->ui.scale_factor,
             }
         }) {
             SuggestionRow(state, CLAY_STRING("New File"),
-                                 (Clay_String){ .length = strlen(kb_new_tab), .chars = kb_new_tab }, "new-icon");
-            SuggestionRow(state, CLAY_STRING("Help Commands"),
-                                 (Clay_String){ .length = strlen(kb_help),    .chars = kb_help    }, "help-icon");
+                                 (Clay_String){ .length = strlen(kb_new_tab), .chars = kb_new_tab }, "new-icon",
+                                 "tab-new");
+            SuggestionRow(state, CLAY_STRING("Open Project"),
+                                 (Clay_String){ .length = strlen(kb_open_project), .chars = kb_open_project }, "open-icon",
+                                 "open-project");
             SuggestionRow(state, CLAY_STRING("Open Command Palette"),
-                                 (Clay_String){ .length = strlen(kb_command), .chars = kb_command }, "palette-icon");
+                                 (Clay_String){ .length = strlen(kb_command), .chars = kb_command }, "palette-icon",
+                                 "execute-extended-command");
+            SuggestionRow(state, CLAY_STRING("Help Commands"),
+                                 (Clay_String){ .length = strlen(kb_help),    .chars = kb_help    }, "help-icon",
+                                 NULL);
         }
     }
 }

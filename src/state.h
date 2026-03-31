@@ -63,6 +63,7 @@ typedef struct {
     float        split_drag_start_y;      // mouse y at split drag start
     FocusTarget  current_focus;
     struct Keymap *welcome_map;             // NULL until registered from Scheme
+    bool         welcome_row_hovered;       // true if any suggestion row was hovered last frame
 } InputState;
 
 typedef struct {
