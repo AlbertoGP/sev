@@ -40,11 +40,6 @@ typedef enum FontID {
     FONT_COUNT
 } FontID;
 
-typedef enum Theme {
-    THEME_DARK,
-    THEME_LIGHT
-} Theme;
-
 typedef enum {
     FOCUS_PANE,
     FOCUS_WELCOME,
@@ -52,9 +47,11 @@ typedef enum {
 } FocusTarget;
 
 typedef struct {
+    FocusTarget  current_focus;
     struct Keymap *global_map;
     struct Keymap *pane_map;       // searched only when pane_get_root() != NULL; parent = global_map
     struct Keymap *current_map;
+    struct Keymap *welcome_map;             // NULL until registered from Scheme
     KeyEvent last_event;
     sexp         key_intercept_cb;         // SEXP_FALSE if inactive
     struct Keymap *key_intercept_map;      // current traversal position
@@ -78,8 +75,6 @@ typedef struct {
     struct Pane *split_drag_pane;         // non-NULL while dragging a split divider
     float        split_drag_start_x;      // mouse x at split drag start
     float        split_drag_start_y;      // mouse y at split drag start
-    FocusTarget  current_focus;
-    struct Keymap *welcome_map;             // NULL until registered from Scheme
     bool         welcome_row_hovered;       // true if any suggestion row was hovered last frame
 } InputState;
 
@@ -175,7 +170,6 @@ typedef struct {
 typedef struct AppState {
     SDL_Window *window;
     Clay_SDL3RendererData rendererData;
-    Theme theme;
     bool needs_redraw;
     bool needs_extra_frame;
     bool animating;
