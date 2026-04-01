@@ -156,6 +156,7 @@ typedef struct {
     FocusTarget  prev_focus;   // saved focus before minibuf activation
     MinibufFrame stack[MINIBUF_STACK_MAX];
     int          stack_depth;  // 0 = no pushed frames
+    float        palette_x, palette_y, palette_w, palette_h; // render-px; valid when active
 } Minibuf;
 
 typedef struct {
