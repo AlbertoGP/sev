@@ -15,6 +15,9 @@
 void MinibufPalette(AppState *state) {
     if (!state->minibuf.active) return;
 
+    int win_w = 0, win_h = 0;
+    SDL_GetWindowSizeInPixels(state->window, &win_w, &win_h);
+
     Buffer *buf = state->minibuf.buf;
 
     // Temporarily make the minibuf the current buffer so that char_at_point()
@@ -64,6 +67,25 @@ void MinibufPalette(AppState *state) {
         ? ui_resolve_color(state, state->ui.roles.text_faded)
         : ui_resolve_color(state, state->ui.roles.text_primary);
 
+    CLAY(CLAY_ID("MinibufBackdrop"), {
+        .floating = {
+            .attachTo     = CLAY_ATTACH_TO_ROOT,
+            .attachPoints = {
+                .element = CLAY_ATTACH_POINT_LEFT_TOP,
+                .parent  = CLAY_ATTACH_POINT_LEFT_TOP
+            },
+            .offset = { 0, 0 },
+            .zIndex = 149
+        },
+        .layout = {
+            .sizing = {
+                .width  = CLAY_SIZING_FIXED((float)win_w),
+                .height = CLAY_SIZING_FIXED((float)win_h)
+            }
+        },
+        .backgroundColor = { 0, 0, 0, 0 }
+    }) {}
+
     CLAY(CLAY_ID("MinibufPalette"), {
         .floating = {
             .attachTo = CLAY_ATTACH_TO_ROOT,
@@ -110,6 +132,11 @@ void MinibufPalette(AppState *state) {
                        FONT_UI_NORMAL, font_size, 151);
         }
     }
+
+    state->minibuf.palette_w = 520.0f * scale;
+    state->minibuf.palette_h = 2.0f * pad + (float)line_h;
+    state->minibuf.palette_x = ((float)win_w - state->minibuf.palette_w) / 2.0f;
+    state->minibuf.palette_y = 64.0f * scale;
 
     buffer_set_current(saved);
 }
