@@ -11,8 +11,8 @@ import Base from '../layouts/Base.astro';
             <img
               src={`${import.meta.env.BASE_URL}favicon.svg`}
               alt="sev icon"
-              width="128"
-              height="128"
+              width="150"
+              height="150"
               class="select-none"
             />
             <div class="flex flex-col gap-3 items-start">
@@ -44,7 +44,7 @@ import Base from '../layouts/Base.astro';
   </section>
 
   <!-- Demo -->
-  <section id="demo-section" class="hidden px-6 pb-24">
+  <section id="demo-section" class="hidden px-6 py-24 bg-mantle">
     <div class="max-w-[800px] mx-auto flex flex-col gap-4">
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-semibold text-[var(--ctp-subtext1)]">Live Demo</h2>
@@ -185,7 +185,7 @@ float fbm(vec2 p) {
 
 void main() {
   vec2  uv = (gl_FragCoord.xy - 0.5 * u_resolution) / u_resolution.y;
-  float t  = u_time * 0.07;
+  float t  = u_time * 0.047;
 
   vec2 q = vec2(fbm(uv + vec2(0.0, 0.0) + t),
                 fbm(uv + vec2(5.2, 1.3) + t * 0.85));
@@ -195,11 +195,11 @@ void main() {
 
   vec3 col = mix(BASE,  MAUVE,  clamp(f * 2.0 - 0.7,         0.0, 1.0));
   col      = mix(col,   MAROON, clamp(length(q) * 0.55,       0.0, 1.0));
-  col      = mix(col,   MAUVE * 1.25, clamp(r.x * r.x * 0.35, 0.0, 1.0));
+  col      = mix(col,   MAUVE, clamp(r.x * r.x * 0.35, 0.0, 1.0));
 
   float lum = f * f;
-  col = col * (lum * 1.5 + 0.1);
-  col = mix(BASE, col, smoothstep(0.1, 0.6, lum * 1.8));
+  col = col * (lum * 1.5 + 0.15);
+  col = mix(BASE, col, smoothstep(0.05, 0.5, lum * 2.5));
 
   float d = length(gl_FragCoord.xy / u_resolution - 0.5) * 2.0;
   col = mix(col, BASE, smoothstep(0.6, 1.4, d));
@@ -222,14 +222,15 @@ void main() {
 
   vec4  fog  = texture2D(u_fog, cellCenter);
   float luma = dot(fog.rgb, vec3(0.299, 0.587, 0.114));
+  float remap = pow(luma, 0.6);
 
-  float ci     = clamp(floor(luma * u_char_count), 0.0, u_char_count - 1.0);
+  float ci     = clamp(floor(remap * u_char_count), 0.0, u_char_count - 1.0);
   vec2  local  = fract(gl_FragCoord.xy / u_cell_size);
   float mask   = texture2D(u_chars, vec2((ci + local.x) / u_char_count, local.y)).r;
 
   vec3 BASE  = vec3(0.141, 0.153, 0.227);
   vec3 color = mix(BASE, fog.rgb, mask);
-  gl_FragColor = vec4(mix(BASE, color, 0.5), 1.0);
+  gl_FragColor = vec4(mix(BASE, color, 0.2), 1.0);
 }`;
 
   // ── WebGL init (two-pass: fog → FBO → ASCII) ──────────────────────────────
@@ -270,7 +271,7 @@ void main() {
     };
 
     // ── Character atlas ───────────────────────────────────────────────────
-    const CHARS = ' .,:;+*#%@';
+    const CHARS = "`.'_^;<!c/?LvJ(F{}I1l[eZYja2SqPhdVObAXmR#B0NQ&@";
     const dpr   = devicePixelRatio || 1;
     const CW    = Math.round(8  * dpr);
     const CH    = Math.round(16 * dpr);
