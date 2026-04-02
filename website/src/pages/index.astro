@@ -1,0 +1,151 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="sev — extensible text editor">
+  <!-- Hero -->
+  <section class="flex flex-col items-center justify-center min-h-screen px-6 text-center gap-8">
+    <img
+      src={`${import.meta.env.BASE_URL}favicon.svg`}
+      alt="sev icon"
+      width="96"
+      height="96"
+      class="select-none"
+    />
+
+    <div class="flex flex-col items-center gap-3">
+      <h1 class="text-6xl font-bold tracking-tight text-[var(--ctp-text)]">sev</h1>
+      <p class="text-lg text-[var(--ctp-subtext1)] max-w-lg">
+        An Emacs-like, extensible graphical text editor for desktop and browser,
+        powered by SDL3, Clay, and Chibi Scheme.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap gap-4 justify-center">
+      <a
+        href="https://github.com/dylancobb/sev"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="px-5 py-2.5 rounded-lg bg-[var(--ctp-surface0)] text-[var(--ctp-text)] hover:bg-[var(--ctp-surface1)] transition-colors"
+      >
+        View on GitHub
+      </a>
+      <button
+        id="demo-btn"
+        class="px-5 py-2.5 rounded-lg bg-[var(--ctp-mauve)] text-[var(--ctp-crust)] font-medium hover:opacity-90 transition-opacity"
+      >
+        Try the Demo
+      </button>
+    </div>
+  </section>
+
+  <!-- Demo -->
+  <section id="demo-section" class="hidden px-6 pb-24">
+    <div class="max-w-[800px] mx-auto flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold text-[var(--ctp-subtext1)]">Live Demo</h2>
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-[var(--ctp-overlay1)]">~9 MB download on first load</span>
+          <button
+            id="fullscreen-btn"
+            class="px-3 py-1 text-sm rounded-lg bg-[var(--ctp-surface0)] text-[var(--ctp-text)] hover:bg-[var(--ctp-surface1)] transition-colors"
+          >Fullscreen</button>
+        </div>
+      </div>
+      <div class="relative rounded-md overflow-hidden border border-[var(--ctp-surface0)] bg-[var(--ctp-mantle)]">
+        <div id="demo-loading" class="absolute inset-0 flex items-center justify-center text-[var(--ctp-overlay1)] text-sm">
+          Loading…
+        </div>
+        <div id="demo-canvas-wrap" style="opacity: 0; transition: opacity 0.3s;">
+          <canvas
+            id="canvas"
+            class="block w-full"
+            style="height: 520px;"
+            oncontextmenu="event.preventDefault()"
+            tabindex="-1"
+          ></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section class="px-6 pb-32">
+    <div class="max-w-2xl mx-auto flex flex-col gap-6 text-[var(--ctp-subtext1)]">
+      <h2 class="text-2xl font-semibold text-[var(--ctp-text)]">About</h2>
+      <p>
+        <strong class="text-[var(--ctp-text)]">sev</strong> is not a feature-complete Emacs clone,
+        but aims to be genuinely usable, lightweight, portable, and highly configurable via Scheme —
+        filling the same role as Lua in Neovim or Elisp in Emacs.
+      </p>
+      <p>
+        The ultimate goal is a foundation for <em>non-text-editor</em> applications where text
+        editing needs to be a first-class capability: music composition environments, wiki-like
+        tools, collaborative editors, and more.
+      </p>
+      <p>
+        Built with <a href="https://libsdl.org/" class="text-[var(--ctp-blue)] hover:underline">SDL3</a>,
+        <a href="https://www.nicbarker.com/clay" class="text-[var(--ctp-blue)] hover:underline">Clay</a>,
+        and <a href="https://synthcode.com/wiki/chibi-scheme" class="text-[var(--ctp-blue)] hover:underline">Chibi Scheme</a>.
+        Targets Linux, macOS, Windows, and WebAssembly via Emscripten.
+      </p>
+    </div>
+  </section>
+</Base>
+
+<script>
+  const btn = document.getElementById('demo-btn') as HTMLButtonElement;
+  const section = document.getElementById('demo-section') as HTMLElement;
+  const loading = document.getElementById('demo-loading') as HTMLElement;
+  const canvasWrap = document.getElementById('demo-canvas-wrap') as HTMLElement;
+  const base = import.meta.env.BASE_URL;
+
+  // Module must be a browser global before app.js executes
+  (window as any).Module = {
+    canvas: document.getElementById('canvas') as HTMLCanvasElement,
+    locateFile: (path: string) => `${base}demo/${path}`,
+    print: (...args: unknown[]) => console.log(...args),
+    setStatus(text: string) {
+      const m = (window as any).Module;
+      m.setStatus.last ??= { time: Date.now(), text: '' };
+      if (text === m.setStatus.last.text) return;
+      const now = Date.now();
+      const match = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+      if (match && now - m.setStatus.last.time < 30) return;
+      m.setStatus.last = { time: now, text };
+      if (!text) {
+        loading.style.display = 'none';
+        canvasWrap.style.opacity = '1';
+      }
+    },
+    totalDependencies: 0,
+    monitorRunDependencies(remaining: number) {
+      const m = (window as any).Module;
+      m.totalDependencies = Math.max(m.totalDependencies, remaining);
+      m.setStatus(
+        remaining
+          ? `Preparing… (${m.totalDependencies - remaining}/${m.totalDependencies})`
+          : 'All downloads complete.'
+      );
+    },
+  };
+
+  let wasmInjected = false;
+
+  // Show section first so SDL sees a canvas with real dimensions, then inject app.js
+  btn.addEventListener('click', () => {
+    section.classList.remove('hidden');
+    section.scrollIntoView({ behavior: 'smooth' });
+    if (!wasmInjected) {
+      wasmInjected = true;
+      const s = document.createElement('script');
+      s.src = `${base}demo/app.js`;
+      s.async = true;
+      document.body.appendChild(s);
+    }
+  });
+
+  document.getElementById('fullscreen-btn')!.addEventListener('click', () => {
+    (window as any).Module?.requestFullscreen(true, false);
+  });
+</script>

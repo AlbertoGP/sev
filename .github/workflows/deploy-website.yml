@@ -1,0 +1,37 @@
+name: Deploy website
+
+on:
+  push:
+    branches: [main]
+    paths: ['website/**']
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # WASM artifacts are committed to website/public/demo/ via `make website-sync-wasm`.
+      # If you add a WASM build step to CI in the future, run it before this step.
+      - name: Build
+        run: cd website && bun install --frozen-lockfile && bun run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: website/dist
+
+      - uses: actions/deploy-pages@v4
+        id: deploy
