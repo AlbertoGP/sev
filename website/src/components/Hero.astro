@@ -116,7 +116,7 @@ void main() {
 
   vec3 BASE  = vec3(0.141, 0.153, 0.227);
   vec3 color = mix(BASE, fog.rgb, mask);
-  gl_FragColor = vec4(mix(BASE, color, 0.2), 1.0);
+  gl_FragColor = vec4(mix(BASE, color, 0.33), 1.0);
 }`;
 
   // ── WebGL init (two-pass: fog → FBO → ASCII) ──────────────────────────────

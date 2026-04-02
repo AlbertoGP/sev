@@ -1,0 +1,45 @@
+---
+const base = import.meta.env.BASE_URL;
+
+const stack = [
+  { src: `${base}C.svg`,            alt: 'C',            url: 'https://www.c-language.org/'            },
+  { src: `${base}sdl.svg`,          alt: 'SDL',          url: 'https://www.libsdl.org/'         },
+  { src: `${base}clay.webp`,        alt: 'Clay',         url: 'https://www.nicbarker.com/clay'         },
+  { src: `${base}chibi.png`,        alt: 'Chibi Scheme', url: 'https://synthcode.com/scheme/chibi/' },
+  { src: `${base}tree-sitter.png`,  alt: 'Tree-sitter',  url: 'https://tree-sitter.github.io/tree-sitter/'  },
+];
+
+const inspirations = [
+  { src: `${base}emacs.svg`,    alt: 'Emacs',    url: 'https://www.gnu.org/software/emacs/' },
+  { src: `${base}neovim.svg`,   alt: 'Neovim',   url: 'https://neovim.io/' },
+  { src: `${base}zed.png`,      alt: 'Zed',      url: 'https://zed.dev/' },
+  { src: `${base}obsidian.svg`, alt: 'Obsidian', url: 'https://obsidian.md/' },
+];
+---
+
+<section class="px-6 py-16 flex flex-col gap-12">
+  <div class="max-w-2xl mx-auto flex flex-col gap-6 items-center">
+    <h2 class="text-sm font-semibold uppercase tracking-widest text-[var(--ctp-overlay1)]">Built with</h2>
+    <div class="flex flex-wrap gap-8 items-center">
+      {stack.map(({ src, alt, url }) => (
+        <a href={url}>
+          <div class="flex flex-col items-center gap-2">
+            <img src={src} alt={alt} class="h-10 w-auto object-contain" />
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+  <div class="max-w-2xl mx-auto flex flex-col gap-6 items-center">
+    <h2 class="text-sm font-semibold uppercase tracking-widest text-[var(--ctp-overlay1)]">Inspired by</h2>
+    <div class="flex flex-wrap gap-8 items-center">
+      {inspirations.map(({ src, alt, url }) => (
+        <a href={url}>
+          <div class="flex flex-col items-center gap-2">
+            <img src={src} alt={alt} class="h-12 w-auto object-contain" />
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+</section>
