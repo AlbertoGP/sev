@@ -227,8 +227,9 @@ void main() {
   vec2  local  = fract(gl_FragCoord.xy / u_cell_size);
   float mask   = texture2D(u_chars, vec2((ci + local.x) / u_char_count, local.y)).r;
 
-  vec3 BASE = vec3(0.141, 0.153, 0.227);
-  gl_FragColor = vec4(mix(BASE, fog.rgb, mask), 1.0);
+  vec3 BASE  = vec3(0.141, 0.153, 0.227);
+  vec3 color = mix(BASE, fog.rgb, mask);
+  gl_FragColor = vec4(mix(BASE, color, 0.5), 1.0);
 }`;
 
   // ── WebGL init (two-pass: fog → FBO → ASCII) ──────────────────────────────
