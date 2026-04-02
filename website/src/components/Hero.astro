@@ -251,9 +251,18 @@ void main() {
       gl.uniform1f(asc_uCnt,  CHARS.length);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-      requestAnimationFrame(frame);
+      if (animating) requestAnimationFrame(frame);
     };
-    requestAnimationFrame(frame);
+
+    let animating = false;
+    new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && !animating) {
+        animating = true;
+        requestAnimationFrame(frame);
+      } else if (!entries[0].isIntersecting) {
+        animating = false;
+      }
+    }).observe(canvas);
   }
 
   initAsciiShader('shader', FRAG);
