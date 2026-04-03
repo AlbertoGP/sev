@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap');
 
 :root {
   /* Catppuccin Macchiato */
@@ -31,6 +32,7 @@
 }
 
 @theme inline {
+  --font-display: 'Cormorant Garamond', serif;
   --color-base:     var(--ctp-base);
   --color-mantle:   var(--ctp-mantle);
   --color-crust:    var(--ctp-crust);
