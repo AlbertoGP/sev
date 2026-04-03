@@ -1,0 +1,19 @@
+---
+const base = import.meta.env.BASE_URL;
+---
+
+<section class="px-6 py-16 bg-mantle">
+  <div class="max-w-2xl mx-auto flex flex-col gap-8">
+    <div class="max-w-2xl flex flex-col gap-6 text-subtext1">
+      <h2 class="text-3xl font-display text-blue">A hackable environment</h2>
+      <p>
+        Sev's commands and settings are exposed via Scheme, making it highly configurable and extensible by end users.
+      </p>
+    </div>
+    <img
+      src={`${base}screenshot.webp`}
+      alt="Sev editor showing Scheme configuration code"
+      class="w-full shadow-lg"
+    />
+  </div>
+</section>
