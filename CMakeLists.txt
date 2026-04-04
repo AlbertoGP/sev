@@ -93,7 +93,12 @@ if(EMSCRIPTEN)
     set(EMCC_ASSETS
         "--preload-file ${CMAKE_SOURCE_DIR}/resources@/resources"
         "--preload-file ${CMAKE_SOURCE_DIR}/scheme@/resources"
+        # Bundle the full chibi-scheme lib, but exclude files that are never
+        # needed at runtime: the snow package manager and SRFI test suites.
+        # This saves ~900 KB from app.data without any fragile dep tracking.
         "--preload-file ${CMAKE_SOURCE_DIR}/vendored/chibi-scheme/lib@/lib"
+        "--exclude-file ${CMAKE_SOURCE_DIR}/vendored/chibi-scheme/lib/chibi/snow"
+        "--exclude-file */test.sld"
     )
     list(JOIN EMCC_ASSETS " " EMCC_ASSETS_STR)
     set_target_properties(app PROPERTIES LINK_FLAGS "${EMCC_ASSETS_STR}")
