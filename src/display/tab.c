@@ -7,6 +7,7 @@
 #include "tooltip.h"
 #include "../text/buffer_type.h"
 #include "theme.h"
+#include "../command/keymap.h"
 #include "../command/message.h"
 #include "../command/scheme_internal.h"
 
@@ -298,7 +299,8 @@ static void **tab_cb_alloc(Pane *dp, Tab *t) {
     return slot;
 }
 
-static bool CloseButton(AppState *state, Pane *dp, Tab *t) {
+static bool CloseButton(AppState *state, Pane *dp, Tab *t,
+                        bool is_active, int pane_index, int tab_index) {
     void **cb = tab_cb_alloc(dp, t);
     bool hovered = false;
     CLAY_AUTO_ID({
@@ -327,6 +329,11 @@ static bool CloseButton(AppState *state, Pane *dp, Tab *t) {
         if (cb) Clay_OnHover(HandleCloseTab, cb);
         hovered = Clay_Hovered();
     }
+    char binding[64] = {0};
+    if (is_active)
+        keymap_where_is_first(state, "tab-close", binding, sizeof(binding));
+    TextTooltipWithBinding(state, hovered, pane_index * 512 + tab_index + 256,
+                           "Close Tab", is_active ? binding : NULL);
     return hovered;
 }
 
@@ -415,7 +422,7 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
                     },
                 }) {
                     if (show_cross) {
-                        block_click = CloseButton(state, dp, t);
+                        block_click = CloseButton(state, dp, t, is_active, index, i);
                     }
                 }
                 if (show_cross && G->input.middle_pressed_this_frame) {

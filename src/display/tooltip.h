@@ -19,5 +19,10 @@ void Tooltip(AppState *state, bool is_hovered, int unique_id,
 // text: caller owns the string
 void TextTooltip(AppState *state, bool is_hovered, int unique_id, const char *text);
 
+// Tooltip with a label and an optional keybinding rendered in the text.key role.
+// If binding is NULL or empty the tooltip shows only the label.
+void TextTooltipWithBinding(AppState *state, bool is_hovered, int unique_id,
+                            const char *label, const char *binding);
+
 // Call from event.c when SDL_EVENT_USER code == TOOLTIP_SHOW_EVENT
 void tooltip_handle_show(AppState *state);
