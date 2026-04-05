@@ -54,14 +54,30 @@ void Tooltip(AppState *state, bool is_hovered, int unique_id,
     uint16_t pad_x = (uint16_t)(6 * scale);
     uint16_t pad_y = (uint16_t)(4 * scale);
 
+    int win_w = 0, win_h = 0;
+    SDL_GetWindowSize(state->window, &win_w, &win_h);
+    bool right_half  = ts->spawn_x > (float)win_w * 0.5f;
+    bool bottom_half = ts->spawn_y > (float)win_h * 0.5f;
+
+    float offset_x = right_half  ? ts->spawn_x - 8.0f * scale
+                                  : ts->spawn_x + 8.0f * scale;
+    float offset_y = bottom_half ? ts->spawn_y - 4.0f * scale
+                                  : ts->spawn_y + 20.0f * scale;
+
+    Clay_FloatingAttachPointType elem_attach;
+    if      (!right_half && !bottom_half) elem_attach = CLAY_ATTACH_POINT_LEFT_TOP;
+    else if ( right_half && !bottom_half) elem_attach = CLAY_ATTACH_POINT_RIGHT_TOP;
+    else if (!right_half &&  bottom_half) elem_attach = CLAY_ATTACH_POINT_LEFT_BOTTOM;
+    else                                  elem_attach = CLAY_ATTACH_POINT_RIGHT_BOTTOM;
+
     CLAY(CLAY_IDI_LOCAL("Tooltip", unique_id), {
         .floating = {
             .attachTo = CLAY_ATTACH_TO_ROOT,
             .attachPoints = {
-                .element = CLAY_ATTACH_POINT_LEFT_TOP,
+                .element = elem_attach,
                 .parent  = CLAY_ATTACH_POINT_LEFT_TOP
             },
-            .offset = { ts->spawn_x + 12, ts->spawn_y + 20 },
+            .offset = { offset_x, offset_y },
             .zIndex = 200
         },
         .layout = {

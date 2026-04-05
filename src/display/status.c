@@ -177,7 +177,6 @@ void StatusBar(AppState *state) {
             .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) }}
         }) {}
         MessageArea(state);
-        Divider(state);
         Mode *major = buffer_get_major_mode(buf);
         if (major && strcmp(major->name, "scheme-mode") == 0) {
             CLAY(CLAY_ID("Scheme Mode"), {
