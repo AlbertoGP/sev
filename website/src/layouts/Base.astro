@@ -15,6 +15,12 @@ const { title = 'sev' } = Astro.props;
     <link rel="icon" type="image/svg+xml" href={`${import.meta.env.BASE_URL}favicon.svg`} />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+    <meta property="og:title" content={title} />
+    <meta property="og:image" content={`${import.meta.env.SITE}${import.meta.env.BASE_URL}banner.png`} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={`${import.meta.env.SITE}${import.meta.env.BASE_URL}`} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={`${import.meta.env.SITE}${import.meta.env.BASE_URL}banner.png`} />
   </head>
   <body class="min-h-screen font-sans antialiased">
     <slot />
