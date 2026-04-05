@@ -42,15 +42,14 @@ const base = import.meta.env.BASE_URL;
 </section>
 
 <script>
-  // ── Domain-Warped Fog ──────────────────────────────────────────
+  // ── Warped Petal SDF ──────────────────────────────────────────
   const FRAG = `
 precision highp float;
 uniform vec2  u_resolution;
 uniform float u_time;
 
-const vec3 BASE   = vec3(0.141, 0.153, 0.227);
-const vec3 MAUVE  = vec3(0.776, 0.627, 0.965);
-const vec3 MAROON = vec3(0.933, 0.600, 0.627);
+const vec3 BASE  = vec3(0.141, 0.153, 0.227);
+const vec3 MAUVE = vec3(0.776, 0.627, 0.965);
 
 float hash(vec2 p) {
   p = fract(p * vec2(127.1, 311.7));
@@ -66,32 +65,68 @@ float noise(vec2 p) {
 float fbm(vec2 p) {
   float v = 0.0, a = 0.5;
   mat2  m = mat2(1.6, 1.2, -1.2, 1.6);
-  for (int i = 0; i < 6; i++) { v += a * noise(p); p = m * p; a *= 0.5; }
+  for (int i = 0; i < 3; i++) { v += a * noise(p); p = m * p; a *= 0.5; }
   return v;
 }
 
+const float COUNT_PETALS = 5.0;
+const float TIME_SPEED   = 0.5;
+
+vec3 sdf(vec2 p, float t) {
+  p = vec2(atan(p.x, p.y), length(p * 3.5));        // cart → polar
+  for (int i = 0; i < 2; i++) {
+    p.y += cos(p.x * COUNT_PETALS - t) / 3.0;        // radial warp
+    p.x += sin(p.y * 4.0 - t * 2.0) / 3.0;           // angular warp
+  }
+  p = vec2(cos(p.x), sin(p.x)) * p.y;               // polar → cart
+  p = abs(fract(p) - 0.5);                           // domain repeat
+  return vec3(length(p), p);
+}
+
 void main() {
-  vec2  uv = (gl_FragCoord.xy - 0.5 * u_resolution) / u_resolution.y;
-  float t  = u_time * 0.047;
+  float t  = u_time * TIME_SPEED;
+  vec2  uv = (gl_FragCoord.xy - u_resolution * 0.5) / u_resolution.y;
+  vec3  rd = normalize(vec3(uv, 1.0));
 
-  vec2 q = vec2(fbm(uv + vec2(0.0, 0.0) + t),
-                fbm(uv + vec2(5.2, 1.3) + t * 0.85));
-  vec2 r = vec2(fbm(uv + 1.8 * q + vec2(1.7, 9.2) + t * 0.45),
-                fbm(uv + 1.8 * q + vec2(8.3, 2.8) + t * 0.38));
-  float f = fbm(uv + 3.0 * r);
+  // Orbiting light
+  vec3 lp = vec3(cos(u_time) * 0.5, sin(u_time) * 0.2, -1.0);
 
-  vec3 col = mix(BASE,  MAUVE,  clamp(f * 2.0 - 0.7,         0.0, 1.0));
-  col      = mix(col,   MAROON, clamp(length(q) * 0.55,       0.0, 1.0));
-  col      = mix(col,   MAUVE, clamp(r.x * r.x * 0.35, 0.0, 1.0));
+  // Single sdf call; flat normal
+  vec3 f = sdf(uv, t);
+  vec3 n = vec3(0.0, 0.0, -1.0);
 
-  float lum = f * f;
-  col = col * (lum * 1.5 + 0.15);
-  col = mix(BASE, col, smoothstep(0.05, 0.5, lum * 2.5));
+  // Attenuation
+  vec3  ld    = lp - vec3(uv, 0.0);
+  float lDist = max(length(ld), 0.001);
+  ld /= lDist;
+  float atten = (f.x * 1.0 + 0.1) / (1.0 + lDist * lDist * 0.15);
 
+  // Diffuse + specular
+  float diff = max(dot(n, ld), 0.0);
+  diff = pow(diff, 4.0) * 0.7 + pow(diff, 8.0) * 0.3;
+  float spec = pow(max(dot(reflect(-ld, n), -rd), 0.0), 12.0);
+
+  // fbm replaces iChannel0 — sampled at SDF-warped position for surface texture
+  float tex = fbm(uv + f.yz);
+  // Wider smoothstep range → gentler contrast, fewer character-band crossings per frame
+tex = smoothstep(0.0, 0.3, pow(max(tex * tex, 0.001), 0.78));
+
+  // Collapse to a single intensity and map BASE → MAUVE
+  // Compress to [0, 0.75] so peaks never hit pure MAUVE — keeps gradients shallow
+  float intensity = sqrt(clamp((tex * (diff * 2.0 + 0.5) + spec * 2.0) * atten, 0.0, 1.0)) * 0.75;
+  vec3  col = mix(BASE, MAUVE, intensity);
+
+  // Event horizon: flat dark singularity, sharp rise, gradual outer decay
+  float ehDist  = length(uv) * 0.3;
+  float ehInner = smoothstep(0.1, 0.25, ehDist);
+  float ehOuter = exp(-max(0.0, ehDist - 0.25) * 4.5);
+  col = mix(BASE, col, ehInner * ehOuter);
+
+  // Radial edge fade
   float d = length(gl_FragCoord.xy / u_resolution - 0.5) * 2.0;
   col = mix(col, BASE, smoothstep(0.6, 1.4, d));
 
-  gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+  gl_FragColor = vec4(col, 1.0);
 }`;
 
   // ── ASCII post-process shader ─────────────────────────────────────────────
@@ -117,7 +152,7 @@ void main() {
 
   vec3 BASE  = vec3(0.141, 0.153, 0.227);
   vec3 color = mix(BASE, fog.rgb, mask);
-  gl_FragColor = vec4(mix(BASE, color, 0.33), 1.0);
+  gl_FragColor = vec4(mix(BASE, color, 0.8), 1.0);
 }`;
 
   // ── WebGL init (two-pass: fog → FBO → ASCII) ──────────────────────────────
