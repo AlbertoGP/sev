@@ -20,7 +20,7 @@ static void set_callback_rate(bool animating) {
 /* This function runs once per frame, and is the heart of the program. */
 SDL_AppResult SDL_AppIterate(void *appstate) {
     AppState *state = (AppState*) appstate;
-    state->input.welcome_row_hovered = false;
+    state->input.desired_cursor = SDL_SYSTEM_CURSOR_DEFAULT;
     state->render_gen++;
 
     Uint64 now = SDL_GetTicksNS();
@@ -62,40 +62,39 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     pane_free_strings();
     bar_free_strings();
     if (state->needs_extra_frame) {
-        state->input.welcome_row_hovered = false;
+        state->input.desired_cursor = SDL_SYSTEM_CURSOR_DEFAULT;
         Clay_RenderCommandArray render_commands = create_app_layout(state);
         SDL_Clay_RenderClayCommands(&state->rendererData, &render_commands);
         pane_free_strings();
         bar_free_strings();
     }
 
-    /* Update system cursor based on final layout's hover state */
+    /* Update system cursor: geometric resize overrides layout's desired_cursor */
     {
-        static SDL_Cursor *cursor_ew      = NULL;
-        static SDL_Cursor *cursor_ns      = NULL;
-        static SDL_Cursor *cursor_default = NULL;
-        static SDL_Cursor *cursor_hand    = NULL;
-        if (!cursor_ew)      cursor_ew      = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_EW_RESIZE);
-        if (!cursor_ns)      cursor_ns      = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NS_RESIZE);
-        if (!cursor_default) cursor_default = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_DEFAULT);
-        if (!cursor_hand)    cursor_hand    = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_POINTER);
+        static SDL_Cursor *cursors[SDL_SYSTEM_CURSOR_COUNT] = {0};
         Pane *split_hover = pane_split_at_coords(pane_get_root(),
                                 state->input.mouse_x, state->input.mouse_y);
         if (split_hover && split_hover->type == PANE_V_SPLIT)
-            SDL_SetCursor(cursor_ew);
+            state->input.desired_cursor = SDL_SYSTEM_CURSOR_EW_RESIZE;
         else if (split_hover && split_hover->type == PANE_H_SPLIT)
-            SDL_SetCursor(cursor_ns);
-        else if (state->input.welcome_row_hovered)
-            SDL_SetCursor(cursor_hand);
-        else
-            SDL_SetCursor(cursor_default);
+            state->input.desired_cursor = SDL_SYSTEM_CURSOR_NS_RESIZE;
+        SDL_SystemCursor id = state->input.desired_cursor;
+        if (!cursors[id]) cursors[id] = SDL_CreateSystemCursor(id);
+        SDL_SetCursor(cursors[id]);
     }
 
     SDL_RenderPresent(state->rendererData.renderer);
 
-    /* Reset dirty flag */
-    state->needs_redraw = false;
+    /* Reset dirty flags; if any render pass requested more work, carry it forward
+     * and push a wakeup event so SDL breaks out of waitevent sleep. */
+    state->needs_redraw = state->needs_extra_frame;
     state->needs_extra_frame = false;
+    if (state->needs_redraw) {
+        SDL_Event ev = {0};
+        ev.type = SDL_EVENT_USER;
+        ev.user.code = 0; /* unrecognised → no-op in SDL_AppEvent, just wakes SDL */
+        SDL_PushEvent(&ev);
+    }
 
     return SDL_APP_CONTINUE;
 }

@@ -42,6 +42,7 @@ void welcome_flush_pending(void) {
             snprintf(msg, sizeof(msg), "Cannot open project: %s", path);
             message_echo(msg);
         }
+        G->needs_extra_frame = true;
         return;
     }
     if (!pending_welcome_cmd) return;
@@ -51,6 +52,7 @@ void welcome_flush_pending(void) {
     if (sexp_exceptionp(result))
         sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
     pending_welcome_cmd = NULL;
+    G->needs_extra_frame = true;
 }
 
 static void XSpacer(void) {
@@ -87,7 +89,7 @@ static void SuggestionRow(AppState *state, Clay_String label, Clay_String key, c
         .cornerRadius = CLAY_CORNER_RADIUS(3 * state->ui.scale_factor)
     }) {
         if (cmd) {
-            if (Clay_Hovered()) state->input.welcome_row_hovered = true;
+            if (Clay_Hovered()) state->input.desired_cursor = SDL_SYSTEM_CURSOR_POINTER;
             Clay_OnHover(HandleWelcomeRowClick, (void *)cmd);
         }
         CLAY_AUTO_ID({
@@ -136,7 +138,7 @@ static void ProjectRow(AppState *state, Clay_String label, Clay_String key, cons
         .backgroundColor = Clay_Hovered() ? hover_bg : (Clay_Color){0},
         .cornerRadius = CLAY_CORNER_RADIUS(3 * state->ui.scale_factor)
     }) {
-        if (Clay_Hovered()) state->input.welcome_row_hovered = true;
+        if (Clay_Hovered()) state->input.desired_cursor = SDL_SYSTEM_CURSOR_POINTER;
         Clay_OnHover(HandleProjectRowClick, (void *)path);
         CLAY_AUTO_ID({
             .layout = {

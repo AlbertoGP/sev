@@ -75,7 +75,7 @@ typedef struct {
     struct Pane *split_drag_pane;         // non-NULL while dragging a split divider
     float        split_drag_start_x;      // mouse x at split drag start
     float        split_drag_start_y;      // mouse y at split drag start
-    bool         welcome_row_hovered;       // true if any suggestion row was hovered last frame
+    SDL_SystemCursor desired_cursor;       // cursor to show this frame; set during layout, reset each frame
 } InputState;
 
 typedef struct {

@@ -36,6 +36,7 @@ void MessageArea(AppState *state) {
     }){
         Clay_OnHover(HandleMessageAreaClick, NULL);
         hovered = Clay_Hovered();
+        if (hovered) state->input.desired_cursor = SDL_SYSTEM_CURSOR_POINTER;
         CLAY_TEXT(message_string, CLAY_TEXT_CONFIG({
             .fontId = FONT_UI_NORMAL,
             .fontSize = 10.0 * state->ui.scale_factor,
