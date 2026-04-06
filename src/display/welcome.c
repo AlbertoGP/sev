@@ -1,6 +1,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "decoration.h"
 #include "icon.h"
 #include "theme.h"
 #include "welcome.h"
@@ -53,16 +54,6 @@ void welcome_flush_pending(void) {
         sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
     pending_welcome_cmd = NULL;
     G->needs_extra_frame = true;
-}
-
-static void XSpacer(void) {
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {
-                .width = CLAY_SIZING_GROW(0)
-            }
-        }
-    }){}
 }
 
 static void SuggestionRow(AppState *state, Clay_String label, Clay_String key, const char *icon_name, const char *cmd) {

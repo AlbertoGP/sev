@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "decoration.h"
 #include "icon.h"
 #include "message.h"
 #include "mode_icon.h"
@@ -29,23 +30,7 @@ void bar_strings_push(char *p) {
     }
 }
 
-void Divider(AppState *state) {
-    CLAY_AUTO_ID({
-        .layout = {
-            .sizing = {
-                .height = 12.0 * state->ui.scale_factor,
-                .width = CLAY_SIZING_FIXED(2),
-            }
-        },
-        .backgroundColor = ui_resolve_color(state, state->ui.roles.border_inactive)
-    }) {}
-}
-
-
-void StatusBar(AppState *state) {
-    Buffer *buf = buffer_get_current();
-    if (!buf) return;
-
+void ModePill(AppState *state, Buffer *buf) {
     CachedRoles roles = state->ui.roles;
 
     sexp mode_symbol = sexp_intern(state->chibi.ctx, "mode-name", -1);
@@ -57,14 +42,203 @@ void StatusBar(AppState *state) {
         .isStaticallyAllocated = true
     };
 
-    char *pos = malloc(32 * sizeof(char));
-    snprintf(pos, 32, "%zu:%d", buf_get_line(buf), get_column(buf));
-    bar_strings_push(pos);
-    Clay_String pointPos = {
-         .chars = pos,
-         .length = strlen(pos),
-    };
-    Clay_Color textColor = ui_resolve_color(state, roles.text_primary);
+    ModeIconEntry *icon = mode_icon_for_current_buffer();
+    Clay_Color mode_bg = icon
+        ? ui_resolve_color(state, icon->role_mode_bg)
+        : ui_resolve_color(state, roles.mode_normal);
+    Clay_Color label_color = icon
+        ? ui_resolve_color(state, icon->role_label)
+        : (Clay_Color){255, 0, 255, 255};
+
+    CLAY(CLAY_ID("Mode Name"), {
+        .layout = {
+            .sizing = {
+                .height = CLAY_SIZING_FIXED(16.0 * state->ui.scale_factor)
+            },
+            .padding = {
+                .left = 8.0 * state->ui.scale_factor,
+                .right = 14.0 * state->ui.scale_factor
+            },
+            .childGap = 3.0 * state->ui.scale_factor,
+            .childAlignment = {
+                .y = CLAY_ALIGN_Y_CENTER
+            },
+        },
+        .cornerRadius = {
+            .topRight = 8.0 * state->ui.scale_factor,
+            .bottomRight = 8.0 * state->ui.scale_factor
+         },
+        .backgroundColor = mode_bg
+    }){
+        if (icon) {
+            SDL_Texture *tex = icon_get(icon->icon_name, state, 14, 14);
+            CLAY(CLAY_ID("Mode Icon"), {
+                .layout = {
+                    .sizing = {
+                        .width = 14.0 * state->ui.scale_factor,
+                        .height = 14.0 * state->ui.scale_factor
+                    },
+                },
+                .image = tex
+            }) {}
+        }
+        CLAY_TEXT(modeName, CLAY_TEXT_CONFIG({
+            .fontId = FONT_UI_BOLD,
+            .fontSize = 12.0 * state->ui.scale_factor,
+            .textColor = label_color,
+        }));
+    }
+}
+
+void MacroIndicator(AppState *state) {
+    CachedRoles roles = state->ui.roles;
+    bool recording = state->macro_recording;
+    if (recording) {
+        float radius = 3.0 * state->ui.scale_factor;
+        CLAY(CLAY_ID("Macro indicator"), {
+            .layout = {
+                .sizing = { .height = CLAY_SIZING_GROW(0) },
+                .childAlignment = {
+                    .y = CLAY_ALIGN_Y_CENTER
+                },
+                .childGap = 4.0 * state->ui.scale_factor
+            },
+        }){
+            CLAY_AUTO_ID({
+                .layout = {
+                    .sizing = { .height = CLAY_SIZING_GROW(0) },
+                    .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
+                    .padding = { .top = (radius / 2) },
+                }
+            }) {
+                CLAY_AUTO_ID({
+                    .layout = {
+                        .sizing = {
+                            .height = CLAY_SIZING_FIXED(2.0 * radius),
+                            .width = CLAY_SIZING_FIXED(2.0 * radius)
+                        }
+                    },
+                    .cornerRadius = CLAY_CORNER_RADIUS(radius),
+                    .backgroundColor = ui_resolve_color(state, roles.macro_indicator)
+                }) {}
+            }
+            CLAY_TEXT(CLAY_STRING("REC"), CLAY_TEXT_CONFIG({
+                .fontId = FONT_UI_BOLD,
+                .fontSize = 10.0 * state->ui.scale_factor,
+                .textColor = ui_resolve_color(state, roles.text_primary),
+            }));
+        }
+        BarDivider(state);
+    }
+}
+
+void MajorModeIndicator(AppState *state, Buffer *buf, Clay_Color text_color) {
+    float scale = state->ui.scale_factor;
+    Mode *major = buffer_get_major_mode(buf);
+    if (major) {
+        if (strcmp(major->name, "scheme-mode") == 0) {
+            CLAY(CLAY_ID("Scheme Mode"), {
+                .layout = {
+                    .childGap = 3.0 * scale,
+                    .childAlignment = {
+                        .y = CLAY_ALIGN_Y_CENTER
+                    },
+                },
+            }){
+                SDL_Texture *tex = icon_get("scheme-icon", state, 12, 12);
+                CLAY(CLAY_ID("Scheme Mode Icon"), {
+                    .layout = {
+                        .sizing = {
+                            .width = 12.0 * scale,
+                            .height = 12.0 * scale
+                        },
+                    },
+                    .image = tex
+                }) {}
+                CLAY_TEXT(CLAY_STRING("Scheme"), CLAY_TEXT_CONFIG({
+                    .fontId = FONT_UI_NORMAL,
+                    .fontSize = 10.0 * scale,
+                    .textColor = text_color,
+                }));
+            }
+        }
+        BarDivider(state);
+    }
+}
+
+void SelectionIndicator(AppState *state, Buffer *buf, Clay_Color text_color) {
+    if (buf->select_mode != SELECT_NONE) {
+        float scale = state->ui.scale_factor;
+
+        size_t sel_a    = buf->select_start.pos;
+        size_t sel_b    = buf->point.pos;
+        size_t sel_min  = sel_a < sel_b ? sel_a : sel_b;
+        size_t sel_max  = sel_a > sel_b ? sel_a : sel_b;
+        size_t line_a   = line_index_at(&buf->lt, sel_a);
+        size_t line_b   = line_index_at(&buf->lt, sel_b);
+        size_t row_min  = line_a < line_b ? line_a : line_b;
+        size_t row_max  = line_a > line_b ? line_a : line_b;
+        size_t num_lines = row_max - row_min + 1;
+
+        char *sel_str = malloc(64 * sizeof(char));
+        if (buf->select_mode == SELECT_LINE) {
+            snprintf(sel_str, 64, "(%zu %s)",
+                num_lines, num_lines == 1 ? "line" : "lines");
+        } else if (buf->select_mode == SELECT_RECTANGLE ||
+                   buf->select_mode == SELECT_RECTANGLE_RAGGED) {
+            size_t col_a    = sel_a - buf->lt.lines[line_a].start;
+            size_t col_b    = sel_b - buf->lt.lines[line_b].start;
+            size_t col_min  = col_a < col_b ? col_a : col_b;
+            size_t col_max  = col_a > col_b ? col_a : col_b;
+            size_t num_cols = col_max - col_min + 1;
+            snprintf(sel_str, 64, "(%zu %s, %zu %s)",
+                num_lines, num_lines == 1 ? "line" : "lines",
+                num_cols,  num_cols  == 1 ? "column" : "columns");
+        } else {
+            size_t num_chars = sel_max - sel_min + 1;
+            if (num_lines > 1) {
+                snprintf(sel_str, 64, "(%zu %s, %zu %s)",
+                    num_lines, num_lines == 1 ? "line" : "lines",
+                    num_chars, num_chars == 1 ? "character" : "characters");
+            } else {
+                snprintf(sel_str, 64, "(%zu %s)",
+                    num_chars, num_chars == 1 ? "character" : "characters");
+            }
+        }
+        bar_strings_push(sel_str);
+        Clay_String selCount = { .chars = sel_str, .length = strlen(sel_str) };
+        CLAY_TEXT(selCount, CLAY_TEXT_CONFIG({
+            .fontId = FONT_UI_NORMAL,
+            .fontSize = 10.0 * state->ui.scale_factor,
+            .textColor = text_color,
+        }));
+        BarDivider(state);
+    }
+}
+
+void CursorPosition(AppState* state, Buffer *buf, Clay_Color text_color) {
+        char *pos = malloc(32 * sizeof(char));
+        snprintf(pos, 32, "%zu:%d", buf_get_line(buf), get_column(buf));
+        bar_strings_push(pos);
+        Clay_String cursor_position = {
+             .chars = pos,
+             .length = strlen(pos),
+        };
+        CLAY_TEXT(cursor_position, CLAY_TEXT_CONFIG({
+            .fontId = FONT_UI_NORMAL,
+            .fontSize = 10.0 * state->ui.scale_factor,
+            .textColor = text_color,
+        }));
+}
+
+void StatusBar(AppState *state) {
+    Buffer *buf = buffer_get_current();
+    if (!buf) return;
+
+    CachedRoles roles = state->ui.roles;
+
+    float scale = state->ui.scale_factor;
+    Clay_Color text_color = ui_resolve_color(state, roles.text_primary);
 
     CLAY(CLAY_ID("Status Bar"), {
         .layout = {
@@ -72,9 +246,9 @@ void StatusBar(AppState *state) {
                 .width = CLAY_SIZING_GROW(0),
             },
             .padding = {
-                 .right = 10.0 * state->ui.scale_factor,
+                 .right = 10.0 * scale,
             },
-            .childGap = 10.0 * state->ui.scale_factor,
+            .childGap = 10.0 * scale,
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
         },
         .border = {
@@ -88,172 +262,16 @@ void StatusBar(AppState *state) {
             .horizontal = true
         }
     }) {
-        ModeIconEntry *icon = mode_icon_for_current_buffer();
-        Clay_Color mode_bg = icon
-            ? ui_resolve_color(state, icon->role_mode_bg)
-            : ui_resolve_color(state, roles.mode_normal);
-        Clay_Color label_color = icon
-            ? ui_resolve_color(state, icon->role_label)
-            : (Clay_Color){255, 0, 255, 255};
+        // Left hand side of status bar
+        ModePill(state, buf);
+        MacroIndicator(state);
 
-        bool recording = state->macro_recording;
+        XSpacer();
 
-        CLAY(CLAY_ID("Mode Name"), {
-            .layout = {
-                .sizing = {
-                    .height = CLAY_SIZING_FIXED(16.0 * state->ui.scale_factor)
-                },
-                .padding = {
-                    .left = 8.0 * state->ui.scale_factor,
-                    .right = 14.0 * state->ui.scale_factor
-                },
-                .childGap = 3.0 * state->ui.scale_factor,
-                .childAlignment = {
-                    .y = CLAY_ALIGN_Y_CENTER
-                },
-            },
-            .cornerRadius = {
-                .topRight = 8.0 * state->ui.scale_factor,
-                .bottomRight = 8.0 * state->ui.scale_factor
-             },
-            .backgroundColor = mode_bg
-        }){
-            if (icon) {
-                SDL_Texture *tex = icon_get(icon->icon_name, state, 14, 14);
-                CLAY(CLAY_ID("Mode Icon"), {
-                    .layout = {
-                        .sizing = {
-                            .width = 14.0 * state->ui.scale_factor,
-                            .height = 14.0 * state->ui.scale_factor
-                        },
-                    },
-                    .image = tex
-                }) {}
-            }
-            CLAY_TEXT(modeName, CLAY_TEXT_CONFIG({
-                .fontId = FONT_UI_BOLD,
-                .fontSize = 12.0 * state->ui.scale_factor,
-                .textColor = label_color,
-            }));
-        }
-        if (recording) {
-            float radius = 3.0 * state->ui.scale_factor;
-            CLAY(CLAY_ID("Macro indicator"), {
-                .layout = {
-                    .sizing = { .height = CLAY_SIZING_GROW(0) },
-                    .childAlignment = {
-                        .y = CLAY_ALIGN_Y_CENTER
-                    },
-                    .childGap = 4.0 * state->ui.scale_factor
-                },
-            }){
-                CLAY_AUTO_ID({
-                    .layout = {
-                        .sizing = { .height = CLAY_SIZING_GROW(0) },
-                        .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
-                        .padding = { .top = (radius / 2) },
-                    }
-                }) {
-                    CLAY_AUTO_ID({
-                        .layout = {
-                            .sizing = {
-                                .height = CLAY_SIZING_FIXED(2.0 * radius),
-                                .width = CLAY_SIZING_FIXED(2.0 * radius)
-                            }
-                        },
-                        .cornerRadius = CLAY_CORNER_RADIUS(radius),
-                        .backgroundColor = ui_resolve_color(state, roles.macro_indicator)
-                    }) {}
-                }
-                CLAY_TEXT(CLAY_STRING("REC"), CLAY_TEXT_CONFIG({
-                    .fontId = FONT_UI_BOLD,
-                    .fontSize = 10.0 * state->ui.scale_factor,
-                    .textColor = ui_resolve_color(state, roles.text_primary),
-                }));
-            }
-            Divider(state);
-        }
-        CLAY_AUTO_ID({
-            .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) }}
-        }) {}
+        // Right hand side of status bar
         MessageArea(state);
-        Mode *major = buffer_get_major_mode(buf);
-        if (major && strcmp(major->name, "scheme-mode") == 0) {
-            CLAY(CLAY_ID("Scheme Mode"), {
-                .layout = {
-                    .childGap = 3.0 * state->ui.scale_factor,
-                    .childAlignment = {
-                        .y = CLAY_ALIGN_Y_CENTER
-                    },
-                },
-            }){
-                SDL_Texture *tex = icon_get("scheme-icon", state, 12, 12);
-                CLAY(CLAY_ID("Scheme Mode Icon"), {
-                    .layout = {
-                        .sizing = {
-                            .width = 12.0 * state->ui.scale_factor,
-                            .height = 12.0 * state->ui.scale_factor
-                        },
-                    },
-                    .image = tex
-                }) {}
-                CLAY_TEXT(CLAY_STRING("Scheme"), CLAY_TEXT_CONFIG({
-                    .fontId = FONT_UI_NORMAL,
-                    .fontSize = 10.0 * state->ui.scale_factor,
-                    .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
-                }));
-            }
-            Divider(state);
-        }
-        if (buf->select_mode != SELECT_NONE) {
-            size_t sel_a    = buf->select_start.pos;
-            size_t sel_b    = buf->point.pos;
-            size_t sel_min  = sel_a < sel_b ? sel_a : sel_b;
-            size_t sel_max  = sel_a > sel_b ? sel_a : sel_b;
-            size_t line_a   = line_index_at(&buf->lt, sel_a);
-            size_t line_b   = line_index_at(&buf->lt, sel_b);
-            size_t row_min  = line_a < line_b ? line_a : line_b;
-            size_t row_max  = line_a > line_b ? line_a : line_b;
-            size_t num_lines = row_max - row_min + 1;
-
-            char *sel_str = malloc(64 * sizeof(char));
-            if (buf->select_mode == SELECT_LINE) {
-                snprintf(sel_str, 64, "(%zu %s)",
-                    num_lines, num_lines == 1 ? "line" : "lines");
-            } else if (buf->select_mode == SELECT_RECTANGLE ||
-                       buf->select_mode == SELECT_RECTANGLE_RAGGED) {
-                size_t col_a    = sel_a - buf->lt.lines[line_a].start;
-                size_t col_b    = sel_b - buf->lt.lines[line_b].start;
-                size_t col_min  = col_a < col_b ? col_a : col_b;
-                size_t col_max  = col_a > col_b ? col_a : col_b;
-                size_t num_cols = col_max - col_min + 1;
-                snprintf(sel_str, 64, "(%zu %s, %zu %s)",
-                    num_lines, num_lines == 1 ? "line" : "lines",
-                    num_cols,  num_cols  == 1 ? "column" : "columns");
-            } else {
-                size_t num_chars = sel_max - sel_min + 1;
-                if (num_lines > 1) {
-                    snprintf(sel_str, 64, "(%zu %s, %zu %s)",
-                        num_lines, num_lines == 1 ? "line" : "lines",
-                        num_chars, num_chars == 1 ? "character" : "characters");
-                } else {
-                    snprintf(sel_str, 64, "(%zu %s)",
-                        num_chars, num_chars == 1 ? "character" : "characters");
-                }
-            }
-            bar_strings_push(sel_str);
-            Clay_String selCount = { .chars = sel_str, .length = strlen(sel_str) };
-            CLAY_TEXT(selCount, CLAY_TEXT_CONFIG({
-                .fontId = FONT_UI_NORMAL,
-                .fontSize = 10.0 * state->ui.scale_factor,
-                .textColor = textColor,
-            }));
-            Divider(state);
-        }
-        CLAY_TEXT(pointPos, CLAY_TEXT_CONFIG({
-            .fontId = FONT_UI_NORMAL,
-            .fontSize = 10.0 * state->ui.scale_factor,
-            .textColor = textColor,
-        }));
+        MajorModeIndicator(state, buf, text_color);
+        SelectionIndicator(state, buf, text_color);
+        CursorPosition(state, buf, text_color);
     }
 }

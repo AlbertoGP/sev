@@ -7,6 +7,7 @@
 #include <chibi/sexp.h>
 
 #include "theme.h"
+#include "../text/buffer.h"
 
 #define MODE_ICON_MAX 32
 
