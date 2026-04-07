@@ -256,7 +256,7 @@ void WelcomePane(AppState *state) {
                                  "describe-key");
             SuggestionRow(state, CLAY_STRING("Open Command Palette"),
                                  (Clay_String){ .length = strlen(kb_command), .chars = kb_command }, "palette-icon",
-                                 "execute-extended-command");
+                                 "command-palette");
         }
         if (state->recent_projects_count > 0) {
             // Build a display order sorted by last_opened descending

@@ -4,6 +4,7 @@
 
 #include "message.h"
 #include "minibuf.h"
+#include "../state_io.h"
 #include "mode.h"
 #include "scheme_internal.h"
 #include "../text/buffer.h"
@@ -271,6 +272,8 @@ sexp scm_minibuffer_submit(sexp ctx, sexp self, sexp n) {
         if (action) {
             action(ctx, sym);
         } else if (G->chibi.call_interactively != SEXP_FALSE) {
+            sexp sym_str = sexp_symbol_to_string(ctx, sym);
+            state_io_record_command(G, sexp_string_data(sym_str));
             sexp result = sexp_apply(ctx, G->chibi.call_interactively,
                                      sexp_list1(ctx, sym));
             if (sexp_exceptionp(result))

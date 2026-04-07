@@ -73,7 +73,5 @@
     (lambda (name)
       (let ((sym (string->symbol name)))
         (if (interactive? sym)
-            (begin
-              (%record-command-usage sym)
-              (call-interactively sym))
+            (call-interactively sym)
             (message (string-append "Not a command: " name)))))))
