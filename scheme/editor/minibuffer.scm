@@ -57,6 +57,10 @@
   "Open the command palette."
   (%minibuffer-activate-commands))
 
+(defcommand (theme-picker)
+  "Browse and activate available themes."
+  (%minibuffer-activate-themes))
+
 ;; Register minibuffer-read as an interactive spec handler
 (register-spec-handler! 'minibuffer-read
   (lambda (form-args done)

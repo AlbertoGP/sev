@@ -7,35 +7,21 @@
 #include "scheme_internal.h"
 #include "../text/buffer.h"
 
-// ---- Command provider -------------------------------------------------------
+// ---- Provider helpers -------------------------------------------------------
 
-static void commands_provider(AppState *state, const char *input) {
+// Populate items[] from a Scheme list of symbols, filtered by input substring.
+static void populate_items(AppState *state, const char *input, sexp list) {
     sexp ctx = state->chibi.ctx;
-    sexp env = state->chibi.env;
-
     state->minibuf.item_count = 0;
-
-    sexp list_commands = sexp_env_ref(ctx, env,
-                                      sexp_intern(ctx, "list-commands", -1),
-                                      SEXP_FALSE);
-    if (list_commands == SEXP_FALSE) return;
-
-    sexp result = sexp_apply(ctx, list_commands, SEXP_NULL);
-    if (sexp_exceptionp(result)) return;
-
     bool filter = input && input[0] != '\0';
 
-    for (sexp p = result; sexp_pairp(p); p = sexp_cdr(p)) {
+    for (sexp p = list; sexp_pairp(p); p = sexp_cdr(p)) {
         if (state->minibuf.item_count >= MINIBUF_ITEMS_MAX) break;
-
         sexp sym = sexp_car(p);
         if (!sexp_symbolp(sym)) continue;
-
         sexp str = sexp_symbol_to_string(ctx, sym);
         const char *name = sexp_string_data(str);
-
         if (filter && strstr(name, input) == NULL) continue;
-
         MinibufItem *item = &state->minibuf.items[state->minibuf.item_count];
         strncpy(item->label,    name, MINIBUF_LABEL_MAX - 1);
         item->label[MINIBUF_LABEL_MAX - 1] = '\0';
@@ -44,11 +30,45 @@ static void commands_provider(AppState *state, const char *input) {
         state->minibuf.item_count++;
     }
 
-    if (state->minibuf.item_count == 0) {
+    if (state->minibuf.item_count == 0)
         state->minibuf.selected = 0;
-    } else if (state->minibuf.selected >= state->minibuf.item_count) {
+    else if (state->minibuf.selected >= state->minibuf.item_count)
         state->minibuf.selected = state->minibuf.item_count - 1;
-    }
+}
+
+// Call a 0-arg Scheme function by name, populate items from the returned list.
+static void scheme_list_provider(AppState *state, const char *input,
+                                  const char *fn_name) {
+    sexp ctx = state->chibi.ctx;
+    sexp fn = sexp_env_ref(ctx, state->chibi.env,
+                           sexp_intern(ctx, fn_name, -1), SEXP_FALSE);
+    if (fn == SEXP_FALSE) return;
+    sexp result = sexp_apply(ctx, fn, SEXP_NULL);
+    if (sexp_exceptionp(result)) return;
+    populate_items(state, input, result);
+}
+
+// ---- Command provider -------------------------------------------------------
+
+static void commands_provider(AppState *state, const char *input) {
+    scheme_list_provider(state, input, "list-commands");
+}
+
+// ---- Theme provider ---------------------------------------------------------
+
+static void themes_provider(AppState *state, const char *input) {
+    scheme_list_provider(state, input, "list-themes");
+}
+
+static void theme_submit(sexp ctx, const char *sym_name) {
+    sexp activate = sexp_env_ref(ctx, G->chibi.env,
+                                  sexp_intern(ctx, "activate-theme", -1),
+                                  SEXP_FALSE);
+    if (activate == SEXP_FALSE) return;
+    sexp sym = sexp_intern(ctx, sym_name, -1);
+    sexp result = sexp_apply(ctx, activate, sexp_list1(ctx, sym));
+    if (sexp_exceptionp(result))
+        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
 }
 
 // Call a named command via the cached call-interactively.
@@ -176,9 +196,11 @@ sexp scm_minibuffer_submit(sexp ctx, sexp self, sexp n) {
         strncpy(sym_name, G->minibuf.items[sel].sym_name, MINIBUF_LABEL_MAX);
         sym_name[MINIBUF_LABEL_MAX - 1] = '\0';
 
-        G->minibuf.provider   = NULL;
-        G->minibuf.item_count = 0;
-        G->minibuf.selected   = 0;
+        void (*action)(sexp, const char*) = G->minibuf.submit_action;
+        G->minibuf.provider       = NULL;
+        G->minibuf.submit_action  = NULL;
+        G->minibuf.item_count     = 0;
+        G->minibuf.selected       = 0;
 
         // Release any stale callbacks before dismissing.
         sexp cb_submit = G->minibuf.on_submit;
@@ -199,7 +221,9 @@ sexp scm_minibuffer_submit(sexp ctx, sexp self, sexp n) {
         if (cb_submit != SEXP_FALSE) sexp_release_object(ctx, cb_submit);
         if (cb_cancel != SEXP_FALSE) sexp_release_object(ctx, cb_cancel);
 
-        if (G->chibi.call_interactively != SEXP_FALSE) {
+        if (action) {
+            action(ctx, sym_name);
+        } else if (G->chibi.call_interactively != SEXP_FALSE) {
             sexp sym = sexp_intern(ctx, sym_name, -1);
             sexp result = sexp_apply(ctx, G->chibi.call_interactively,
                                      sexp_list1(ctx, sym));
@@ -262,10 +286,11 @@ sexp scm_minibuffer_cancel(sexp ctx, sexp self, sexp n) {
         minibuf_pop(ctx);
         // active remains true; previous frame is restored
     } else {
-        G->minibuf.active = false;
-        G->minibuf.provider   = NULL;
-        G->minibuf.item_count = 0;
-        G->minibuf.selected   = 0;
+        G->minibuf.active         = false;
+        G->minibuf.provider       = NULL;
+        G->minibuf.submit_action  = NULL;
+        G->minibuf.item_count     = 0;
+        G->minibuf.selected       = 0;
         G->input.current_focus = G->minibuf.prev_focus;
         buffer_set_current(G->minibuf.prev_buf);
         G->needs_redraw = true;
@@ -291,10 +316,20 @@ sexp scm_minibuffer_activep(sexp ctx, sexp self, sexp n) {
 }
 
 sexp scm_minibuffer_activate_commands(sexp ctx, sexp self, sexp n) {
-    G->minibuf.provider   = commands_provider;
-    G->minibuf.item_count = 0;
-    G->minibuf.selected   = 0;
+    G->minibuf.provider       = commands_provider;
+    G->minibuf.submit_action  = NULL; // use call-interactively
+    G->minibuf.item_count     = 0;
+    G->minibuf.selected       = 0;
     sexp prompt = sexp_c_string(ctx, "Execute command...", -1);
+    return scm_minibuffer_activate(ctx, self, n, prompt, SEXP_FALSE, SEXP_FALSE);
+}
+
+sexp scm_minibuffer_activate_themes(sexp ctx, sexp self, sexp n) {
+    G->minibuf.provider       = themes_provider;
+    G->minibuf.submit_action  = theme_submit;
+    G->minibuf.item_count     = 0;
+    G->minibuf.selected       = 0;
+    sexp prompt = sexp_c_string(ctx, "Select a theme...", -1);
     return scm_minibuffer_activate(ctx, self, n, prompt, SEXP_FALSE, SEXP_FALSE);
 }
 

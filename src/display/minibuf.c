@@ -107,7 +107,7 @@ void MinibufPalette(AppState *state) {
             },
             .layoutDirection = CLAY_TOP_TO_BOTTOM
         },
-        .backgroundColor = ui_resolve_color(state, state->ui.roles.bar_bg),
+        .backgroundColor = ui_resolve_color(state, state->ui.roles.ui_bg),
         .border = {
             .color = ui_resolve_color(state, state->ui.roles.border_active),
             .width = { .top = 1, .bottom = 1, .left = 1, .right = 1 }

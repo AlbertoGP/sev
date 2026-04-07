@@ -7,6 +7,8 @@
    name
    (list palette roles)))
 
+(define (list-themes) (hash-table-keys *themes*))
+
 (defcommand (activate-theme input)
   "Switch to the named theme."
   (interactive (minibuffer-read "Select a theme..."))

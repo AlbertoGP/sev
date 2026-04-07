@@ -450,6 +450,7 @@ void scheme_init(AppState *state) {
     SDEF("%minibuffer-cancel",   0, scm_minibuffer_cancel);
     SDEF("%minibuffer-active?",  0, scm_minibuffer_activep);
     SDEF("%minibuffer-activate-commands", 0, scm_minibuffer_activate_commands);
+    SDEF("%minibuffer-activate-themes",   0, scm_minibuffer_activate_themes);
     SDEF("%minibuffer-select-next",       0, scm_minibuffer_select_next);
     SDEF("%minibuffer-select-prev",       0, scm_minibuffer_select_prev);
 
@@ -557,7 +558,8 @@ void scheme_init(AppState *state) {
         "%macro-start! %macro-stop! %macro-play %macro-recording? "
         "%minibuffer-activate %minibuffer-submit "
         "%minibuffer-cancel %minibuffer-active? "
-        "%minibuffer-activate-commands %minibuffer-select-next %minibuffer-select-prev "
+        "%minibuffer-activate-commands %minibuffer-activate-themes "
+        "%minibuffer-select-next %minibuffer-select-prev "
         "%which-key-toggle "
         "%record-command-usage %update-recent-project! %chdir %open-recent-project! "
         "%jump-push! %jump-backward! %jump-forward! "
