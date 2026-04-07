@@ -7,6 +7,50 @@
 #include "scheme_internal.h"
 #include "../text/buffer.h"
 
+// ---- Command provider -------------------------------------------------------
+
+static void commands_provider(AppState *state, const char *input) {
+    sexp ctx = state->chibi.ctx;
+    sexp env = state->chibi.env;
+
+    state->minibuf.item_count = 0;
+
+    sexp list_commands = sexp_env_ref(ctx, env,
+                                      sexp_intern(ctx, "list-commands", -1),
+                                      SEXP_FALSE);
+    if (list_commands == SEXP_FALSE) return;
+
+    sexp result = sexp_apply(ctx, list_commands, SEXP_NULL);
+    if (sexp_exceptionp(result)) return;
+
+    bool filter = input && input[0] != '\0';
+
+    for (sexp p = result; sexp_pairp(p); p = sexp_cdr(p)) {
+        if (state->minibuf.item_count >= MINIBUF_ITEMS_MAX) break;
+
+        sexp sym = sexp_car(p);
+        if (!sexp_symbolp(sym)) continue;
+
+        sexp str = sexp_symbol_to_string(ctx, sym);
+        const char *name = sexp_string_data(str);
+
+        if (filter && strstr(name, input) == NULL) continue;
+
+        MinibufItem *item = &state->minibuf.items[state->minibuf.item_count];
+        strncpy(item->label,    name, MINIBUF_LABEL_MAX - 1);
+        item->label[MINIBUF_LABEL_MAX - 1] = '\0';
+        strncpy(item->sym_name, name, MINIBUF_LABEL_MAX - 1);
+        item->sym_name[MINIBUF_LABEL_MAX - 1] = '\0';
+        state->minibuf.item_count++;
+    }
+
+    if (state->minibuf.item_count == 0) {
+        state->minibuf.selected = 0;
+    } else if (state->minibuf.selected >= state->minibuf.item_count) {
+        state->minibuf.selected = state->minibuf.item_count - 1;
+    }
+}
+
 // Call a named command via the cached call-interactively.
 // Used to push/pop evil mode on minibuffer focus transitions.
 static void minibuf_invoke_command(sexp ctx, const char *name) {
@@ -122,6 +166,49 @@ sexp scm_minibuffer_submit(sexp ctx, sexp self, sexp n) {
     if (!G->minibuf.active)
         return SEXP_VOID;
 
+    // Provider branch: ignore raw text, execute selected item.
+    if (G->minibuf.provider && G->minibuf.item_count > 0) {
+        int sel = G->minibuf.selected;
+        if (sel < 0) sel = 0;
+        if (sel >= G->minibuf.item_count) sel = G->minibuf.item_count - 1;
+
+        char sym_name[MINIBUF_LABEL_MAX];
+        strncpy(sym_name, G->minibuf.items[sel].sym_name, MINIBUF_LABEL_MAX);
+        sym_name[MINIBUF_LABEL_MAX - 1] = '\0';
+
+        G->minibuf.provider   = NULL;
+        G->minibuf.item_count = 0;
+        G->minibuf.selected   = 0;
+
+        // Release any stale callbacks before dismissing.
+        sexp cb_submit = G->minibuf.on_submit;
+        sexp cb_cancel = G->minibuf.on_cancel;
+        G->minibuf.on_submit = SEXP_FALSE;
+        G->minibuf.on_cancel = SEXP_FALSE;
+
+        if (G->minibuf.stack_depth > 0) {
+            minibuf_pop(ctx);
+        } else {
+            G->minibuf.active = false;
+            G->input.current_focus = G->minibuf.prev_focus;
+            buffer_set_current(G->minibuf.prev_buf);
+            G->needs_redraw = true;
+            minibuf_invoke_command(ctx, "evil-normal");
+        }
+
+        if (cb_submit != SEXP_FALSE) sexp_release_object(ctx, cb_submit);
+        if (cb_cancel != SEXP_FALSE) sexp_release_object(ctx, cb_cancel);
+
+        if (G->chibi.call_interactively != SEXP_FALSE) {
+            sexp sym = sexp_intern(ctx, sym_name, -1);
+            sexp result = sexp_apply(ctx, G->chibi.call_interactively,
+                                     sexp_list1(ctx, sym));
+            if (sexp_exceptionp(result))
+                sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+        }
+        return SEXP_VOID;
+    }
+
     char *raw = buffer_text(G->minibuf.buf);
     const char *text = raw ? raw : "";
 
@@ -176,6 +263,9 @@ sexp scm_minibuffer_cancel(sexp ctx, sexp self, sexp n) {
         // active remains true; previous frame is restored
     } else {
         G->minibuf.active = false;
+        G->minibuf.provider   = NULL;
+        G->minibuf.item_count = 0;
+        G->minibuf.selected   = 0;
         G->input.current_focus = G->minibuf.prev_focus;
         buffer_set_current(G->minibuf.prev_buf);
         G->needs_redraw = true;
@@ -198,4 +288,28 @@ sexp scm_minibuffer_cancel(sexp ctx, sexp self, sexp n) {
 
 sexp scm_minibuffer_activep(sexp ctx, sexp self, sexp n) {
     return sexp_make_boolean(G->minibuf.active);
+}
+
+sexp scm_minibuffer_activate_commands(sexp ctx, sexp self, sexp n) {
+    G->minibuf.provider   = commands_provider;
+    G->minibuf.item_count = 0;
+    G->minibuf.selected   = 0;
+    sexp prompt = sexp_c_string(ctx, "Execute command...", -1);
+    return scm_minibuffer_activate(ctx, self, n, prompt, SEXP_FALSE, SEXP_FALSE);
+}
+
+sexp scm_minibuffer_select_next(sexp ctx, sexp self, sexp n) {
+    if (!G->minibuf.active || G->minibuf.item_count == 0) return SEXP_VOID;
+    if (G->minibuf.selected < G->minibuf.item_count - 1)
+        G->minibuf.selected++;
+    G->needs_redraw = true;
+    return SEXP_VOID;
+}
+
+sexp scm_minibuffer_select_prev(sexp ctx, sexp self, sexp n) {
+    if (!G->minibuf.active || G->minibuf.item_count == 0) return SEXP_VOID;
+    if (G->minibuf.selected > 0)
+        G->minibuf.selected--;
+    G->needs_redraw = true;
+    return SEXP_VOID;
 }

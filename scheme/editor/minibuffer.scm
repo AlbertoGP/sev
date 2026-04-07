@@ -29,6 +29,10 @@
 (set-key! minibuffer-map "C-a"   'line-start)
 (set-key! minibuffer-map "C-e"   'line-end)
 
+;; Provider navigation
+(set-key! minibuffer-map "DOWN" 'minibuffer-select-next)
+(set-key! minibuffer-map "UP"   'minibuffer-select-prev)
+
 (defcommand (minibuffer-read prompt on-submit)
   "Prompt for input in the minibuffer; call on-submit with the result."
   (%minibuffer-activate prompt on-submit #f))
@@ -40,6 +44,18 @@
 (defcommand (minibuffer-cancel)
   "Cancel minibuffer input."
   (%minibuffer-cancel))
+
+(defcommand (minibuffer-select-next)
+  "Select the next item in the provider list."
+  (%minibuffer-select-next))
+
+(defcommand (minibuffer-select-prev)
+  "Select the previous item in the provider list."
+  (%minibuffer-select-prev))
+
+(defcommand (command-palette)
+  "Open the command palette."
+  (%minibuffer-activate-commands))
 
 ;; Register minibuffer-read as an interactive spec handler
 (register-spec-handler! 'minibuffer-read

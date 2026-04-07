@@ -130,8 +130,18 @@ typedef struct UIState {
     float scale_factor;       // effective scale = dpi_scale * user_scale
 } UIState;
 
+// Forward declaration so Minibuf's provider pointer can reference AppState.
+typedef struct AppState AppState;
+
 #define MINIBUF_PROMPT_MAX 256
 #define MINIBUF_STACK_MAX 8
+#define MINIBUF_ITEMS_MAX 256
+#define MINIBUF_LABEL_MAX 128
+
+typedef struct {
+    char label[MINIBUF_LABEL_MAX];    // display name
+    char sym_name[MINIBUF_LABEL_MAX]; // symbol name, interned at submit
+} MinibufItem;
 
 typedef struct {
     char   prompt[MINIBUF_PROMPT_MAX];
@@ -152,6 +162,10 @@ typedef struct {
     MinibufFrame stack[MINIBUF_STACK_MAX];
     int          stack_depth;  // 0 = no pushed frames
     float        palette_x, palette_y, palette_w, palette_h; // render-px; valid when active
+    void (*provider)(AppState *state, const char *input); // NULL = plain mode
+    MinibufItem items[MINIBUF_ITEMS_MAX];
+    int         item_count;
+    int         selected;
 } Minibuf;
 
 typedef struct {

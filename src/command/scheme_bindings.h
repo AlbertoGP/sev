@@ -165,6 +165,9 @@ sexp scm_minibuffer_activate(sexp ctx, sexp self, sexp n, sexp sprompt, sexp on_
 sexp scm_minibuffer_submit(sexp ctx, sexp self, sexp n);
 sexp scm_minibuffer_cancel(sexp ctx, sexp self, sexp n);
 sexp scm_minibuffer_activep(sexp ctx, sexp self, sexp n);
+sexp scm_minibuffer_activate_commands(sexp ctx, sexp self, sexp n);
+sexp scm_minibuffer_select_next(sexp ctx, sexp self, sexp n);
+sexp scm_minibuffer_select_prev(sexp ctx, sexp self, sexp n);
 
 // --- display/which_key.c ---
 sexp scm_which_key_toggle(sexp ctx, sexp self, sexp n);

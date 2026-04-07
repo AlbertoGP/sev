@@ -40,6 +40,10 @@ void MinibufPalette(AppState *state) {
     minibuf_text[text_len] = '\0';
     free(raw);
 
+    // Refresh provider items based on current input.
+    if (state->minibuf.provider)
+        state->minibuf.provider(state, minibuf_text);
+
     // When empty, show the prompt as faded placeholder text.
     // When non-empty, show only the user's input in the normal color.
     bool placeholder = (text_len == 0);
@@ -60,7 +64,7 @@ void MinibufPalette(AppState *state) {
         cursor_x = (float)w;
     }
 
-    float pad    = 12.0f * scale;
+    float pad    = 5.0f * scale;
     int   line_h = vline_get_line_height(&state->rendererData, FONT_UI_NORMAL, font_size);
 
     Clay_Color text_color = placeholder
@@ -101,7 +105,7 @@ void MinibufPalette(AppState *state) {
                 .width  = CLAY_SIZING_FIXED(520.0f * scale),
                 .height = CLAY_SIZING_FIT(0)
             },
-            .padding = { .left = pad, .right = pad, .top = pad, .bottom = pad }
+            .layoutDirection = CLAY_TOP_TO_BOTTOM
         },
         .backgroundColor = ui_resolve_color(state, state->ui.roles.bar_bg),
         .border = {
@@ -117,8 +121,14 @@ void MinibufPalette(AppState *state) {
                 .sizing = {
                     .width  = CLAY_SIZING_GROW(0),
                     .height = CLAY_SIZING_FIT(0)
-                }
-            }
+                },
+                .padding = { 
+                    .left = 2 * pad,
+                    .right = 2 * pad, 
+                    .top = 8.0 * scale,
+                    .bottom = 8.0 * scale
+                },
+            },
         }) {
             CLAY_TEXT(display_str, CLAY_TEXT_CONFIG({
                 .fontId    = FONT_UI_NORMAL,
@@ -131,10 +141,62 @@ void MinibufPalette(AppState *state) {
                        0.0f, 0.0f, 65535.0f, 65535.0f,
                        FONT_UI_NORMAL, font_size, 151);
         }
+
+        // Item list (command palette results)
+        if (state->minibuf.provider && state->minibuf.item_count > 0) {
+#define MINIBUF_VISIBLE_ITEMS 8
+            int visible = state->minibuf.item_count < MINIBUF_VISIBLE_ITEMS
+                        ? state->minibuf.item_count : MINIBUF_VISIBLE_ITEMS;
+            CLAY(CLAY_ID_LOCAL("MinibufDivider"), {
+                .layout = {
+                    .sizing = { .width = CLAY_SIZING_GROW(0) },
+                    .padding = CLAY_PADDING_ALL(pad)    ,
+                    .layoutDirection = CLAY_TOP_TO_BOTTOM
+                },
+                .border = {
+                    .color = ui_resolve_color(state, state->ui.roles.border_active),
+                    .width = { .top = 1 }
+                }
+            }) {
+                for (int i = 0; i < visible; i++) {
+                    bool is_selected = (i == state->minibuf.selected);
+                    Clay_Color c = ui_resolve_color(state, state->ui.roles.scrollbar_hover);
+                    Clay_Color row_bg = is_selected
+                        ? (Clay_Color){c.r, c.g, c.b, 128}
+                        : (Clay_Color){0, 0, 0, 0};
+                    Clay_String label = {
+                        .chars  = state->minibuf.items[i].label,
+                        .length = (int32_t)strlen(state->minibuf.items[i].label)
+                    };
+                    CLAY(CLAY_IDI_LOCAL("MinibufItem", i), {
+                        .layout = {
+                            .sizing = {
+                                .width  = CLAY_SIZING_GROW(0),
+                            },
+                            .padding        = CLAY_PADDING_ALL(pad),
+                            .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
+                        },
+                        .backgroundColor = row_bg,
+                        .cornerRadius    = CLAY_CORNER_RADIUS(4.0f * scale)
+                    }) {
+                        CLAY_TEXT(label, CLAY_TEXT_CONFIG({
+                            .fontId    = FONT_UI_NORMAL,
+                            .fontSize  = font_size,
+                            .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
+                            .wrapMode  = CLAY_TEXT_WRAP_NONE
+                        }));
+                    }
+                }
+            }
+        }
     }
 
+    int visible_count = (state->minibuf.provider && state->minibuf.item_count > 0)
+        ? (state->minibuf.item_count < MINIBUF_VISIBLE_ITEMS
+           ? state->minibuf.item_count : MINIBUF_VISIBLE_ITEMS)
+        : 0;
     state->minibuf.palette_w = 520.0f * scale;
-    state->minibuf.palette_h = 2.0f * pad + (float)line_h;
+    state->minibuf.palette_h = 2.0f * pad + (float)line_h + (float)(visible_count * line_h);
     state->minibuf.palette_x = ((float)win_w - state->minibuf.palette_w) / 2.0f;
     state->minibuf.palette_y = 64.0f * scale;
 
