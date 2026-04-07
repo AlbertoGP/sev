@@ -141,6 +141,7 @@ typedef struct AppState AppState;
 typedef struct {
     char label[MINIBUF_LABEL_MAX];    // display name
     char sym_name[MINIBUF_LABEL_MAX]; // symbol name, interned at submit
+    char keybinding[64];              // first keybinding string, or "" if none
 } MinibufItem;
 
 typedef struct {

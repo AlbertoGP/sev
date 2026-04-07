@@ -123,6 +123,10 @@
 ;; Introspection
 (define (list-commands) (list-by-kind 'command))
 
+(define (command-first-binding sym)
+  (let ((ks (where-is sym)))
+    (if (pair? ks) (car ks) #f)))
+
 ;; defcommand macro - declare commands concisely
 (define-syntax defcommand
   (syntax-rules (interactive)

@@ -8,5 +8,5 @@
     set-doc! get-doc get-doc-text
     make-interactive! interactive? interactive-spec
     register-spec-handler!
-    list-commands list-functions list-variables where-is)
+    list-commands list-functions list-variables where-is command-first-binding)
   (include "command.scm"))

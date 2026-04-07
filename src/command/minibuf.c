@@ -8,11 +8,30 @@
 #include "scheme_internal.h"
 #include "../text/buffer.h"
 
-// ---- Provider helpers -------------------------------------------------------
+// ---- Shared provider utility ------------------------------------------------
 
-// Populate items[] from a Scheme list of symbols, filtered by input substring.
-static void populate_items(AppState *state, const char *input, sexp list) {
+// Clamp selected after item_count changes.
+static void clamp_selected(AppState *state) {
+    if (state->minibuf.item_count == 0)
+        state->minibuf.selected = 0;
+    else if (state->minibuf.selected >= state->minibuf.item_count)
+        state->minibuf.selected = state->minibuf.item_count - 1;
+}
+
+// ---- Command provider -------------------------------------------------------
+
+static void commands_provider(AppState *state, const char *input) {
     sexp ctx = state->chibi.ctx;
+    sexp fn = sexp_env_ref(ctx, state->chibi.env,
+                           sexp_intern(ctx, "list-commands", -1), SEXP_FALSE);
+    if (fn == SEXP_FALSE) return;
+    sexp list = sexp_apply(ctx, fn, SEXP_NULL);
+    if (sexp_exceptionp(list)) return;
+
+    sexp first_binding_fn = sexp_env_ref(ctx, state->chibi.env,
+                                          sexp_intern(ctx, "command-first-binding", -1),
+                                          SEXP_FALSE);
+
     state->minibuf.item_count = 0;
     bool filter = input && input[0] != '\0';
 
@@ -24,35 +43,18 @@ static void populate_items(AppState *state, const char *input, sexp list) {
         const char *name = sexp_string_data(str);
         if (filter && strstr(name, input) == NULL) continue;
         MinibufItem *item = &state->minibuf.items[state->minibuf.item_count];
+        memset(item, 0, sizeof(*item));
         strncpy(item->label,    name, MINIBUF_LABEL_MAX - 1);
-        item->label[MINIBUF_LABEL_MAX - 1] = '\0';
         strncpy(item->sym_name, name, MINIBUF_LABEL_MAX - 1);
-        item->sym_name[MINIBUF_LABEL_MAX - 1] = '\0';
+        if (first_binding_fn != SEXP_FALSE) {
+            sexp kb = sexp_apply(ctx, first_binding_fn, sexp_list1(ctx, sym));
+            if (sexp_stringp(kb)) {
+                strncpy(item->keybinding, sexp_string_data(kb), sizeof(item->keybinding) - 1);
+            }
+        }
         state->minibuf.item_count++;
     }
-
-    if (state->minibuf.item_count == 0)
-        state->minibuf.selected = 0;
-    else if (state->minibuf.selected >= state->minibuf.item_count)
-        state->minibuf.selected = state->minibuf.item_count - 1;
-}
-
-// Call a 0-arg Scheme function by name, populate items from the returned list.
-static void scheme_list_provider(AppState *state, const char *input,
-                                  const char *fn_name) {
-    sexp ctx = state->chibi.ctx;
-    sexp fn = sexp_env_ref(ctx, state->chibi.env,
-                           sexp_intern(ctx, fn_name, -1), SEXP_FALSE);
-    if (fn == SEXP_FALSE) return;
-    sexp result = sexp_apply(ctx, fn, SEXP_NULL);
-    if (sexp_exceptionp(result)) return;
-    populate_items(state, input, result);
-}
-
-// ---- Command provider -------------------------------------------------------
-
-static void commands_provider(AppState *state, const char *input) {
-    scheme_list_provider(state, input, "list-commands");
+    clamp_selected(state);
 }
 
 // ---- Theme provider ---------------------------------------------------------
@@ -78,17 +80,13 @@ static void themes_provider(AppState *state, const char *input) {
         const char *display_name = sexp_string_data(dstr);
         if (filter && strstr(display_name, input) == NULL) continue;
         MinibufItem *item = &state->minibuf.items[state->minibuf.item_count];
+        memset(item, 0, sizeof(*item));
         strncpy(item->label, display_name, MINIBUF_LABEL_MAX - 1);
-        item->label[MINIBUF_LABEL_MAX - 1] = '\0';
         sexp sym_str = sexp_symbol_to_string(ctx, sym);
         strncpy(item->sym_name, sexp_string_data(sym_str), MINIBUF_LABEL_MAX - 1);
-        item->sym_name[MINIBUF_LABEL_MAX - 1] = '\0';
         state->minibuf.item_count++;
     }
-    if (state->minibuf.item_count == 0)
-        state->minibuf.selected = 0;
-    else if (state->minibuf.selected >= state->minibuf.item_count)
-        state->minibuf.selected = state->minibuf.item_count - 1;
+    clamp_selected(state);
 }
 
 static void theme_apply(sexp ctx, sexp sym) {

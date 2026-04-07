@@ -166,23 +166,39 @@ void MinibufPalette(AppState *state) {
                         .chars  = state->minibuf.items[i].label,
                         .length = (int32_t)strlen(state->minibuf.items[i].label)
                     };
+                    bool has_kb = state->minibuf.items[i].keybinding[0] != '\0';
                     CLAY(CLAY_IDI_LOCAL("MinibufItem", i), {
                         .layout = {
-                            .sizing = {
-                                .width  = CLAY_SIZING_GROW(0),
-                            },
+                            .sizing         = { .width = CLAY_SIZING_GROW(0) },
                             .padding        = CLAY_PADDING_ALL(pad),
-                            .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
+                            .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
+                            .childGap       = (uint16_t)(pad * 2)
                         },
                         .backgroundColor = row_bg,
                         .cornerRadius    = CLAY_CORNER_RADIUS(4.0f * scale)
                     }) {
-                        CLAY_TEXT(label, CLAY_TEXT_CONFIG({
-                            .fontId    = FONT_UI_NORMAL,
-                            .fontSize  = font_size,
-                            .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
-                            .wrapMode  = CLAY_TEXT_WRAP_NONE
-                        }));
+                        CLAY(CLAY_IDI_LOCAL("MinibufItemLabel", i), {
+                            .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } }
+                        }) {
+                            CLAY_TEXT(label, CLAY_TEXT_CONFIG({
+                                .fontId    = FONT_UI_NORMAL,
+                                .fontSize  = font_size,
+                                .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
+                                .wrapMode  = CLAY_TEXT_WRAP_NONE
+                            }));
+                        }
+                        if (has_kb) {
+                            Clay_String kb = {
+                                .chars  = state->minibuf.items[i].keybinding,
+                                .length = (int32_t)strlen(state->minibuf.items[i].keybinding)
+                            };
+                            CLAY_TEXT(kb, CLAY_TEXT_CONFIG({
+                                .fontId    = FONT_UI_NORMAL,
+                                .fontSize  = font_size,
+                                .textColor = ui_resolve_color(state, state->ui.roles.text_key),
+                                .wrapMode  = CLAY_TEXT_WRAP_NONE
+                            }));
+                        }
                     }
                 }
             }
