@@ -133,10 +133,11 @@ typedef struct UIState {
 // Forward declaration so Minibuf's provider pointer can reference AppState.
 typedef struct AppState AppState;
 
-#define MINIBUF_PROMPT_MAX 256
-#define MINIBUF_STACK_MAX 8
-#define MINIBUF_ITEMS_MAX 256
-#define MINIBUF_LABEL_MAX 128
+#define MINIBUF_PROMPT_MAX    256
+#define MINIBUF_STACK_MAX     8
+#define MINIBUF_ITEMS_MAX     256
+#define MINIBUF_LABEL_MAX     128
+#define MINIBUF_VISIBLE_ITEMS 8
 
 typedef struct {
     char label[MINIBUF_LABEL_MAX];    // display name
@@ -170,6 +171,7 @@ typedef struct {
     MinibufItem items[MINIBUF_ITEMS_MAX];
     int         item_count;
     int         selected;
+    int         item_scroll;
 } Minibuf;
 
 typedef struct {

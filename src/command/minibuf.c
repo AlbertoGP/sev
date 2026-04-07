@@ -11,12 +11,25 @@
 
 // ---- Shared provider utility ------------------------------------------------
 
-// Clamp selected after item_count changes.
+// Clamp selected and item_scroll after item_count changes.
 static void clamp_selected(AppState *state) {
     if (state->minibuf.item_count == 0)
         state->minibuf.selected = 0;
     else if (state->minibuf.selected >= state->minibuf.item_count)
         state->minibuf.selected = state->minibuf.item_count - 1;
+    int max_scroll = state->minibuf.item_count - MINIBUF_VISIBLE_ITEMS;
+    if (max_scroll < 0) max_scroll = 0;
+    if (state->minibuf.item_scroll > max_scroll) state->minibuf.item_scroll = max_scroll;
+    if (state->minibuf.item_scroll < 0) state->minibuf.item_scroll = 0;
+}
+
+// Scroll the visible window just enough to keep selected in view.
+static void scroll_to_visible(AppState *state) {
+    int sel = state->minibuf.selected;
+    if (sel < state->minibuf.item_scroll)
+        state->minibuf.item_scroll = sel;
+    else if (sel >= state->minibuf.item_scroll + MINIBUF_VISIBLE_ITEMS)
+        state->minibuf.item_scroll = sel - MINIBUF_VISIBLE_ITEMS + 1;
 }
 
 // ---- Command provider -------------------------------------------------------
@@ -132,6 +145,7 @@ bool minibuf_init(AppState *state) {
     state->minibuf.preview_action = NULL;
     state->minibuf.submit_action  = NULL;
     state->minibuf.saved_sym      = SEXP_FALSE;
+    state->minibuf.item_scroll    = 0;
 
     Buffer *buf = buffer_create("*minibuffer*");
     if (!buf) return false;
@@ -245,6 +259,7 @@ sexp scm_minibuffer_submit(sexp ctx, sexp self, sexp n) {
         G->minibuf.submit_action  = NULL;
         G->minibuf.item_count     = 0;
         G->minibuf.selected       = 0;
+        G->minibuf.item_scroll    = 0;
         if (G->minibuf.saved_sym != SEXP_FALSE) {
             sexp_release_object(ctx, G->minibuf.saved_sym);
             G->minibuf.saved_sym = SEXP_FALSE;
@@ -345,6 +360,7 @@ sexp scm_minibuffer_cancel(sexp ctx, sexp self, sexp n) {
         G->minibuf.submit_action  = NULL;
         G->minibuf.item_count     = 0;
         G->minibuf.selected       = 0;
+        G->minibuf.item_scroll    = 0;
         if (G->minibuf.saved_sym != SEXP_FALSE) {
             sexp_release_object(ctx, G->minibuf.saved_sym);
             G->minibuf.saved_sym = SEXP_FALSE;
@@ -378,6 +394,7 @@ sexp scm_minibuffer_activate_commands(sexp ctx, sexp self, sexp n) {
     G->minibuf.submit_action  = NULL; // use call-interactively
     G->minibuf.item_count     = 0;
     G->minibuf.selected       = 0;
+    G->minibuf.item_scroll    = 0;
     sexp prompt = sexp_c_string(ctx, "Execute command...", -1);
     return scm_minibuffer_activate(ctx, self, n, prompt, SEXP_FALSE, SEXP_FALSE);
 }
@@ -397,6 +414,7 @@ sexp scm_minibuffer_activate_themes(sexp ctx, sexp self, sexp n) {
     G->minibuf.submit_action  = theme_confirm;
     G->minibuf.item_count     = 0;
     G->minibuf.selected       = 0;
+    G->minibuf.item_scroll    = 0;
     sexp prompt = sexp_c_string(ctx, "Select a theme...", -1);
     sexp ret = scm_minibuffer_activate(ctx, self, n, prompt, SEXP_FALSE, SEXP_FALSE);
 
@@ -412,6 +430,7 @@ sexp scm_minibuffer_select_next(sexp ctx, sexp self, sexp n) {
     if (!G->minibuf.active || G->minibuf.item_count == 0) return SEXP_VOID;
     if (G->minibuf.selected < G->minibuf.item_count - 1) {
         G->minibuf.selected++;
+        scroll_to_visible(G);
         if (G->minibuf.preview_action)
             G->minibuf.preview_action(ctx,
                 sexp_intern(ctx, G->minibuf.items[G->minibuf.selected].sym_name, -1));
@@ -424,6 +443,7 @@ sexp scm_minibuffer_select_prev(sexp ctx, sexp self, sexp n) {
     if (!G->minibuf.active || G->minibuf.item_count == 0) return SEXP_VOID;
     if (G->minibuf.selected > 0) {
         G->minibuf.selected--;
+        scroll_to_visible(G);
         if (G->minibuf.preview_action)
             G->minibuf.preview_action(ctx,
                 sexp_intern(ctx, G->minibuf.items[G->minibuf.selected].sym_name, -1));

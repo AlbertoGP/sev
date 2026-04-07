@@ -353,6 +353,26 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         float deltaTime = ((float) SDL_GetTicksNS() - state->last_frame_ns) / 1e9;
         Clay_UpdateScrollContainers(true, (Clay_Vector2) { event->wheel.x, event->wheel.y }, deltaTime);
 
+        // Scroll the minibuffer completion list when wheel is over the palette.
+        if (state->minibuf.active && state->minibuf.item_count > MINIBUF_VISIBLE_ITEMS) {
+            float mx = event->wheel.mouse_x, my = event->wheel.mouse_y;
+            bool over_palette =
+                mx >= state->minibuf.palette_x &&
+                mx <  state->minibuf.palette_x + state->minibuf.palette_w &&
+                my >= state->minibuf.palette_y &&
+                my <  state->minibuf.palette_y + state->minibuf.palette_h;
+            if (over_palette) {
+                int delta = (int)event->wheel.y;
+                if (event->wheel.direction == SDL_MOUSEWHEEL_NORMAL) delta = -delta;
+                int max_scroll = state->minibuf.item_count - MINIBUF_VISIBLE_ITEMS;
+                state->minibuf.item_scroll += delta;
+                if (state->minibuf.item_scroll < 0) state->minibuf.item_scroll = 0;
+                if (state->minibuf.item_scroll > max_scroll) state->minibuf.item_scroll = max_scroll;
+                state->needs_redraw = true;
+                break;
+            }
+        }
+
         // Scroll the buffer pane under the mouse cursor.
         Pane *scroll_hit = pane_at_coords(pane_get_root(),
                                           event->wheel.mouse_x, event->wheel.mouse_y);

@@ -67,11 +67,3 @@
     (let ((prompt (if (pair? form-args) (car form-args) "Input...")))
       (minibuffer-read prompt done))))
 
-(defcommand (execute-extended-command)
-  "Read command name and execute it."
-  (minibuffer-read "Execute a command..."
-    (lambda (name)
-      (let ((sym (string->symbol name)))
-        (if (interactive? sym)
-            (call-interactively sym)
-            (message (string-append "Not a command: " name)))))))

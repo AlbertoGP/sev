@@ -16,9 +16,8 @@
   (map (lambda (s) (cons s (theme-display-name s)))
        (hash-table-keys *themes*)))
 
-(defcommand (activate-theme input)
+(defun (activate-theme input)
   "Switch to the named theme."
-  (interactive (minibuffer-read "Select a theme..."))
   (let* ((sym   (if (string? input) (string->symbol input) input))
          (theme (hash-table-ref *themes* sym))
          (palette (cadr theme))

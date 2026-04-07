@@ -5,7 +5,6 @@
 #include <SDL3_ttf/SDL_ttf.h>
 
 #include "cursor.h"
-#include "message.h"
 #include "theme.h"
 #include "vline.h"
 #include "../clay/renderer.h"
@@ -142,7 +141,6 @@ void MinibufPalette(AppState *state) {
 
         // Item list (command palette results)
         if (state->minibuf.provider && state->minibuf.item_count > 0) {
-#define MINIBUF_VISIBLE_ITEMS 8
             int visible = state->minibuf.item_count < MINIBUF_VISIBLE_ITEMS
                         ? state->minibuf.item_count : MINIBUF_VISIBLE_ITEMS;
             CLAY(CLAY_ID_LOCAL("MinibufDivider"), {
@@ -156,17 +154,18 @@ void MinibufPalette(AppState *state) {
                     .width = { .top = 1 }
                 }
             }) {
+                int scroll = state->minibuf.item_scroll;
                 for (int i = 0; i < visible; i++) {
-                    bool is_selected = (i == state->minibuf.selected);
+                    bool is_selected = (scroll + i == state->minibuf.selected);
                     Clay_Color c = ui_resolve_color(state, state->ui.roles.scrollbar_hover);
                     Clay_Color row_bg = is_selected
                         ? (Clay_Color){c.r, c.g, c.b, 128}
                         : (Clay_Color){0, 0, 0, 0};
                     Clay_String label = {
-                        .chars  = state->minibuf.items[i].label,
-                        .length = (int32_t)strlen(state->minibuf.items[i].label)
+                        .chars  = state->minibuf.items[scroll + i].label,
+                        .length = (int32_t)strlen(state->minibuf.items[scroll + i].label)
                     };
-                    bool has_kb = state->minibuf.items[i].keybinding[0] != '\0';
+                    bool has_kb = state->minibuf.items[scroll + i].keybinding[0] != '\0';
                     CLAY(CLAY_IDI_LOCAL("MinibufItem", i), {
                         .layout = {
                             .sizing         = { .width = CLAY_SIZING_GROW(0) },
@@ -189,8 +188,8 @@ void MinibufPalette(AppState *state) {
                         }
                         if (has_kb) {
                             Clay_String kb = {
-                                .chars  = state->minibuf.items[i].keybinding,
-                                .length = (int32_t)strlen(state->minibuf.items[i].keybinding)
+                                .chars  = state->minibuf.items[scroll + i].keybinding,
+                                .length = (int32_t)strlen(state->minibuf.items[scroll + i].keybinding)
                             };
                             CLAY_TEXT(kb, CLAY_TEXT_CONFIG({
                                 .fontId    = FONT_UI_NORMAL,
