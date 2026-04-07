@@ -2,6 +2,7 @@
 
 #include <chibi/eval.h>
 
+#include "message.h"
 #include "minibuf.h"
 #include "mode.h"
 #include "scheme_internal.h"
@@ -60,15 +61,22 @@ static void themes_provider(AppState *state, const char *input) {
     scheme_list_provider(state, input, "list-themes");
 }
 
-static void theme_submit(sexp ctx, const char *sym_name) {
+static void theme_apply(sexp ctx, sexp sym) {
     sexp activate = sexp_env_ref(ctx, G->chibi.env,
                                   sexp_intern(ctx, "activate-theme", -1),
                                   SEXP_FALSE);
     if (activate == SEXP_FALSE) return;
-    sexp sym = sexp_intern(ctx, sym_name, -1);
     sexp result = sexp_apply(ctx, activate, sexp_list1(ctx, sym));
     if (sexp_exceptionp(result))
         sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+}
+
+static void theme_confirm(sexp ctx, sexp sym) {
+    sexp str = sexp_symbol_to_string(ctx, sym);
+    const char *name = sexp_string_data(str);
+    char buf[MINIBUF_LABEL_MAX + 32];
+    snprintf(buf, sizeof(buf), "Theme changed to %s", name);
+    message_send(buf);
 }
 
 // Call a named command via the cached call-interactively.
@@ -83,10 +91,14 @@ static void minibuf_invoke_command(sexp ctx, const char *name) {
 }
 
 bool minibuf_init(AppState *state) {
-    state->minibuf.on_submit   = SEXP_FALSE;
-    state->minibuf.on_cancel   = SEXP_FALSE;
-    state->minibuf.active      = false;
-    state->minibuf.stack_depth = 0;
+    state->minibuf.on_submit      = SEXP_FALSE;
+    state->minibuf.on_cancel      = SEXP_FALSE;
+    state->minibuf.active         = false;
+    state->minibuf.stack_depth    = 0;
+    state->minibuf.provider       = NULL;
+    state->minibuf.preview_action = NULL;
+    state->minibuf.submit_action  = NULL;
+    state->minibuf.saved_sym      = SEXP_FALSE;
 
     Buffer *buf = buffer_create("*minibuffer*");
     if (!buf) return false;
@@ -192,15 +204,18 @@ sexp scm_minibuffer_submit(sexp ctx, sexp self, sexp n) {
         if (sel < 0) sel = 0;
         if (sel >= G->minibuf.item_count) sel = G->minibuf.item_count - 1;
 
-        char sym_name[MINIBUF_LABEL_MAX];
-        strncpy(sym_name, G->minibuf.items[sel].sym_name, MINIBUF_LABEL_MAX);
-        sym_name[MINIBUF_LABEL_MAX - 1] = '\0';
+        sexp sym = sexp_intern(ctx, G->minibuf.items[sel].sym_name, -1);
 
-        void (*action)(sexp, const char*) = G->minibuf.submit_action;
+        void (*action)(sexp, sexp) = G->minibuf.submit_action;
         G->minibuf.provider       = NULL;
+        G->minibuf.preview_action = NULL;
         G->minibuf.submit_action  = NULL;
         G->minibuf.item_count     = 0;
         G->minibuf.selected       = 0;
+        if (G->minibuf.saved_sym != SEXP_FALSE) {
+            sexp_release_object(ctx, G->minibuf.saved_sym);
+            G->minibuf.saved_sym = SEXP_FALSE;
+        }
 
         // Release any stale callbacks before dismissing.
         sexp cb_submit = G->minibuf.on_submit;
@@ -222,9 +237,8 @@ sexp scm_minibuffer_submit(sexp ctx, sexp self, sexp n) {
         if (cb_cancel != SEXP_FALSE) sexp_release_object(ctx, cb_cancel);
 
         if (action) {
-            action(ctx, sym_name);
+            action(ctx, sym);
         } else if (G->chibi.call_interactively != SEXP_FALSE) {
-            sexp sym = sexp_intern(ctx, sym_name, -1);
             sexp result = sexp_apply(ctx, G->chibi.call_interactively,
                                      sexp_list1(ctx, sym));
             if (sexp_exceptionp(result))
@@ -286,11 +300,20 @@ sexp scm_minibuffer_cancel(sexp ctx, sexp self, sexp n) {
         minibuf_pop(ctx);
         // active remains true; previous frame is restored
     } else {
+        // Restore previewed state before dismissing (e.g. theme picker reverts theme).
+        if (G->minibuf.preview_action && G->minibuf.saved_sym != SEXP_FALSE)
+            G->minibuf.preview_action(ctx, G->minibuf.saved_sym);
+
         G->minibuf.active         = false;
         G->minibuf.provider       = NULL;
+        G->minibuf.preview_action = NULL;
         G->minibuf.submit_action  = NULL;
         G->minibuf.item_count     = 0;
         G->minibuf.selected       = 0;
+        if (G->minibuf.saved_sym != SEXP_FALSE) {
+            sexp_release_object(ctx, G->minibuf.saved_sym);
+            G->minibuf.saved_sym = SEXP_FALSE;
+        }
         G->input.current_focus = G->minibuf.prev_focus;
         buffer_set_current(G->minibuf.prev_buf);
         G->needs_redraw = true;
@@ -325,26 +348,51 @@ sexp scm_minibuffer_activate_commands(sexp ctx, sexp self, sexp n) {
 }
 
 sexp scm_minibuffer_activate_themes(sexp ctx, sexp self, sexp n) {
+    // Save current theme so cancel can restore it.
+    // Call the exported (current-theme) accessor; *current-theme* itself is not exported.
+    sexp fn = sexp_env_ref(ctx, G->chibi.env,
+                            sexp_intern(ctx, "current-theme", -1), SEXP_FALSE);
+    sexp current = (fn != SEXP_FALSE) ? sexp_apply(ctx, fn, SEXP_NULL) : SEXP_FALSE;
+    G->minibuf.saved_sym = sexp_symbolp(current) ? current : SEXP_FALSE;
+    if (G->minibuf.saved_sym != SEXP_FALSE)
+        sexp_preserve_object(ctx, G->minibuf.saved_sym);
+
     G->minibuf.provider       = themes_provider;
-    G->minibuf.submit_action  = theme_submit;
+    G->minibuf.preview_action = theme_apply;
+    G->minibuf.submit_action  = theme_confirm;
     G->minibuf.item_count     = 0;
     G->minibuf.selected       = 0;
     sexp prompt = sexp_c_string(ctx, "Select a theme...", -1);
-    return scm_minibuffer_activate(ctx, self, n, prompt, SEXP_FALSE, SEXP_FALSE);
+    sexp ret = scm_minibuffer_activate(ctx, self, n, prompt, SEXP_FALSE, SEXP_FALSE);
+
+    // Populate items now so the initial selection is immediately previewed.
+    themes_provider(G, "");
+    if (G->minibuf.item_count > 0)
+        theme_apply(ctx, sexp_intern(ctx, G->minibuf.items[0].sym_name, -1));
+
+    return ret;
 }
 
 sexp scm_minibuffer_select_next(sexp ctx, sexp self, sexp n) {
     if (!G->minibuf.active || G->minibuf.item_count == 0) return SEXP_VOID;
-    if (G->minibuf.selected < G->minibuf.item_count - 1)
+    if (G->minibuf.selected < G->minibuf.item_count - 1) {
         G->minibuf.selected++;
+        if (G->minibuf.preview_action)
+            G->minibuf.preview_action(ctx,
+                sexp_intern(ctx, G->minibuf.items[G->minibuf.selected].sym_name, -1));
+    }
     G->needs_redraw = true;
     return SEXP_VOID;
 }
 
 sexp scm_minibuffer_select_prev(sexp ctx, sexp self, sexp n) {
     if (!G->minibuf.active || G->minibuf.item_count == 0) return SEXP_VOID;
-    if (G->minibuf.selected > 0)
+    if (G->minibuf.selected > 0) {
         G->minibuf.selected--;
+        if (G->minibuf.preview_action)
+            G->minibuf.preview_action(ctx,
+                sexp_intern(ctx, G->minibuf.items[G->minibuf.selected].sym_name, -1));
+    }
     G->needs_redraw = true;
     return SEXP_VOID;
 }

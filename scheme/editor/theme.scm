@@ -1,5 +1,6 @@
 (define *themes* (make-hash-table))
 (define *current-theme* #f)
+(define (current-theme) *current-theme*)
 
 (define (define-theme name palette roles)
   (hash-table-set!
