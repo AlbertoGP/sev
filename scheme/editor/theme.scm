@@ -2,21 +2,27 @@
 (define *current-theme* #f)
 (define (current-theme) *current-theme*)
 
-(define (define-theme name palette roles)
+(define (define-theme name display-name palette roles)
   (hash-table-set!
    *themes*
    name
-   (list palette roles)))
+   (list display-name palette roles)))
 
-(define (list-themes) (hash-table-keys *themes*))
+(define (theme-display-name sym)
+  (let ((t (hash-table-ref/default *themes* sym #f)))
+    (and t (car t))))
+
+(define (list-themes)
+  (map (lambda (s) (cons s (theme-display-name s)))
+       (hash-table-keys *themes*)))
 
 (defcommand (activate-theme input)
   "Switch to the named theme."
   (interactive (minibuffer-read "Select a theme..."))
   (let* ((sym   (if (string? input) (string->symbol input) input))
          (theme (hash-table-ref *themes* sym))
-         (palette (car theme))
-         (roles   (cadr theme)))
+         (palette (cadr theme))
+         (roles   (car (cddr theme))))
     (%clear-palette!)
     (%clear-roles!)
 
@@ -33,6 +39,7 @@
 
 (define-theme
  'catppuccin-mocha
+ "Catppuccin Mocha"
 
  ;; palette
  '((bg-0      . "#1e1e2e")
@@ -123,6 +130,7 @@
 
 (define-theme
  'catppuccin-macchiato
+ "Catppuccin Macchiato"
 
  ;; palette
  '((bg-0      . "#24273a")
@@ -213,6 +221,7 @@
 
 (define-theme
  'catppuccin-latte
+ "Catppuccin Latte"
 
  ;; palette
  '((bg-0      . "#eff1f5")

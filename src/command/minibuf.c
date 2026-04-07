@@ -58,7 +58,37 @@ static void commands_provider(AppState *state, const char *input) {
 // ---- Theme provider ---------------------------------------------------------
 
 static void themes_provider(AppState *state, const char *input) {
-    scheme_list_provider(state, input, "list-themes");
+    sexp ctx = state->chibi.ctx;
+    sexp fn = sexp_env_ref(ctx, state->chibi.env,
+                           sexp_intern(ctx, "list-themes", -1), SEXP_FALSE);
+    if (fn == SEXP_FALSE) return;
+    sexp list = sexp_apply(ctx, fn, SEXP_NULL);
+    if (sexp_exceptionp(list)) return;
+
+    state->minibuf.item_count = 0;
+    bool filter = input && input[0] != '\0';
+
+    for (sexp p = list; sexp_pairp(p); p = sexp_cdr(p)) {
+        if (state->minibuf.item_count >= MINIBUF_ITEMS_MAX) break;
+        sexp pair = sexp_car(p);
+        if (!sexp_pairp(pair)) continue;
+        sexp sym  = sexp_car(pair);
+        sexp dstr = sexp_cdr(pair);
+        if (!sexp_symbolp(sym) || !sexp_stringp(dstr)) continue;
+        const char *display_name = sexp_string_data(dstr);
+        if (filter && strstr(display_name, input) == NULL) continue;
+        MinibufItem *item = &state->minibuf.items[state->minibuf.item_count];
+        strncpy(item->label, display_name, MINIBUF_LABEL_MAX - 1);
+        item->label[MINIBUF_LABEL_MAX - 1] = '\0';
+        sexp sym_str = sexp_symbol_to_string(ctx, sym);
+        strncpy(item->sym_name, sexp_string_data(sym_str), MINIBUF_LABEL_MAX - 1);
+        item->sym_name[MINIBUF_LABEL_MAX - 1] = '\0';
+        state->minibuf.item_count++;
+    }
+    if (state->minibuf.item_count == 0)
+        state->minibuf.selected = 0;
+    else if (state->minibuf.selected >= state->minibuf.item_count)
+        state->minibuf.selected = state->minibuf.item_count - 1;
 }
 
 static void theme_apply(sexp ctx, sexp sym) {
@@ -72,10 +102,14 @@ static void theme_apply(sexp ctx, sexp sym) {
 }
 
 static void theme_confirm(sexp ctx, sexp sym) {
-    sexp str = sexp_symbol_to_string(ctx, sym);
-    const char *name = sexp_string_data(str);
+    sexp fn = sexp_env_ref(ctx, G->chibi.env,
+                            sexp_intern(ctx, "theme-display-name", -1), SEXP_FALSE);
+    sexp dname = (fn != SEXP_FALSE) ? sexp_apply(ctx, fn, sexp_list1(ctx, sym)) : SEXP_FALSE;
+    const char *display_name = sexp_stringp(dname)
+        ? sexp_string_data(dname)
+        : sexp_string_data(sexp_symbol_to_string(ctx, sym));
     char buf[MINIBUF_LABEL_MAX + 32];
-    snprintf(buf, sizeof(buf), "Theme changed to %s", name);
+    snprintf(buf, sizeof(buf), "Theme changed to %s", display_name);
     message_send(buf);
 }
 

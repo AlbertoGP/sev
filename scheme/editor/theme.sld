@@ -1,5 +1,5 @@
 (define-library (editor theme)
   (import (except (scheme base) newline)
           (srfi 69) (editor primitives) (editor command))
-  (export define-theme activate-theme list-themes current-theme)
+  (export define-theme activate-theme list-themes theme-display-name current-theme)
   (include "theme.scm"))
