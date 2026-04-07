@@ -445,7 +445,7 @@ static void BufRender_CursorCell(BufRenderCtx *ctx, size_t i, float cursor_offse
             break;
         }
     }
-    Cursor(ctx->state, (int32_t)i, cursor_offset,
+    Cursor(ctx->state, (int32_t)i, cursor_offset, 0.0f,
            ctx->line_height,
            ctx->box.x + ctx->padding + ctx->gutter_width, ctx->box.y,
            ctx->box.width - ctx->padding - ctx->gutter_width, ctx->text_height,

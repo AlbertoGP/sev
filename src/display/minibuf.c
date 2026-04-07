@@ -114,8 +114,6 @@ void MinibufPalette(AppState *state) {
         },
         .cornerRadius = CLAY_CORNER_RADIUS(6.0f * scale)
     }) {
-        // Inner wrapper with no padding so Cursor()'s CLAY_ATTACH_TO_PARENT
-        // origin aligns with the text baseline (not the outer padding box).
         CLAY(CLAY_ID("MinibufPaletteContent"), {
             .layout = {
                 .sizing = {
@@ -137,7 +135,7 @@ void MinibufPalette(AppState *state) {
                 .wrapMode  = CLAY_TEXT_WRAP_NONE
             }));
             if (state->cursor_visible)
-                Cursor(state, 0, cursor_x, line_h,
+                Cursor(state, 0, cursor_x + 2.0f * pad, 8.0f * scale, line_h,
                        0.0f, 0.0f, 65535.0f, 65535.0f,
                        FONT_UI_NORMAL, font_size, 151);
         }

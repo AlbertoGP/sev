@@ -13,7 +13,7 @@
 
 (set-key! global-keymap "C-q" 'quit)
 (set-key! global-keymap "C-e" 'eval-expression)
-(set-key! global-keymap "C-S-p" 'execute-extended-command)
+(set-key! global-keymap "C-S-p" 'command-palette)
 (set-key! global-keymap ":" 'command-palette)
 (set-key! global-keymap "M-0" 'reset-global-scale)
 (set-key! global-keymap "M-=" 'increase-global-scale)

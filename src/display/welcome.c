@@ -214,7 +214,7 @@ void WelcomePane(AppState *state) {
         static char kb_command[64] = ":";
         keymap_where_is_first(state, "tab-new",                  kb_new_tab,       sizeof(kb_new_tab));
         keymap_where_is_first(state, "open-project",             kb_open_project,  sizeof(kb_open_project));
-        keymap_where_is_first(state, "execute-extended-command", kb_command,       sizeof(kb_command));
+        keymap_where_is_first(state, "command-palettle",         kb_command,       sizeof(kb_command));
         keymap_where_is_first(state, "describe-key",             kb_help,          sizeof(kb_help));
         CLAY(CLAY_ID("Get Started Title"), {
             .layout = {
