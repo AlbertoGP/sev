@@ -375,6 +375,17 @@
   "Around text object."
   (evil-execute-text-object 'around))
 
+;; Named prefix keymaps for text-object dispatch.
+(let ((i-km (make-keymap)) (a-km (make-keymap)))
+  (%set-keymap-name! i-km "in-text-object")
+  (%set-keymap-name! a-km "around-text-object")
+  (bind-prefix! pending-map "i" i-km)
+  (bind-prefix! pending-map "a" a-km)
+  (bind-prefix! select-map "i" i-km)
+  (bind-prefix! select-map "a" a-km))
+(set-command-display-binding! 'evil-in-text-object     "i <obj>")
+(set-command-display-binding! 'evil-around-text-object "a <obj>")
+
 ;; Bind i/a + char in pending and select maps
 (for-each (lambda (ch)
   (let ((key (string ch)))

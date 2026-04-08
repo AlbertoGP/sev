@@ -43,7 +43,7 @@ static void commands_provider(AppState *state, const char *input) {
     if (sexp_exceptionp(list)) return;
 
     sexp first_binding_fn = sexp_env_ref(ctx, state->chibi.env,
-                                          sexp_intern(ctx, "command-first-binding", -1),
+                                          sexp_intern(ctx, "command-display-binding", -1),
                                           SEXP_FALSE);
 
     state->minibuf.item_count = 0;

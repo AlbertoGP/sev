@@ -46,11 +46,22 @@
         (%macro-play current-evil-macro)
         (loop (- n 1))))))
 
+;; Named prefix keymaps for macro dispatch.
+(let ((q-km (make-keymap)))
+  (%set-keymap-name! q-km "macro-register")
+  (bind-prefix! normal-map "q" q-km))
+(set-command-display-binding! 'evil-start-macro "q <reg>")
+
 ;; q + a-z → start macro recording
 (do ((i 0 (+ i 1)))
     ((= i 26))
   (let ((ch (string (integer->char (+ (char->integer #\a) i)))))
     (set-key! normal-map (string-append "q " ch) 'evil-start-macro)))
+
+(let ((at-km (make-keymap)))
+  (%set-keymap-name! at-km "play-macro")
+  (bind-prefix! normal-map "@" at-km))
+(set-command-display-binding! 'evil-play-macro "@ <reg>")
 
 ;; @ + a-z → play macro; @@ → replay last
 (do ((i 0 (+ i 1)))

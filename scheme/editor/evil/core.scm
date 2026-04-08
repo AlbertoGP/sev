@@ -131,6 +131,13 @@
   "Select register for next op/paste."
   (set! current-evil-register (last-key-char)))
 
+;; Named prefix keymaps for dispatch commands — must come before the per-char loops.
+(let ((reg-km (make-keymap)))
+  (%set-keymap-name! reg-km "use-register")
+  (bind-prefix! normal-map "\"" reg-km)
+  (bind-prefix! select-map "\"" reg-km))
+(set-command-display-binding! 'evil-use-register "\" <reg>")
+
 ;; Bind " + (a-z, A-Z, ") sequences in normal-map and select-map
 (for-each
   (lambda (ch)
@@ -148,6 +155,22 @@
 (set-key! normal-map "\" _" 'evil-use-register)
 (set-key! select-map "\" _" 'evil-use-register)
 
+;; Named prefix keymaps for mark dispatch.
+(let ((m-km (make-keymap)))
+  (%set-keymap-name! m-km "set-mark")
+  (bind-prefix! normal-map "m" m-km))
+(let ((gl-km (make-keymap)))
+  (%set-keymap-name! gl-km "goto-mark")
+  (bind-prefix! normal-map "'" gl-km)
+  (bind-prefix! pending-map "'" gl-km))
+(let ((ge-km (make-keymap)))
+  (%set-keymap-name! ge-km "goto-mark-exact")
+  (bind-prefix! normal-map "`" ge-km)
+  (bind-prefix! pending-map "`" ge-km))
+(set-command-display-binding! 'evil-set-mark        "m <mark>")
+(set-command-display-binding! 'evil-goto-mark-line  "' <mark>")
+(set-command-display-binding! 'evil-goto-mark-exact "` <mark>")
+
 ;; m / ' / ` — bind all 26 letters programmatically
 (do ((i 0 (+ i 1)))
     ((= i 26))
@@ -157,6 +180,24 @@
     (set-key! normal-map  (string-append "` " ch) 'evil-goto-mark-exact)
     (set-key! pending-map (string-append "' " ch) 'evil-goto-mark-line)
     (set-key! pending-map (string-append "` " ch) 'evil-goto-mark-exact)))
+
+;; Named prefix keymaps for character-seek dispatch.
+(let ((f-km (make-keymap)) (F-km (make-keymap))
+      (t-km (make-keymap)) (T-km (make-keymap)))
+  (%set-keymap-name! f-km "find-char")
+  (%set-keymap-name! F-km "find-char-back")
+  (%set-keymap-name! t-km "to-char")
+  (%set-keymap-name! T-km "to-char-back")
+  (for-each (lambda (map)
+    (bind-prefix! map "f" f-km)
+    (bind-prefix! map "F" F-km)
+    (bind-prefix! map "t" t-km)
+    (bind-prefix! map "T" T-km))
+    (list normal-map pending-map select-map)))
+(set-command-display-binding! 'evil-motion-f "f <char>")
+(set-command-display-binding! 'evil-motion-F "F <char>")
+(set-command-display-binding! 'evil-motion-t "t <char>")
+(set-command-display-binding! 'evil-motion-T "T <char>")
 
 ;; f/F/t/T — bind all printable non-space chars programmatically
 (do ((i 33 (+ i 1)))

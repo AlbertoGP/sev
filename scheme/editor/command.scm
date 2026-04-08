@@ -13,6 +13,10 @@
 (define *interactive-table* (make-hash-table eq?))   ; sym -> spec
 (define *keymap-edges* (make-hash-table eq?))    ; child-keymap -> list of (parent-keymap . prefix-str)
 (define *keymap-commands* (make-hash-table eq?)) ; command-sym -> list of (keymap . keystr)
+(define *command-display-bindings* (make-hash-table eq?)) ; command-sym -> display string
+
+(define (set-command-display-binding! sym str)
+  (hash-table-set! *command-display-bindings* sym str))
 
 ;; Documentation API
 (define (set-doc! sym kind text)
@@ -126,6 +130,32 @@
 (define (command-first-binding sym)
   (let ((ks (where-is sym)))
     (if (pair? ks) (car ks) #f)))
+
+(define (string-drop-last-word s)
+  (let loop ((i (- (string-length s) 1)))
+    (cond ((< i 0) #f)
+          ((char=? (string-ref s i) #\space) (substring s 0 i))
+          (else (loop (- i 1))))))
+
+(define (command-display-binding sym)
+  (or (hash-table-ref/default *command-display-bindings* sym #f)
+      (let ((bindings (where-is sym)))
+        (cond
+          ((null? bindings) #f)
+          ((null? (cdr bindings)) (car bindings))
+          (else
+           (let ((pfx (string-drop-last-word (car bindings))))
+             (if (and pfx
+                      (let loop ((rest (cdr bindings)))
+                        (or (null? rest)
+                            (and (equal? pfx (string-drop-last-word (car rest)))
+                                 (loop (cdr rest))))))
+                 (string-append pfx " <char>")
+                 (let loop ((best (car bindings)) (rest (cdr bindings)))
+                   (if (null? rest) best
+                       (loop (if (< (string-length (car rest)) (string-length best))
+                                 (car rest) best)
+                             (cdr rest)))))))))))
 
 ;; defcommand macro - declare commands concisely
 (define-syntax defcommand

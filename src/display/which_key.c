@@ -121,6 +121,53 @@ void WhichKey(AppState *state) {
     collect_entries_top(state->chibi.ctx, state->which_key.keymap, "", 0);
     if (wk_count == 0) return;
 
+    // Collapse dispatch-style entries: if the same command appears >= 3 times,
+    // keep only the first occurrence and rename its key to "<char>".
+    {
+        char seen_labels[WK_MAX][64];
+        int  seen_idx[WK_MAX];
+        int  seen_cnt[WK_MAX];
+        int  nseen = 0;
+        bool skip[WK_MAX];
+        memset(skip, 0, sizeof(skip));
+
+        for (int i = 0; i < wk_count; i++) {
+            if (wk_is_prefix[i]) continue;
+            bool found = false;
+            for (int j = 0; j < nseen; j++) {
+                if (strcmp(seen_labels[j], wk_label_strs[i]) == 0) {
+                    seen_cnt[j]++;
+                    skip[i] = true;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found && nseen < WK_MAX) {
+                strncpy(seen_labels[nseen], wk_label_strs[i], 63);
+                seen_labels[nseen][63] = '\0';
+                seen_idx[nseen] = i;
+                seen_cnt[nseen] = 1;
+                nseen++;
+            }
+        }
+        for (int j = 0; j < nseen; j++) {
+            if (seen_cnt[j] >= 3)
+                snprintf(wk_key_strs[seen_idx[j]], WK_KEY_SZ, "<char>");
+        }
+        int n = 0;
+        for (int i = 0; i < wk_count; i++) {
+            if (!skip[i]) {
+                if (n != i) {
+                    memcpy(wk_key_strs[n],   wk_key_strs[i],   WK_KEY_SZ);
+                    memcpy(wk_label_strs[n], wk_label_strs[i], 64);
+                    wk_is_prefix[n] = wk_is_prefix[i];
+                }
+                n++;
+            }
+        }
+        wk_count = n;
+    }
+
     float scale = state->ui.scale_factor;
     uint16_t font_size = (uint16_t)(14.0f * scale);
     float pad = 8.0f * scale;
