@@ -4,7 +4,6 @@
 (define normal-map (make-keymap))
 (define insert-map (make-keymap))
 (define select-map (make-keymap))
-(define command-map (make-keymap))
 (define pending-map (make-keymap))
 
 ;; Set parent pointers so pane commands are found via parent chain traversal.
@@ -14,7 +13,6 @@
 (set-keymap-parent! insert-map  pane-keymap)
 (set-keymap-parent! select-map  pane-keymap)
 (set-keymap-parent! pending-map pane-keymap)
-(set-keymap-parent! command-map pane-keymap)
 
 ;; Normal mode bindings
 (set-key! normal-map "0" 'evil-zero)
@@ -227,7 +225,6 @@
 (define-minor-mode 'evil-insert-mode insert-map #t)
 (define-minor-mode 'evil-replace-mode insert-map #t)
 (define-minor-mode 'evil-select-mode select-map)
-(define-minor-mode 'evil-command-mode command-map)
 (define-minor-mode 'evil-pending-mode pending-map)
 
 ;; Register mode icons
@@ -239,8 +236,6 @@
                          'mode.replace 'label.replace 'cursor.replace 'under)
 (register-mode-icon/full 'evil-select-mode  "icon-select.svg"
                          'mode.select  'label.select  'cursor.select  'solid)
-(register-mode-icon/full 'evil-command-mode "icon-command.svg"
-                         'mode.command 'label.command 'cursor.command  'solid)
 (register-mode-icon/full 'evil-pending-mode "icon-pending.svg"
                          'mode.pending 'label.pending 'cursor.pending  'under)
 
@@ -295,7 +290,6 @@
   (disable-minor-mode 'evil-insert-mode)
   (disable-minor-mode 'evil-replace-mode)
   (disable-minor-mode 'evil-select-mode)
-  (disable-minor-mode 'evil-command-mode)
   (disable-minor-mode 'evil-pending-mode)
   (%set-cursor-override! #f)
   (enable-minor-mode 'evil-normal-mode)
@@ -316,7 +310,6 @@
   (disable-minor-mode 'evil-normal-mode)
   (disable-minor-mode 'evil-replace-mode)
   (disable-minor-mode 'evil-select-mode)
-  (disable-minor-mode 'evil-command-mode)
   (disable-minor-mode 'evil-recording-mode)
   (enable-minor-mode 'evil-insert-mode)
   (%select-mode-set! 0)
@@ -332,7 +325,6 @@
   (disable-minor-mode 'evil-normal-mode)
   (disable-minor-mode 'evil-insert-mode)
   (disable-minor-mode 'evil-select-mode)
-  (disable-minor-mode 'evil-command-mode)
   (disable-minor-mode 'evil-recording-mode)
   (enable-minor-mode 'evil-replace-mode)
   (%select-mode-set! 0)
@@ -348,7 +340,6 @@
   (disable-minor-mode 'evil-normal-mode)
   (disable-minor-mode 'evil-insert-mode)
   (disable-minor-mode 'evil-replace-mode)
-  (disable-minor-mode 'evil-command-mode)
   (enable-minor-mode 'evil-select-mode)
   (%select-mode-set! mode-int)
   (message-clear)
@@ -377,16 +368,6 @@
   (when (rect-mode? (%select-mode-get))
     (%select-mode-set! 4))
   (line-end))
-
-(defcommand (evil-command)
-  "vim: command mode\nEnter command mode."
-  (disable-minor-mode 'evil-normal-mode)
-  (disable-minor-mode 'evil-insert-mode)
-  (disable-minor-mode 'evil-replace-mode)
-  (disable-minor-mode 'evil-select-mode)
-  (enable-minor-mode 'evil-command-mode)
-  (set-local! 'mode-name "Command")
-  (message-clear))
 
 
 ;; Query function for UI

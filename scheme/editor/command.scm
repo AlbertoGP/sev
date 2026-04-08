@@ -199,11 +199,9 @@
          (doc   (get-doc sym))
          (keys  (where-is sym)))
     (%pop-to-buffer "*Help*")
-    ;; Set up help-mode on first use (buffer_create auto-enables evil-normal-mode)
+    ;; Set up help-mode on first use
     (when (not (%buffer-has-minor-mode? 'help-mode))
-      (%disable-minor-mode 'evil-normal-mode)
-      (%enable-minor-mode 'help-mode)
-      (%set-local! 'mode-name "Help"))
+      (%enable-minor-mode 'help-mode))
     ;; Header: name + kind
     (%insert-string fname)
     (%insert-string "    [")

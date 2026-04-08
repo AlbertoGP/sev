@@ -249,5 +249,3 @@
 (set-key! help-map "LEFT"  'backward-char)
 (set-key! help-map "RIGHT" 'forward-char)
 (define-minor-mode 'help-mode help-map)
-(register-mode-icon/full 'help-mode "icon-help.svg"
-                         'mode.help 'label.help 'cursor.help 'solid)

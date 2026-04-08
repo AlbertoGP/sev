@@ -317,8 +317,6 @@ sexp scm_minibuffer_activate(sexp ctx, sexp self, sexp n,
         G->minibuf.stack_depth++;
         buffer_clear(G->minibuf.buf);
     } else {
-        // Fresh activation: switch the calling buffer to command-mode.
-        minibuf_invoke_command(ctx, "evil-command");
         // Release any stale callbacks
         if (G->minibuf.on_submit != SEXP_FALSE)
             sexp_release_object(ctx, G->minibuf.on_submit);
