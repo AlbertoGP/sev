@@ -20,6 +20,7 @@ set(SRC_FILES
     src/command/mode.c
     src/command/scheme.c
     src/display/cursor.c
+    src/display/decoration.c
     src/display/icon.c
     src/display/layout.c
     src/display/message.c
