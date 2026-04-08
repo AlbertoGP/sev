@@ -216,6 +216,19 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         cursor_flash_reset(state);
         float x = event->button.x;
         float y = event->button.y;
+
+        // Handle minibuf click first, before setting any Clay or input state,
+        // to prevent click-through to elements rendered under the backdrop.
+        if (state->minibuf.active) {
+            bool inside = (x >= state->minibuf.palette_x &&
+                           x <  state->minibuf.palette_x + state->minibuf.palette_w &&
+                           y >= state->minibuf.palette_y &&
+                           y <  state->minibuf.palette_y + state->minibuf.palette_h);
+            if (!inside)
+                scm_minibuffer_cancel(state->chibi.ctx, SEXP_FALSE, SEXP_FALSE);
+            break; // consume the click regardless
+        }
+
         Clay_SetPointerState((Clay_Vector2){x, y}, true);
 
         state->input.mouse_button_down = true;
@@ -226,18 +239,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             state->input.middle_pressed_this_frame = true;
         if (event->button.button == SDL_BUTTON_LEFT && event->button.clicks == 2)
             state->input.left_double_click_this_frame = true;
-
-        // Cancel minibuf if click is outside the palette area.
-        if (state->minibuf.active) {
-            bool inside = (x >= state->minibuf.palette_x &&
-                           x <  state->minibuf.palette_x + state->minibuf.palette_w &&
-                           y >= state->minibuf.palette_y &&
-                           y <  state->minibuf.palette_y + state->minibuf.palette_h);
-            if (!inside) {
-                scm_minibuffer_cancel(state->chibi.ctx, SEXP_FALSE, SEXP_FALSE);
-                break;
-            }
-        }
 
         // Check split divider before scrollbar/buffer.
         Pane *split_hit = pane_split_at_coords(pane_get_root(), x, y);

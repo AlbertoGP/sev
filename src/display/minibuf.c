@@ -208,8 +208,14 @@ void MinibufPalette(AppState *state) {
         ? (state->minibuf.item_count < MINIBUF_VISIBLE_ITEMS
            ? state->minibuf.item_count : MINIBUF_VISIBLE_ITEMS)
         : 0;
+    // MinibufPaletteContent: top=8*scale + line_h + bottom=8*scale
+    float input_h = 16.0f * scale + (float)line_h;
+    // MinibufDivider: 2*pad wrapper + visible items each (pad + line_h + pad)
+    float items_h = visible_count > 0
+        ? 2.0f * pad + (float)visible_count * (2.0f * pad + (float)line_h)
+        : 0.0f;
     state->minibuf.palette_w = 520.0f * scale;
-    state->minibuf.palette_h = 2.0f * pad + (float)line_h + (float)(visible_count * line_h);
+    state->minibuf.palette_h = input_h + items_h;
     state->minibuf.palette_x = ((float)win_w - state->minibuf.palette_w) / 2.0f;
     state->minibuf.palette_y = 64.0f * scale;
 
