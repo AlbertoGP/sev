@@ -57,18 +57,21 @@ static void commands_provider(AppState *state, const char *input) {
         if (!sexp_symbolp(sym)) continue;
         sexp str = sexp_symbol_to_string(ctx, sym);
         const char *name = sexp_string_data(str);
-        if (filter && strstr(name, input) == NULL) continue;
+
+        // Compute display label before filtering so we match what the user sees
+        const char *label = name;
+        sexp summary = (summary_fn != SEXP_FALSE)
+            ? sexp_apply(ctx, summary_fn, sexp_list1(ctx, sym))
+            : SEXP_FALSE;
+        if (sexp_stringp(summary))
+            label = sexp_string_data(summary);
+
+        if (filter && strstr(label, input) == NULL) continue;
+
         MinibufItem *item = &state->minibuf.items[state->minibuf.item_count];
         memset(item, 0, sizeof(*item));
-        if (summary_fn != SEXP_FALSE) {
-            sexp summary = sexp_apply(ctx, summary_fn, sexp_list1(ctx, sym));
-            strncpy(item->label,
-                    sexp_stringp(summary) ? sexp_string_data(summary) : name,
-                    MINIBUF_LABEL_MAX - 1);
-        } else {
-            strncpy(item->label, name, MINIBUF_LABEL_MAX - 1);
-        }
-        strncpy(item->sym_name, name, MINIBUF_LABEL_MAX - 1);
+        strncpy(item->label,    label, MINIBUF_LABEL_MAX - 1);
+        strncpy(item->sym_name, name,  MINIBUF_LABEL_MAX - 1);
         if (first_binding_fn != SEXP_FALSE) {
             sexp kb = sexp_apply(ctx, first_binding_fn, sexp_list1(ctx, sym));
             if (sexp_stringp(kb)) {

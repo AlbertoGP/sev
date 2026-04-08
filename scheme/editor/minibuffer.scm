@@ -33,7 +33,7 @@
 (set-key! minibuffer-map "DOWN" 'minibuffer-select-next)
 (set-key! minibuffer-map "UP"   'minibuffer-select-prev)
 
-(defcommand (minibuffer-read prompt on-submit)
+(defun (minibuffer-read prompt on-submit)
   "Prompt for input in the minibuffer; call on-submit with the result."
   (%minibuffer-activate prompt on-submit #f))
 

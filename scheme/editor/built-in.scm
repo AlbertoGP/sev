@@ -15,9 +15,9 @@
 (defcommand insert-tab "editor: insert tab\nInsert tab character or expand to spaces at next tab stop.")
 (defcommand delete-backward-char "editor: backspace\nDelete the character before cursor.")
 (defcommand delete-forward-char "editor: delete\nDelete the character after cursor.")
-(defcommand move-cursor "Move cursor by COUNT characters.")
-(defcommand delete-char "Delete COUNT characters before cursor.")
-(defcommand insert-char "Insert character CH at cursor.")
+(set-doc! 'move-cursor 'function "Move cursor by COUNT characters.")
+(set-doc! 'delete-char 'function "Delete COUNT characters before cursor.")
+(set-doc! 'insert-char 'function "Insert character CH at cursor.")
 (defcommand (tab-next) "pane: next tab\nSwitch to the next tab."
   (unless (no-panes?) (%tab-next)))
 (defcommand (tab-prev) "pane: previous tab\nSwitch to the previous tab."
