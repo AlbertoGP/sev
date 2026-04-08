@@ -169,7 +169,9 @@ typedef struct {
     void (*preview_action)(sexp ctx, sexp sym);             // called on selection change; NULL = none
     void (*submit_action)(sexp ctx, sexp sym);              // NULL = call-interactively
     sexp  saved_sym;                                        // GC-preserved; SEXP_FALSE if unused
-    MinibufItem items[MINIBUF_ITEMS_MAX];
+    MinibufItem all_items[MINIBUF_ITEMS_MAX]; // sorted master list, built once per activation
+    int         all_item_count;              // 0 = not yet built
+    MinibufItem items[MINIBUF_ITEMS_MAX];    // filtered view into all_items
     int         item_count;
     int         selected;
     int         item_scroll;

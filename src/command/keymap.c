@@ -198,11 +198,24 @@ static void key_dispatch_inner(AppState *state, const KeyEvent *ev) {
     if (state->input.current_map != state->input.global_map) {
         b = keymap_lookup(state->input.current_map, ev);
     } else {
-        // Start of sequence: use full chain lookup
-        if (state->input.current_focus == FOCUS_WELCOME && state->input.welcome_map)
+        // Start of sequence: use focus-appropriate lookup
+        if (state->input.current_focus == FOCUS_MINIBUFFER) {
+            // Only search minor mode keymaps (minibuffer-mode); no global
+            // fallthrough so commands like command-palette can't nest.
+            b = NULL;
+            Buffer *buf = buffer_get_current();
+            ModeList *minors = buffer_get_minor_modes(buf);
+            if (minors) {
+                for (ModeListNode *n = minors->head; n; n = n->next) {
+                    if (n->mode->keymap && (b = keymap_lookup(n->mode->keymap, ev)))
+                        break;
+                }
+            }
+        } else if (state->input.current_focus == FOCUS_WELCOME && state->input.welcome_map) {
             b = keymap_lookup(state->input.welcome_map, ev);
-        else
+        } else {
             b = keymap_lookup_chain(state, ev);
+        }
     }
 
     if (!b) {
