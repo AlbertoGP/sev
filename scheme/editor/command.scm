@@ -224,19 +224,19 @@
     (point-set! 0)))
 
 (defcommand (describe-function)
-  "Select a function with completions and display its documentation."
+  "help: describe function\nSelect a function with completions and display its documentation."
   (%minibuffer-activate-describe-function))
 
 (defcommand (describe-command)
-  "Select a command with completions and display its documentation."
+  "help: describe command\nSelect a command with completions and display its documentation."
   (%minibuffer-activate-describe-command))
 
 (defcommand (describe-variable)
-  "Select a variable with completions and display its documentation."
+  "help: describe variable\nSelect a variable with completions and display its documentation."
   (%minibuffer-activate-describe-variable))
 
 (defcommand (describe-key)
-  "Read a key sequence and describe its binding."
+  "help: look up command by keybinding\nRead a key sequence and describe its binding."
   (message "Describe key: ")
   (%read-key-binding
     (lambda (sym key-str)

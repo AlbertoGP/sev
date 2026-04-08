@@ -368,11 +368,11 @@
 ;;;
 
 (defcommand (evil-in-text-object)
-  "Inner text object."
+  "vim: inner text object\n"
   (evil-execute-text-object 'in))
 
 (defcommand (evil-around-text-object)
-  "Around text object."
+  "vim: around text object"
   (evil-execute-text-object 'around))
 
 ;; Named prefix keymaps for text-object dispatch.

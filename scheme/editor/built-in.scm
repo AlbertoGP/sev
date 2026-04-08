@@ -1,64 +1,64 @@
 ;;; build-in.scm - built-in editor command definitions.
 
 ;; C primitive commands
-(defcommand quit "Exit the editor.")
-(defcommand self-insert "Insert the character that invoked this command.")
-(defcommand eval-buffer "Evaluate the current buffer as Scheme code.")
-(defcommand next-line "Move cursor to the next line.")
-(defcommand prev-line "Move cursor to the previous line.")
-(defcommand forward-char "Move cursor forward one character.")
-(defcommand backward-char "Move cursor backward one character.")
-(defcommand line-start "Move cursor to start of current line.")
-(defcommand line-end "Move cursor to end of current line.")
-(defcommand skip-whitespace "Move cursor to next non-space, non-tab character.")
-(defcommand newline "Insert a newline at cursor.")
-(defcommand insert-tab "Insert tab or expand to spaces at next tab stop.")
-(defcommand delete-backward-char "Delete the character before cursor.")
-(defcommand delete-forward-char "Delete the character after cursor.")
+(defcommand quit "quit\nExit the editor.")
+(defcommand self-insert "editor: self-insert character\nInsert the character that invoked this command.")
+(defcommand eval-buffer "scheme: evaluate buffer\nEvaluate the current buffer as Scheme code.")
+(defcommand next-line "editor: move cursor to next line\nMove cursor to the next line.")
+(defcommand prev-line "editor: move cursor to previous line\nMove cursor to the previous line.")
+(defcommand forward-char "editor: move cursor forward one character")
+(defcommand backward-char "editor: move cursor backward one character")
+(defcommand line-start "editor: move cursor to start of line")
+(defcommand line-end "editor: move cursor to end of line")
+(defcommand skip-whitespace "editor: move past whitespace\nMove cursor to next non-space, non-tab character.")
+(defcommand newline "editor: insert newline at cursor")
+(defcommand insert-tab "editor: insert tab\nInsert tab character or expand to spaces at next tab stop.")
+(defcommand delete-backward-char "editor: backspace\nDelete the character before cursor.")
+(defcommand delete-forward-char "editor: delete\nDelete the character after cursor.")
 (defcommand move-cursor "Move cursor by COUNT characters.")
 (defcommand delete-char "Delete COUNT characters before cursor.")
 (defcommand insert-char "Insert character CH at cursor.")
-(defcommand (tab-next) "Switch to the next tab."
+(defcommand (tab-next) "pane: next tab\nSwitch to the next tab."
   (unless (no-panes?) (%tab-next)))
-(defcommand (tab-prev) "Switch to the previous tab."
+(defcommand (tab-prev) "pane: previous tab\nSwitch to the previous tab."
   (unless (no-panes?) (%tab-prev)))
-(defcommand reset-global-scale "Reset global UI scaling factor.")
-(defcommand increase-global-scale "Increase global UI scaling factor.")
-(defcommand decrease-global-scale "Decrease global UI scaling factor.")
-(defcommand (reset-buffer-scale) "Reset buffer text scaling factor."
+(defcommand reset-global-scale "sev: reset UI scale\nReset global UI scaling factor.")
+(defcommand increase-global-scale "sev: increase UI scale\nIncrease global UI scaling factor.")
+(defcommand decrease-global-scale "sev: decrease UI scale\nDecrease global UI scaling factor.")
+(defcommand (reset-buffer-scale) "sev: reset buffer scale\nReset buffer text scaling factor."
   (unless (no-panes?) (%reset-buffer-scale)))
-(defcommand (increase-buffer-scale) "Increase buffer text scaling factor."
+(defcommand (increase-buffer-scale) "sev: increase buffer scale\nIncrease buffer text scaling factor."
   (unless (no-panes?) (%increase-buffer-scale)))
-(defcommand (decrease-buffer-scale) "Decrease buffer text scaling factor."
+(defcommand (decrease-buffer-scale) "sev: decrease buffer scale\nDecrease buffer text scaling factor."
   (unless (no-panes?) (%decrease-buffer-scale)))
-(defcommand (split-horizontal) "Split the current pane horizontally."
+(defcommand (split-horizontal) "pane: create horizontal split\nSplit the current pane horizontally."
   (unless (no-panes?) (%split-horizontal)))
-(defcommand (split-vertical) "Split the current pane vertically."
+(defcommand (split-vertical) "pane: create vertical split\nSplit the current pane vertically."
   (unless (no-panes?) (%split-vertical)))
-(defcommand (tab-close) "Close the current tab."
+(defcommand (tab-close) "pane: close tab"
   (unless (no-panes?) (%tab-close)))
-(defcommand (pane-navigate-up) "Navigate to the pane above."
+(defcommand (pane-navigate-up) "pane: navigate up"
   (unless (no-panes?) (%pane-navigate-up)))
-(defcommand (pane-navigate-down) "Navigate to the pane below."
+(defcommand (pane-navigate-down) "pane: navigate down"
   (unless (no-panes?) (%pane-navigate-down)))
-(defcommand (pane-navigate-left) "Navigate to the pane on the left."
+(defcommand (pane-navigate-left) "pane: navigate left"
   (unless (no-panes?) (%pane-navigate-left)))
-(defcommand (pane-navigate-right) "Navigate to the pane on the right."
+(defcommand (pane-navigate-right) "pane: navigate right"
   (unless (no-panes?) (%pane-navigate-right)))
-(defcommand (pane-h-split-increase) "Increase horizontal split size."
+(defcommand (pane-h-split-increase) "pane: increase width"
   (unless (no-panes?) (%pane-h-split-increase)))
-(defcommand (pane-h-split-decrease) "Decrease horizontal split size."
+(defcommand (pane-h-split-decrease) "pane: decrease width"
   (unless (no-panes?) (%pane-h-split-decrease)))
-(defcommand (pane-v-split-increase) "Increase vertical split size."
+(defcommand (pane-v-split-increase) "pane: increase height"
   (unless (no-panes?) (%pane-v-split-increase)))
-(defcommand (pane-v-split-decrease) "Decrease vertical split size."
+(defcommand (pane-v-split-decrease) "pane: decrease height"
   (unless (no-panes?) (%pane-v-split-decrease)))
-(defcommand clay-debug "Toggle Clay debug mode.")
-(defcommand exchange-point-and-mark "Swap point and selection anchor.")
+(defcommand clay-debug "debug: toggle Clay debug mode.")
+(defcommand exchange-point-and-mark "editor: swap cursor and selection boundary")
 
 ;; compound Scheme commands
 (defcommand (eval-expression)
-  "Evaluate a Scheme expression from the minibuffer and display the result."
+  "scheme: evaluate expression\nEvaluate a Scheme expression from the minibuffer and display the result."
   (interactive)
   (minibuffer-read "Evaluate a Scheme expression..."
     (lambda (expr-str)
@@ -70,10 +70,10 @@
           (message (get-output-string out)))))))
 
 (defcommand (line-start-skip-whitespace)
-  "Set cursor to first non-blank character on current line."
+  "editor: move to first non-blank char\nSet cursor to first non-blank character on current line."
   (line-start) (skip-whitespace))
 (defcommand (join-line)
-  "Delete newline character between the current and subsequent line."
+  "editor: join current and next line\nDelete newline character between the current and subsequent line."
   (line-end) (delete-forward-char))
 
 ;; Return the file extension (after last "."), or "" if none.
@@ -100,7 +100,7 @@
         (else (loop (cdr alist)))))))
 
 (defcommand (save-buffer-as)
-  "Save the current buffer under a new file name."
+  "editor: save file as...\nSave the current buffer under a new file name."
   (interactive)
   (if (no-panes?)
       (message "No buffer to save")
@@ -117,7 +117,7 @@
                     (message (string-append "Failed to save " filename)))))))))
 
 (defcommand (save-buffer)
-  "Save the current buffer. If no file name is set, prompt for one."
+  "editor: save file\nSave the current buffer. If no file name is set, prompt for one."
   (interactive)
   (if (no-panes?)
       (message "No buffer to save")
@@ -129,7 +129,7 @@
             (call-interactively 'save-buffer-as)))))
 
 (defcommand (open-file)
-  "Open an existing file into a new buffer, or switch to it if already open."
+  "editor: open file\nOpen an existing file into a new buffer, or switch to it if already open."
   (interactive)
   (minibuffer-read "Open a file..."
     (lambda (filename)
@@ -154,7 +154,7 @@
                       (message (string-append "Switched to buffer " filename))))))))))
 
 (defcommand (open-project)
-  "Open a project directory, changing the working directory to it."
+  "project: open\nOpen a project directory, changing the working directory to it."
   (interactive)
   (minibuffer-read "Open project: "
     (lambda (path)
@@ -167,7 +167,7 @@
                 (message (string-append "Opened project " path))))))))
 
 (defcommand (read-file)
-  "Insert the contents of a file at the point in the current buffer without moving point or other text."
+  "editor: paste file at cursor\nInsert the contents of a file at the point in the current buffer without moving point or other text."
   (interactive)
   (minibuffer-read "Insert file: "
     (lambda (filename)
@@ -179,7 +179,7 @@
                 (message (string-append "Could not read " filename))))))))
 
 (defcommand (buffer-new)
-  "Create a new untitled buffer and display it in the current tab."
+  "editor: new buffer\nCreate a new untitled buffer and display it in the current tab."
   (interactive)
   (let ((name "untitled"))
     (if (no-panes?)
@@ -190,7 +190,7 @@
     (message (string-append "Created buffer " name))))
 
 (defcommand (buffer-rename)
-  "Rename the current buffer."
+  "editor: rename buffer\nRename the current buffer."
   (interactive)
   (if (no-panes?)
       (message "No buffer to rename")
@@ -203,7 +203,7 @@
                   (message (string-append "Name already in use: " new-name))))))))
 
 (defcommand (scratch-buffer)
-  "Switch to the *scratch* buffer, creating it if it does not exist."
+  "editor: scratch buffer\nSwitch to the *scratch* buffer, creating it if it does not exist."
   (interactive)
   (if (no-panes?)
       (%tab-new! "*scratch*")
@@ -213,7 +213,7 @@
   (message "Switched to *scratch*"))
 
 (defcommand (switch-to-buffer)
-  "Switch the current tab to a named buffer."
+  "editor: switch buffer\nSwitch the current tab to a named buffer."
   (interactive)
   (if (no-panes?)
       (message "No pane to switch buffer in")
@@ -226,7 +226,7 @@
                   (message (string-append "No buffer named \"" name "\""))))))))
 
 (defcommand (buffer-close)
-  "Close a named buffer, closing all tabs that currently display it."
+  "editor: close buffer\nClose a named buffer, closing all tabs that currently display it."
   (interactive)
   (minibuffer-read "Close buffer: "
     (lambda (name)
@@ -237,7 +237,7 @@
               (message (string-append "No buffer named \"" name "\"")))))))
 
 (defcommand (tab-new)
-  "Create a new tab. Prompts for a buffer name; untitled if left empty."
+  "pane: new tab\nCreate a new tab. Prompts for a buffer name; untitled if left empty."
   (interactive)
   (let ((buf-name "untitled"))
     (if (%tab-new-fresh! buf-name)

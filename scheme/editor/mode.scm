@@ -175,7 +175,7 @@
   '((wrap-lines . #f)))
 
 (defcommand (toggle-wrap-lines)
-  "Toggle line wrapping in the current buffer."
+  "editor: toggle line wrap in buffer\nToggle line wrapping in the current buffer."
   (unless (no-panes?)
     (set-local! 'wrap-lines (not (get-local 'wrap-lines #t)))
     (set-local! 'wrap-lines/explicit? #t)))
@@ -184,7 +184,7 @@
 (define-major-mode 'scheme-mode)
 (set-mode-parent! 'scheme-mode 'prog-mode)
 (defcommand (scheme-mode)
-  "Enable Scheme mode in the current buffer."
+  "editor: enable scheme mode in buffer\nEnable Scheme mode in the current buffer."
   (%ts-enable!)
   (set-major-mode! 'scheme-mode))
 
@@ -206,14 +206,14 @@
       (set-local! 'display-line-numbers-type #f))))
 
 (defcommand (toggle-line-numbers)
-  "Toggle display of line numbers in the current buffer."
+  "editor: toggle line numbers\nToggle display of line numbers in the current buffer."
   (unless (no-panes?)
     (let ((next (not (get-local 'display-line-numbers-type))))
       (set-local! 'display-line-numbers-type next)
       (set-local! 'display-line-numbers-type/explicit? #t))))
 
 (defcommand (toggle-relative-line-numbers)
-  "Toggle relative line numbering in the current buffer."
+  "editor: toggle relative line numbers\nToggle relative line numbering in the current buffer."
   (unless (no-panes?)
     (let ((next (if (eq? (get-local 'display-line-numbers-type) 'relative)
                     #t 'relative)))
@@ -221,7 +221,7 @@
       (set-local! 'display-line-numbers-type/explicit? #t))))
 
 (defcommand (toggle-visual-line-numbers)
-  "Toggle visual line numbering in the current buffer."
+  "editor: toggle visual line numbers\nToggle visual line numbering in the current buffer."
   (unless (no-panes?)
     (let ((next (if (eq? (get-local 'display-line-numbers-type) 'visual)
                     #t 'visual)))
@@ -230,7 +230,7 @@
 
 ;; Help buffer mode
 (defcommand (help-quit)
-  "Close the help buffer and restore normal mode."
+  "help: close help pane\nClose the help buffer and restore normal mode."
   (%tab-close)
   (%disable-minor-mode 'help-mode)
   (%enable-minor-mode 'evil-normal-mode)

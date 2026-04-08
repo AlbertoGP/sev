@@ -33,7 +33,7 @@
     (list (min la lb) (max la lb) (min ca cb) (+ (max ca cb) 1))))
 
 (defcommand (evil-visual-rect-insert)
-  "Enter insert mode at the left column of each line in rectangle selection."
+  "vim: rectangular insert\nEnter insert mode at the left column of each line in rectangle selection."
   (let* ((b (evil-rect-bounds))
          (row-min (list-ref b 0)) (row-max (list-ref b 1))
          (col-min (list-ref b 2)))
@@ -46,7 +46,7 @@
     (evil-insert)))
 
 (defcommand (evil-visual-rect-append)
-  "Enter insert mode at the right column of each line in rectangle selection."
+  "vim: rectangular append\nEnter insert mode at the right column of each line in rectangle selection."
   (let* ((b (evil-rect-bounds))
          (row-min (list-ref b 0)) (row-max (list-ref b 1))
          (col-max (list-ref b 3))
@@ -89,7 +89,7 @@
                        (%line-end-position row-min))))))
 
 (defcommand (evil-visual-delete)
-  "Delete the visual selection."
+  "vim: delete selection\nDelete the visual selection."
   (%begin-change)
   (let ((mode (%select-mode-get)))
     (if (rect-mode? mode)
@@ -149,7 +149,7 @@
   (evil-normal))
 
 (defcommand (evil-visual-change)
-  "Change the visual selection."
+  "vim: change selection\nChange the visual selection."
   (%begin-change)
   (set! evil-pending-repeat-info
     (make-repeat-info 'op-change 1 #f #f
@@ -179,7 +179,7 @@
             (evil-insert))))))
 
 (defcommand (evil-visual-yank)
-  "Yank visual selection."
+  "vim: yank selection\nYank visual selection."
   (let* ((mode (%select-mode-get))
          (anchor (%mark-position #\<))
          (cur-point (point-get))
@@ -223,7 +223,7 @@
     (evil-normal)))
 
 (defcommand (evil-visual-paste)
-  "Paste register contents replacing visual selection."
+  "vim: paste into selection\nPaste register contents replacing visual selection."
   (let* ((reg current-evil-register)
          (text (if (char=? reg #\+)
                    (let ((s (%clipboard-get)))

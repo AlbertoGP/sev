@@ -1,3 +1,3 @@
 (defcommand (which-key-toggle)
-  "Toggle which-key popup."
+  "help: toggle key completion prompt\nToggle which-key popup."
   (%which-key-toggle))

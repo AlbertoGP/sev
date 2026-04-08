@@ -9,7 +9,7 @@
 (define macro-char "")
 
 (defcommand (evil-start-macro)
-  "Start recording macro to register."
+  "vim: record macro\nStart recording macro to register."
   (let ((ch (last-key-char)))
     (when ch
       (%macro-start! ch)
@@ -18,7 +18,7 @@
       (message (string-append "Recording macro @" (string macro-char))))))
 
 (defcommand (evil-stop-macro)
-  "Stop macro recording."
+  "vim: finish macro recording"
   (%macro-stop!)
   (disable-minor-mode 'evil-recording-mode)
   (message (string-append "Saved macro @" (string macro-char))))
@@ -26,7 +26,7 @@
 (define current-evil-macro #\a)   ; last-played register for @@
 
 (defcommand (evil-play-macro)
-  "Play macro from register."
+  "vim: replay macro\nPlay macro from register."
   (let ((ch (last-key-char))
         (count (or evil-count 1)))
     (when ch
@@ -38,7 +38,7 @@
           (loop (- n 1)))))))
 
 (defcommand (evil-play-last-macro)
-  "Replay last macro (@@ in Vim)."
+  "vim: replay last macro\nReplay last macro (@@ in Vim)."
   (let ((count (or evil-count 1)))
     (set! evil-count #f)
     (let loop ((n count))

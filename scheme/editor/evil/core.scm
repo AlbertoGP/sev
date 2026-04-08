@@ -128,7 +128,7 @@
 (define current-evil-register #\")
 
 (defcommand (evil-use-register)
-  "Select register for next op/paste."
+  "vim: paste from register\nSelect register for next op/paste."
   (set! current-evil-register (last-key-char)))
 
 ;; Named prefix keymaps for dispatch commands — must come before the per-char loops.
@@ -261,7 +261,7 @@
 
 ;; State transitions
 (defcommand (evil-normal)
-  "Return to normal mode."
+  "vim: normal mode\nReturn to normal mode."
   ;; Finalize insert/replace session change (only meaningful when panes exist)
   (unless (no-panes?)
     (when (%change-active?)
@@ -309,7 +309,7 @@
     (enable-minor-mode 'evil-recording-mode)))
 
 (defcommand (evil-insert)
-  "Enter insert mode."
+  "vim: insert mode\nEnter insert mode."
   (unless (%change-active?)
     (%begin-change)
     (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'insert #f)))
@@ -325,7 +325,7 @@
   (set-local! 'mode-name "Insert"))
 
 (defcommand (evil-replace)
-  "Enter replace mode."
+  "vim: replace mode\nEnter replace mode."
   (unless (%change-active?)
     (%begin-change)
     (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'replace #f)))
@@ -355,31 +355,31 @@
   (set-local! 'mode-name name))
 
 (defcommand (evil-select)
-  "Enter select mode."
+  "vim: select mode\nEnter select mode."
   (if (and (%buffer-has-minor-mode? 'evil-select-mode) (= (%select-mode-get) 1))
       (evil-normal)
       (enter-visual-submode 1 "Select")))
 
 (defcommand (evil-select-line)
-  "Enter visual line mode."
+  "vim: select line mode\nEnter visual line mode."
   (if (and (%buffer-has-minor-mode? 'evil-select-mode) (= (%select-mode-get) 2))
       (evil-normal)
       (enter-visual-submode 2 "Line")))
 
 (defcommand (evil-select-rectangle)
-  "Enter visual block mode."
+  "vim: select rectangle mode\nEnter visual block mode."
   (if (and (%buffer-has-minor-mode? 'evil-select-mode) (rect-mode? (%select-mode-get)))
       (evil-normal)
       (enter-visual-submode 3 "Rectangle")))
 
 (defcommand (evil-visual-dollar)
-  "Move to end of line; in rectangle mode, enables ragged right edge."
+  "vim: line end\nMove to end of line; in rectangle mode, enables ragged right edge."
   (when (rect-mode? (%select-mode-get))
     (%select-mode-set! 4))
   (line-end))
 
 (defcommand (evil-command)
-  "Enter command mode."
+  "vim: command mode\nEnter command mode."
   (disable-minor-mode 'evil-normal-mode)
   (disable-minor-mode 'evil-insert-mode)
   (disable-minor-mode 'evil-replace-mode)
@@ -398,7 +398,7 @@
 
 ;; Enable evil mode
 (defcommand (evil-mode)
-  "Enable vim-like modal editing."
+  "vim: enable vim mode\nEnable vim-like modal editing."
   (enable-minor-mode 'evil-normal-mode))
 
 

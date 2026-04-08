@@ -141,29 +141,29 @@
 ;;;
 
 (defcommand (evil-op-delete)
-  "Delete operator."
+  "vim: delete operator"
   (evil-enter-operator 'op-delete))
 
 (defcommand (evil-op-yank)
-  "Yank operator."
+  "vim: yank operator"
   (evil-enter-operator 'op-yank))
 
 (defcommand (evil-op-change)
-  "Change operator."
+  "vim: change operator"
   (evil-enter-operator 'op-change))
 
 (defcommand (evil-D)
-  "Delete to end of line."
+  "vim: delete to end of line"
   (evil-enter-operator 'op-delete)
   (evil-execute-motion 'motion-$))
 
 (defcommand (evil-C)
-  "Change to end of line."
+  "vim: change to end of line"
   (evil-enter-operator 'op-change)
   (evil-execute-motion 'motion-$))
 
 (defcommand (evil-S)
-  "Substitute entire line."
+  "vim: substitute entire line"
   (evil-enter-operator 'op-change)
   (evil-enter-operator 'op-change))
 
@@ -172,7 +172,7 @@
 ;;;
 
 (defcommand (evil-x)
-  "Delete character(s) forward."
+  "vim: delete character\nDelete character(s) forward."
   (let ((count (or evil-count 1)))
     (%begin-change)
     (let ((len (buffer-length))
@@ -191,7 +191,7 @@
     (message-clear)))
 
 (defcommand (evil-X)
-  "Delete character(s) backward."
+  "vim: backspace character\nDelete character(s) backward."
   (let ((count (or evil-count 1)))
     (%begin-change)
     (let ((p (point-get)))
@@ -212,7 +212,7 @@
 ;;;
 
 (defcommand (evil-char-replace-setup)
-  "Enter char-replace pending state (show UNDER cursor until char typed)."
+  "vim: replace character\nEnter char-replace pending state (show UNDER cursor until char typed)."
   (%set-cursor-override! 'under)
   (message-echo (if evil-count (string-append (number->string evil-count) "r-") "r-"))
   (%read-key-binding
@@ -224,7 +224,7 @@
             (evil-char-replace))))))
 
 (defcommand (evil-char-replace)
-  "Replace [count] chars with typed char."
+  "vim: replace characters\nReplace [count] chars with typed char."
   (let ((ch (last-key-char))
         (count (or evil-count 1)))
     (when ch
@@ -248,7 +248,7 @@
     (message-clear)))
 
 (defcommand (evil-visual-char-replace)
-  "Replace all non-newline chars in selection with typed char."
+  "vim: replace selection\nReplace all non-newline chars in selection with typed char."
   (let ((ch (last-key-char))
         (mode (%select-mode-get)))
     (when ch
@@ -308,32 +308,32 @@
 ;;;
 
 (defcommand (open-line-below)
-  "Create a new empty line below current line, move to it and enter insert mode."
+  "vim: new line below\nCreate a new empty line below current line, move to it and enter insert mode."
   (%begin-change)
   (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'open-below #f))
   (line-end) (newline) (evil-insert))
 (defcommand (open-line-above)
-  "Create a new empty line above current line, move to it and enter insert mode."
+  "vim: new line above\nCreate a new empty line above current line, move to it and enter insert mode."
   (%begin-change)
   (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'open-above #f))
   (line-start) (newline) (prev-line) (evil-insert))
 (defcommand (insert-at-start)
-  "Set cursor to first non-blank character on current line and enter insert mode."
+  "vim: insert at line start\nSet cursor to first non-blank character on current line and enter insert mode."
   (%begin-change)
   (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'insert-at-start #f))
   (line-start) (skip-whitespace) (evil-insert))
 (defcommand (append-char)
-  "Enter insert mode after the character currently under the cursor."
+  "vim: append character\nEnter insert mode after the character currently under the cursor."
   (%begin-change)
   (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'append-char #f))
   (forward-char) (evil-insert))
 (defcommand (append-line)
-  "Set the cursor to the final column on the current line and enter insert mode."
+  "vim: append line\nSet the cursor to the final column on the current line and enter insert mode."
   (%begin-change)
   (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'append-line #f))
   (line-end) (evil-insert))
 (defcommand (substitute-char)
-  "Delete the character under cursor and enter insert mode."
+  "vim: change character\nDelete the character under cursor and enter insert mode."
   (%begin-change)
   (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'substitute #f))
   (delete-forward-char) (evil-insert))
@@ -346,7 +346,7 @@
 (set-key! pending-map "y" 'evil-op-yank)   ; yy = yank line
 
 (defcommand (evil-paste-after)
-  "Paste register contents after cursor."
+  "vim: paste after cursor\nPaste register contents after cursor."
   (let* ((reg current-evil-register)
          (text (if (char=? reg #\+)
                    (let ((s (%clipboard-get)))
@@ -386,7 +386,7 @@
   (set! current-evil-register #\"))
 
 (defcommand (evil-paste-before)
-  "Paste register contents before cursor."
+  "vim: paste before cursor\nPaste register contents before cursor."
   (let* ((reg current-evil-register)
          (text (if (char=? reg #\+)
                    (let ((s (%clipboard-get)))
@@ -428,7 +428,7 @@
 (set-key! normal-map "P" 'evil-paste-before)
 
 (defcommand (evil-insert-paste-clipboard)
-  "Paste from system clipboard."
+  "vim: paste from system clipboard"
   (let ((text (%clipboard-get)))
     (when (not (string=? text ""))
       (%insert-string text))))

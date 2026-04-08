@@ -297,38 +297,38 @@
 ;;; Motion command wrappers (bound to keys)
 ;;;
 
-(defcommand (evil-motion-h) "Move left."  (unless (no-panes?) (evil-execute-motion 'motion-h)))
-(defcommand (evil-motion-j) "Move down." (unless (no-panes?) (evil-execute-motion 'motion-j)))
-(defcommand (evil-motion-k) "Move up."   (unless (no-panes?) (evil-execute-motion 'motion-k)))
-(defcommand (evil-motion-l) "Move right." (unless (no-panes?) (evil-execute-motion 'motion-l)))
-(defcommand (evil-motion-$) "Move to end of line." (evil-execute-motion 'motion-$))
-(defcommand (evil-motion-^) "Move to first non-blank." (evil-execute-motion 'motion-^))
-(defcommand (evil-motion-w) "Move forward one word." (evil-execute-motion 'motion-w))
-(defcommand (evil-motion-b) "Move backward one word." (evil-execute-motion 'motion-b))
-(defcommand (evil-motion-e) "Move to end of word." (evil-execute-motion 'motion-e))
-(defcommand (evil-motion-W) "Move forward one WORD." (evil-execute-motion 'motion-W))
-(defcommand (evil-motion-B) "Move backward one WORD." (evil-execute-motion 'motion-B))
-(defcommand (evil-motion-E) "Move to end of WORD." (evil-execute-motion 'motion-E))
+(defcommand (evil-motion-h) "vim: move left"  (unless (no-panes?) (evil-execute-motion 'motion-h)))
+(defcommand (evil-motion-j) "vim: move down" (unless (no-panes?) (evil-execute-motion 'motion-j)))
+(defcommand (evil-motion-k) "vim: move up"   (unless (no-panes?) (evil-execute-motion 'motion-k)))
+(defcommand (evil-motion-l) "vim: move right" (unless (no-panes?) (evil-execute-motion 'motion-l)))
+(defcommand (evil-motion-$) "vim: move to end of line" (evil-execute-motion 'motion-$))
+(defcommand (evil-motion-^) "vim: move to first non-blank" (evil-execute-motion 'motion-^))
+(defcommand (evil-motion-w) "vim: move forward one word" (evil-execute-motion 'motion-w))
+(defcommand (evil-motion-b) "vim: move backward one word" (evil-execute-motion 'motion-b))
+(defcommand (evil-motion-e) "vim: move to end of word" (evil-execute-motion 'motion-e))
+(defcommand (evil-motion-W) "vim: move forward one WORD" (evil-execute-motion 'motion-W))
+(defcommand (evil-motion-B) "vim: move backward one WORD" (evil-execute-motion 'motion-B))
+(defcommand (evil-motion-E) "vim: move to end of WORD" (evil-execute-motion 'motion-E))
 
 ;; Bracket matching motion
 (register-motion! 'motion-%
   (lambda (count) (jump-to-matching-bracket)))
 
-(defcommand (evil-motion-%) "Jump to matching bracket." (evil-execute-motion 'motion-%))
+(defcommand (evil-motion-%) "vim: jump to matching bracket" (evil-execute-motion 'motion-%))
 
 (defcommand (evil-motion-gg)
-  "Go to first line."
+  "vim: jump to first line"
   (when (eq? evil-sm-state 'normal) (%jump-push!))
   (evil-execute-motion 'motion-goto-line))
 
 (defcommand (evil-motion-G)
-  "Go to last line."
+  "vim: jump to last line"
   (when (eq? evil-sm-state 'normal) (%jump-push!))
   (unless evil-count (set! evil-count (%line-count)))
   (evil-execute-motion 'motion-goto-line))
 
 (defcommand (evil-set-mark)
-  "Set named mark."
+  "vim: set mark"
   (let ((ch (last-key-char)))
     (when ch
       (%mark-set-to-point! ch)
@@ -336,7 +336,7 @@
 
 
 (defcommand (evil-goto-mark-line)
-  "Jump to line of mark."
+  "vim: jump to mark line\nJump to line of mark."
   (let ((ch (last-key-char)))
     (when ch
       (when (eq? evil-sm-state 'normal) (%jump-push!))
@@ -345,7 +345,7 @@
       (evil-execute-motion 'motion--mark-line-tmp))))
 
 (defcommand (evil-goto-mark-exact)
-  "Jump to exact position of mark."
+  "vim: jump to mark\nJump to exact position of mark."
   (let ((ch (last-key-char)))
     (when ch
       (when (eq? evil-sm-state 'normal) (%jump-push!))
@@ -354,17 +354,17 @@
       (evil-execute-motion 'motion--mark-exact-tmp))))
 
 (defcommand (evil-jump-backward)
-  "Jump to older entry in jump list."
+  "vim: jump backward\nJump to older entry in jump list."
   (%jump-backward!))
 
 (defcommand (evil-jump-forward)
-  "Jump to newer entry in jump list."
+  "vim: jump forward\nJump to newer entry in jump list."
   (%jump-forward!))
 
 ;; f/F/t/T — character seeking (current line only)
 
 (defcommand (evil-motion-f)
-  "Find character forward (on)."
+  "vim: find character forward (on)"
   (let ((ch (last-key-char)))
     (when ch
       (register-motion! 'motion--seek-tmp
@@ -379,7 +379,7 @@
       (evil-execute-motion 'motion--seek-tmp))))
 
 (defcommand (evil-motion-F)
-  "Find character backward (on)."
+  "vim: find character backward (on)"
   (let ((ch (last-key-char)))
     (when ch
       (register-motion! 'motion--seek-tmp
@@ -393,7 +393,7 @@
       (evil-execute-motion 'motion--seek-tmp))))
 
 (defcommand (evil-motion-t)
-  "Find character forward (before)."
+  "vim: find character forward (before)"
   (let ((ch (last-key-char)))
     (when ch
       (register-motion! 'motion--seek-tmp
@@ -408,7 +408,7 @@
       (evil-execute-motion 'motion--seek-tmp))))
 
 (defcommand (evil-motion-T)
-  "Find character backward (after)."
+  "vim: find character backward (after)"
   (let ((ch (last-key-char)))
     (when ch
       (register-motion! 'motion--seek-tmp

@@ -2,17 +2,17 @@
 
 ;; Undo
 (defcommand (evil-undo)
-  "Undo last change."
+  "vim: undo\nUndo last change."
   (%undo))
 
 ;; Redo
 (defcommand (evil-redo)
-  "Redo last undone change."
+  "vim: redo\nRedo last undone change."
   (%redo))
 
 ;; Line restore
 (defcommand (evil-line-restore)
-  "Restore line to its state before edits began on it."
+  "vim: line restore\nRestore line to its state before edits began on it."
   (%begin-change)
   (%line-restore)
   (%end-change))
@@ -43,7 +43,7 @@
 
 ;; Dot repeat
 (defcommand (evil-repeat)
-  "Repeat last change."
+  "vim: repeat last change"
   (let ((ri (%change-last-repeat-info))
         (user-count evil-count))
     (when (repeat-info? ri)
@@ -147,7 +147,7 @@
 
 ;; Count accumulation
 (defcommand (evil-digit-argument)
-  "Accumulate count prefix."
+  "vim: accumulate count prefix"
   (let ((ch (last-key-char)))
     (when (and ch (not (eq? ch #f)))
       (let ((digit (- (char->integer ch) (char->integer #\0))))
@@ -156,7 +156,7 @@
 
 ;; 0 key: line-start or append zero to count
 (defcommand (evil-zero)
-  "Line start or append zero to count."
+  "vim: line start or append 0 to count"
   (if evil-count
       (begin
         (set! evil-count (* evil-count 10))

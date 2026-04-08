@@ -38,27 +38,27 @@
   (%minibuffer-activate prompt on-submit #f))
 
 (defcommand (minibuffer-submit)
-  "Accept current minibuffer input."
+  "minibuffer: submit\nAccept current minibuffer input."
   (%minibuffer-submit))
 
 (defcommand (minibuffer-cancel)
-  "Cancel minibuffer input."
+  "minibuffer: escape\nCancel minibuffer input."
   (%minibuffer-cancel))
 
 (defcommand (minibuffer-select-next)
-  "Select the next item in the provider list."
+  "minibuffer: select next\nSelect the next item in the provider list."
   (%minibuffer-select-next))
 
 (defcommand (minibuffer-select-prev)
-  "Select the previous item in the provider list."
+  "minibuffer: select previous\nSelect the previous item in the provider list."
   (%minibuffer-select-prev))
 
 (defcommand (command-palette)
-  "Open the command palette."
+  "sev: open command palette"
   (%minibuffer-activate-commands))
 
 (defcommand (theme-picker)
-  "Browse and activate available themes."
+  "theme selector: toggle\nBrowse and activate available themes."
   (%minibuffer-activate-themes))
 
 ;; Register minibuffer-read as an interactive spec handler
