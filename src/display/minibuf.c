@@ -154,18 +154,16 @@ void MinibufPalette(AppState *state) {
                     .width = { .top = 1 }
                 }
             }) {
+                Clay_Color sel = ui_resolve_color(state, state->ui.roles.selection);
                 int scroll = state->minibuf.item_scroll;
                 for (int i = 0; i < visible; i++) {
-                    bool is_selected = (scroll + i == state->minibuf.selected);
-                    Clay_Color c = ui_resolve_color(state, state->ui.roles.scrollbar_hover);
-                    Clay_Color row_bg = is_selected
-                        ? (Clay_Color){c.r, c.g, c.b, 128}
-                        : (Clay_Color){0, 0, 0, 0};
+                    int abs_idx = scroll + i;
+                    bool is_selected = (abs_idx == state->minibuf.selected);
                     Clay_String label = {
-                        .chars  = state->minibuf.items[scroll + i].label,
-                        .length = (int32_t)strlen(state->minibuf.items[scroll + i].label)
+                        .chars  = state->minibuf.items[abs_idx].label,
+                        .length = (int32_t)strlen(state->minibuf.items[abs_idx].label)
                     };
-                    bool has_kb = state->minibuf.items[scroll + i].keybinding[0] != '\0';
+                    bool has_kb = state->minibuf.items[abs_idx].keybinding[0] != '\0';
                     CLAY(CLAY_IDI_LOCAL("MinibufItem", i), {
                         .layout = {
                             .sizing         = { .width = CLAY_SIZING_GROW(0) },
@@ -173,9 +171,14 @@ void MinibufPalette(AppState *state) {
                             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
                             .childGap       = (uint16_t)(pad * 2)
                         },
-                        .backgroundColor = row_bg,
-                        .cornerRadius    = CLAY_CORNER_RADIUS(4.0f * scale)
+                        .backgroundColor = Clay_Hovered()
+                            ? (Clay_Color){sel.r, sel.g, sel.b, sel.a / 2}
+                            : (is_selected
+                                ? sel
+                                : (Clay_Color){0, 0, 0, 0}),
+                        .cornerRadius = CLAY_CORNER_RADIUS(4.0f * scale)
                     }) {
+                    if (Clay_Hovered()) state->input.desired_cursor = SDL_SYSTEM_CURSOR_POINTER;
                         CLAY(CLAY_IDI_LOCAL("MinibufItemLabel", i), {
                             .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } }
                         }) {
@@ -218,6 +221,12 @@ void MinibufPalette(AppState *state) {
     state->minibuf.palette_h = input_h + items_h;
     state->minibuf.palette_x = ((float)win_w - state->minibuf.palette_w) / 2.0f;
     state->minibuf.palette_y = 64.0f * scale;
+    // Item geometry for click hit-testing in event.c
+    float item_h = 2.0f * pad + (float)line_h;
+    state->minibuf.palette_item_h  = visible_count > 0 ? item_h : 0.0f;
+    state->minibuf.palette_items_y = visible_count > 0
+        ? state->minibuf.palette_y + input_h + pad
+        : 0.0f;
 
     buffer_set_current(saved);
 }

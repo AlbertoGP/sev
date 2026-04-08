@@ -164,6 +164,7 @@ typedef struct {
     MinibufFrame stack[MINIBUF_STACK_MAX];
     int          stack_depth;  // 0 = no pushed frames
     float        palette_x, palette_y, palette_w, palette_h; // render-px; valid when active
+    float        palette_items_y, palette_item_h;            // item list geometry; 0 when no items
     void (*provider)(AppState *state, const char *input);   // NULL = plain mode
     void (*preview_action)(sexp ctx, sexp sym);             // called on selection change; NULL = none
     void (*submit_action)(sexp ctx, sexp sym);              // NULL = call-interactively

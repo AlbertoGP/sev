@@ -224,8 +224,19 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                            x <  state->minibuf.palette_x + state->minibuf.palette_w &&
                            y >= state->minibuf.palette_y &&
                            y <  state->minibuf.palette_y + state->minibuf.palette_h);
-            if (!inside)
+            if (!inside) {
                 scm_minibuffer_cancel(state->chibi.ctx, SEXP_FALSE, SEXP_FALSE);
+            } else if (state->minibuf.provider && state->minibuf.item_count > 0
+                       && state->minibuf.palette_item_h > 0.0f
+                       && y >= state->minibuf.palette_items_y) {
+                int i = (int)((y - state->minibuf.palette_items_y) / state->minibuf.palette_item_h);
+                int visible = state->minibuf.item_count < MINIBUF_VISIBLE_ITEMS
+                            ? state->minibuf.item_count : MINIBUF_VISIBLE_ITEMS;
+                if (i >= 0 && i < visible) {
+                    state->minibuf.selected = state->minibuf.item_scroll + i;
+                    scm_minibuffer_submit(state->chibi.ctx, SEXP_FALSE, SEXP_FALSE);
+                }
+            }
             break; // consume the click regardless
         }
 
