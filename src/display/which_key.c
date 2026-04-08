@@ -179,16 +179,16 @@ void WhichKey(AppState *state) {
     }
 
     float scale = state->ui.scale_factor;
-    uint16_t font_size = (uint16_t)(14.0f * scale);
+    uint16_t font_size = (uint16_t)(12.0f * scale);
     float pad = 8.0f * scale;
 
     CachedRoles roles = state->ui.roles;
-    Clay_Color bg         = ui_resolve_color(state, roles.bar_bg);
+    Clay_Color bg         = ui_resolve_color(state, roles.ui_bg);
     Clay_Color fg_header  = ui_resolve_color(state, roles.text_primary);
     Clay_Color fg_key     = ui_resolve_color(state, roles.text_key);
     Clay_Color fg_label   = ui_resolve_color(state, roles.text_command);
     Clay_Color fg_prefix  = ui_resolve_color(state, roles.text_prefix);
-    Clay_Color border_col = ui_resolve_color(state, roles.border_inactive);
+    Clay_Color border_col = ui_resolve_color(state, roles.border_active);
 
     CLAY(CLAY_ID("WhichKey"), {
         .floating = {
@@ -203,12 +203,13 @@ void WhichKey(AppState *state) {
         .layout = {
             .layoutDirection = CLAY_TOP_TO_BOTTOM,
             .padding = { .left = pad, .right = pad, .top = pad, .bottom = pad },
-            .childGap = (uint16_t)(2.0f * scale)
+            .childGap = (uint16_t)(pad * 2)
         },
+        .cornerRadius = CLAY_CORNER_RADIUS(6.0f * scale),
         .backgroundColor = bg,
         .border = {
             .color = border_col,
-            .width = { .top = 1, .bottom = 1, .left = 1, .right = 1 }
+            .width = { .top = 1, .bottom = 1, .left = 1, .right = 1, .betweenChildren = 1 }
         }
     }) {
         // Header: show the accumulated prefix
@@ -223,29 +224,23 @@ void WhichKey(AppState *state) {
             .wrapMode  = CLAY_TEXT_WRAP_NONE
         }));
 
-        for (int i = 0; i < wk_count; i++) {
-            Clay_String key_cs = {
-                .chars  = wk_key_strs[i],
-                .length = (int32_t)strlen(wk_key_strs[i])
-            };
-            Clay_String label_cs = {
-                .chars  = wk_label_strs[i],
-                .length = (int32_t)strlen(wk_label_strs[i])
-            };
-
-            CLAY(CLAY_IDI_LOCAL("WK_Row", i), {
+        CLAY(CLAY_ID("WK_Cols"), {
+            .layout = {
+                .layoutDirection = CLAY_LEFT_TO_RIGHT,
+                .childGap = (uint16_t)(12.0f * scale)
+            }
+        }) {
+            CLAY(CLAY_ID("WK_Keys"), {
                 .layout = {
-                    .layoutDirection = CLAY_LEFT_TO_RIGHT,
-                    .childGap = (uint16_t)(8.0f * scale)
+                    .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                    .childGap = (uint16_t)(2.0f * scale)
                 }
             }) {
-                CLAY(CLAY_IDI_LOCAL("WK_Key", i), {
-                    .layout = {
-                        .sizing = {
-                            .width = CLAY_SIZING_FIXED(60.0f * scale)
-                        }
-                    }
-                }) {
+                for (int i = 0; i < wk_count; i++) {
+                    Clay_String key_cs = {
+                        .chars  = wk_key_strs[i],
+                        .length = (int32_t)strlen(wk_key_strs[i])
+                    };
                     CLAY_TEXT(key_cs, CLAY_TEXT_CONFIG({
                         .fontId    = FONT_BUF_NORMAL,
                         .fontSize  = font_size,
@@ -253,12 +248,25 @@ void WhichKey(AppState *state) {
                         .wrapMode  = CLAY_TEXT_WRAP_NONE
                     }));
                 }
-                CLAY_TEXT(label_cs, CLAY_TEXT_CONFIG({
-                    .fontId    = FONT_BUF_NORMAL,
-                    .fontSize  = font_size,
-                    .textColor = wk_is_prefix[i] ? fg_prefix : fg_label,
-                    .wrapMode  = CLAY_TEXT_WRAP_NONE
-                }));
+            }
+            CLAY(CLAY_ID("WK_Labels"), {
+                .layout = {
+                    .layoutDirection = CLAY_TOP_TO_BOTTOM,
+                    .childGap = (uint16_t)(2.0f * scale)
+                }
+            }) {
+                for (int i = 0; i < wk_count; i++) {
+                    Clay_String label_cs = {
+                        .chars  = wk_label_strs[i],
+                        .length = (int32_t)strlen(wk_label_strs[i])
+                    };
+                    CLAY_TEXT(label_cs, CLAY_TEXT_CONFIG({
+                        .fontId    = FONT_UI_NORMAL,
+                        .fontSize  = font_size,
+                        .textColor = wk_is_prefix[i] ? fg_prefix : fg_label,
+                        .wrapMode  = CLAY_TEXT_WRAP_NONE
+                    }));
+                }
             }
         }
     }

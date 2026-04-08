@@ -85,9 +85,9 @@
    (tab.close         . fg-0)
    (text.primary      . text-0)
    (text.faded        . fg-2)
-   (text.key          . green)
-   (text.command      . blue)
-   (text.prefix       . mauve)
+   (text.key          . text-2)
+   (text.command      . text-0)
+   (text.prefix       . text-0)
    (text.linenum      . mauve)
    (selection         . select)
    (mode.normal       . lavender)
@@ -119,7 +119,7 @@
    (hl.builtin        . (:color sky))
    (hl.operator       . (:color text-0))
    (hl.bracket        . (:color accent-0))
-   (hl.bracket.match    . (:color rosewater :bg select))))
+   (hl.bracket.match  . (:color rosewater :bg select))))
 
 (define-theme
  'catppuccin-macchiato
@@ -170,9 +170,9 @@
    (tab.close         . fg-0)
    (text.primary      . text-0)
    (text.faded        . fg-2)
-   (text.key          . green)
-   (text.command      . blue)
-   (text.prefix       . mauve)
+   (text.key          . text-2)
+   (text.command      . text-0)
+   (text.prefix       . text-0)
    (text.linenum      . mauve)
    (selection         . select)
    (mode.normal       . lavender)
@@ -204,7 +204,7 @@
    (hl.builtin        . (:color sky))
    (hl.operator       . (:color text-0))
    (hl.bracket        . (:color accent-0))
-   (hl.bracket.match    . (:color rosewater :bg select))))
+   (hl.bracket.match  . (:color rosewater :bg select))))
 
 (define-theme
  'catppuccin-latte
@@ -255,9 +255,9 @@
    (tab.close         . fg-0)
    (text.primary      . text-0)
    (text.faded        . fg-2)
-   (text.key          . green)
-   (text.command      . blue)
-   (text.prefix       . mauve)
+   (text.key          . text-2)
+   (text.command      . text-0)
+   (text.prefix       . text-0)
    (text.linenum      . mauve)
    (selection         . select)
    (mode.normal       . lavender)
@@ -289,7 +289,7 @@
    (hl.builtin        . (:color sky))
    (hl.operator       . (:color text-0))
    (hl.bracket        . (:color accent-0))
-   (hl.bracket.match    . (:color rosewater :bg select))))
+   (hl.bracket.match  . (:color rosewater :bg select))))
 
 (activate-theme 'catppuccin-macchiato)
 
