@@ -59,7 +59,7 @@ static bool key_seen(KeyEvent *seen, int nseen, const KeyEvent *ev) {
     return false;
 }
 
-static void collect_entries(sexp ctx, Keymap *km, const char *prefix,
+static void collect_entries(sexp ctx, sexp summary_fn, Keymap *km, const char *prefix,
                              int depth, KeyEvent *seen, int *nseen) {
     if (!km || wk_count >= WK_MAX || depth > 4) return;
 
@@ -82,10 +82,18 @@ static void collect_entries(sexp ctx, Keymap *km, const char *prefix,
         if (e->binding.type == BINDING_COMMAND) {
             snprintf(wk_key_strs[wk_count], sizeof(wk_key_strs[0]),
                      "%s", full_path);
-            sexp name_sexp = sexp_symbol_to_string(ctx, e->binding.command_sym);
-            const char *sym_name = sexp_string_data(name_sexp);
+            const char *label;
+            sexp label_sexp = (summary_fn != SEXP_FALSE)
+                ? sexp_apply(ctx, summary_fn, sexp_list1(ctx, e->binding.command_sym))
+                : SEXP_FALSE;
+            if (sexp_stringp(label_sexp)) {
+                label = sexp_string_data(label_sexp);
+            } else {
+                sexp name_sexp = sexp_symbol_to_string(ctx, e->binding.command_sym);
+                label = sexp_string_data(name_sexp);
+            }
             snprintf(wk_label_strs[wk_count], sizeof(wk_label_strs[0]),
-                     "%s", sym_name ? sym_name : "?");
+                     "%s", label ? label : "?");
             wk_is_prefix[wk_count] = false;
             wk_count++;
         } else if (e->binding.type == BINDING_KEYMAP) {
@@ -100,20 +108,22 @@ static void collect_entries(sexp ctx, Keymap *km, const char *prefix,
                 wk_count++;
             } else {
                 // Anonymous prefix: recurse
-                collect_entries(ctx, child, full_path, depth + 1, seen, nseen);
+                collect_entries(ctx, summary_fn, child, full_path, depth + 1, seen, nseen);
             }
         }
     }
 
     // Traverse parent chain so inherited entries are visible
     if (km->parent)
-        collect_entries(ctx, km->parent, prefix, depth, seen, nseen);
+        collect_entries(ctx, summary_fn, km->parent, prefix, depth, seen, nseen);
 }
 
 static void collect_entries_top(sexp ctx, Keymap *km, const char *prefix, int depth) {
+    sexp summary_fn = sexp_env_ref(ctx, G->chibi.env,
+                                   sexp_intern(ctx, "doc-summary", -1), SEXP_FALSE);
     KeyEvent seen[64];
     int nseen = 0;
-    collect_entries(ctx, km, prefix, depth, seen, &nseen);
+    collect_entries(ctx, summary_fn, km, prefix, depth, seen, &nseen);
 }
 
 void WhichKey(AppState *state) {

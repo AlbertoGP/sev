@@ -5,6 +5,7 @@
   (export
     defcommand defvar defun
     call-interactively set-key! bind-prefix! describe-symbol describe-function describe-key describe-command describe-variable
+    doc-summary
     set-doc! get-doc get-doc-text
     make-interactive! interactive? interactive-spec
     register-spec-handler!

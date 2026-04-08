@@ -45,6 +45,8 @@ static void commands_provider(AppState *state, const char *input) {
     sexp first_binding_fn = sexp_env_ref(ctx, state->chibi.env,
                                           sexp_intern(ctx, "command-display-binding", -1),
                                           SEXP_FALSE);
+    sexp summary_fn = sexp_env_ref(ctx, state->chibi.env,
+                                   sexp_intern(ctx, "doc-summary", -1), SEXP_FALSE);
 
     state->minibuf.item_count = 0;
     bool filter = input && input[0] != '\0';
@@ -58,7 +60,14 @@ static void commands_provider(AppState *state, const char *input) {
         if (filter && strstr(name, input) == NULL) continue;
         MinibufItem *item = &state->minibuf.items[state->minibuf.item_count];
         memset(item, 0, sizeof(*item));
-        strncpy(item->label,    name, MINIBUF_LABEL_MAX - 1);
+        if (summary_fn != SEXP_FALSE) {
+            sexp summary = sexp_apply(ctx, summary_fn, sexp_list1(ctx, sym));
+            strncpy(item->label,
+                    sexp_stringp(summary) ? sexp_string_data(summary) : name,
+                    MINIBUF_LABEL_MAX - 1);
+        } else {
+            strncpy(item->label, name, MINIBUF_LABEL_MAX - 1);
+        }
         strncpy(item->sym_name, name, MINIBUF_LABEL_MAX - 1);
         if (first_binding_fn != SEXP_FALSE) {
             sexp kb = sexp_apply(ctx, first_binding_fn, sexp_list1(ctx, sym));

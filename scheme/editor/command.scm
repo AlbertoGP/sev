@@ -124,6 +124,17 @@
         (proc)
         (resolve-spec-cps spec '() (lambda (args) (apply proc args))))))
 
+;; Return the first line of a symbol's docstring, falling back to the symbol name.
+(define (doc-summary sym)
+  (let ((text (get-doc-text sym)))
+    (if text
+        (let loop ((i 0))
+          (cond
+            ((= i (string-length text)) text)
+            ((char=? (string-ref text i) #\newline) (substring text 0 i))
+            (else (loop (+ i 1)))))
+        (symbol->string sym))))
+
 ;; Introspection
 (define (list-commands) (list-by-kind 'command))
 
