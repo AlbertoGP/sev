@@ -183,12 +183,10 @@
        (set-doc! 'name 'command docstring)
        (make-interactive! 'name '())))))
 
-(defcommand (describe-function fname)
-  "Display documentation for a named function or command."
-  (interactive (minibuffer-read "Describe function: "))
-  (let* ((sym  (string->symbol fname))
-         (doc  (get-doc sym))
-         (keys (where-is sym)))
+(define (describe-symbol sym)
+  (let* ((fname (symbol->string sym))
+         (doc   (get-doc sym))
+         (keys  (where-is sym)))
     (%pop-to-buffer "*Help*")
     ;; Set up help-mode on first use (buffer_create auto-enables evil-normal-mode)
     (when (not (%buffer-has-minor-mode? 'help-mode))
@@ -214,13 +212,25 @@
     ;; Go to top
     (point-set! 0)))
 
+(defcommand (describe-function)
+  "Select a function with completions and display its documentation."
+  (%minibuffer-activate-describe-function))
+
+(defcommand (describe-command)
+  "Select a command with completions and display its documentation."
+  (%minibuffer-activate-describe-command))
+
+(defcommand (describe-variable)
+  "Select a variable with completions and display its documentation."
+  (%minibuffer-activate-describe-variable))
+
 (defcommand (describe-key)
   "Read a key sequence and describe its binding."
   (message "Describe key: ")
   (%read-key-binding
     (lambda (sym key-str)
       (if sym
-          (describe-function (symbol->string sym))
+          (describe-symbol sym)
           (message (string-append key-str " is unbound"))))))
 
 ;; defvar macro - declare documented variables concisely

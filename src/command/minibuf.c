@@ -71,6 +71,64 @@ static void commands_provider(AppState *state, const char *input) {
     clamp_selected(state);
 }
 
+// ---- Function provider ------------------------------------------------------
+
+static void functions_provider(AppState *state, const char *input) {
+    sexp ctx = state->chibi.ctx;
+    sexp fn = sexp_env_ref(ctx, state->chibi.env,
+                           sexp_intern(ctx, "list-functions", -1), SEXP_FALSE);
+    if (fn == SEXP_FALSE) return;
+    sexp list = sexp_apply(ctx, fn, SEXP_NULL);
+    if (sexp_exceptionp(list)) return;
+
+    state->minibuf.item_count = 0;
+    bool filter = input && input[0] != '\0';
+
+    for (sexp p = list; sexp_pairp(p); p = sexp_cdr(p)) {
+        if (state->minibuf.item_count >= MINIBUF_ITEMS_MAX) break;
+        sexp sym = sexp_car(p);
+        if (!sexp_symbolp(sym)) continue;
+        sexp str = sexp_symbol_to_string(ctx, sym);
+        const char *name = sexp_string_data(str);
+        if (filter && strstr(name, input) == NULL) continue;
+        MinibufItem *item = &state->minibuf.items[state->minibuf.item_count];
+        memset(item, 0, sizeof(*item));
+        strncpy(item->label,    name, MINIBUF_LABEL_MAX - 1);
+        strncpy(item->sym_name, name, MINIBUF_LABEL_MAX - 1);
+        state->minibuf.item_count++;
+    }
+    clamp_selected(state);
+}
+
+// ---- Variable provider ------------------------------------------------------
+
+static void variables_provider(AppState *state, const char *input) {
+    sexp ctx = state->chibi.ctx;
+    sexp fn = sexp_env_ref(ctx, state->chibi.env,
+                           sexp_intern(ctx, "list-variables", -1), SEXP_FALSE);
+    if (fn == SEXP_FALSE) return;
+    sexp list = sexp_apply(ctx, fn, SEXP_NULL);
+    if (sexp_exceptionp(list)) return;
+
+    state->minibuf.item_count = 0;
+    bool filter = input && input[0] != '\0';
+
+    for (sexp p = list; sexp_pairp(p); p = sexp_cdr(p)) {
+        if (state->minibuf.item_count >= MINIBUF_ITEMS_MAX) break;
+        sexp sym = sexp_car(p);
+        if (!sexp_symbolp(sym)) continue;
+        sexp str = sexp_symbol_to_string(ctx, sym);
+        const char *name = sexp_string_data(str);
+        if (filter && strstr(name, input) == NULL) continue;
+        MinibufItem *item = &state->minibuf.items[state->minibuf.item_count];
+        memset(item, 0, sizeof(*item));
+        strncpy(item->label,    name, MINIBUF_LABEL_MAX - 1);
+        strncpy(item->sym_name, name, MINIBUF_LABEL_MAX - 1);
+        state->minibuf.item_count++;
+    }
+    clamp_selected(state);
+}
+
 // ---- Theme provider ---------------------------------------------------------
 
 static void themes_provider(AppState *state, const char *input) {
@@ -109,6 +167,15 @@ static void theme_apply(sexp ctx, sexp sym) {
                                   SEXP_FALSE);
     if (activate == SEXP_FALSE) return;
     sexp result = sexp_apply(ctx, activate, sexp_list1(ctx, sym));
+    if (sexp_exceptionp(result))
+        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+}
+
+static void describe_symbol_action(sexp ctx, sexp sym) {
+    sexp fn = sexp_env_ref(ctx, G->chibi.env,
+                           sexp_intern(ctx, "describe-symbol", -1), SEXP_FALSE);
+    if (fn == SEXP_FALSE) return;
+    sexp result = sexp_apply(ctx, fn, sexp_list1(ctx, sym));
     if (sexp_exceptionp(result))
         sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
 }
@@ -387,6 +454,36 @@ sexp scm_minibuffer_cancel(sexp ctx, sexp self, sexp n) {
 
 sexp scm_minibuffer_activep(sexp ctx, sexp self, sexp n) {
     return sexp_make_boolean(G->minibuf.active);
+}
+
+sexp scm_minibuffer_activate_describe_function(sexp ctx, sexp self, sexp n) {
+    G->minibuf.provider      = functions_provider;
+    G->minibuf.submit_action = describe_symbol_action;
+    G->minibuf.item_count    = 0;
+    G->minibuf.selected      = 0;
+    G->minibuf.item_scroll   = 0;
+    sexp prompt = sexp_c_string(ctx, "Describe function...", -1);
+    return scm_minibuffer_activate(ctx, self, n, prompt, SEXP_FALSE, SEXP_FALSE);
+}
+
+sexp scm_minibuffer_activate_describe_command(sexp ctx, sexp self, sexp n) {
+    G->minibuf.provider      = commands_provider;
+    G->minibuf.submit_action = describe_symbol_action;
+    G->minibuf.item_count    = 0;
+    G->minibuf.selected      = 0;
+    G->minibuf.item_scroll   = 0;
+    sexp prompt = sexp_c_string(ctx, "Describe command...", -1);
+    return scm_minibuffer_activate(ctx, self, n, prompt, SEXP_FALSE, SEXP_FALSE);
+}
+
+sexp scm_minibuffer_activate_describe_variable(sexp ctx, sexp self, sexp n) {
+    G->minibuf.provider      = variables_provider;
+    G->minibuf.submit_action = describe_symbol_action;
+    G->minibuf.item_count    = 0;
+    G->minibuf.selected      = 0;
+    G->minibuf.item_scroll   = 0;
+    sexp prompt = sexp_c_string(ctx, "Describe variable...", -1);
+    return scm_minibuffer_activate(ctx, self, n, prompt, SEXP_FALSE, SEXP_FALSE);
 }
 
 sexp scm_minibuffer_activate_commands(sexp ctx, sexp self, sexp n) {

@@ -51,6 +51,8 @@
 (%set-keymap-name! help-map "help")
 (set-key! help-map "f" 'describe-function)
 (set-key! help-map "k" 'describe-key)
+(set-key! help-map "c" 'describe-command)
+(set-key! help-map "v" 'describe-variable)
 (set-key! help-map "w" 'which-key-toggle)
 (bind-prefix! base-spc-map "h" help-map)
 

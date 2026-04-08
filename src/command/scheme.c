@@ -449,8 +449,11 @@ void scheme_init(AppState *state) {
     SDEF("%minibuffer-submit",   0, scm_minibuffer_submit);
     SDEF("%minibuffer-cancel",   0, scm_minibuffer_cancel);
     SDEF("%minibuffer-active?",  0, scm_minibuffer_activep);
-    SDEF("%minibuffer-activate-commands", 0, scm_minibuffer_activate_commands);
-    SDEF("%minibuffer-activate-themes",   0, scm_minibuffer_activate_themes);
+    SDEF("%minibuffer-activate-commands",         0, scm_minibuffer_activate_commands);
+    SDEF("%minibuffer-activate-describe-function", 0, scm_minibuffer_activate_describe_function);
+    SDEF("%minibuffer-activate-describe-command",  0, scm_minibuffer_activate_describe_command);
+    SDEF("%minibuffer-activate-describe-variable", 0, scm_minibuffer_activate_describe_variable);
+    SDEF("%minibuffer-activate-themes",           0, scm_minibuffer_activate_themes);
     SDEF("%minibuffer-select-next",       0, scm_minibuffer_select_next);
     SDEF("%minibuffer-select-prev",       0, scm_minibuffer_select_prev);
 
@@ -558,7 +561,9 @@ void scheme_init(AppState *state) {
         "%macro-start! %macro-stop! %macro-play %macro-recording? "
         "%minibuffer-activate %minibuffer-submit "
         "%minibuffer-cancel %minibuffer-active? "
-        "%minibuffer-activate-commands %minibuffer-activate-themes "
+        "%minibuffer-activate-commands %minibuffer-activate-describe-function "
+        "%minibuffer-activate-describe-command "
+        "%minibuffer-activate-describe-variable %minibuffer-activate-themes "
         "%minibuffer-select-next %minibuffer-select-prev "
         "%which-key-toggle "
         "%record-command-usage %update-recent-project! %chdir %open-recent-project! "
