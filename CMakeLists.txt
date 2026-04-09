@@ -31,6 +31,7 @@ set(SRC_FILES
     src/display/scale.c
     src/display/welcome.c
     src/display/status.c
+    src/display/keybinding.c
     src/display/tab.c
     src/display/theme.c
     src/display/tooltip.c

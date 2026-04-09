@@ -3,6 +3,7 @@
 
 #include "decoration.h"
 #include "icon.h"
+#include "keybinding.h"
 #include "theme.h"
 #include "welcome.h"
 #include "../command/keymap.h"
@@ -58,8 +59,7 @@ void welcome_flush_pending(void) {
 
 static void SuggestionRow(AppState *state, Clay_String label, Clay_String key, const char *icon_name, const char *cmd) {
     float font_size = 12 * state->ui.scale_factor;
-    TextStyle key_style  = ui_resolve_text_style(state, state->ui.roles.text_key,
-                                                  FONT_BUF_NORMAL, font_size);
+    float key_font_size = 11 * state->ui.scale_factor;
     int icon_size = 11.0 * state->ui.scale_factor;
     SDL_Texture *icon = icon_get(icon_name,   state, icon_size, icon_size);
     Clay_Color bg = ui_resolve_color(state, state->ui.roles.line_bg);
@@ -98,18 +98,13 @@ static void SuggestionRow(AppState *state, Clay_String label, Clay_String key, c
             .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
         }));
         XSpacer();
-        CLAY_TEXT(key, CLAY_TEXT_CONFIG({
-            .fontId    = key_style.font_id,
-            .fontSize  = key_style.font_size,
-            .textColor = key_style.color,
-        }));
+        Keybinding(state, key, key_font_size);
     }
 }
 
 static void ProjectRow(AppState *state, Clay_String label, Clay_String key, const char *path) {
     float font_size = 12 * state->ui.scale_factor;
-    TextStyle key_style  = ui_resolve_text_style(state, state->ui.roles.text_key,
-                                                  FONT_BUF_NORMAL, font_size);
+    float key_font_size = 11 * state->ui.scale_factor;
     int icon_size = 11.0 * state->ui.scale_factor;
     SDL_Texture *icon = icon_get("project-icon", state, icon_size, icon_size);
     Clay_Color bg = ui_resolve_color(state, state->ui.roles.line_bg);
@@ -146,11 +141,7 @@ static void ProjectRow(AppState *state, Clay_String label, Clay_String key, cons
             .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
         }));
         XSpacer();
-        CLAY_TEXT(key, CLAY_TEXT_CONFIG({
-            .fontId    = key_style.font_id,
-            .fontSize  = key_style.font_size,
-            .textColor = key_style.color,
-        }));
+        Keybinding(state, key, key_font_size);
     }
 }
 
@@ -208,14 +199,14 @@ void WelcomePane(AppState *state) {
                 }));
             }
         }
-        static char kb_new_tab[64] = "SPC t n";
-        static char kb_open_project[64] = "SPC p o";
-        static char kb_help[64]   = "SPC h k";
-        static char kb_command[64] = ":";
+        static char kb_new_tab[64] = "";
+        static char kb_open_project[64] = "";
+        static char kb_help[64]   = "";
+        static char kb_command[64] = "";
         keymap_where_is_first(state, "tab-new",                  kb_new_tab,       sizeof(kb_new_tab));
         keymap_where_is_first(state, "open-project",             kb_open_project,  sizeof(kb_open_project));
-        keymap_where_is_first(state, "command-palettle",         kb_command,       sizeof(kb_command));
-        keymap_where_is_first(state, "describe-key",             kb_help,          sizeof(kb_help));
+        keymap_where_is_first(state, "command-palette",          kb_command,       sizeof(kb_command));
+        keymap_where_is_first(state, "describe-command",         kb_help,          sizeof(kb_help));
         CLAY(CLAY_ID("Get Started Title"), {
             .layout = {
                 .sizing = {
@@ -251,9 +242,9 @@ void WelcomePane(AppState *state) {
             SuggestionRow(state, CLAY_STRING("Open Project"),
                                  (Clay_String){ .length = strlen(kb_open_project), .chars = kb_open_project }, "open-icon",
                                  "open-project");
-            SuggestionRow(state, CLAY_STRING("Describe Key"),
+            SuggestionRow(state, CLAY_STRING("Describe Command"),
                                  (Clay_String){ .length = strlen(kb_help),    .chars = kb_help    }, "help-icon",
-                                 "describe-key");
+                                 "describe-command");
             SuggestionRow(state, CLAY_STRING("Open Command Palette"),
                                  (Clay_String){ .length = strlen(kb_command), .chars = kb_command }, "palette-icon",
                                  "command-palette");

@@ -1,4 +1,5 @@
 #include "tooltip.h"
+#include "keybinding.h"
 #include "theme.h"
 #include "../clay/renderer.h"
 
@@ -138,15 +139,8 @@ static void text_binding_tooltip_render(void *user_data) {
             .textColor = ui_resolve_color(d->state, d->state->ui.roles.text_primary)
         }));
         if (d->binding[0]) {
-            TextStyle ks = ui_resolve_text_style(d->state,
-                               d->state->ui.roles.text_key,
-                               FONT_BUF_NORMAL, fsz);
             Clay_String kb = { .chars = d->binding, .length = (int32_t)strlen(d->binding) };
-            CLAY_TEXT(kb, CLAY_TEXT_CONFIG({
-                .fontId    = ks.font_id,
-                .fontSize  = ks.font_size,
-                .textColor = ks.color
-            }));
+            Keybinding(d->state, kb, fsz);
         }
     }
 }

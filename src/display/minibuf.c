@@ -5,6 +5,7 @@
 #include <SDL3_ttf/SDL_ttf.h>
 
 #include "cursor.h"
+#include "keybinding.h"
 #include "theme.h"
 #include "vline.h"
 #include "../clay/renderer.h"
@@ -195,12 +196,7 @@ void MinibufPalette(AppState *state) {
                                 .chars  = state->minibuf.items[scroll + i].keybinding,
                                 .length = (int32_t)strlen(state->minibuf.items[scroll + i].keybinding)
                             };
-                            CLAY_TEXT(kb, CLAY_TEXT_CONFIG({
-                                .fontId    = FONT_UI_NORMAL,
-                                .fontSize  = font_size,
-                                .textColor = ui_resolve_color(state, state->ui.roles.text_key),
-                                .wrapMode  = CLAY_TEXT_WRAP_NONE
-                            }));
+                            Keybinding(state, kb, font_size);
                         }
                     }
                 }

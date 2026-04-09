@@ -3,9 +3,11 @@
 #include <stdio.h>
 
 #include "which_key.h"
+#include "keybinding.h"
 #include "theme.h"
 #include "../command/keymap.h"
 #include "../command/scheme_internal.h"
+#include "../command/message.h"
 
 #define WK_MAX 64
 #define WK_KEY_SZ 64
@@ -217,7 +219,6 @@ void WhichKey(AppState *state) {
     CachedRoles roles = state->ui.roles;
     Clay_Color bg         = ui_resolve_color(state, roles.ui_bg);
     Clay_Color fg_header  = ui_resolve_color(state, roles.text_primary);
-    Clay_Color fg_key     = ui_resolve_color(state, roles.text_key);
     Clay_Color fg_label   = ui_resolve_color(state, roles.text_command);
     Clay_Color fg_prefix  = ui_resolve_color(state, roles.text_prefix);
     Clay_Color border_col = ui_resolve_color(state, roles.border_active);
@@ -249,12 +250,7 @@ void WhichKey(AppState *state) {
             .chars  = state->which_key.prefix_str,
             .length = (int32_t)strlen(state->which_key.prefix_str)
         };
-        CLAY_TEXT(header_cs, CLAY_TEXT_CONFIG({
-            .fontId    = FONT_BUF_NORMAL,
-            .fontSize  = font_size,
-            .textColor = fg_header,
-            .wrapMode  = CLAY_TEXT_WRAP_NONE
-        }));
+        Keybinding(state, header_cs, font_size);
 
         CLAY(CLAY_ID("WK_Cols"), {
             .layout = {
@@ -273,12 +269,7 @@ void WhichKey(AppState *state) {
                         .chars  = wk_key_strs[i],
                         .length = (int32_t)strlen(wk_key_strs[i])
                     };
-                    CLAY_TEXT(key_cs, CLAY_TEXT_CONFIG({
-                        .fontId    = FONT_BUF_NORMAL,
-                        .fontSize  = font_size,
-                        .textColor = fg_key,
-                        .wrapMode  = CLAY_TEXT_WRAP_NONE
-                    }));
+                    Keybinding(state, key_cs, font_size);
                 }
             }
             CLAY(CLAY_ID("WK_Labels"), {
@@ -308,6 +299,9 @@ sexp scm_which_key_toggle(sexp ctx, sexp self, sexp n) {
     G->which_key.enabled = !G->which_key.enabled;
     if (!G->which_key.enabled)
         G->which_key.active = false;
+    char msg[64];
+    sprintf(msg, "Key completion prompt %s", G->which_key.enabled ? "enabled" : "disabled");
+    message_send(msg);
     G->needs_redraw = true;
     return SEXP_VOID;
 }
