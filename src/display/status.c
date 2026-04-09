@@ -133,6 +133,7 @@ void MacroIndicator(AppState *state) {
 }
 
 void MajorModeIndicator(AppState *state, Buffer *buf, Clay_Color text_color) {
+    if (state->input.current_focus == FOCUS_WELCOME) return;
     float scale = state->ui.scale_factor;
     Mode *major = buffer_get_major_mode(buf);
     if (major) {
