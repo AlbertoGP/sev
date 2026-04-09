@@ -77,6 +77,40 @@
   'overrides '((mode.normal . lavender)))
 
 (define-theme
+  'catppuccin-frappe
+  "Catppuccin Frappé"
+  'palette
+  '((bg-0      . "#303446")
+    (bg-1      . "#292c3c")
+    (bg-2      . "#232634")
+    (fg-0      . "#414559")
+    (fg-1      . "#51576d")
+    (fg-2      . "#626880")
+    (accent-0  . "#737994")
+    (accent-1  . "#838ba7")
+    (accent-2  . "#949cbb")
+    (text-0    . "#c6d0f5")
+    (text-1    . "#b5bfe2")
+    (text-2    . "#a5adce")
+    (select    . (alpha accent-2 0.25))
+    (lavender  . "#babbf1")
+    (blue      . "#8caaee")
+    (sapphire  . "#85c1dc")
+    (sky       . "#99d1db")
+    (teal      . "#81c8be")
+    (green     . "#a6d189")
+    (yellow    . "#e5c890")
+    (peach     . "#ef9f76")
+    (maroon    . "#ea999c")
+    (red       . "#e78284")
+    (mauve     . "#ca9ee6")
+    (pink      . "#f4b8e4")
+    (flamingo  . "#eebebe")
+    (rosewater . "#f2d5cf"))
+  'canonical-map *catppuccin-canonical-map*
+  'overrides '((mode.normal . lavender)))
+
+(define-theme
   'catppuccin-latte
   "Catppuccin Latte"
   'palette
