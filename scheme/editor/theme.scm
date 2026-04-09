@@ -27,6 +27,22 @@
   (map (lambda (s) (cons s (theme-display-name s)))
        (hash-table-keys *themes*)))
 
+;;; --- Alpha helper ---
+
+(define (byte->hex2 n)
+  (let ((s (number->string (max 0 (min 255 (exact (round n)))) 16)))
+    (if (= (string-length s) 1) (string-append "0" s) s)))
+
+;; Apply an opacity (0.0–1.0) to a hex colour string.
+;; Accepts "#RRGGBB" or "#RRGGBBAA"; always returns "#RRGGBBAA".
+(define (alpha hex-str opacity)
+  (let* ((s   (if (char=? (string-ref hex-str 0) #\#)
+                  (substring hex-str 1 (string-length hex-str))
+                  hex-str))
+         (rgb (substring s 0 6))
+         (a   (* (max 0.0 (min 1.0 opacity)) 255)))
+    (string-append "#" rgb (byte->hex2 a))))
+
 ;;; --- Canonical palette schema ---
 
 (define *canonical-keys*
@@ -41,14 +57,50 @@
     ;; extended virtual keys (supplied via canonical-map)
     fg-text fg-text-dim fg-warm selection-bg))
 
-(define (build-canonical palette cmap)
+;; Resolve an (alpha key float) form against an alist of key→hex-string.
+;; Returns the computed hex string, or #f if the key is missing.
+(define (resolve-alpha form alist)
+  (let* ((ref-key (cadr form))
+         (opacity (car (cddr form)))
+         (entry   (assq ref-key alist)))
+    (and entry (string? (cdr entry)) (alpha (cdr entry) opacity))))
+
+;; Resolve a value that is either a hex string or an (alpha key float) form.
+(define (resolve-hex val alist)
+  (cond
+    ((string? val) val)
+    ((and (pair? val) (eq? (car val) 'alpha)) (resolve-alpha val alist))
+    (else #f)))
+
+;; Load the raw palette sequentially, resolving (alpha key float) forms
+;; against previously-loaded entries. Returns resolved alist of key→hex.
+(define (load-raw-palette raw-palette)
+  (let loop ((entries raw-palette) (resolved '()))
+    (if (null? entries)
+        resolved
+        (let* ((entry (car entries))
+               (key   (car entry))
+               (hex   (resolve-hex (cdr entry) resolved)))
+          (when hex (%set-palette! key hex))
+          (loop (cdr entries)
+                (if hex (cons (cons key hex) resolved) resolved))))))
+
+;; Build canonical alist from resolved palette + canonical-map.
+;; cmap values may be a raw palette symbol or (alpha raw-key float).
+(define (build-canonical resolved-palette cmap)
   (map (lambda (ckey)
          (let ((mapped (assq ckey cmap)))
            (cons ckey
                  (if mapped
-                     (let ((p (assq (cdr mapped) palette)))
-                       (and p (cdr p)))
-                     (let ((p (assq ckey palette)))
+                     (let ((cmap-val (cdr mapped)))
+                       (if (pair? cmap-val)
+                           ;; (alpha raw-key float) in canonical-map
+                           (resolve-alpha cmap-val resolved-palette)
+                           ;; symbol: look up in resolved palette
+                           (let ((p (assq cmap-val resolved-palette)))
+                             (and p (cdr p)))))
+                     ;; no mapping: try direct name match in resolved palette
+                     (let ((p (assq ckey resolved-palette)))
                        (and p (cdr p)))))))
        *canonical-keys*))
 
@@ -87,6 +139,8 @@
     (text.prefix       . fg-text)
     (text.linenum      . purple)
     (selection         . selection-bg)
+    (selection.hover   . (alpha selection-bg 0.2))
+    (message.hover     . (alpha fg-0 0.5))
     ;; mode indicators
     (mode.normal       . blue)
     (mode.insert       . green)
@@ -125,6 +179,23 @@
 
 ;;; --- Activation ---
 
+;; If a role value is (alpha key float), create a synthetic palette entry
+;; and return its key symbol. Otherwise return val unchanged.
+(define *alpha-seq* 0)
+(define (resolve-role-value val full-palette)
+  (if (and (pair? val) (eq? (car val) 'alpha))
+      (let ((hex (resolve-alpha val full-palette)))
+        (if hex
+            (let ((sym (string->symbol
+                        (string-append "%alpha"
+                                       (number->string
+                                        (begin (set! *alpha-seq* (+ *alpha-seq* 1))
+                                               *alpha-seq*))))))
+              (%set-palette! sym hex)
+              sym)
+            val))
+      val))
+
 (defun (activate-theme input)
   "Switch to the named theme."
   (let* ((sym           (if (string? input) (string->symbol input) input))
@@ -136,18 +207,22 @@
     (%clear-palette!)
     (%clear-roles!)
 
-    ;; 1. load raw palette
-    (for-each (lambda (p) (%set-palette! (car p) (cdr p))) raw-palette)
+    ;; 1. Load raw palette sequentially; (alpha key float) values are resolved
+    ;;    against previously-loaded entries in the same palette.
+    (let* ((resolved     (load-raw-palette raw-palette))
+           ;; 2. Build canonical entries and push them into palette_table so
+           ;;    default role symbols like 'purple, 'fg-text resolve via C.
+           (canonical    (build-canonical resolved canonical-map))
+           ;; Combined lookup for role resolution: raw + canonical
+           (full-palette (append canonical resolved)))
+      (for-each (lambda (e) (when (cdr e) (%set-palette! (car e) (cdr e))))
+                canonical)
 
-    ;; 2. push canonical entries into palette_table under canonical names
-    ;;    so default role symbols like 'purple, 'fg-text resolve via C unchanged
-    (for-each
-     (lambda (e) (when (cdr e) (%set-palette! (car e) (cdr e))))
-     (build-canonical raw-palette canonical-map))
-
-    ;; 3. apply merged roles (defaults first; theme overrides win)
-    (for-each (lambda (r) (%set-role! (car r) (cdr r)))
-              (merge-roles *default-roles* overrides))
+      ;; 3. Apply merged roles; (alpha key float) role values get a synthetic
+      ;;    palette entry so C's symbol→palette lookup continues to work.
+      (for-each (lambda (r)
+                  (%set-role! (car r) (resolve-role-value (cdr r) full-palette)))
+                (merge-roles *default-roles* overrides)))
 
     (set! *current-theme* sym)
     (%update-icon-colors!)))

@@ -4,7 +4,7 @@
     (fg-text     . text-0)
     (fg-text-dim . text-2)
     (fg-warm     . text-1)
-    (selection-bg . sel-bg)))
+    (selection-bg . (alpha bg-0 0.4)))) ; semi-transparent panel bg for selections
 ; blue, cyan, green, yellow, orange, red match canonical names directly
 
 (define-theme
@@ -27,8 +27,6 @@
     (text-0    . "#839496")   ; base0  — body text
     (text-1    . "#93a1a1")   ; base1  — emphasized / cursor
     (text-2    . "#586e75")   ; base01 — dim / key hints
-    ;; selection
-    (sel-bg    . "#07364266") ; base02 @ ~40% opacity
     ;; violet (maps to canonical 'purple via canonical-map)
     (violet    . "#6c71c4")
     ;; accent hues (names match canonical keys directly)
@@ -68,8 +66,6 @@
     (text-0    . "#657b83")   ; base00 — body text
     (text-1    . "#586e75")   ; base01 — emphasized / cursor
     (text-2    . "#93a1a1")   ; base1  — dim / key hints
-    ;; selection
-    (sel-bg    . "#eee8d566") ; base2 @ ~40% opacity
     ;; violet (maps to canonical 'purple via canonical-map)
     (violet    . "#6c71c4")
     ;; accent hues (names match canonical keys directly)

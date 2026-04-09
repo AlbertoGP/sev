@@ -18,8 +18,7 @@ static void HandleMessageAreaClick(Clay_ElementId elementId,
 
 void MessageArea(AppState *state) {
     bool hovered = false;
-    Clay_Color c = ui_resolve_color(state, state->ui.roles.line_bg);
-    Clay_Color hovered_bg = { .r = c.r, .g = c.g, .b = c.b, .a = 128 };
+    Clay_Color hovered_bg = ui_resolve_color(state, state->ui.roles.message_hover);
     uint16_t padding = 10.0 * state->ui.scale_factor;
     CLAY(CLAY_ID("Echo Area"), {
         .layout = {

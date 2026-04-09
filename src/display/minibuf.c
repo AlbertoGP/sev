@@ -154,7 +154,8 @@ void MinibufPalette(AppState *state) {
                     .width = { .top = 1 }
                 }
             }) {
-                Clay_Color sel = ui_resolve_color(state, state->ui.roles.selection);
+                Clay_Color sel       = ui_resolve_color(state, state->ui.roles.selection);
+                Clay_Color sel_hover = ui_resolve_color(state, state->ui.roles.selection_hover);
                 int scroll = state->minibuf.item_scroll;
                 for (int i = 0; i < visible; i++) {
                     int abs_idx = scroll + i;
@@ -172,10 +173,10 @@ void MinibufPalette(AppState *state) {
                             .childGap       = (uint16_t)(pad * 2)
                         },
                         .backgroundColor = Clay_Hovered()
-                            ? (Clay_Color){sel.r, sel.g, sel.b, sel.a / 2}
+                            ? sel_hover
                             : (is_selected
                                 ? sel
-                                : (Clay_Color){0, 0, 0, 0}),
+                                : (Clay_Color){0}),
                         .cornerRadius = CLAY_CORNER_RADIUS(4.0f * scale)
                     }) {
                     if (Clay_Hovered()) state->input.desired_cursor = SDL_SYSTEM_CURSOR_POINTER;

@@ -91,6 +91,8 @@ typedef struct CachedRoles {
     sexp text_primary, text_faded, text_key, text_command, text_prefix;
     sexp text_linenum;
     sexp selection;
+    sexp selection_hover;
+    sexp message_hover;
     sexp mode_normal, mode_insert, mode_replace, mode_select;
     sexp mode_command, mode_pending, mode_minibuffer, mode_help;
     sexp label_normal, label_insert, label_replace, label_select;
