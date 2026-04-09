@@ -56,28 +56,60 @@ static void key_event_append_str(char *buf, size_t sz, const KeyEvent *ev) {
     char tmp[64];
     size_t ti = 0;
 
-    if (ev->mods & MOD_CTRL)  { tmp[ti++] = 'C'; tmp[ti++] = '-'; }
-    if (ev->mods & MOD_META)  { tmp[ti++] = 'M'; tmp[ti++] = '-'; }
-    if (ev->mods & MOD_SHIFT) { tmp[ti++] = 'S'; tmp[ti++] = '-'; }
+    if (ev->mods & MOD_CTRL)  { memcpy(tmp + ti, "ctrl-",  5); ti += 5; }
+    if (ev->mods & MOD_META)  { memcpy(tmp + ti, "alt-",   4); ti += 4; }
+    if (ev->mods & MOD_SHIFT) { memcpy(tmp + ti, "shift-", 6); ti += 6; }
 
     if (ev->type == KEYEVENT_SPECIAL) {
         const char *name;
         switch (ev->keycode) {
-        case KEY_ESC:       name = "ESC";   break;
-        case KEY_RETURN:    name = "RET";   break;
-        case KEY_TAB:       name = "TAB";   break;
-        case KEY_BACKSPACE: name = "BSP";   break;
-        case KEY_DELETE:    name = "DEL";   break;
-        case KEY_UP:        name = "UP";    break;
-        case KEY_DOWN:      name = "DOWN";  break;
-        case KEY_LEFT:      name = "LEFT";  break;
-        case KEY_RIGHT:     name = "RIGHT"; break;
-        default:            name = "?";     break;
+        case KEY_ESC:        name = "escape";    break;
+        case KEY_RETURN:     name = "return";    break;
+        case KEY_TAB:        name = "tab";       break;
+        case KEY_BACKSPACE:  name = "backspace"; break;
+        case KEY_DELETE:     name = "delete";    break;
+        case KEY_UP:         name = "up";        break;
+        case KEY_DOWN:       name = "down";      break;
+        case KEY_LEFT:       name = "left";      break;
+        case KEY_RIGHT:      name = "right";     break;
+        case KEY_HOME:       name = "home";      break;
+        case KEY_END:        name = "end";       break;
+        case KEY_PAGE_UP:    name = "pageup";    break;
+        case KEY_PAGE_DOWN:  name = "pagedown";  break;
+        case KEY_INSERT:     name = "insert";    break;
+        case KEY_MENU:       name = "menu";      break;
+        case KEY_PRINT:      name = "print";     break;
+        case KEY_PAUSE:      name = "pause";     break;
+        case KEY_F1:  name = "f1";  break;
+        case KEY_F2:  name = "f2";  break;
+        case KEY_F3:  name = "f3";  break;
+        case KEY_F4:  name = "f4";  break;
+        case KEY_F5:  name = "f5";  break;
+        case KEY_F6:  name = "f6";  break;
+        case KEY_F7:  name = "f7";  break;
+        case KEY_F8:  name = "f8";  break;
+        case KEY_F9:  name = "f9";  break;
+        case KEY_F10: name = "f10"; break;
+        case KEY_F11: name = "f11"; break;
+        case KEY_F12: name = "f12"; break;
+        case KEY_F13: name = "f13"; break;
+        case KEY_F14: name = "f14"; break;
+        case KEY_F15: name = "f15"; break;
+        case KEY_F16: name = "f16"; break;
+        case KEY_F17: name = "f17"; break;
+        case KEY_F18: name = "f18"; break;
+        case KEY_F19: name = "f19"; break;
+        case KEY_F20: name = "f20"; break;
+        case KEY_F21: name = "f21"; break;
+        case KEY_F22: name = "f22"; break;
+        case KEY_F23: name = "f23"; break;
+        case KEY_F24: name = "f24"; break;
+        default:             name = "?";         break;
         }
         snprintf(tmp + ti, sizeof(tmp) - ti, "%s", name);
     } else {
         if (ev->codepoint == (uint32_t)' ') {
-            snprintf(tmp + ti, sizeof(tmp) - ti, "SPC");
+            snprintf(tmp + ti, sizeof(tmp) - ti, "space");
         } else {
             tmp[ti++] = (char)ev->codepoint;
             tmp[ti]   = '\0';
@@ -337,141 +369,69 @@ void key_dispatch(AppState *state, const KeyEvent *ev) {
     key_dispatch_inner(state, ev);
 }
 
+/* Boundary check: key name at s[0..len-1] must be followed by space or NUL. */
+#define KEY_WORD(str, len) \
+    (strncmp(s, str, len) == 0 && (s[len] == '\0' || s[len] == ' '))
+
 int parse_key_sequence(const char *s, KeyEvent *out) {
     int count = 0;
     uint16_t mods = 0;
 
     while (*s) {
-        if (*s == ' ') {
-            s++;
-            continue;
-        }
+        if (*s == ' ') { s++; continue; }
 
         mods = 0;
 
-        /* modifiers */
-        while (s[1] == '-') {
-            switch (*s) {
-            case 'C': mods |= MOD_CTRL; break;
-            case 'M': mods |= MOD_META; break;
-            case 'S': mods |= MOD_SHIFT; break;
+        /* modifiers: consume full-word prefixes */
+        while (true) {
+            if      (strncmp(s, "ctrl-",  5) == 0) { mods |= MOD_CTRL;  s += 5; }
+            else if (strncmp(s, "alt-",   4) == 0) { mods |= MOD_META;  s += 4; }
+            else if (strncmp(s, "shift-", 6) == 0) { mods |= MOD_SHIFT; s += 6; }
+            else break;
+        }
+
+        /* special key names */
+        if      (KEY_WORD("space",     5)) { out[count++] = (KeyEvent){KEYEVENT_CHAR,    mods, {.codepoint = ' '         }}; s += 5; }
+        else if (KEY_WORD("return",    6)) { out[count++] = (KeyEvent){KEYEVENT_SPECIAL, mods, {.keycode = KEY_RETURN    }}; s += 6; }
+        else if (KEY_WORD("escape",    6)) { out[count++] = (KeyEvent){KEYEVENT_SPECIAL, mods, {.keycode = KEY_ESC       }}; s += 6; }
+        else if (KEY_WORD("tab",       3)) { out[count++] = (KeyEvent){KEYEVENT_SPECIAL, mods, {.keycode = KEY_TAB       }}; s += 3; }
+        else if (KEY_WORD("backspace", 9)) { out[count++] = (KeyEvent){KEYEVENT_SPECIAL, mods, {.keycode = KEY_BACKSPACE }}; s += 9; }
+        else if (KEY_WORD("delete",    6)) { out[count++] = (KeyEvent){KEYEVENT_SPECIAL, mods, {.keycode = KEY_DELETE    }}; s += 6; }
+        else if (KEY_WORD("up",        2)) { out[count++] = (KeyEvent){KEYEVENT_SPECIAL, mods, {.keycode = KEY_UP        }}; s += 2; }
+        else if (KEY_WORD("down",      4)) { out[count++] = (KeyEvent){KEYEVENT_SPECIAL, mods, {.keycode = KEY_DOWN      }}; s += 4; }
+        else if (KEY_WORD("left",      4)) { out[count++] = (KeyEvent){KEYEVENT_SPECIAL, mods, {.keycode = KEY_LEFT      }}; s += 4; }
+        else if (KEY_WORD("right",     5)) { out[count++] = (KeyEvent){KEYEVENT_SPECIAL, mods, {.keycode = KEY_RIGHT     }}; s += 5; }
+        else if (KEY_WORD("home",      4)) { out[count++] = (KeyEvent){KEYEVENT_SPECIAL, mods, {.keycode = KEY_HOME      }}; s += 4; }
+        else if (KEY_WORD("end",       3)) { out[count++] = (KeyEvent){KEYEVENT_SPECIAL, mods, {.keycode = KEY_END       }}; s += 3; }
+        else if (KEY_WORD("pageup",    6)) { out[count++] = (KeyEvent){KEYEVENT_SPECIAL, mods, {.keycode = KEY_PAGE_UP   }}; s += 6; }
+        else if (KEY_WORD("pagedown",  8)) { out[count++] = (KeyEvent){KEYEVENT_SPECIAL, mods, {.keycode = KEY_PAGE_DOWN }}; s += 8; }
+        else if (KEY_WORD("insert",    6)) { out[count++] = (KeyEvent){KEYEVENT_SPECIAL, mods, {.keycode = KEY_INSERT    }}; s += 6; }
+        else if (KEY_WORD("menu",      4)) { out[count++] = (KeyEvent){KEYEVENT_SPECIAL, mods, {.keycode = KEY_MENU      }}; s += 4; }
+        else if (KEY_WORD("print",     5)) { out[count++] = (KeyEvent){KEYEVENT_SPECIAL, mods, {.keycode = KEY_PRINT     }}; s += 5; }
+        else if (KEY_WORD("pause",     5)) { out[count++] = (KeyEvent){KEYEVENT_SPECIAL, mods, {.keycode = KEY_PAUSE     }}; s += 5; }
+        else if (s[0] == 'f' && s[1] >= '1' && s[1] <= '9') {
+            /* function keys f1–f24 */
+            int n = s[1] - '0';
+            int skip = 2;
+            if (s[2] >= '0' && s[2] <= '9') { n = n * 10 + (s[2] - '0'); skip = 3; }
+            if (n >= 1 && n <= 24 && (s[skip] == '\0' || s[skip] == ' ')) {
+                out[count++] = (KeyEvent){KEYEVENT_SPECIAL, mods, {.keycode = KEY_F1 + (n - 1)}};
+                s += skip;
+            } else if (*s) {
+                out[count++] = (KeyEvent){KEYEVENT_CHAR, mods, {.codepoint = (uint32_t)*s}};
+                s++;
             }
-            s += 2; // skip "C-"
         }
-
-        if (s[0] == 'S' && s[1] == 'P' && s[2] == 'C') {
-            out[count++] = (KeyEvent){
-                .type = KEYEVENT_CHAR,
-                .mods = mods,
-                .codepoint = (uint32_t)' '
-            };
-            s += 3;
-            continue;
-        }
-
-        if (s[0] == 'E' && s[1] == 'S' && s[2] == 'C') {
-            out[count++] = (KeyEvent){
-                .type = KEYEVENT_SPECIAL,
-                .mods = mods,
-                .keycode = KEY_ESC
-            };
-            s += 3;
-            continue;
-        }
-
-        if (s[0] == 'R' && s[1] == 'E' && s[2] == 'T') {
-            out[count++] = (KeyEvent){
-                .type = KEYEVENT_SPECIAL,
-                .mods = mods,
-                .keycode = KEY_RETURN
-            };
-            s += 3;
-            continue;
-        }
-
-        if (s[0] == 'T' && s[1] == 'A' && s[2] == 'B') {
-            out[count++] = (KeyEvent){
-                .type = KEYEVENT_SPECIAL,
-                .mods = mods,
-                .keycode = KEY_TAB
-            };
-            s += 3;
-            continue;
-        }
-
-        if (s[0] == 'B' && s[1] == 'S' && s[2] == 'P') {
-            out[count++] = (KeyEvent){
-                .type = KEYEVENT_SPECIAL,
-                .mods = mods,
-                .keycode = KEY_BACKSPACE
-            };
-            s += 3;
-            continue;
-        }
-
-        if (s[0] == 'D' && s[1] == 'E' && s[2] == 'L') {
-            out[count++] = (KeyEvent){
-                .type = KEYEVENT_SPECIAL,
-                .mods = mods,
-                .keycode = KEY_DELETE
-            };
-            s += 3;
-            continue;
-        }
-
-        if (s[0] == 'U' && s[1] == 'P') {
-            out[count++] = (KeyEvent){
-                .type = KEYEVENT_SPECIAL,
-                .mods = mods,
-                .keycode = KEY_UP
-            };
-            s += 2;
-            continue;
-        }
-
-        if (s[0] == 'D' && s[1] == 'O' && s[2] == 'W' && s[3] == 'N') {
-            out[count++] = (KeyEvent){
-                .type = KEYEVENT_SPECIAL,
-                .mods = mods,
-                .keycode = KEY_DOWN
-            };
-            s += 4;
-            continue;
-        }
-
-        if (s[0] == 'L' && s[1] == 'E' && s[2] == 'F' && s[3] == 'T') {
-            out[count++] = (KeyEvent){
-                .type = KEYEVENT_SPECIAL,
-                .mods = mods,
-                .keycode = KEY_LEFT
-            };
-            s += 4;
-            continue;
-        }
-
-        if (s[0] == 'R' && s[1] == 'I' && s[2] == 'G' && s[3] == 'H' && s[4] == 'T') {
-            out[count++] = (KeyEvent){
-                .type = KEYEVENT_SPECIAL,
-                .mods = mods,
-                .keycode = KEY_RIGHT
-            };
-            s += 5;
-            continue;
-        }
-
-        /* key */
-        if (*s) {
-            out[count++] = (KeyEvent){
-                .type = KEYEVENT_CHAR,
-                .mods = mods,
-                .codepoint = (uint32_t)*s
-            };
+        else if (*s) {
+            out[count++] = (KeyEvent){KEYEVENT_CHAR, mods, {.codepoint = (uint32_t)*s}};
             s++;
         }
     }
 
     return count;
 }
+
+#undef KEY_WORD
 
 void keymap_bind_sequence(Keymap *km, KeyEvent *seq, int n, Binding final) {
     for (int i = 0; i < n - 1; i++) {

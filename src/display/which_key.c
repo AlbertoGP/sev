@@ -16,31 +16,63 @@ static bool wk_is_prefix[WK_MAX];
 static int  wk_count;
 
 static void key_event_to_str(char *buf, size_t sz, const KeyEvent *ev) {
-    char tmp[32];
+    char tmp[48];
     size_t ti = 0;
 
-    if (ev->mods & MOD_CTRL)  { tmp[ti++] = 'C'; tmp[ti++] = '-'; }
-    if (ev->mods & MOD_META)  { tmp[ti++] = 'M'; tmp[ti++] = '-'; }
-    if (ev->mods & MOD_SHIFT) { tmp[ti++] = 'S'; tmp[ti++] = '-'; }
+    if (ev->mods & MOD_CTRL)  { memcpy(tmp + ti, "ctrl-",  5); ti += 5; }
+    if (ev->mods & MOD_META)  { memcpy(tmp + ti, "alt-",   4); ti += 4; }
+    if (ev->mods & MOD_SHIFT) { memcpy(tmp + ti, "shift-", 6); ti += 6; }
 
     if (ev->type == KEYEVENT_SPECIAL) {
         const char *name;
         switch (ev->keycode) {
-        case KEY_ESC:       name = "ESC";   break;
-        case KEY_RETURN:    name = "RET";   break;
-        case KEY_TAB:       name = "TAB";   break;
-        case KEY_BACKSPACE: name = "BSP";   break;
-        case KEY_DELETE:    name = "DEL";   break;
-        case KEY_UP:        name = "UP";    break;
-        case KEY_DOWN:      name = "DOWN";  break;
-        case KEY_LEFT:      name = "LEFT";  break;
-        case KEY_RIGHT:     name = "RIGHT"; break;
-        default:            name = "?";     break;
+        case KEY_ESC:        name = "escape";    break;
+        case KEY_RETURN:     name = "return";    break;
+        case KEY_TAB:        name = "tab";       break;
+        case KEY_BACKSPACE:  name = "backspace"; break;
+        case KEY_DELETE:     name = "delete";    break;
+        case KEY_UP:         name = "up";        break;
+        case KEY_DOWN:       name = "down";      break;
+        case KEY_LEFT:       name = "left";      break;
+        case KEY_RIGHT:      name = "right";     break;
+        case KEY_HOME:       name = "home";      break;
+        case KEY_END:        name = "end";       break;
+        case KEY_PAGE_UP:    name = "pageup";    break;
+        case KEY_PAGE_DOWN:  name = "pagedown";  break;
+        case KEY_INSERT:     name = "insert";    break;
+        case KEY_MENU:       name = "menu";      break;
+        case KEY_PRINT:      name = "print";     break;
+        case KEY_PAUSE:      name = "pause";     break;
+        case KEY_F1:  name = "f1";  break;
+        case KEY_F2:  name = "f2";  break;
+        case KEY_F3:  name = "f3";  break;
+        case KEY_F4:  name = "f4";  break;
+        case KEY_F5:  name = "f5";  break;
+        case KEY_F6:  name = "f6";  break;
+        case KEY_F7:  name = "f7";  break;
+        case KEY_F8:  name = "f8";  break;
+        case KEY_F9:  name = "f9";  break;
+        case KEY_F10: name = "f10"; break;
+        case KEY_F11: name = "f11"; break;
+        case KEY_F12: name = "f12"; break;
+        case KEY_F13: name = "f13"; break;
+        case KEY_F14: name = "f14"; break;
+        case KEY_F15: name = "f15"; break;
+        case KEY_F16: name = "f16"; break;
+        case KEY_F17: name = "f17"; break;
+        case KEY_F18: name = "f18"; break;
+        case KEY_F19: name = "f19"; break;
+        case KEY_F20: name = "f20"; break;
+        case KEY_F21: name = "f21"; break;
+        case KEY_F22: name = "f22"; break;
+        case KEY_F23: name = "f23"; break;
+        case KEY_F24: name = "f24"; break;
+        default:             name = "?";         break;
         }
         snprintf(tmp + ti, sizeof(tmp) - ti, "%s", name);
     } else {
         if (ev->codepoint == (uint32_t)' ') {
-            snprintf(tmp + ti, sizeof(tmp) - ti, "SPC");
+            snprintf(tmp + ti, sizeof(tmp) - ti, "space");
         } else {
             tmp[ti++] = (char)ev->codepoint;
             tmp[ti]   = '\0';

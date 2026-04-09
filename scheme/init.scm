@@ -11,18 +11,18 @@
 ;; ── Global keymap (base) ─────────────────────────────────────────────────────
 ;; Bindings that are always available regardless of whether any pane is open.
 
-(set-key! global-keymap "C-q" 'quit)
-(set-key! global-keymap "C-e" 'eval-expression)
-(set-key! global-keymap "C-S-p" 'command-palette)
+(set-key! global-keymap "ctrl-q" 'quit)
+(set-key! global-keymap "ctrl-e" 'eval-expression)
+(set-key! global-keymap "ctrl-shift-p" 'command-palette)
 (set-key! global-keymap ":" 'command-palette)
-(set-key! global-keymap "M-0" 'reset-global-scale)
-(set-key! global-keymap "M-=" 'increase-global-scale)
-(set-key! global-keymap "M--" 'decrease-global-scale)
+(set-key! global-keymap "alt-0" 'reset-global-scale)
+(set-key! global-keymap "alt-=" 'increase-global-scale)
+(set-key! global-keymap "alt--" 'decrease-global-scale)
 
 ;; SPC prefix for global (base) — open-file, buffer-new, help
 (define base-spc-map (make-keymap))
 (%set-keymap-name! base-spc-map "leader")
-(bind-prefix! global-keymap "SPC" base-spc-map)
+(bind-prefix! global-keymap "space" base-spc-map)
 
 ;; SPC f — file operations (always available: open creates a pane if none)
 (set-key! base-spc-map "f o" 'open-file)
@@ -66,60 +66,60 @@
 (%set-keymap-name!   pane-keymap "pane")
 
 ;; Mode / escape
-(set-key! pane-keymap "ESC"     'evil-normal)
-(set-key! pane-keymap "C-["     'evil-normal)
+(set-key! pane-keymap "escape"     'evil-normal)
+(set-key! pane-keymap "ctrl-["     'evil-normal)
 
 ;; Tab navigation
-(set-key! pane-keymap "C-TAB"   'tab-next)
-(set-key! pane-keymap "C-S-TAB" 'tab-prev)
+(set-key! pane-keymap "ctrl-tab"       'tab-next)
+(set-key! pane-keymap "ctrl-shift-tab" 'tab-prev)
 
 ;; Pane management
-(set-key! pane-keymap "C-w"     'tab-close)
+(set-key! pane-keymap "ctrl-w"     'tab-close)
 
 ;; File save
-(set-key! pane-keymap "C-s"     'save-buffer)
-(set-key! pane-keymap "C-S-s"   'save-buffer-as)
+(set-key! pane-keymap "ctrl-s"     'save-buffer)
+(set-key! pane-keymap "ctrl-shift-s"   'save-buffer-as)
 
 ;; Buffer-local text scale
-(set-key! pane-keymap "C-0"     'reset-buffer-scale)
-(set-key! pane-keymap "C-="     'increase-buffer-scale)
-(set-key! pane-keymap "C--"     'decrease-buffer-scale)
+(set-key! pane-keymap "ctrl-0"     'reset-buffer-scale)
+(set-key! pane-keymap "ctrl-="     'increase-buffer-scale)
+(set-key! pane-keymap "ctrl--"     'decrease-buffer-scale)
 
 ;; Evil motions (cursor movement)
 (set-key! pane-keymap "h"       'evil-motion-h)
 (set-key! pane-keymap "j"       'evil-motion-j)
 (set-key! pane-keymap "k"       'evil-motion-k)
 (set-key! pane-keymap "l"       'evil-motion-l)
-(set-key! pane-keymap "LEFT"    'evil-motion-h)
-(set-key! pane-keymap "DOWN"    'evil-motion-j)
-(set-key! pane-keymap "UP"      'evil-motion-k)
-(set-key! pane-keymap "RIGHT"   'evil-motion-l)
+(set-key! pane-keymap "left"    'evil-motion-h)
+(set-key! pane-keymap "down"    'evil-motion-j)
+(set-key! pane-keymap "up"      'evil-motion-k)
+(set-key! pane-keymap "right"   'evil-motion-l)
 
 ;; Pane navigation
-(set-key! pane-keymap "C-h"     'pane-navigate-left)
-(set-key! pane-keymap "C-j"     'pane-navigate-down)
-(set-key! pane-keymap "C-k"     'pane-navigate-up)
-(set-key! pane-keymap "C-l"     'pane-navigate-right)
-(set-key! pane-keymap "C-LEFT"  'pane-navigate-left)
-(set-key! pane-keymap "C-DOWN"  'pane-navigate-down)
-(set-key! pane-keymap "C-UP"    'pane-navigate-up)
-(set-key! pane-keymap "C-RIGHT" 'pane-navigate-right)
+(set-key! pane-keymap "ctrl-h"     'pane-navigate-left)
+(set-key! pane-keymap "ctrl-j"     'pane-navigate-down)
+(set-key! pane-keymap "ctrl-k"     'pane-navigate-up)
+(set-key! pane-keymap "ctrl-l"     'pane-navigate-right)
+(set-key! pane-keymap "ctrl-left"  'pane-navigate-left)
+(set-key! pane-keymap "ctrl-down"  'pane-navigate-down)
+(set-key! pane-keymap "ctrl-up"    'pane-navigate-up)
+(set-key! pane-keymap "ctrl-right" 'pane-navigate-right)
 
 ;; Pane resize
-(set-key! pane-keymap "C-S-h"     'pane-v-split-decrease)
-(set-key! pane-keymap "C-S-j"     'pane-h-split-increase)
-(set-key! pane-keymap "C-S-k"     'pane-h-split-decrease)
-(set-key! pane-keymap "C-S-l"     'pane-v-split-increase)
-(set-key! pane-keymap "C-S-LEFT"  'pane-v-split-decrease)
-(set-key! pane-keymap "C-S-DOWN"  'pane-h-split-increase)
-(set-key! pane-keymap "C-S-UP"    'pane-h-split-decrease)
-(set-key! pane-keymap "C-S-RIGHT" 'pane-v-split-increase)
+(set-key! pane-keymap "ctrl-shift-h"     'pane-v-split-decrease)
+(set-key! pane-keymap "ctrl-shift-j"     'pane-h-split-increase)
+(set-key! pane-keymap "ctrl-shift-k"     'pane-h-split-decrease)
+(set-key! pane-keymap "ctrl-shift-l"     'pane-v-split-increase)
+(set-key! pane-keymap "ctrl-shift-left"  'pane-v-split-decrease)
+(set-key! pane-keymap "ctrl-shift-down"  'pane-h-split-increase)
+(set-key! pane-keymap "ctrl-shift-up"    'pane-h-split-decrease)
+(set-key! pane-keymap "ctrl-shift-right" 'pane-v-split-increase)
 
 ;; SPC prefix for pane — extends base-spc-map via parent chain
 (define pane-spc-map (make-keymap))
 (%set-keymap-name!   pane-spc-map "leader")
 (%set-keymap-parent! pane-spc-map base-spc-map)
-(bind-prefix! pane-keymap "SPC" pane-spc-map)
+(bind-prefix! pane-keymap "space" pane-spc-map)
 
 ;; SPC b — full buffer map (extends base-buffer-map)
 (define pane-buffer-map (make-keymap))

@@ -9,29 +9,29 @@
                          'cursor.minibuffer 'thin)
 
 ;; Override global-keymap keys that would interfere with text entry
-(set-key! minibuffer-map "SPC"   'self-insert)
+(set-key! minibuffer-map "space" 'self-insert)
 (set-key! minibuffer-map "h"     'self-insert)
 (set-key! minibuffer-map "j"     'self-insert)
 (set-key! minibuffer-map "k"     'self-insert)
 (set-key! minibuffer-map "l"     'self-insert)
 
 ;; Submit / cancel
-(set-key! minibuffer-map "RET"   'minibuffer-submit)
-(set-key! minibuffer-map "C-j"   'minibuffer-submit)
-(set-key! minibuffer-map "ESC"   'minibuffer-cancel)
-(set-key! minibuffer-map "C-g"   'minibuffer-cancel)
+(set-key! minibuffer-map "return"   'minibuffer-submit)
+(set-key! minibuffer-map "ctrl-j"   'minibuffer-submit)
+(set-key! minibuffer-map "escape"   'minibuffer-cancel)
+(set-key! minibuffer-map "ctrl-g"   'minibuffer-cancel)
 
 ;; Editing
-(set-key! minibuffer-map "BSP"   'delete-backward-char)
-(set-key! minibuffer-map "DEL"   'delete-forward-char)
-(set-key! minibuffer-map "LEFT"  'backward-char)
-(set-key! minibuffer-map "RIGHT" 'forward-char)
-(set-key! minibuffer-map "C-a"   'line-start)
-(set-key! minibuffer-map "C-e"   'line-end)
+(set-key! minibuffer-map "backspace" 'delete-backward-char)
+(set-key! minibuffer-map "delete"    'delete-forward-char)
+(set-key! minibuffer-map "left"      'backward-char)
+(set-key! minibuffer-map "right"     'forward-char)
+(set-key! minibuffer-map "ctrl-a"    'line-start)
+(set-key! minibuffer-map "ctrl-e"    'line-end)
 
 ;; Provider navigation
-(set-key! minibuffer-map "DOWN" 'minibuffer-select-next)
-(set-key! minibuffer-map "UP"   'minibuffer-select-prev)
+(set-key! minibuffer-map "down" 'minibuffer-select-next)
+(set-key! minibuffer-map "up"   'minibuffer-select-prev)
 
 (defun (minibuffer-read prompt on-submit)
   "Prompt for input in the minibuffer; call on-submit with the result."
