@@ -2,4 +2,6 @@
   (import (except (scheme base) newline)
           (srfi 69) (editor primitives) (editor command))
   (export define-theme activate-theme list-themes theme-display-name current-theme)
-  (include "theme.scm"))
+  (include "theme.scm")
+  (include "theme/catppuccin.scm")
+  (include "theme/solarized.scm"))

@@ -6,9 +6,11 @@ build:
 		&& cp ./scheme/init.scm ./out/scheme/init.scm \
 		&& mkdir -p ./out/scheme/editor \
 		&& mkdir -p ./out/scheme/editor/evil \
+		&& mkdir -p ./out/scheme/editor/theme \
 		&& cp ./scheme/editor/*.scm ./out/scheme/editor/ \
 		&& cp ./scheme/editor/*.sld ./out/scheme/editor/ \
-		&& cp ./scheme/editor/evil/*.scm ./out/scheme/editor/evil/
+		&& cp ./scheme/editor/evil/*.scm ./out/scheme/editor/evil/ \
+		&& cp ./scheme/editor/theme/*.scm ./out/scheme/editor/theme/
 
 # Debug build with AddressSanitizer
 debug: build-debug run
