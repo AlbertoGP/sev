@@ -107,23 +107,16 @@ static void functions_provider(AppState *state, const char *input) {
         sexp list = sexp_apply(ctx, fn, SEXP_NULL);
         if (sexp_exceptionp(list)) return;
 
-        sexp summary_fn = sexp_env_ref(ctx, state->chibi.env,
-                                       sexp_intern(ctx, "doc-summary", -1), SEXP_FALSE);
-
         for (sexp p = list; sexp_pairp(p); p = sexp_cdr(p)) {
             if (state->minibuf.all_item_count >= MINIBUF_ITEMS_MAX) break;
             sexp sym = sexp_car(p);
             if (!sexp_symbolp(sym)) continue;
             sexp str = sexp_symbol_to_string(ctx, sym);
             const char *name = sexp_string_data(str);
-            const char *label = name;
-            sexp summary = (summary_fn != SEXP_FALSE)
-                ? sexp_apply(ctx, summary_fn, sexp_list1(ctx, sym)) : SEXP_FALSE;
-            if (sexp_stringp(summary)) label = sexp_string_data(summary);
             MinibufItem *item = &state->minibuf.all_items[state->minibuf.all_item_count];
             memset(item, 0, sizeof(*item));
-            strncpy(item->label,    label, MINIBUF_LABEL_MAX - 1);
-            strncpy(item->sym_name, name,  MINIBUF_LABEL_MAX - 1);
+            strncpy(item->label,    name, MINIBUF_LABEL_MAX - 1);
+            strncpy(item->sym_name, name, MINIBUF_LABEL_MAX - 1);
             state->minibuf.all_item_count++;
         }
         qsort(state->minibuf.all_items, state->minibuf.all_item_count,
@@ -143,23 +136,16 @@ static void variables_provider(AppState *state, const char *input) {
         sexp list = sexp_apply(ctx, fn, SEXP_NULL);
         if (sexp_exceptionp(list)) return;
 
-        sexp summary_fn = sexp_env_ref(ctx, state->chibi.env,
-                                       sexp_intern(ctx, "doc-summary", -1), SEXP_FALSE);
-
         for (sexp p = list; sexp_pairp(p); p = sexp_cdr(p)) {
             if (state->minibuf.all_item_count >= MINIBUF_ITEMS_MAX) break;
             sexp sym = sexp_car(p);
             if (!sexp_symbolp(sym)) continue;
             sexp str = sexp_symbol_to_string(ctx, sym);
             const char *name = sexp_string_data(str);
-            const char *label = name;
-            sexp summary = (summary_fn != SEXP_FALSE)
-                ? sexp_apply(ctx, summary_fn, sexp_list1(ctx, sym)) : SEXP_FALSE;
-            if (sexp_stringp(summary)) label = sexp_string_data(summary);
             MinibufItem *item = &state->minibuf.all_items[state->minibuf.all_item_count];
             memset(item, 0, sizeof(*item));
-            strncpy(item->label,    label, MINIBUF_LABEL_MAX - 1);
-            strncpy(item->sym_name, name,  MINIBUF_LABEL_MAX - 1);
+            strncpy(item->label,    name, MINIBUF_LABEL_MAX - 1);
+            strncpy(item->sym_name, name, MINIBUF_LABEL_MAX - 1);
             state->minibuf.all_item_count++;
         }
         qsort(state->minibuf.all_items, state->minibuf.all_item_count,
