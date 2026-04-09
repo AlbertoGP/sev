@@ -197,7 +197,7 @@ void WhichKey(AppState *state) {
                 .element = CLAY_ATTACH_POINT_RIGHT_BOTTOM,
                 .parent  = CLAY_ATTACH_POINT_RIGHT_BOTTOM
             },
-            .offset = { -36.0f * scale, -60.0f * scale },
+            .offset = { -36.0f * scale, -36.0f * scale },
             .zIndex = 100
         },
         .layout = {
