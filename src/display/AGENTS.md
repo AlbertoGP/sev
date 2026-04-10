@@ -89,7 +89,7 @@ UI component layer built on Clay. Each frame, declares the full layout hierarchy
 
 ## Relationship to Other Subsystems
 
-- **src/clay/** — this layer calls `CLAY()` macros; clay computes layout and renders. See `src/clay/CLAUDE.md`.
+- **src/clay/** — this layer calls `CLAY()` macros; clay computes layout and renders. See `src/clay/AGENTS.md`.
 - **src/text/** — `BufferContentRender` reads buffer state (text, point, lines, marks, select mode) but never mutates it
 - **scheme/** — themes, icons, modes, and scale commands registered from Scheme; display reads the resulting C state
 - **src/state_io.h** — `welcome.c` calls `state_io_update_recent_project()` when opening a project from the welcome screen

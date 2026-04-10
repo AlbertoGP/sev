@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to LLMs when working with code in this repository.
 
 ## Project Overview
 
@@ -53,19 +53,19 @@ The app uses SDL3's main callbacks pattern (no `main()` function):
 
 Buffers, marks, logical lines, registers, undo, jump list, buffer-local variables.
 
-- See `src/text/CLAUDE.md` for subsystem details.
+- See `src/text/AGENTS.md` for subsystem details.
 
 ### Input + Command Layer (`src/command/`)
 
 Input handling, command execution, mode registry, macro recording, Scheme interpreter init.
 
-- See `src/command/CLAUDE.md` for subsystem details.
+- See `src/command/AGENTS.md` for subsystem details.
 
 ### Scheme Integration (`src/command/scheme.c`, `scheme/`)
 
 Chibi Scheme provides extensibility and user scripting.
 
-- See `scheme/CLAUDE.md` for subsystem details.
+- See `scheme/AGENTS.md` for subsystem details.
 
 ### UI Rendering (`src/clay/`, `src/display/`)
 
@@ -78,8 +78,8 @@ Clay immediate-mode UI with SDL3 renderer backend. Layout defined in `layout.c`:
 - Which-key popup overlay when active
 - Bottom strip: minibuffer (prompt + editable text + cursor) when active, echo area otherwise
 
-- See `src/display/CLAUDE.md` for display subsystem details.
-- See `src/clay/CLAUDE.md` for Clay library and renderer backend details.
+- See `src/display/AGENTS.md` for display subsystem details.
+- See `src/clay/AGENTS.md` for Clay library and renderer backend details.
 
 ## Key Patterns
 

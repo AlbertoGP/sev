@@ -1,107 +1,157 @@
 ![Banner image](banner.png)
 
-# `sev`
+# Sev
 
-`sev` is an Emacs-like, Vim-like extensible graphical text editor powered by:
+Sev is an Emacs-like, Vim-like graphical text editor, built from scratch using [SDL3](https://libsdl.org/) and [Clay](https://www.nicbarker.com/clay), with [Chibi Scheme](https://synthcode.com/wiki/chibi-scheme) as its scripting layer. It runs natively on Linux and macOS (Windows soon!), and in the browser via WebAssembly.
 
-- [SDL3](https://libsdl.org/) for windowing, rendering and low level device I/O.
-- [Clay](https://www.nicbarker.com/clay) for layout and UI.
-- [Chibi Scheme](https://synthcode.com/wiki/chibi-scheme) as an embedded interpreted language, filling the same role as elisp in Emacs or Lua in Neovim.
+## Screenshots
 
-This application is _not_ an attempt to build a feature-complete clone of Emacs, but does aim to be:
+TODO: add some screenshots!
 
-- Genuinely usable.
-- Lightweight / performant.
-- Portable. More specifically, able to run on Windows, Mac, Linux _and_ in the browser via Emscripten and WebAssembly.
-- Highly configurable and extensible via Scheme.
+## Features
 
-The ultimate goal of `sev` is to bring together a core set of features from Emacs and Vim (and a couple from more modern editors like Helix and Zed), which can then serve as a foundation for _non_-text-editor applications where text editing needs to be a first-class application capability. This leads to a couple of points of departure from the Emacs philosophy:
+- **Full Vim-style modal editing** — normal, insert, visual, replace, and operator-pending modes; motions, operators, text objects, registers, macros and marks
+- **Modern VSCode/Zed-style command palette** — `ctrl-shift-p` or `:` to search and run any command by name
+- **Which-key overlay** — press a prefix key and see all available continuations
+- **Scheme scripting** — every command, keybinding, and mode is defined in Scheme and can be overridden; no recompile needed
+- **Themes** — Catppuccin and Solarized themes are included, with many more planned; define your own in a few lines
+- **Split panes** — horizontal and vertical splits, navigate and resize with the keyboard or mouse
+- **Runs in the browser** — build with Emscripten for a zero-install WebAssembly version
+- **Undo tree, jump list, buffer-local variables, tab bar, and so much more**
 
-1. Everything is _not_ a buffer. _Many_ things are buffers, but `sev` will also make use of other forms of graphical display. For example, I plan on using it to create a music composition environment with notation and all kinds of other non-text graphical elements.
-2. `sev` does not try to be unopinionated. Defaults should be sane, and batteries should usually be included.
+## Quick Start
 
-Emacs's power comes from the homogeneity of its internals and the fact that _everything_ is exposed via Lisp and available to customise. But the end user of Emacs is the person using it as a text editor, and they need to be able to change everything _at runtime_.
+### Prerequisites
 
-The end user of `sev` is the application developer, who has direct access to the C internals. _Their_ end user is using whatever they build with it! _Most_ things should still be customisable, but the application developer is the user `sev` will be specially oriented towards. Hopefully it will still be an excellent text editor by itself, and perfectly viable as a main driver.
+- CMake 3.20+
+- A C compiler (GCC or Clang)
+- SDL3 system dependencies (on Debian/Ubuntu: `libgl-dev libgles-dev`)
 
-A couple of features are also on the roadmap for `sev` beyond standard text editing capabilities:
+Dependencies (SDL3, SDL\_ttf, Chibi Scheme) are vendored as git submodules.
 
-- I'd like `sev` to support collaborative text editing sessions ASAP. [Eg-walker](https://arxiv.org/pdf/2409.14252) is a fairly recent algorithm and looks very exciting.
-- I'm keen to explore [alternative ways of displaying text](https://arxiv.org/pdf/2008.06030) that make better use of modern monitors and typography.
-- As an admirer of [Obsidian](https://obsidian.md/), Emacs's [Org Mode](https://orgmode.org/) and the original idea of [hypermedia](https://en.wikipedia.org/wiki/Hypermedia) that gave us the World Wide Web, I'd like to build some wiki-like capabilities directly into the editor. Possibly via directives that are usable anywhere recognisable as inside a code comment in text buffers (or anywhere if the buffer holds non-code text like Markdown).
+```bash
+git clone --recursive https://github.com/your-username/sev
+cd sev
+```
+
+### Desktop
+
+```bash
+cmake -S . -B build-desktop
+cmake --build build-desktop
+./build-desktop/app
+```
+
+### WebAssembly
+
+Requires [Emscripten](https://emscripten.org/docs/getting_started/downloads.html).
+
+```bash
+emcmake cmake -S . -B build-wasm
+cmake --build build-wasm
+python3 -m http.server   # then open http://localhost:8000
+```
+
+## Scriptable with Scheme
+
+All commands, keybindings, modes, and themes are defined in Scheme. Drop your configuration in `scheme/init.scm` or load it from there.
+
+**Define and bind a custom command:**
+
+```scheme
+(defcommand (greet)
+  "editor: greet\nShow a personalised message in the echo area."
+  (interactive)
+  (minibuffer-read "Your name: "
+    (lambda (name)
+      (message (string-append "Hello, " name "!")))))
+
+(set-key! global-keymap "ctrl-shift-g" 'greet)
+```
+
+**Define a custom theme:**
+
+```scheme
+(define-theme
+  'my-theme
+  "My Theme Display Name"
+  'palette
+  '((bg-0    . "#1a1b26")
+    (bg-1    . "#16161e")
+    (bg-2    . "#13131a")
+    (fg-0    . "#2a2b3d")
+    (fg-1    . "#3b3c52")
+    (fg-2    . "#414868")
+    (accent-0 . "#565f89")
+    (accent-1 . "#6b7394")
+    (accent-2 . "#828bb8")
+    (text-0  . "#c0caf5")
+    (text-1  . "#a9b1d6")
+    (text-2  . "#9aa5ce")
+    (select  . (alpha accent-2 0.25))
+    (blue    . "#7aa2f7")
+    (cyan    . "#7dcfff")
+    (green   . "#9ece6a")
+    (yellow  . "#e0af68")
+    (orange  . "#ff9e64")
+    (red     . "#f7768e")
+    (purple  . "#bb9af7")
+    (pink    . "#ff007c"))
+  'canonical-map
+  '((fg-text      . text-0)
+    (fg-text-dim  . text-2)
+    (fg-warm      . text-1)
+    (selection-bg . select))
+  'overrides
+  '((mode.normal . blue)))   ; omit to keep *default-roles* value
+
+(activate-theme 'my-theme)
+```
+
+The full Vim modal editing system — motions, operators, text objects, macros — is implemented in `scheme/editor/evil/`. It's a good reference for what's possible without touching C.
 
 ## Project Organisation
 
-At the the top level:
-
 ```
-├── resources/
-├── scheme/
-├── src/
-│   ├── clay/
-│   ├── command/
-│   ├── display/
-│   ├── text/
-│   ├── event.c
-│   ├── init.c
-│   ├── iterate.c
-│   ├── quit.c
-│   └── state.h
-└── vendored/
+├── resources/    fonts and SVG icons
+├── scheme/       all Scheme scripts (commands, modes, keybindings, themes)
+│   └── editor/   R7RS modules: command, mode, evil, theme, minibuffer, …
+├── src/          C source (~12k LOC)
+│   ├── command/  input handling, keymaps, command dispatch, Scheme bridge
+│   ├── text/     buffers, marks, lines, registers, undo
+│   └── display/  layout, panes, tabs, status bar, Clay components
+└── vendored/     SDL3, SDL_ttf, Chibi Scheme (git submodules)
 ```
 
-- `resources/` is where font and icon files are located.
-- `scheme/` is where all `sev`-specific Scheme scripts are located.
-- `src/` is where all C code resides.
-- `vendored/` is where external repositories such as [SDL3](https://github.com/libsdl-org/sdl) and [Chibi Scheme](https://github.com/ashinn/chibi-scheme) live as git submodules.
+## Roadmap
 
-Within the `src/` directory, the application is divided into three main layers: `command/`, `text/` and `display/`.
+Beyond standard text editing, the longer-term vision includes:
 
-- The command layer manages the mapping of user input to keymaps and command invocation, as well as setting up the Scheme interpreter.
-- The text layer defines things like text buffers, marks, logical lines and buffer-local variables, and exposes the functions that manipulate them.
-- The display layer defines the application layout, reusable UI components and the display model's notion of things such as _tabs_, _panes_ and _visual lines_.
+- **Collaborative editing** — real-time sessions using the [Eg-walker](https://arxiv.org/pdf/2409.14252) algorithm
+- **Declarative UI-builder DSL** — enable users to create custom UIs for their plugins directly via the Scheme layer
+- **Alternative text display** — better use of modern monitors and typography (see [this paper](https://arxiv.org/pdf/2008.06030))
+- **Wiki / hypermedia** — Org Mode-style directives and wiki links, inspired by Obsidian and the original hypertext vision
+- **Embeddable core** — Sev is designed to be usable as a foundation for non-text-editor apps (smart notes software, data tools, etc.) where rich text editing is a first-class feature
 
-Several files also live at the top level of the `src/` directory:
+## Project Status
 
-- `init.c`, `event.c`, `iterate.c` and `quit.c` define functions called by SDL.
-  - `init.c` is where all code called during application startup should go.
-  - `event.c` is where handling is set up for various events.
-  - `iterate.c` is the entry point for rendering and post-rendering cleanup.
-  - `quit.c` is where functions are called to clean up allocated resources on app shutdown.
-- `state.h` defines the global `AppState` object.
+Sev is **early / experimental**. Core editing works and it is usable, but there are a few specific features that will make it more viable as a daily driver. Namely:
 
-## Building
+- Text search and replace
+- A file picker / file tree
+- LSP integration
+- In-app documentation
 
-### Fresh build commands
+Expect rough edges, missing features, and breaking changes. Feedback and contributions are very welcome.
 
-```bash
-# Desktop
-cmake -S . -B build-desktop
-cmake --build build-desktop
+## Contributing
 
-# WASM
-emcmake cmake -S . -B build-wasm
-cmake --build build-wasm
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to get started. The Scheme layer (`scheme/`) is a great place to contribute without needing to touch C — new commands, themes, motions, and modes can all be written in pure Scheme.
 
-# WASM with optimisations
-emcmake cmake -S . -B build-wasm -DCMAKE_BUILD_TYPE=Release
-cmake --build build-wasm
-```
+## Community
 
-### Rebuild commands
+[Discord](https://discord.gg/v3gB3bJJ) — join the conversation as the community gets off the ground.
 
-```bash
-## Desktop
-cd build-desktop
-make -j$(nproc)
+## License
 
-## WASM
-cd build-wasm
-make -j$(nproc)
-```
-
-### Running WASM build
-
-```bash
-python3 -m http.server
-```
+[MIT](LICENSE) © 2026 Dylan Cobb
