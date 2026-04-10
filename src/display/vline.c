@@ -536,25 +536,62 @@ size_t vline_byte_pos_at_xy(const VLineCache *cache, const char *buf_text,
 
     if (len == 0) return vl->byte_start;
 
-    // Linear scan: find which character was clicked.
-    // With a block cursor the cursor covers the character it sits on, so
-    // clicking anywhere within a character's pixel extent places the cursor
-    // before that character.  Only advance past a character when the click
-    // is strictly beyond its right edge.
+    // Walk the line in tab-free runs. Within a run, use TTF_MeasureString to
+    // find the click position in one shot — summing per-glyph TTF_GetStringSize
+    // widths drifts against the actual rendered advance widths (especially for
+    // narrow glyphs like U+2500 "─"), which is why per-char scanning used to
+    // mis-report the clicked column on long "─" runs.
+    //
+    // With a block cursor, a click anywhere within a character's pixel extent
+    // places the cursor before that character; we only advance past a char
+    // when the click is strictly beyond its right edge.
     float space_w = text_measure_space(renderer, font_id, font_size);
+    TTF_Font *font = SDL_Clay_GetRenderFont(renderer, font_id, (float)font_size);
     float x_accum = 0.0f;
     size_t byte_offset = 0;
     size_t last_byte_offset = 0;
     while (byte_offset < len) {
-        int seq = utf8_seq_len_fwd(line_text + byte_offset);
-        float char_w = (line_text[byte_offset] == '\t')
-            ? text_tab_stop_width(x_accum, cache->tab_width, space_w)
-            : measure_text(renderer, font_id, font_size, line_text + byte_offset, seq);
-        if (effective_x < x_accum + char_w)
-            return vl->byte_start + byte_offset;
-        last_byte_offset = byte_offset;
-        x_accum += char_w;
-        byte_offset += seq;
+        if (line_text[byte_offset] == '\t') {
+            float tab_w = text_tab_stop_width(x_accum, cache->tab_width, space_w);
+            if (effective_x < x_accum + tab_w)
+                return vl->byte_start + byte_offset;
+            last_byte_offset = byte_offset;
+            x_accum += tab_w;
+            byte_offset += 1;
+            continue;
+        }
+
+        // Find the end of the tab-free run.
+        size_t run_end = byte_offset;
+        while (run_end < len && line_text[run_end] != '\t') run_end++;
+        size_t run_len = run_end - byte_offset;
+
+        float budget = effective_x - x_accum;
+        int budget_px = budget > 0 ? (int)(budget + 0.5f) : 0;
+
+        int mw = 0;
+        size_t ml = 0;
+        if (font) {
+            TTF_MeasureString(font, line_text + byte_offset, run_len,
+                              budget_px, &mw, &ml);
+        }
+
+        if (ml < run_len) {
+            // Click lands within this run — cursor goes before the char at
+            // byte_offset + ml (the first char whose extent crosses budget_px).
+            return vl->byte_start + byte_offset + ml;
+        }
+
+        // Whole run fits to the left of the click — advance past it.
+        float run_w = measure_text(renderer, font_id, font_size,
+                                   line_text + byte_offset, run_len);
+        // Track the byte offset of the last character in the run for the
+        // "click past end of line" fallback below.
+        if (run_len > 0) {
+            last_byte_offset = run_end - utf8_seq_len_back(line_text + run_end);
+        }
+        x_accum += run_w;
+        byte_offset = run_end;
     }
     // Click past all characters: place cursor on the last character of this
     // visual line rather than byte_end (which would land on the next line).
