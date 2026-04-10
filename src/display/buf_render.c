@@ -214,14 +214,14 @@ static bool BufRender_SetupGeometry(BufRenderCtx *ctx, Clay_ElementId id) {
             if (cursor_vline < cache->count) {
                 const VisualLine *cvl = &cache->lines[cursor_vline];
                 size_t head_len = point > cvl->byte_start ? point - cvl->byte_start : 0;
-                float cursor_x = ctx->padding;
+                float cursor_x = 0.0f;
                 if (head_len > 0)
                     cursor_x += text_measure_tab_aware(&ctx->state->rendererData, ctx->font_id, ctx->font_size,
                                                   ctx->chars + cvl->byte_start,
                                                   head_len, tab_width);
+                float textcol_w = box.width - (ctx->padding + gutter_width);
                 float old_scroll_x = cache->scroll_x;
-                vline_scroll_x_to_cursor_pixels(cache, cursor_x,
-                                                text_width - gutter_width);
+                vline_scroll_x_to_cursor_pixels(cache, cursor_x, textcol_w);
                 if (cache->scroll_x != old_scroll_x)
                     ctx->state->needs_extra_frame = true;
             }
