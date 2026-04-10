@@ -9,6 +9,7 @@
 #include "gap.h"
 #include "line.h"
 #include "utf8.h"
+#include "var.h"
 #include "../command/message.h"
 #include "../command/scheme_internal.h"
 
@@ -16,6 +17,63 @@ extern KeyEvent last_event;
 
 static void update_point(Buffer *buf) {
     buf->point.pos = gb_point_get(buf->contents);
+}
+
+static int buffer_tab_width(Buffer *buf) {
+    sexp ctx = G->chibi.ctx;
+    sexp tw_sym = sexp_intern(ctx, "tab-width", -1);
+    sexp tw_val = vartable_get(buffer_get_locals(buf), tw_sym, SEXP_FALSE);
+    return (sexp_fixnump(tw_val) && sexp_unbox_fixnum(tw_val) > 0)
+           ? (int)sexp_unbox_fixnum(tw_val) : 4;
+}
+
+// Convert a byte offset within a line to a 1-indexed display column.
+// Advances one UTF-8 sequence per column; tabs jump to the next tab stop.
+static int line_byte_to_col(Buffer *buf, size_t line_start, size_t byte_pos, int tab_width) {
+    if (tab_width <= 0) tab_width = 4;
+    int col = 0;
+    size_t p = line_start;
+    while (p < byte_pos) {
+        char c = (char)buf_char_at(buf, p);
+        if (c == '\t') {
+            col += tab_width - (col % tab_width);
+            p += 1;
+        } else {
+            int n = utf8_seq_len_fwd(&c);
+            if (p + n > byte_pos) n = (int)(byte_pos - p);
+            col += 1;
+            p += n;
+        }
+    }
+    return col + 1;
+}
+
+// Find the byte position within [line_start, line_end) at which the display
+// column first reaches target_col_1based. When the target lands inside a tab,
+// `round` selects whether to stop before (false) or after (true) the tab.
+static size_t line_col_to_byte(Buffer *buf, size_t line_start, size_t line_end,
+                               int target_col_1based, int tab_width, bool round) {
+    if (tab_width <= 0) tab_width = 4;
+    if (target_col_1based < 1) target_col_1based = 1;
+    int target0 = target_col_1based - 1;
+    int col = 0;
+    size_t p = line_start;
+    while (p < line_end) {
+        if (col >= target0) break;
+        char c = (char)buf_char_at(buf, p);
+        if (c == '\t') {
+            int next = col + (tab_width - (col % tab_width));
+            if (next > target0 && !round) break;
+            col = next;
+            p += 1;
+        } else {
+            int n = utf8_seq_len_fwd(&c);
+            if (p + (size_t)n > line_end) n = (int)(line_end - p);
+            col += 1;
+            p += n;
+        }
+    }
+    return p;
 }
 
 static void snapshot_line(Buffer *buf) {
@@ -81,9 +139,6 @@ bool point_move(int count) {
             char c = (char)gb_char_at(buf->contents, byte_pos);
             if (c == '\n') {
                 buf->cur_line++;
-                buf->col = 0;
-            } else {
-                buf->col++;
             }
             byte_pos += utf8_seq_len_fwd(&c);
             if (byte_pos > get_char_count(buf)) {
@@ -91,6 +146,7 @@ bool point_move(int count) {
                 break;
             }
         }
+        buf->col = 0;
         gb_point_set(buf->contents, byte_pos);
     } else {
         if (point == 0) return true;
@@ -110,13 +166,8 @@ bool point_move(int count) {
                 buf->cur_line--;
             }
             byte_pos -= back_len;
-            char c_at = (char)gb_char_at(buf->contents, byte_pos);
-            if (c_at == '\n') {
-                buf->col = 0;
-            } else if (buf->col) {
-                buf->col--;
-            }
         }
+        buf->col = 0;
         gb_point_set(buf->contents, byte_pos);
     }
     update_point(buf);
@@ -234,32 +285,32 @@ int get_column(Buffer *buf) {
     } else {    // column must be recalculated.
         size_t pos = buf->point.pos;
         size_t line_index = line_index_at(&buf->lt, pos);
-
-        return buf->col = (int)(pos + 1 - buf->lt.lines[line_index].start);
+        size_t line_start = buf->lt.lines[line_index].start;
+        return buf->col = line_byte_to_col(buf, line_start, pos, buffer_tab_width(buf));
     }
 }
 
 void set_column(int column, bool round) {
     Buffer *buf = buffer_get_current();
     if (buf->col == column) return;
-    if (column < 0) column = 0;
+    if (column < 1) column = 1;
 
     size_t pos = point_get(buf).pos;
     LineTable lt = buf->lt;
     size_t line_index = line_index_at(&lt, pos);
-    int last_col = (int)(lt.lines[line_index].end - lt.lines[line_index].start);
-    if (last_col > 0 && buf_char_at(buf, lt.lines[line_index].end - 1) == '\n') {
-        last_col--;
+    size_t line_start = lt.lines[line_index].start;
+    size_t line_end   = lt.lines[line_index].end;
+    if (line_end > line_start && buf_char_at(buf, line_end - 1) == '\n') {
+        line_end--;
     }
 
-    if (column > last_col + 1)
-        column = last_col + 1;
+    int tab_width = buffer_tab_width(buf);
+    int max_col = line_byte_to_col(buf, line_start, line_end, tab_width);
+    if (column > max_col) column = max_col;
 
-    int delta = column - buf->col;
-    Location loc = {
-        .pos = pos + delta
-    };
-    point_set(loc);
+    size_t new_pos = line_col_to_byte(buf, line_start, line_end, column, tab_width, round);
+    point_set((Location){ .pos = new_pos });
+    buf->col = line_byte_to_col(buf, line_start, new_pos, tab_width);
 }
 
 void point_to_line_start(Buffer *buf) {

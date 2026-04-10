@@ -40,11 +40,17 @@ void Cursor(AppState *state, int32_t index,
     // Read char under cursor for width measurement and SOLID overlay
     char char_buf[5] = " ";
     int  char_len    = 1;
-    char first = char_at_point();
+    Buffer *buf = buffer_get_current();
+    size_t pos  = point_get(buf).pos;
+    // Snap pos back to the UTF-8 lead byte if we somehow landed mid-sequence.
+    while (pos > 0) {
+        char c = (char)buf_char_at(buf, pos);
+        if ((c & 0xC0) != 0x80) break;
+        pos--;
+    }
+    char first = (pos < (size_t)buf_size(buf)) ? (char)buf_char_at(buf, pos) : '\0';
     if (first) {
         int seq_len = utf8_seq_len_fwd(&first);
-        Buffer *buf = buffer_get_current();
-        size_t pos  = point_get(buf).pos;
         for (int i = 0; i < seq_len; i++)
             char_buf[i] = (char)buf_char_at(buf, pos + i);
         char_buf[seq_len] = '\0';
