@@ -6,7 +6,7 @@
 ;; Tab bar icons
 (register-icon 'tab-close "icon-close.svg" 'text.primary)
 (register-icon 'tab-icon "tab-icon.svg" 'text.primary)
-(register-icon 'welcome-icon "tab-icon.svg" 'text.primary)
+(register-icon 'welcome-icon "welcome-icon.svg" 'text.primary)
 (register-icon 'scheme-icon "icon-scheme.svg" 'text.primary)
 
 (register-icon 'new-icon "icon-plus.svg" 'text.primary)

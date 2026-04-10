@@ -1,4 +1,9 @@
-![Banner image](banner.png)
+<h1 align="center">
+  <img src="logo.svg" alt="Sev">
+
+  <a href="https://dylancobb.github.io/sev">Website</a> |
+  <a href="https://discord.gg/v3gB3bJJ">Chat</a>
+</h1>
 
 # Sev
 
