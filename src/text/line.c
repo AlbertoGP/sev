@@ -89,6 +89,13 @@ static void line_table_shrink(LineTable *lt, size_t new_size) {
     lt->cap    = new_size;
 }
 
+static void shift_line_spans(Line *line, int32_t delta) {
+    for (uint32_t si = 0; si < line->hl_span_count; si++) {
+        line->hl_spans[si].start_byte = (uint32_t)((int32_t)line->hl_spans[si].start_byte + delta);
+        line->hl_spans[si].end_byte   = (uint32_t)((int32_t)line->hl_spans[si].end_byte   + delta);
+    }
+}
+
 #define capped_dbl_size(s) (((s) < SIZE_MAX / 2) ? (2 * (s)) : SIZE_MAX)
 
 static bool line_table_insert(LineTable *lt, size_t index, Line line) {
@@ -123,6 +130,7 @@ bool line_insert_char(LineTable *lt, size_t pos, char ch) {
         for (size_t i = line_number + 1; i < lt->count; i++) {
             lt->lines[i].start++;
             lt->lines[i].end++;
+            shift_line_spans(&lt->lines[i], +1);
         }
 
         return true;
@@ -155,6 +163,7 @@ bool line_insert_char(LineTable *lt, size_t pos, char ch) {
         lt->lines[i].start++;
         lt->lines[i].end++;
         lt->lines[i].version++;
+        shift_line_spans(&lt->lines[i], +1);
     }
 
     return true;
@@ -173,6 +182,7 @@ void line_backspace_char(LineTable *lt, size_t pos, char ch) {
         for (size_t i = line_number + 1; i < lt->count; i++) {
             lt->lines[i].start--;
             lt->lines[i].end--;
+            shift_line_spans(&lt->lines[i], -1);
         }
 
         return;
@@ -202,6 +212,7 @@ void line_backspace_char(LineTable *lt, size_t pos, char ch) {
         lt->lines[i].start--;
         lt->lines[i].end--;
         lt->lines[i].version++;
+        shift_line_spans(&lt->lines[i], -1);
     }
 }
 
@@ -218,6 +229,7 @@ void line_delete_char(LineTable *lt, size_t pos, char ch) {
         for (size_t i = line_number + 1; i < lt->count; i++) {
             lt->lines[i].start--;
             lt->lines[i].end--;
+            shift_line_spans(&lt->lines[i], -1);
         }
 
         return;
@@ -247,5 +259,6 @@ void line_delete_char(LineTable *lt, size_t pos, char ch) {
         lt->lines[i].start--;
         lt->lines[i].end--;
         lt->lines[i].version++;
+        shift_line_spans(&lt->lines[i], -1);
     }
 }
