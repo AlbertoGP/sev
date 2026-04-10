@@ -33,6 +33,7 @@ set(SRC_FILES
     src/display/status.c
     src/display/keybinding.c
     src/display/tab.c
+    src/display/text_surface.c
     src/display/theme.c
     src/display/tooltip.c
     src/display/vline.c

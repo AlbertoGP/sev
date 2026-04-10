@@ -8,6 +8,7 @@
 #include "keybinding.h"
 #include "theme.h"
 #include "vline.h"
+#include "text_surface.h"
 #include "../clay/renderer.h"
 #include "../text/buffer.h"
 #include "../state.h"
@@ -59,9 +60,7 @@ void MinibufPalette(AppState *state) {
     // Cursor x: measure width of text[0..point_pos) (no prompt prefix).
     float cursor_x = 0.0f;
     if (!placeholder && point_pos > 0) {
-        int w = 0, h = 0;
-        TTF_GetStringSize(font, minibuf_text, point_pos, &w, &h);
-        cursor_x = (float)w;
+        cursor_x = text_measure_tab_aware(&state->rendererData, FONT_UI_NORMAL, font_size, minibuf_text, point_pos, 4);
     }
 
     float pad    = 5.0f * scale;
@@ -128,12 +127,13 @@ void MinibufPalette(AppState *state) {
                 },
             },
         }) {
-            CLAY_TEXT(display_str, CLAY_TEXT_CONFIG({
-                .fontId    = FONT_UI_NORMAL,
-                .fontSize  = font_size,
-                .textColor = text_color,
-                .wrapMode  = CLAY_TEXT_WRAP_NONE
-            }));
+            int32_t mb_run = 0;
+            CLAY_AUTO_ID({ .layout = { .layoutDirection = CLAY_LEFT_TO_RIGHT }}) {
+                text_emit_tab_aware(&state->rendererData, &mb_run, NULL,
+                                    FONT_UI_NORMAL, font_size, 4, line_h,
+                                    text_color, (Clay_Color){0},
+                                    display_str.chars, display_str.length);
+            }
             if (state->cursor_visible)
                 Cursor(state, 0, cursor_x + 2.0f * pad, 8.0f * scale, line_h,
                        0.0f, 0.0f, 65535.0f, 65535.0f,

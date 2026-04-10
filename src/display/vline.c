@@ -9,16 +9,10 @@
 #include "../text/line.h"
 #include "../text/utf8.h"
 #include "../clay/renderer.h"
+#include "text_surface.h"
 
 #define MIN_CACHE_SIZE 16
 
-// Returns the pixel width of a tab character at position x_px.
-// Tab stops are defined as multiples of tab_width spaces.
-static float tab_stop_px(float x_px, int tab_width, float space_w) {
-    if (tab_width <= 0) tab_width = 4;
-    int col = (int)(x_px / space_w);
-    return (float)(((col / tab_width) + 1) * tab_width - col) * space_w;
-}
 
 // Measure the width of a substring using the font.
 static float measure_text(Clay_SDL3RendererData *renderer,
@@ -158,19 +152,7 @@ static size_t nowrap_logical_line(VLineCache *cache,
     size_t end   = line->end;
 
     // Measure full line width respecting tabs.
-    float space_w = measure_text(renderer, font_id, font_size, " ", 1);
-    float width   = 0.0f;
-    size_t pos    = start;
-    while (pos < end) {
-        char c = buf_text[pos];
-        int seq_len = utf8_seq_len_fwd(&buf_text[pos]);
-        if (c == '\t') {
-            width += tab_stop_px(width, tab_width, space_w);
-        } else {
-            width += measure_text(renderer, font_id, font_size, &buf_text[pos], seq_len);
-        }
-        pos += seq_len;
-    }
+    float width = text_measure_tab_aware(renderer, font_id, font_size, buf_text + start, end - start, tab_width);
 
     VisualLine vline = {
         .line_id      = line->line_id,
@@ -246,8 +228,8 @@ static size_t wrap_logical_line(VLineCache *cache,
 
             // Handle tabs - expand to next tab stop
             if (c == '\t') {
-                float space_width = measure_text(renderer, font_id, font_size, " ", 1);
-                char_width = tab_stop_px(width, tab_width, space_width);
+                float space_width = text_measure_space(renderer, font_id, font_size);
+                char_width = text_tab_stop_width(width, tab_width, space_width);
             }
 
             // Would this character overflow?
@@ -559,14 +541,14 @@ size_t vline_byte_pos_at_xy(const VLineCache *cache, const char *buf_text,
     // clicking anywhere within a character's pixel extent places the cursor
     // before that character.  Only advance past a character when the click
     // is strictly beyond its right edge.
-    float space_w = measure_text(renderer, font_id, font_size, " ", 1);
+    float space_w = text_measure_space(renderer, font_id, font_size);
     float x_accum = 0.0f;
     size_t byte_offset = 0;
     size_t last_byte_offset = 0;
     while (byte_offset < len) {
         int seq = utf8_seq_len_fwd(line_text + byte_offset);
         float char_w = (line_text[byte_offset] == '\t')
-            ? tab_stop_px(x_accum, cache->tab_width, space_w)
+            ? text_tab_stop_width(x_accum, cache->tab_width, space_w)
             : measure_text(renderer, font_id, font_size, line_text + byte_offset, seq);
         if (effective_x < x_accum + char_w)
             return vl->byte_start + byte_offset;
