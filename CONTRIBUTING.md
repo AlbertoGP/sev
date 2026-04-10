@@ -79,4 +79,4 @@ The `scheme/AGENTS.md` file documents the full C FFI and module system. The per-
 
 ## Community
 
-[Discord](https://discord.gg/v3gB3bJJ)
+[Discord](https://discord.gg/u9tvBmTMwx)

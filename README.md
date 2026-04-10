@@ -2,7 +2,7 @@
   <img src="logo.svg" alt="Sev" width="325">
 
 <a href="https://dylancobb.github.io/sev">Website</a> |
-<a href="https://discord.gg/v3gB3bJJ">Chat</a>
+<a href="https://discord.gg/u9tvBmTMwx">Chat</a>
 
 </h1>
 
@@ -156,7 +156,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for how to get started. The Scheme layer 
 
 ## Community
 
-[Discord](https://discord.gg/v3gB3bJJ) — join the conversation as the community gets off the ground.
+[Discord](https://discord.gg/u9tvBmTMwx) — join the conversation as the community gets off the ground.
 
 ## License
 
