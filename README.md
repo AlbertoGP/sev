@@ -1,8 +1,9 @@
 <h1 align="center">
-  <img src="logo.svg" alt="Sev">
+  <img src="logo.svg" alt="Sev" width="325">
 
-  <a href="https://dylancobb.github.io/sev">Website</a> |
-  <a href="https://discord.gg/v3gB3bJJ">Chat</a>
+<a href="https://dylancobb.github.io/sev">Website</a> |
+<a href="https://discord.gg/u9tvBmTMwx">Chat</a>
+
 </h1>
 
 # Sev
@@ -32,7 +33,7 @@ TODO: add some screenshots!
 - A C compiler (GCC or Clang)
 - SDL3 system dependencies (on Debian/Ubuntu: `libgl-dev libgles-dev`)
 
-Dependencies (SDL3, SDL\_ttf, Chibi Scheme) are vendored as git submodules.
+Dependencies (SDL3, SDL_ttf, Chibi Scheme) are vendored as git submodules.
 
 ```bash
 git clone --recursive https://github.com/your-username/sev
@@ -155,7 +156,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for how to get started. The Scheme layer 
 
 ## Community
 
-[Discord](https://discord.gg/v3gB3bJJ) — join the conversation as the community gets off the ground.
+[Discord](https://discord.gg/u9tvBmTMwx) — join the conversation as the community gets off the ground.
 
 ## License
 
