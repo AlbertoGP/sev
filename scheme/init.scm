@@ -24,27 +24,17 @@
 (%set-keymap-name! base-spc-map "leader")
 (bind-prefix! global-keymap "space" base-spc-map)
 
-;; SPC f — file operations (always available: open creates a pane if none)
-(set-key! base-spc-map "f o" 'open-file)
-
-;; SPC p — project operations (always available)
-(define project-map (make-keymap))
-(%set-keymap-name! project-map "project")
-(set-key! project-map "o" 'open-project)
-(bind-prefix! base-spc-map "p" project-map)
-
 ;; SPC b — buffer operations available on welcome screen
 (define base-buffer-map (make-keymap))
 (%set-keymap-name! base-buffer-map "buffer")
 (set-key! base-buffer-map "n" 'buffer-new)
 (bind-prefix! base-spc-map "b" base-buffer-map)
 
-;; SPC t — tab operations
-(define base-tab-map (make-keymap))
-(%set-keymap-name! base-tab-map "tabs/theme")
-(set-key! base-tab-map "n" 'tab-new)
-(set-key! base-tab-map "h" 'theme-picker)
-(bind-prefix! base-spc-map "t" base-tab-map)
+;; SPC f — file operations (always available: open creates a pane if none)
+(define file-map (make-keymap))
+(%set-keymap-name! file-map "file/find")
+(set-key! file-map "o" 'open-file)
+(bind-prefix! base-spc-map "f" file-map)
 
 ;; SPC h — help (always available)
 (define help-map (make-keymap))
@@ -55,6 +45,19 @@
 (set-key! help-map "v" 'describe-variable)
 (set-key! help-map "w" 'which-key-toggle)
 (bind-prefix! base-spc-map "h" help-map)
+
+;; SPC p — project operations (always available)
+(define project-map (make-keymap))
+(%set-keymap-name! project-map "project")
+(set-key! project-map "o" 'open-project)
+(bind-prefix! base-spc-map "p" project-map)
+
+;; SPC t — tab operations
+(define base-tab-map (make-keymap))
+(%set-keymap-name! base-tab-map "tabs/theme")
+(set-key! base-tab-map "n" 'tab-new)
+(set-key! base-tab-map "h" 'theme-picker)
+(bind-prefix! base-spc-map "t" base-tab-map)
 
 ;; ── Pane keymap ───────────────────────────────────────────────────────────────
 ;; Bindings that only make sense when at least one pane is open.
