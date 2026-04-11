@@ -74,6 +74,9 @@ bool tab_new_with_buffer(const char *buf_name, bool always_create);
 // Set a tab's buffer and invalidate its vline cache.
 void tab_set_buffer(Tab *tab, Buffer *buf);
 
+// Return the first tab in pane's tab list showing buf, or NULL if none.
+Tab *pane_tab_for_buffer(struct Pane *pane, Buffer *buf);
+
 // Update the window title to reflect the active tab.
 void update_window_title(void);
 

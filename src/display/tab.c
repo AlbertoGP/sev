@@ -38,6 +38,13 @@ Tab *tab_alloc(Buffer *buf) {
     return tab;
 }
 
+Tab *pane_tab_for_buffer(Pane *pane, Buffer *buf) {
+    if (!pane || pane->type != PANE_CONTENT) return NULL;
+    for (Tab *t = pane->content.list; t; t = t->next)
+        if (t->content.buffer.buffer == buf) return t;
+    return NULL;
+}
+
 void tab_set_buffer(Tab *tab, Buffer *buf) {
     if (!tab || !buf) return;
     tab->content.buffer.buffer = buf;
@@ -131,9 +138,16 @@ bool tab_new_with_buffer(const char *buf_name, bool always_create) {
         pane_replace_child(NULL, NULL, p);
         p->content.active = true;
     } else {
-        // Add tab to active display pane.
+        // If a tab in the active pane already shows this buffer, switch to it.
         Pane *active = pane_get_active();
         if (!active) return false;
+        Tab *existing = pane_tab_for_buffer(active, buf);
+        if (existing) {
+            active->content.active_tab = existing;
+            sync_active_buffer();
+            G->needs_redraw = true;
+            return true;
+        }
         Tab *t = display_tab_new(active, buf);
         if (!t) return false;
     }

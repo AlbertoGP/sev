@@ -227,6 +227,14 @@ static sexp scm_tab_set_buffer(sexp ctx, sexp self, sexp n, sexp sname) {
     if (!buf) return SEXP_FALSE;
     Pane *pane = pane_get_active();
     if (!pane || !pane->content.active_tab) return SEXP_FALSE;
+    // If another tab in this pane already shows buf, switch to it.
+    Tab *existing = pane_tab_for_buffer(pane, buf);
+    if (existing) {
+        pane->content.active_tab = existing;
+        sync_active_buffer();
+        G->needs_redraw = true;
+        return SEXP_TRUE;
+    }
     if (buf != buffer_get_current())
         pane_push_jump();
     tab_set_buffer(pane->content.active_tab, buf);
