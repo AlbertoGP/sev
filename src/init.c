@@ -1,5 +1,9 @@
 #include <stdio.h>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL.h>
@@ -124,6 +128,30 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         fprintf(stderr, "Failed to initialise pane system.");
         return SDL_APP_FAILURE;
     }
+
+#ifdef __EMSCRIPTEN__
+    if (state->first_launch) {
+        // Persist the seeded state so subsequent loads don't re-trigger this.
+        state_io_save(state);
+
+        // Open /demo/demo-file.scm, mirroring the open-file Scheme command.
+        sexp ctx = state->chibi.ctx;
+        sexp env = state->chibi.env;
+        sexp result = sexp_eval_string(ctx,
+            "(let ((f \"/demo/demo-file.scm\"))"
+            "  (when (file-exists? f)"
+            "    (when (no-panes?) (%tab-new! f))"
+            "    (%buffer-create f)"
+            "    (%tab-set-buffer! f)"
+            "    (%set-buffer-file-name! f)"
+            "    (%buffer-read)"
+            "    (set-auto-mode!)"
+            "    (%update-recent-project! \"/demo\")))",
+            -1, env);
+        if (sexp_exceptionp(result))
+            sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+    }
+#endif
 
     state->needs_redraw = true;
     state->needs_extra_frame = true;

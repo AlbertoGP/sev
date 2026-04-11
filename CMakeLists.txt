@@ -94,6 +94,8 @@ if(EMSCRIPTEN)
     # Preload resources, scheme, and chibi-scheme lib (required for standard env)
     # Note: scheme files go to /resources/ to match RESOURCES_PATH in scheme.c
     set(EMCC_ASSETS
+        # Inject pre.js before the compiled module — sets up IDBFS and clipboard.
+        "--pre-js ${CMAKE_SOURCE_DIR}/src/wasm/pre.js"
         "--preload-file ${CMAKE_SOURCE_DIR}/resources@/resources"
         "--preload-file ${CMAKE_SOURCE_DIR}/scheme@/resources"
         # Bundle the full chibi-scheme lib, but exclude files that are never
@@ -102,6 +104,7 @@ if(EMSCRIPTEN)
         "--preload-file ${CMAKE_SOURCE_DIR}/vendored/chibi-scheme/lib@/lib"
         "--exclude-file ${CMAKE_SOURCE_DIR}/vendored/chibi-scheme/lib/chibi/snow"
         "--exclude-file */test.sld"
+        "--preload-file ${CMAKE_SOURCE_DIR}/demo@/demo"
     )
     list(JOIN EMCC_ASSETS " " EMCC_ASSETS_STR)
     set_target_properties(app PROPERTIES LINK_FLAGS "${EMCC_ASSETS_STR}")
@@ -109,9 +112,14 @@ if(EMSCRIPTEN)
     # Allow WASM linear memory to grow beyond its initial size (required for
     # Chibi Scheme's GC heap allocation; without this the binary has a fixed
     # memory ceiling and any malloc beyond it returns NULL / aborts).
+    # FORCE_FILESYSTEM=1 bundles IDBFS and other FS implementations.
+    # EXPORTED_RUNTIME_METHODS=FS exposes the FS object globally so pre.js
+    # can call FS.syncfs / FS.mount from outside the module closure.
     target_link_options(app PRIVATE
         -sALLOW_MEMORY_GROWTH=1
         -sMAXIMUM_MEMORY=268435456
+        -sFORCE_FILESYSTEM=1
+        -sEXPORTED_RUNTIME_METHODS=FS
     )
 
     # Disable unused SDL3 subsystems to reduce WASM binary size

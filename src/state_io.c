@@ -6,6 +6,10 @@
 #include <time.h>
 #include <unistd.h>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #include <chibi/eval.h>
 #include "../vendored/jsmn.h"
 
@@ -22,6 +26,12 @@
 // Build the state.json path, creating the directory tree if needed.
 // Returns true on success, false on mkdir failure.
 static bool state_io_path(char *buf, size_t len) {
+#ifdef __EMSCRIPTEN__
+    // In WASM, use /tmp/ (always-present MEMFS); pre.js populates this from
+    // localStorage before main() runs, and state_io_save() flushes it back.
+    snprintf(buf, len, "/tmp/sev-state.json");
+    return true;
+#else
     const char *home = getenv("HOME");
     if (!home || !home[0]) return false;
 
@@ -35,6 +45,7 @@ static bool state_io_path(char *buf, size_t len) {
 
     snprintf(buf, len, "%s/.local/state/sev/state.json", home);
     return true;
+#endif
 }
 
 static int tok_len(const jsmntok_t *tok) {
@@ -157,6 +168,12 @@ bool state_io_save(const AppState *state) {
         remove(tmp);
         return false;
     }
+#ifdef __EMSCRIPTEN__
+    // Read the just-written file and persist it to localStorage.
+    EM_ASM({
+        sevFlushStateToLocalStorage();
+    });
+#endif
     return true;
 }
 
@@ -168,6 +185,14 @@ bool state_io_load(AppState *state) {
     if (!f) {
         if (errno == ENOENT) {
             state->first_launch = true;
+#ifdef __EMSCRIPTEN__
+            // Seed the demo project so it appears in recent-projects on first load.
+            RecentProject *rp = &state->recent_projects[0];
+            strncpy(rp->path, "/demo", sizeof(rp->path) - 1);
+            rp->path[sizeof(rp->path) - 1] = '\0';
+            rp->last_opened = (int64_t)time(NULL);
+            state->recent_projects_count = 1;
+#endif
             return true;
         }
         return false;
@@ -315,6 +340,10 @@ void state_io_update_recent_project(AppState *state, const char *path) {
         state->recent_projects[oldest].path[sizeof(state->recent_projects[oldest].path) - 1] = '\0';
         state->recent_projects[oldest].last_opened = now;
     }
+#ifdef __EMSCRIPTEN__
+    // Eagerly persist recent-project changes — SDL_AppQuit is unreliable in the browser.
+    state_io_save(state);
+#endif
 }
 
 // (%update-recent-project! path) — Scheme binding
