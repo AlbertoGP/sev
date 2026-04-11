@@ -12,7 +12,21 @@ Sev is an Emacs-like, Vim-like graphical text editor, built from scratch using [
 
 ## Screenshots
 
-TODO: add some screenshots!
+<figure>
+  <img width="3778" height="2047" alt="image" src="https://github.com/user-attachments/assets/5b595e0d-571f-4b2d-9ecd-ce4916cd9e6a" />
+  <figcaption>Panes, tabs and syntax highlighting</figcaption>
+</figure>
+
+<figure>
+  <img width="3778" height="2047" alt="image" src="https://github.com/user-attachments/assets/84412c21-f423-4884-9566-360ca90f9b32" />  
+  <figcaption>The welcome screen and command palette with command completions</figcaption>
+</figure>
+
+<figure>
+  <img width="3778" height="2047" alt="image" src="https://github.com/user-attachments/assets/87ed1065-f070-4aa8-b271-566000c7153c" />
+  <figcaption>Theme picker with theme previews. Easily add new themes via Scheme.</figcaption>
+</figure>
+
 
 ## Features
 
