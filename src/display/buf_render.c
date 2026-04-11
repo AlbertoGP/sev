@@ -479,9 +479,9 @@ static void BufRender_SelectionCell(BufRenderCtx *ctx, size_t i, VisualLine *vl)
     if (sel_w > 0 && sel_pool_idx < SCISSORED_RECT_POOL_SIZE) {
         ScissoredRectData *s = &sel_pool[sel_pool_idx++];
         s->type   = CUSTOM_TYPE_SCISSORED_RECT;
-        s->clip_x = ctx->box.x;
+        s->clip_x = ctx->box.x + ctx->padding + ctx->gutter_width;
         s->clip_y = ctx->box.y;
-        s->clip_w = ctx->box.width;
+        s->clip_w = ctx->box.width - ctx->padding - ctx->gutter_width;
         s->clip_h = ctx->text_height;
         s->color  = ui_resolve_color(ctx->state, ctx->state->ui.roles.selection);
         CLAY(CLAY_IDI_LOCAL("Sel", (int32_t)i), {
