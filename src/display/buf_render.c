@@ -598,9 +598,13 @@ static void BufRender_TextRow(BufRenderCtx *ctx, size_t i) {
     }
 
     Clay_Color c = ui_resolve_color(ctx->state, ctx->state->ui.roles.line_bg);
+    // In nowrap mode the row is shifted left by scroll_x via the parent clip childOffset.
+    // Use a fixed width of (text_col_w + scroll_x) so the background always fills the
+    // full visible pane width regardless of how far the user has scrolled horizontally.
+    float text_col_w = ctx->box.width - ctx->padding - ctx->gutter_width;
     CLAY(CLAY_IDI_LOCAL("TextRow", (int32_t)i), {
         .layout = {
-            .sizing = { .width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(ctx->line_height) },
+            .sizing = { .width = ctx->wrap_lines ? CLAY_SIZING_GROW(0) : CLAY_SIZING_FIXED(text_col_w + ctx->scroll_x), .height = CLAY_SIZING_FIXED(ctx->line_height) },
             .layoutDirection = CLAY_LEFT_TO_RIGHT,
         },
         .backgroundColor = (cursor_on_line && ctx->buf->select_mode == SELECT_NONE) ? (Clay_Color){ c.r, c.g, c.b, 128 } : (Clay_Color){0}
