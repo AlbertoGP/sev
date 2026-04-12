@@ -124,7 +124,9 @@
       (let ((filename (%buffer-file-name)))
         (if (not (eq? filename #f))
             (if (%buffer-write)
-                (message (string-append "Saved " filename))
+                (begin
+                  (%tab-set-preview! #f)
+                  (message (string-append "Saved " filename)))
                 (message (string-append "Failed to save " filename)))
             (call-interactively 'save-buffer-as)))))
 
@@ -139,7 +141,9 @@
               (message (string-append "File not found: " filename))
               (begin
                 (%jump-push!)
-                (when (no-panes?) (%tab-new! filename))
+                (when (no-panes?)
+                  (%tab-new! filename)
+                  (%tab-set-preview! #t))
                 (if (%buffer-create filename)
                     (begin
                       (%tab-set-buffer! filename)

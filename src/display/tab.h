@@ -38,6 +38,7 @@ typedef struct {
 typedef struct Tab {
     struct Tab *next;
     struct Tab *prev;
+    bool       is_preview;
     TabContent content;
 } Tab;
 

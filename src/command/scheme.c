@@ -237,8 +237,26 @@ static sexp scm_tab_set_buffer(sexp ctx, sexp self, sexp n, sexp sname) {
     }
     if (buf != buffer_get_current())
         pane_push_jump();
+    // If the active tab is not in preview mode, open in a new preview tab.
+    if (!pane->content.active_tab->is_preview) {
+        Tab *tab = display_tab_new(pane, buf);
+        if (!tab) return SEXP_FALSE;
+        tab->is_preview = true;
+        sync_active_buffer();
+        G->needs_redraw = true;
+        return SEXP_TRUE;
+    }
+    // Current tab is preview: replace its buffer (remains preview).
     tab_set_buffer(pane->content.active_tab, buf);
     sync_active_buffer();
+    G->needs_redraw = true;
+    return SEXP_TRUE;
+}
+
+static sexp scm_tab_set_preview(sexp ctx, sexp self, sexp n, sexp sbool) {
+    Pane *pane = pane_get_active();
+    if (!pane || !pane->content.active_tab) return SEXP_FALSE;
+    pane->content.active_tab->is_preview = sexp_truep(sbool);
     G->needs_redraw = true;
     return SEXP_TRUE;
 }
@@ -397,6 +415,7 @@ void scheme_init(AppState *state) {
     SDEF("%buffer-read", 0, scm_buffer_read);
     SDEF("%buffer-create", 1, scm_buffer_create);
     SDEF("%tab-set-buffer!", 1, scm_tab_set_buffer);
+    SDEF("%tab-set-preview!", 1, scm_tab_set_preview);
     SDEF("%buffer-close!", 1, scm_buffer_close);
     SDEF("%set-welcome-keymap!", 1, scm_set_welcome_keymap);
 
@@ -546,7 +565,7 @@ void scheme_init(AppState *state) {
         "%buffer-has-minor-mode? "
         "%buffer-file-name %set-buffer-file-name! %buffer-write "
         "%buffer-modified? %set-buffer-modified! %buffer-set-name! "
-        "%buffer-insert %buffer-read %buffer-create %tab-set-buffer! %buffer-close! "
+        "%buffer-insert %buffer-read %buffer-create %tab-set-buffer! %tab-set-preview! %buffer-close! "
         "%register-mode %set-major-mode "
         "%enable-minor-mode %disable-minor-mode "
         "%buffer-major-mode %buffer-minor-modes "

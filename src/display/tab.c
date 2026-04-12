@@ -370,6 +370,8 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
 
         for (int i = 1; t != NULL; t = t->next, i++) {
             bool is_active = (t == dp->content.active_tab);
+            if (t->is_preview && t->content.buffer.buffer->is_modified)
+                t->is_preview = false;
             const char *_full = t->content.buffer.buffer->name;
             const char *_slash = strrchr(_full, '/');
             const char *_base = (_slash && _slash[1]) ? _slash + 1 : _full;
@@ -421,7 +423,7 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
                     }
                 }) {
                     CLAY_TEXT(tab_name, CLAY_TEXT_CONFIG({
-                        .fontId   = FONT_UI_NORMAL,
+                        .fontId   = t->is_preview ? FONT_UI_ITALIC : FONT_UI_NORMAL,
                         .fontSize = 12 * state->ui.scale_factor,
                         .textColor = c
                     }));
@@ -431,6 +433,8 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
                 }
                 void **cb = tab_cb_alloc(dp, t);
                 bool show_cross = Clay_Hovered();
+                if (show_cross && G->input.left_double_click_this_frame)
+                    t->is_preview = false;
                 bool block_click = false;
                 CLAY(CLAY_IDI_LOCAL("Close Button", i), {
                     .layout = {
