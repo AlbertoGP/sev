@@ -9,6 +9,8 @@
 #include "message.h"
 #include "mode_icon.h"
 #include "theme.h"
+#include "tooltip.h"
+#include "../command/keymap.h"
 #include "../state.h"
 #include "../text/buffer.h"
 #include "../text/buffer_type.h"
@@ -173,6 +175,10 @@ void MajorModeIndicator(AppState *state, Buffer *buf, Clay_Color text_color) {
             .textColor = text_color,
         }));
     }
+    bool hovered = Clay_Hovered();
+    char binding[64] = {0};
+    keymap_where_is_first(state, "set-buffer-mode", binding, sizeof(binding));
+    TextTooltipWithBinding(state, hovered, 0xBADE, "Select Language", binding);
     BarDivider(state);
 }
 
