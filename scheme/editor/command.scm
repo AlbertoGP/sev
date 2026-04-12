@@ -200,8 +200,8 @@
          (keys  (where-is sym)))
     (%pop-to-buffer "*Help*")
     ;; Set up help-mode on first use
-    (when (not (%buffer-has-minor-mode? 'help-mode))
-      (%enable-minor-mode 'help-mode))
+    (unless (eq? (%buffer-major-mode) 'help-mode)
+      (%set-major-mode 'help-mode))
     ;; Header: name + kind
     (%insert-string fname)
     (%insert-string "    [")

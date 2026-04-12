@@ -74,7 +74,7 @@
   (line-start) (skip-whitespace))
 (defcommand (join-line)
   "editor: join current and next line\nDelete newline character between the current and subsequent line."
-  (unless (%buffer-has-minor-mode? 'help-mode)
+  (unless (buffer-read-only?)
     (line-end) (delete-forward-char)))
 
 ;; Return the file extension (after last "."), or "" if none.

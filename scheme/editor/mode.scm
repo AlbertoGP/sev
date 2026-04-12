@@ -228,28 +228,21 @@
       (set-local! 'display-line-numbers-type next)
       (set-local! 'display-line-numbers-type/explicit? #t))))
 
-;; Help buffer mode
+;; Read-only base major mode — derive from this to make a buffer read-only.
+(define-major-mode 'read-only-mode)
+
+;; Help buffer major mode
 (define help-map (make-keymap))
-(set-key! help-map "escape" 'tab-close)
-(set-key! help-map "ctrl-w" 'tab-close)
-(set-key! help-map "j"      'next-line)
-(set-key! help-map "k"      'prev-line)
-(set-key! help-map "h"      'backward-char)
-(set-key! help-map "l"      'forward-char)
-(set-key! help-map "up"     'prev-line)
-(set-key! help-map "down"   'next-line)
-(set-key! help-map "left"   'backward-char)
-(set-key! help-map "right"  'forward-char)
-;; Block all content-modifying keys. Uses a plain define + make-interactive!
-;; (no set-doc!) so help-mode-noop is callable but absent from the command palette.
-(define (help-mode-noop) #f)
-(make-interactive! 'help-mode-noop '())
-(for-each (lambda (key) (set-key! help-map key 'help-mode-noop))
-          '("i" "I" "R" "r"
-            "a" "A" "o" "O"
-            "s" "S" "c" "C"
-            "d" "D" "x" "X"
-            "p" "P"
-            "u" "U" "ctrl-r"
-            "J" "."))
-(define-minor-mode 'help-mode help-map)
+(set-key! help-map "j"     'next-line)
+(set-key! help-map "k"     'prev-line)
+(set-key! help-map "h"     'backward-char)
+(set-key! help-map "l"     'forward-char)
+(set-key! help-map "up"    'prev-line)
+(set-key! help-map "down"  'next-line)
+(set-key! help-map "left"  'backward-char)
+(set-key! help-map "right" 'forward-char)
+(define-major-mode 'help-mode help-map)
+(set-mode-parent! 'help-mode 'read-only-mode)
+
+;; Predicate — true for any buffer whose major mode derives from read-only-mode.
+(define (buffer-read-only?) (derived-mode? 'read-only-mode))

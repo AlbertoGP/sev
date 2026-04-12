@@ -14,5 +14,5 @@
     set-mode-parent! derived-mode?
     user-settings-rules apply-buffer-settings
     register-setting-default!
-    help-mode-noop)
+    buffer-read-only?)
   (include "mode.scm"))

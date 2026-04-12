@@ -353,14 +353,14 @@
 
 (defcommand (evil-d)
   "vim: delete operator or selection\nIn normal mode, enter operator-pending state; combine with a motion to delete.\nIn visual mode, delete the selection."
-  (unless (%buffer-has-minor-mode? 'help-mode)
+  (unless (buffer-read-only?)
     (if (> (%select-mode-get) 0)
         (evil-visual-delete)
         (evil-op-delete))))
 
 (defcommand (evil-c)
   "vim: change operator or selection\nIn normal mode, enter operator-pending state; combine with a motion to change.\nIn visual mode, delete the selection and enter insert mode."
-  (unless (%buffer-has-minor-mode? 'help-mode)
+  (unless (buffer-read-only?)
     (if (> (%select-mode-get) 0)
         (evil-visual-change)
         (evil-op-change))))
@@ -373,21 +373,21 @@
 
 (defcommand (evil-x)
   "vim: delete character or selection\nIn normal mode, delete character(s) forward.\nIn visual mode, delete the selection."
-  (unless (%buffer-has-minor-mode? 'help-mode)
+  (unless (buffer-read-only?)
     (if (> (%select-mode-get) 0)
         (evil-visual-delete)
         (evil-x-impl))))
 
 (defcommand (evil-p)
   "vim: paste after cursor or into selection\nIn normal mode, paste register contents after the cursor.\nIn visual mode, paste register contents replacing the selection."
-  (unless (%buffer-has-minor-mode? 'help-mode)
+  (unless (buffer-read-only?)
     (if (> (%select-mode-get) 0)
         (evil-visual-paste)
         (evil-paste-after))))
 
 (defcommand (evil-P)
   "vim: paste before cursor or into selection\nIn normal mode, paste register contents before the cursor.\nIn visual mode, paste register contents replacing the selection."
-  (unless (%buffer-has-minor-mode? 'help-mode)
+  (unless (buffer-read-only?)
     (if (> (%select-mode-get) 0)
         (evil-visual-paste)
         (evil-paste-before))))

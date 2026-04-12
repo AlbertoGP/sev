@@ -3,19 +3,19 @@
 ;; Undo
 (defcommand (evil-undo)
   "vim: undo\nUndo last change."
-  (unless (%buffer-has-minor-mode? 'help-mode)
+  (unless (buffer-read-only?)
     (%undo)))
 
 ;; Redo
 (defcommand (evil-redo)
   "vim: redo\nRedo last undone change."
-  (unless (%buffer-has-minor-mode? 'help-mode)
+  (unless (buffer-read-only?)
     (%redo)))
 
 ;; Line restore
 (defcommand (evil-line-restore)
   "vim: line restore\nRestore line to its state before edits began on it."
-  (unless (%buffer-has-minor-mode? 'help-mode)
+  (unless (buffer-read-only?)
     (%begin-change)
     (%line-restore)
     (%end-change)))
@@ -47,7 +47,7 @@
 ;; Dot repeat
 (defcommand (evil-repeat)
   "vim: repeat last change"
-  (unless (%buffer-has-minor-mode? 'help-mode)
+  (unless (buffer-read-only?)
   (let ((ri (%change-last-repeat-info))
         (user-count evil-count))
     (when (repeat-info? ri)

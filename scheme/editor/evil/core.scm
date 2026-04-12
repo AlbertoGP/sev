@@ -257,6 +257,10 @@
 ;; State transitions
 (defcommand (evil-normal)
   "vim: normal mode\nReturn to normal mode."
+  (let ((was-editing? (or (%buffer-has-minor-mode? 'evil-insert-mode)
+                          (%buffer-has-minor-mode? 'evil-replace-mode)
+                          (%buffer-has-minor-mode? 'evil-select-mode)
+                          (%buffer-has-minor-mode? 'evil-pending-mode))))
   ;; Finalize insert/replace session change (only meaningful when panes exist)
   (unless (no-panes?)
     (when (%change-active?)
@@ -301,16 +305,13 @@
   (when (%macro-recording?)
     (disable-minor-mode 'evil-recording-mode)
     (enable-minor-mode 'evil-recording-mode))
-  ;; Re-seat help-mode at the head of the minor-mode list so its keymap
-  ;; (escape → tab-close, blocked edit keys, etc.) always wins over the
-  ;; evil mode keymaps whose parent chain would otherwise shadow it.
-  (when (%buffer-has-minor-mode? 'help-mode)
-    (disable-minor-mode 'help-mode)
-    (enable-minor-mode 'help-mode)))
+  ;; In read-only buffers: first escape exits any active mode, second closes the tab.
+  (when (and (not was-editing?) (buffer-read-only?))
+    (call-interactively 'tab-close))))
 
 (defcommand (evil-insert)
   "vim: insert mode\nEnter insert mode."
-  (unless (%buffer-has-minor-mode? 'help-mode)
+  (unless (buffer-read-only?)
     (unless (%change-active?)
       (%begin-change)
       (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'insert #f)))
@@ -326,7 +327,7 @@
 
 (defcommand (evil-replace)
   "vim: replace mode\nEnter replace mode."
-  (unless (%buffer-has-minor-mode? 'help-mode)
+  (unless (buffer-read-only?)
     (unless (%change-active?)
       (%begin-change)
       (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'replace #f)))
@@ -546,7 +547,7 @@
 
 ;; Core dispatch: enter operator-pending
 (define (evil-enter-operator op-sym)
-  (unless (and (%buffer-has-minor-mode? 'help-mode)
+  (unless (and (buffer-read-only?)
                (not (eq? op-sym 'op-yank)))
   (if (and (eq? evil-sm-state 'operator-pending)
            (eq? evil-pending-op op-sym))
