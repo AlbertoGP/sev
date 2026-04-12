@@ -3,19 +3,22 @@
 ;; Undo
 (defcommand (evil-undo)
   "vim: undo\nUndo last change."
-  (%undo))
+  (unless (%buffer-has-minor-mode? 'help-mode)
+    (%undo)))
 
 ;; Redo
 (defcommand (evil-redo)
   "vim: redo\nRedo last undone change."
-  (%redo))
+  (unless (%buffer-has-minor-mode? 'help-mode)
+    (%redo)))
 
 ;; Line restore
 (defcommand (evil-line-restore)
   "vim: line restore\nRestore line to its state before edits began on it."
-  (%begin-change)
-  (%line-restore)
-  (%end-change))
+  (unless (%buffer-has-minor-mode? 'help-mode)
+    (%begin-change)
+    (%line-restore)
+    (%end-change)))
 
 ;; Replay helpers for dottable operations
 (define (evil-replay-setup setup)
@@ -44,6 +47,7 @@
 ;; Dot repeat
 (defcommand (evil-repeat)
   "vim: repeat last change"
+  (unless (%buffer-has-minor-mode? 'help-mode)
   (let ((ri (%change-last-repeat-info))
         (user-count evil-count))
     (when (repeat-info? ri)
@@ -143,7 +147,7 @@
              (%end-change)))
           (else #f)))))
   (set! evil-count #f)
-  (message-clear))
+  (message-clear)))
 
 ;; Count accumulation
 (defcommand (evil-digit-argument)

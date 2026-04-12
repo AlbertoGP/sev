@@ -353,15 +353,17 @@
 
 (defcommand (evil-d)
   "vim: delete operator or selection\nIn normal mode, enter operator-pending state; combine with a motion to delete.\nIn visual mode, delete the selection."
-  (if (> (%select-mode-get) 0)
-      (evil-visual-delete)
-      (evil-op-delete)))
+  (unless (%buffer-has-minor-mode? 'help-mode)
+    (if (> (%select-mode-get) 0)
+        (evil-visual-delete)
+        (evil-op-delete))))
 
 (defcommand (evil-c)
   "vim: change operator or selection\nIn normal mode, enter operator-pending state; combine with a motion to change.\nIn visual mode, delete the selection and enter insert mode."
-  (if (> (%select-mode-get) 0)
-      (evil-visual-change)
-      (evil-op-change)))
+  (unless (%buffer-has-minor-mode? 'help-mode)
+    (if (> (%select-mode-get) 0)
+        (evil-visual-change)
+        (evil-op-change))))
 
 (defcommand (evil-y)
   "vim: yank operator or selection\nIn normal mode, enter operator-pending state; combine with a motion to yank.\nIn visual mode, yank the selection."
@@ -371,21 +373,24 @@
 
 (defcommand (evil-x)
   "vim: delete character or selection\nIn normal mode, delete character(s) forward.\nIn visual mode, delete the selection."
-  (if (> (%select-mode-get) 0)
-      (evil-visual-delete)
-      (evil-x-impl)))
+  (unless (%buffer-has-minor-mode? 'help-mode)
+    (if (> (%select-mode-get) 0)
+        (evil-visual-delete)
+        (evil-x-impl))))
 
 (defcommand (evil-p)
   "vim: paste after cursor or into selection\nIn normal mode, paste register contents after the cursor.\nIn visual mode, paste register contents replacing the selection."
-  (if (> (%select-mode-get) 0)
-      (evil-visual-paste)
-      (evil-paste-after)))
+  (unless (%buffer-has-minor-mode? 'help-mode)
+    (if (> (%select-mode-get) 0)
+        (evil-visual-paste)
+        (evil-paste-after))))
 
 (defcommand (evil-P)
   "vim: paste before cursor or into selection\nIn normal mode, paste register contents before the cursor.\nIn visual mode, paste register contents replacing the selection."
-  (if (> (%select-mode-get) 0)
-      (evil-visual-paste)
-      (evil-paste-before)))
+  (unless (%buffer-has-minor-mode? 'help-mode)
+    (if (> (%select-mode-get) 0)
+        (evil-visual-paste)
+        (evil-paste-before))))
 
 ;; Visual mode operator bindings
 (set-key! select-map "d" 'evil-d)

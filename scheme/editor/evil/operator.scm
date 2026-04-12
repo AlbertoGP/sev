@@ -151,27 +151,31 @@
 
 (defcommand (evil-D)
   "vim: delete to end of line or delete lines\nIn normal mode, delete from cursor to end of line.\nIn visual mode, delete all lines spanned by the selection."
-  (if (> (%select-mode-get) 0)
-      (evil-visual-force-linewise-delete)
-      (begin
-        (evil-enter-operator 'op-delete)
-        (evil-execute-motion 'motion-$))))
+  (unless (%buffer-has-minor-mode? 'help-mode)
+    (if (> (%select-mode-get) 0)
+        (evil-visual-force-linewise-delete)
+        (begin
+          (evil-enter-operator 'op-delete)
+          (evil-execute-motion 'motion-$)))))
 
 (defcommand (evil-C)
   "vim: change to end of line"
-  (evil-enter-operator 'op-change)
-  (evil-execute-motion 'motion-$))
+  (unless (%buffer-has-minor-mode? 'help-mode)
+    (evil-enter-operator 'op-change)
+    (evil-execute-motion 'motion-$)))
 
 (defcommand (evil-S)
   "vim: substitute entire line"
-  (evil-enter-operator 'op-change)
-  (evil-enter-operator 'op-change))
+  (unless (%buffer-has-minor-mode? 'help-mode)
+    (evil-enter-operator 'op-change)
+    (evil-enter-operator 'op-change)))
 
 ;;;
 ;;; Count-aware x/X
 ;;;
 
 (define (evil-x-impl)
+  (unless (%buffer-has-minor-mode? 'help-mode)
   (let ((count (or evil-count 1)))
     (%begin-change)
     (let ((len (buffer-length))
@@ -187,26 +191,27 @@
       (make-repeat-info 'op-delete count 'motion-l 1 #f #f #f #f))
     (%end-change)
     (set! evil-count #f)
-    (message-clear)))
+    (message-clear))))
 
 (defcommand (evil-X)
   "vim: backspace character or delete lines\nIn normal mode, delete character(s) backward.\nIn visual mode, delete all lines spanned by the selection."
-  (if (> (%select-mode-get) 0)
-      (evil-visual-force-linewise-delete)
-      (let ((count (or evil-count 1)))
-        (%begin-change)
-        (let ((p (point-get)))
-          (let ((actual (min count p)))
-            (when (> actual 0)
-              (let loop ((i 0))
-                (when (< i actual)
-                  (delete-backward-char)
-                  (loop (+ i 1)))))))
-        (%change-set-repeat-info!
-          (make-repeat-info 'op-delete count 'motion-h 1 #f #f #f #f))
-        (%end-change)
-        (set! evil-count #f)
-        (message-clear))))
+  (unless (%buffer-has-minor-mode? 'help-mode)
+    (if (> (%select-mode-get) 0)
+        (evil-visual-force-linewise-delete)
+        (let ((count (or evil-count 1)))
+          (%begin-change)
+          (let ((p (point-get)))
+            (let ((actual (min count p)))
+              (when (> actual 0)
+                (let loop ((i 0))
+                  (when (< i actual)
+                    (delete-backward-char)
+                    (loop (+ i 1)))))))
+          (%change-set-repeat-info!
+            (make-repeat-info 'op-delete count 'motion-h 1 #f #f #f #f))
+          (%end-change)
+          (set! evil-count #f)
+          (message-clear)))))
 
 ;;;
 ;;; r — character replace
@@ -214,15 +219,16 @@
 
 (defcommand (evil-char-replace-setup)
   "vim: replace character or selection\nEnter char-replace pending state (show UNDER cursor until char typed)."
-  (%set-cursor-override! 'under)
-  (message-echo (if evil-count (string-append (number->string evil-count) "r-") "r-"))
-  (%read-key-binding
-    (lambda (sym key-str)
-      (%set-cursor-override! #f)
-      (when (last-key-char)
-        (if (> (%select-mode-get) 0)
-            (evil-visual-char-replace)
-            (evil-char-replace))))))
+  (unless (%buffer-has-minor-mode? 'help-mode)
+    (%set-cursor-override! 'under)
+    (message-echo (if evil-count (string-append (number->string evil-count) "r-") "r-"))
+    (%read-key-binding
+      (lambda (sym key-str)
+        (%set-cursor-override! #f)
+        (when (last-key-char)
+          (if (> (%select-mode-get) 0)
+              (evil-visual-char-replace)
+              (evil-char-replace)))))))
 
 (define (evil-char-replace)
   (let ((ch (last-key-char))
@@ -308,14 +314,16 @@
 
 (defcommand (open-line-below)
   "vim: new line below\nCreate a new empty line below current line, move to it and enter insert mode."
-  (%begin-change)
-  (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'open-below #f))
-  (line-end) (newline) (evil-insert))
+  (unless (%buffer-has-minor-mode? 'help-mode)
+    (%begin-change)
+    (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'open-below #f))
+    (line-end) (newline) (evil-insert)))
 (defcommand (open-line-above)
   "vim: new line above\nCreate a new empty line above current line, move to it and enter insert mode."
-  (%begin-change)
-  (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'open-above #f))
-  (line-start) (newline) (prev-line) (evil-insert))
+  (unless (%buffer-has-minor-mode? 'help-mode)
+    (%begin-change)
+    (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'open-above #f))
+    (line-start) (newline) (prev-line) (evil-insert)))
 (define (insert-at-start)
   (%begin-change)
   (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'insert-at-start #f))
@@ -331,9 +339,10 @@
   (line-end) (evil-insert))
 (defcommand (substitute-char)
   "vim: change character\nDelete the character under cursor and enter insert mode."
-  (%begin-change)
-  (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'substitute #f))
-  (delete-forward-char) (evil-insert))
+  (unless (%buffer-has-minor-mode? 'help-mode)
+    (%begin-change)
+    (set! evil-pending-repeat-info (make-repeat-info #f 1 #f #f #f #f 'substitute #f))
+    (delete-forward-char) (evil-insert)))
 
 ;;;
 ;;; Yank and paste commands

@@ -13,5 +13,6 @@
     scheme-mode
     set-mode-parent! derived-mode?
     user-settings-rules apply-buffer-settings
-    register-setting-default!)
+    register-setting-default!
+    help-mode-noop)
   (include "mode.scm"))

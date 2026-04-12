@@ -240,4 +240,16 @@
 (set-key! help-map "down"   'next-line)
 (set-key! help-map "left"   'backward-char)
 (set-key! help-map "right"  'forward-char)
+;; Block all content-modifying keys. Uses a plain define + make-interactive!
+;; (no set-doc!) so help-mode-noop is callable but absent from the command palette.
+(define (help-mode-noop) #f)
+(make-interactive! 'help-mode-noop '())
+(for-each (lambda (key) (set-key! help-map key 'help-mode-noop))
+          '("i" "I" "R" "r"
+            "a" "A" "o" "O"
+            "s" "S" "c" "C"
+            "d" "D" "x" "X"
+            "p" "P"
+            "u" "U" "ctrl-r"
+            "J" "."))
 (define-minor-mode 'help-mode help-map)
