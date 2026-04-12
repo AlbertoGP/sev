@@ -76,12 +76,15 @@
     %resolvable-settings))
 
 ;; ---------------------------------------------------------------------------
-;; Register a major mode with an optional keymap
+;; Register a major mode with a display name, optional icon, and optional keymap
 ;; Returns the mode object or #f on failure
 ;; ---------------------------------------------------------------------------
-(define (define-major-mode name . args)
-  (let ((keymap (if (pair? args) (car args) #f)))
-    (%register-mode name 'major keymap)))
+(define (define-major-mode name display-name . rest)
+  ;; rest: ([icon-or-false [keymap]])
+  (let* ((icon   (if (pair? rest) (car rest) #f))
+         (keymap (if (and (pair? rest) (pair? (cdr rest))) (cadr rest) #f)))
+    (%register-mode name 'major keymap)
+    (%register-major-mode-info! name display-name icon)))
 
 ;; Register a minor mode with an optional keymap and allows-input flag
 ;; Returns the mode object or #f on failure
@@ -138,11 +141,11 @@
                         'mode.normal 'label.normal 'cursor.normal cursor-type))
 
 ;; Define fundamental-mode as the default major mode
-(define-major-mode 'fundamental-mode)
+(define-major-mode 'fundamental-mode "Fundamental")
 
 ;; Base categories for settings inheritance
-(define-major-mode 'prog-mode)
-(define-major-mode 'text-mode)
+(define-major-mode 'prog-mode "Prog")
+(define-major-mode 'text-mode "Text")
 
 ;; App-supplied line-number defaults per category
 (%app-settings-rules-add!
@@ -181,7 +184,7 @@
     (set-local! 'wrap-lines/explicit? #t)))
 
 ;; Scheme major mode — activates tree-sitter highlighting
-(define-major-mode 'scheme-mode)
+(define-major-mode 'scheme-mode "Scheme" 'scheme-icon)
 (set-mode-parent! 'scheme-mode 'prog-mode)
 (defcommand (scheme-mode)
   "editor: enable scheme mode in buffer\nEnable Scheme mode in the current buffer."
@@ -229,7 +232,7 @@
       (set-local! 'display-line-numbers-type/explicit? #t))))
 
 ;; Read-only base major mode — derive from this to make a buffer read-only.
-(define-major-mode 'read-only-mode)
+(define-major-mode 'read-only-mode "Read-Only")
 
 ;; Help buffer major mode
 (define help-map (make-keymap))
@@ -241,7 +244,7 @@
 (set-key! help-map "down"  'next-line)
 (set-key! help-map "left"  'backward-char)
 (set-key! help-map "right" 'forward-char)
-(define-major-mode 'help-mode help-map)
+(define-major-mode 'help-mode "Help" 'help-icon help-map)
 (set-mode-parent! 'help-mode 'read-only-mode)
 
 ;; Predicate — true for any buffer whose major mode derives from read-only-mode.

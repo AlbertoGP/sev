@@ -101,8 +101,9 @@ Loaded by `scheme.c`. Imports all `(editor ...)` modules. Sets global keybinding
 4. Export from `editor/evil.sld`
 
 ### Adding a new mode
-1. `(define-minor-mode 'name keymap [allows-input])` or `(define-major-mode 'name keymap)` in `mode.scm`
-2. Optionally `(register-mode-icon/full 'name "file.svg" 'bg-role 'label-role 'cursor-role 'cursor-type)`
+1. `(define-minor-mode 'name keymap [allows-input])` or `(define-major-mode 'name "Display Name" [icon-or-#f [keymap]])` in `mode.scm`
+   - Major modes take a required display name (shown in the status bar) and an optional icon symbol (e.g. `'scheme-icon`); pass `#f` or omit for no icon
+2. Optionally `(register-mode-icon/full 'name "file.svg" 'bg-role 'label-role 'cursor-role 'cursor-type)` for vim-style minor mode pill icons
 3. Create activation/deactivation commands; export from `editor/mode.sld`
 
 ### Adding a new theme

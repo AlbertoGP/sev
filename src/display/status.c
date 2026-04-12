@@ -5,6 +5,7 @@
 
 #include "decoration.h"
 #include "icon.h"
+#include "major_mode_info.h"
 #include "message.h"
 #include "mode_icon.h"
 #include "theme.h"
@@ -136,35 +137,43 @@ void MajorModeIndicator(AppState *state, Buffer *buf, Clay_Color text_color) {
     if (state->input.current_focus == FOCUS_WELCOME) return;
     float scale = state->ui.scale_factor;
     Mode *major = buffer_get_major_mode(buf);
-    if (major) {
-        if (strcmp(major->name, "scheme-mode") == 0) {
-            CLAY(CLAY_ID("Scheme Mode"), {
+    if (!major) return;
+
+    MajorModeInfoEntry *info = major_mode_info_get(major->name);
+    if (!info) return;
+
+    Clay_String display_name = {
+        .chars = info->display_name,
+        .length = strlen(info->display_name),
+        .isStaticallyAllocated = true
+    };
+    CLAY(CLAY_ID("Major Mode"), {
+        .layout = {
+            .childGap = 3.0 * scale,
+            .childAlignment = {
+                .y = CLAY_ALIGN_Y_CENTER
+            },
+        },
+    }) {
+        if (info->icon_name[0]) {
+            SDL_Texture *tex = icon_get(info->icon_name, state, 12, 12);
+            CLAY(CLAY_ID("Major Mode Icon"), {
                 .layout = {
-                    .childGap = 3.0 * scale,
-                    .childAlignment = {
-                        .y = CLAY_ALIGN_Y_CENTER
+                    .sizing = {
+                        .width = 12.0 * scale,
+                        .height = 12.0 * scale
                     },
                 },
-            }){
-                SDL_Texture *tex = icon_get("scheme-icon", state, 12, 12);
-                CLAY(CLAY_ID("Scheme Mode Icon"), {
-                    .layout = {
-                        .sizing = {
-                            .width = 12.0 * scale,
-                            .height = 12.0 * scale
-                        },
-                    },
-                    .image = tex
-                }) {}
-                CLAY_TEXT(CLAY_STRING("Scheme"), CLAY_TEXT_CONFIG({
-                    .fontId = FONT_UI_NORMAL,
-                    .fontSize = 10.0 * scale,
-                    .textColor = text_color,
-                }));
-            }
+                .image = tex
+            }) {}
         }
-        BarDivider(state);
+        CLAY_TEXT(display_name, CLAY_TEXT_CONFIG({
+            .fontId = FONT_UI_NORMAL,
+            .fontSize = 10.0 * scale,
+            .textColor = text_color,
+        }));
     }
+    BarDivider(state);
 }
 
 void SelectionIndicator(AppState *state, Buffer *buf, Clay_Color text_color) {

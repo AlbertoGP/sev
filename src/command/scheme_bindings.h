@@ -107,6 +107,10 @@ sexp scm_register_mode_icon(sexp ctx, sexp self, sexp n,
                             sexp srole_bg, sexp srole_label,
                             sexp srole_cursor, sexp scursor_type);
 
+// --- display/major_mode_info.c ---
+sexp scm_register_major_mode_info(sexp ctx, sexp self, sexp n,
+                                  sexp sname, sexp sdisplay, sexp sicon);
+
 // --- display/theme.c ---
 sexp scm_set_cursor_override(sexp ctx, sexp self, sexp n, sexp stype);
 
