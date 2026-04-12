@@ -32,8 +32,7 @@
          (cb (- point  (%line-start-position lb))))
     (list (min la lb) (max la lb) (min ca cb) (+ (max ca cb) 1))))
 
-(defcommand (evil-visual-rect-insert)
-  "vim: rectangular insert\nEnter insert mode at the left column of each line in rectangle selection."
+(define (evil-visual-rect-insert)
   (let* ((b (evil-rect-bounds))
          (row-min (list-ref b 0)) (row-max (list-ref b 1))
          (col-min (list-ref b 2)))
@@ -45,8 +44,7 @@
                      (%line-end-position row-min)))
     (evil-insert)))
 
-(defcommand (evil-visual-rect-append)
-  "vim: rectangular append\nEnter insert mode at the right column of each line in rectangle selection."
+(define (evil-visual-rect-append)
   (let* ((b (evil-rect-bounds))
          (row-min (list-ref b 0)) (row-max (list-ref b 1))
          (col-max (list-ref b 3))
@@ -88,8 +86,7 @@
       (point-set! (min (+ ls col-min)
                        (%line-end-position row-min))))))
 
-(defcommand (evil-visual-delete)
-  "vim: delete selection\nDelete the visual selection."
+(define (evil-visual-delete)
   (%begin-change)
   (let ((mode (%select-mode-get)))
     (if (rect-mode? mode)
@@ -148,8 +145,7 @@
   (%end-change)
   (evil-normal))
 
-(defcommand (evil-visual-change)
-  "vim: change selection\nChange the visual selection."
+(define (evil-visual-change)
   (%begin-change)
   (set! evil-pending-repeat-info
     (make-repeat-info 'op-change 1 #f #f
@@ -178,8 +174,7 @@
             (delete-range start end)
             (evil-insert))))))
 
-(defcommand (evil-visual-yank)
-  "vim: yank selection\nYank visual selection."
+(define (evil-visual-yank)
   (let* ((mode (%select-mode-get))
          (anchor (%mark-position #\<))
          (cur-point (point-get))
@@ -222,8 +217,7 @@
     (point-set! sel-min)
     (evil-normal)))
 
-(defcommand (evil-visual-paste)
-  "vim: paste into selection\nPaste register contents replacing visual selection."
+(define (evil-visual-paste)
   (let* ((reg current-evil-register)
          (text (if (char=? reg #\+)
                    (let ((s (%clipboard-get)))
@@ -310,19 +304,103 @@
   (set! current-evil-register #\")
   (evil-normal))
 
+;;;
+;;; Linewise-force helper (used by evil-D and evil-X in visual mode)
+;;;
+
+;; Delete all lines spanned by the current visual selection, regardless of select mode.
+(define (evil-visual-force-linewise-delete)
+  (%begin-change)
+  (let* ((anchor (%mark-position #\<))
+         (cur-point (point-get))
+         (line-min (%position-line (min anchor cur-point)))
+         (line-max (%position-line (max anchor cur-point)))
+         (start (%line-start-position line-min))
+         (end   (%line-end-position line-max))
+         (text  (%buffer-substring start end))
+         ;; On the last line of the buffer there may be no trailing newline:
+         ;; include the preceding newline instead so no empty line is left behind.
+         (start (if (and (= end (buffer-length))
+                         (> start 0)
+                         (char=? (char-at (- start 1)) #\newline))
+                    (- start 1)
+                    start)))
+    (evil-register-write! text 'linewise)
+    (point-set! start)
+    (delete-range start end))
+  (%change-set-repeat-info!
+    (make-repeat-info 'op-delete 1 #f #f
+                      evil-last-visual-text-object
+                      evil-last-visual-text-object-kind #f #f))
+  (%end-change)
+  (evil-normal))
+
+;;;
+;;; Mode-aware commands (normal + visual dispatch)
+;;;
+
+(defcommand (evil-A)
+  "vim: append to line or selection\nIn normal mode, move to end of line and enter insert mode.\nIn visual mode, enter insert mode at the right column of each line in the rectangle."
+  (if (> (%select-mode-get) 0)
+      (evil-visual-rect-append)
+      (append-line)))
+
+(defcommand (evil-I)
+  "vim: insert at line start or selection\nIn normal mode, move to first non-blank and enter insert mode.\nIn visual mode, enter insert mode at the left column of each line in the rectangle."
+  (if (> (%select-mode-get) 0)
+      (evil-visual-rect-insert)
+      (insert-at-start)))
+
+(defcommand (evil-d)
+  "vim: delete operator or selection\nIn normal mode, enter operator-pending state; combine with a motion to delete.\nIn visual mode, delete the selection."
+  (if (> (%select-mode-get) 0)
+      (evil-visual-delete)
+      (evil-op-delete)))
+
+(defcommand (evil-c)
+  "vim: change operator or selection\nIn normal mode, enter operator-pending state; combine with a motion to change.\nIn visual mode, delete the selection and enter insert mode."
+  (if (> (%select-mode-get) 0)
+      (evil-visual-change)
+      (evil-op-change)))
+
+(defcommand (evil-y)
+  "vim: yank operator or selection\nIn normal mode, enter operator-pending state; combine with a motion to yank.\nIn visual mode, yank the selection."
+  (if (> (%select-mode-get) 0)
+      (evil-visual-yank)
+      (evil-op-yank)))
+
+(defcommand (evil-x)
+  "vim: delete character or selection\nIn normal mode, delete character(s) forward.\nIn visual mode, delete the selection."
+  (if (> (%select-mode-get) 0)
+      (evil-visual-delete)
+      (evil-x-impl)))
+
+(defcommand (evil-p)
+  "vim: paste after cursor or into selection\nIn normal mode, paste register contents after the cursor.\nIn visual mode, paste register contents replacing the selection."
+  (if (> (%select-mode-get) 0)
+      (evil-visual-paste)
+      (evil-paste-after)))
+
+(defcommand (evil-P)
+  "vim: paste before cursor or into selection\nIn normal mode, paste register contents before the cursor.\nIn visual mode, paste register contents replacing the selection."
+  (if (> (%select-mode-get) 0)
+      (evil-visual-paste)
+      (evil-paste-before)))
+
 ;; Visual mode operator bindings
-(set-key! select-map "d" 'evil-visual-delete)
-(set-key! select-map "x" 'evil-visual-delete)
-(set-key! select-map "c" 'evil-visual-change)
-(set-key! select-map "s" 'evil-visual-change)
-(set-key! select-map "D" 'evil-visual-delete)
-(set-key! select-map "C" 'evil-visual-change)
-(set-key! select-map "S" 'evil-visual-change)
-(set-key! select-map "y" 'evil-visual-yank)
-(set-key! select-map "I" 'evil-visual-rect-insert)
-(set-key! select-map "A" 'evil-visual-rect-append)
-(set-key! select-map "p" 'evil-visual-paste)
-(set-key! select-map "P" 'evil-visual-paste)
+(set-key! select-map "d" 'evil-d)
+(set-key! select-map "x" 'evil-x)
+(set-key! select-map "c" 'evil-c)
+(set-key! select-map "s" 'evil-c)
+(set-key! select-map "D" 'evil-D)
+(set-key! select-map "C" 'evil-c)
+(set-key! select-map "S" 'evil-S)
+(set-key! select-map "X" 'evil-X)
+(set-key! select-map "y" 'evil-y)
+(set-key! select-map "I" 'evil-I)
+(set-key! select-map "A" 'evil-A)
+(set-key! select-map "p" 'evil-p)
+(set-key! select-map "P" 'evil-P)
 
 ;; Visual mode motion bindings
 (set-key! select-map "w" 'evil-motion-w)
