@@ -8,7 +8,6 @@
 #include "line.h"
 #include "../../vendored/tree-sitter-scheme/bindings/c/tree-sitter-scheme.h"
 #include <chibi/eval.h>
-#include "../command/scheme_internal.h"
 
 // highlights.scm from vendored/tree-sitter-scheme/queries/highlights.scm
 // Embedded to avoid runtime file I/O (works on WASM too).
