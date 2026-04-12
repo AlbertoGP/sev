@@ -246,6 +246,8 @@
   (interactive)
   (let ((buf-name "untitled"))
     (if (%tab-new-fresh! buf-name)
-        (message (string-append "Opened tab " buf-name))
+        (begin
+          (set-major-mode! 'text-mode)
+          (message (string-append "Opened tab " buf-name)))
         (message (string-append "Failed to create tab " buf-name)))))
 

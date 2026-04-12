@@ -145,7 +145,7 @@
 
 ;; Base categories for settings inheritance
 (define-major-mode 'prog-mode "Prog")
-(define-major-mode 'text-mode "Text")
+(define-major-mode 'text-mode "Plain Text" 'plaintext-icon)
 
 ;; App-supplied line-number defaults per category
 (%app-settings-rules-add!
