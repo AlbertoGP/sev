@@ -1,5 +1,6 @@
 (define-library (editor mode)
   (import (except (scheme base) newline)
+          (srfi 1)
           (editor primitives) (editor command))
   (export
     define-major-mode define-minor-mode
@@ -11,7 +12,8 @@
     toggle-line-numbers toggle-relative-line-numbers
     toggle-visual-line-numbers toggle-wrap-lines
     scheme-mode
-    set-mode-parent! derived-mode?
+    set-mode-parent! derived-mode? mode-derives-from?
+    list-writable-major-modes set-buffer-mode
     user-settings-rules apply-buffer-settings
     register-setting-default!
     buffer-read-only?)

@@ -204,6 +204,69 @@ static void describe_symbol_action(sexp ctx, sexp sym) {
         sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
 }
 
+// ---- Major mode provider ----------------------------------------------------
+
+static void major_modes_provider(AppState *state, const char *input) {
+    if (state->minibuf.all_item_count == 0) {
+        sexp ctx = state->chibi.ctx;
+        sexp fn = sexp_env_ref(ctx, state->chibi.env,
+                               sexp_intern(ctx, "list-writable-major-modes", -1), SEXP_FALSE);
+        if (fn == SEXP_FALSE) return;
+
+        // GC-protect list: sexp_symbol_to_string in the loop allocates and can
+        // trigger GC, which would collect the unprotected list sitting on the C stack.
+        sexp_gc_var1(list);
+        sexp_gc_preserve1(ctx, list);
+        list = sexp_apply(ctx, fn, SEXP_NULL);
+
+        if (!sexp_exceptionp(list)) {
+            for (sexp p = list; sexp_pairp(p); p = sexp_cdr(p)) {
+                if (state->minibuf.all_item_count >= MINIBUF_ITEMS_MAX) break;
+                sexp pair = sexp_car(p);
+                if (!sexp_pairp(pair)) continue;
+                sexp sym  = sexp_car(pair);
+                sexp dstr = sexp_cdr(pair);
+                if (!sexp_symbolp(sym) || !sexp_stringp(dstr)) continue;
+                MinibufItem *item = &state->minibuf.all_items[state->minibuf.all_item_count];
+                memset(item, 0, sizeof(*item));
+                strncpy(item->label, sexp_string_data(dstr), MINIBUF_LABEL_MAX - 1);
+                sexp sym_str = sexp_symbol_to_string(ctx, sym);
+                strncpy(item->sym_name, sexp_string_data(sym_str), MINIBUF_LABEL_MAX - 1);
+                state->minibuf.all_item_count++;
+            }
+            qsort(state->minibuf.all_items, state->minibuf.all_item_count,
+                  sizeof(MinibufItem), item_label_cmp);
+        }
+
+        sexp_gc_release1(ctx);
+    }
+    filter_items(state, input);
+}
+
+static void major_mode_apply(sexp ctx, sexp sym) {
+    sexp fn = sexp_env_ref(ctx, G->chibi.env,
+                           sexp_intern(ctx, "set-major-mode!", -1), SEXP_FALSE);
+    if (fn == SEXP_FALSE) return;
+    sexp result = sexp_apply(ctx, fn, sexp_list1(ctx, sym));
+    if (sexp_exceptionp(result))
+        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+}
+
+sexp scm_minibuffer_activate_major_modes(sexp ctx, sexp self, sexp n) {
+    G->minibuf.provider       = major_modes_provider;
+    G->minibuf.preview_action = NULL;
+    G->minibuf.submit_action  = major_mode_apply;
+    G->minibuf.all_item_count = 0;
+    G->minibuf.item_count     = 0;
+    G->minibuf.selected       = 0;
+    G->minibuf.item_scroll    = 0;
+
+    sexp prompt = sexp_c_string(ctx, "Set major mode...", -1);
+    sexp ret = scm_minibuffer_activate(ctx, self, n, prompt, SEXP_FALSE, SEXP_FALSE);
+    major_modes_provider(G, "");
+    return ret;
+}
+
 static void theme_confirm(sexp ctx, sexp sym) {
     sexp fn = sexp_env_ref(ctx, G->chibi.env,
                             sexp_intern(ctx, "theme-display-name", -1), SEXP_FALSE);

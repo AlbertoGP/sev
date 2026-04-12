@@ -84,7 +84,8 @@
   (let* ((icon   (if (pair? rest) (car rest) #f))
          (keymap (if (and (pair? rest) (pair? (cdr rest))) (cadr rest) #f)))
     (%register-mode name 'major keymap)
-    (%register-major-mode-info! name display-name icon)))
+    (%register-major-mode-info! name display-name icon)
+    (set! %all-major-modes (cons (cons name display-name) %all-major-modes))))
 
 ;; Register a minor mode with an optional keymap and allows-input flag
 ;; Returns the mode object or #f on failure
@@ -139,6 +140,26 @@
 (define (register-mode-icon mode-name filename cursor-type)
   (%register-mode-icon! mode-name filename
                         'mode.normal 'label.normal 'cursor.normal cursor-type))
+
+;; Alist of (mode-sym . display-name) for all registered major modes, built up
+;; by define-major-mode. Used by the mode picker to enumerate available modes.
+(define %all-major-modes '())
+
+;; Check if MODE (a symbol) derives from BASE (a symbol) via the parent chain.
+(define (mode-derives-from? mode base)
+  (let loop ((m mode))
+    (cond ((not m) #f)
+          ((eq? m base) #t)
+          (else (loop (mode-parent m))))))
+
+;; Return an alist of (sym . "Display Name") for all major modes that do not
+;; derive from read-only-mode. Used by the major-mode picker.
+(define (list-writable-major-modes)
+  (filter (lambda (pair)
+            (let ((mode (car pair)))
+              (and (not (mode-derives-from? mode 'read-only-mode))
+                   (not (eq? mode 'prog-mode)))))
+          %all-major-modes))
 
 ;; Define fundamental-mode as the default major mode
 (define-major-mode 'fundamental-mode "Fundamental")
@@ -249,3 +270,10 @@
 
 ;; Predicate — true for any buffer whose major mode derives from read-only-mode.
 (define (buffer-read-only?) (derived-mode? 'read-only-mode))
+
+;; Open the major-mode picker. Does nothing in read-only buffers.
+(defcommand (set-buffer-mode)
+  "editor: set major mode\nSelect a major mode for the current buffer from a completion list."
+  (interactive)
+  (unless (or (no-panes?) (buffer-read-only?))
+    (%minibuffer-activate-major-modes!)))

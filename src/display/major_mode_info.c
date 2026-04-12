@@ -44,14 +44,22 @@ sexp scm_register_major_mode_info(sexp ctx, sexp self, sexp n,
     if (!sexp_symbolp(sicon) && sicon != SEXP_FALSE)
         return sexp_user_exception(ctx, self, "icon must be a symbol or #f", sicon);
 
-    const char *mode_name    = sexp_string_data(sexp_symbol_to_string(ctx, sname));
+    // GC-protect sname_str: the second sexp_symbol_to_string call allocates and
+    // could trigger GC, collecting the first result while mode_name still points into it.
+    sexp_gc_var1(sname_str);
+    sexp_gc_preserve1(ctx, sname_str);
+
+    sname_str           = sexp_symbol_to_string(ctx, sname);
+    sexp sicon_str      = (sicon != SEXP_FALSE)
+        ? sexp_symbol_to_string(ctx, sicon) : SEXP_FALSE;
+
+    const char *mode_name    = sexp_string_data(sname_str);
     const char *display_name = sexp_string_data(sdisplay);
-    const char *icon_name    = (sicon != SEXP_FALSE)
-        ? sexp_string_data(sexp_symbol_to_string(ctx, sicon))
-        : NULL;
+    const char *icon_name    = (sicon_str != SEXP_FALSE)
+        ? sexp_string_data(sicon_str) : NULL;
 
-    if (!major_mode_info_register(mode_name, display_name, icon_name))
-        return SEXP_FALSE;
+    bool ok = major_mode_info_register(mode_name, display_name, icon_name);
 
-    return SEXP_TRUE;
+    sexp_gc_release1(ctx);
+    return ok ? SEXP_TRUE : SEXP_FALSE;
 }
