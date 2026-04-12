@@ -11,6 +11,7 @@
 #include "theme.h"
 #include "tooltip.h"
 #include "../command/keymap.h"
+#include "../command/scheme_internal.h"
 #include "../state.h"
 #include "../text/buffer.h"
 #include "../text/buffer_type.h"
@@ -95,12 +96,14 @@ void ModePill(AppState *state, Buffer *buf) {
 
 void MacroIndicator(AppState *state) {
     CachedRoles roles = state->ui.roles;
+    float scale = state->ui.scale_factor;
     bool recording = state->macro_recording;
     if (recording) {
         float radius = 3.0 * state->ui.scale_factor;
         CLAY(CLAY_ID("Macro indicator"), {
             .layout = {
                 .sizing = { .height = CLAY_SIZING_GROW(0) },
+                .padding = { .left = 10.0 * scale, .right = 10.0 * scale },
                 .childAlignment = {
                     .y = CLAY_ALIGN_Y_CENTER
                 },
@@ -131,8 +134,19 @@ void MacroIndicator(AppState *state) {
                 .textColor = ui_resolve_color(state, roles.text_primary),
             }));
         }
-        BarDivider(state);
     }
+}
+
+static void HandleMajorModeClick(Clay_ElementId elementId,
+                                 Clay_PointerData pointerInfo,
+                                 void *userData) {
+    (void)elementId; (void)userData;
+    if (pointerInfo.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
+    sexp ctx = G->chibi.ctx;
+    sexp sym = sexp_intern(ctx, "set-buffer-mode", -1);
+    sexp result = sexp_apply(ctx, G->chibi.call_interactively, sexp_list1(ctx, sym));
+    if (sexp_exceptionp(result))
+        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
 }
 
 void MajorModeIndicator(AppState *state, Buffer *buf, Clay_Color text_color) {
@@ -149,14 +163,26 @@ void MajorModeIndicator(AppState *state, Buffer *buf, Clay_Color text_color) {
         .length = strlen(info->display_name),
         .isStaticallyAllocated = true
     };
+    Clay_Color hovered_bg = ui_resolve_color(state, state->ui.roles.message_hover);
     CLAY(CLAY_ID("Major Mode"), {
         .layout = {
+            .sizing = {
+                .height = CLAY_SIZING_FIXED(16 * scale),
+            },
+            .padding = { .left = 10.0 * scale, .right = 10.0 * scale },
             .childGap = 3.0 * scale,
             .childAlignment = {
                 .y = CLAY_ALIGN_Y_CENTER
             },
         },
+        .backgroundColor = Clay_Hovered() ? hovered_bg : (Clay_Color){0}
     }) {
+        Clay_OnHover(HandleMajorModeClick, NULL);
+        bool hovered = Clay_Hovered();
+        char binding[64] = {0};
+        keymap_where_is_first(state, "set-buffer-mode", binding, sizeof(binding));
+        TextTooltipWithBinding(state, hovered, 0xBADE, "Select Language", binding);
+        if (hovered) state->input.desired_cursor = SDL_SYSTEM_CURSOR_POINTER;
         if (info->icon_name[0]) {
             SDL_Texture *tex = icon_get(info->icon_name, state, 12, 12);
             CLAY(CLAY_ID("Major Mode Icon"), {
@@ -175,10 +201,6 @@ void MajorModeIndicator(AppState *state, Buffer *buf, Clay_Color text_color) {
             .textColor = text_color,
         }));
     }
-    bool hovered = Clay_Hovered();
-    char binding[64] = {0};
-    keymap_where_is_first(state, "set-buffer-mode", binding, sizeof(binding));
-    TextTooltipWithBinding(state, hovered, 0xBADE, "Select Language", binding);
     BarDivider(state);
 }
 
@@ -223,28 +245,53 @@ void SelectionIndicator(AppState *state, Buffer *buf, Clay_Color text_color) {
         }
         bar_strings_push(sel_str);
         Clay_String selCount = { .chars = sel_str, .length = strlen(sel_str) };
-        CLAY_TEXT(selCount, CLAY_TEXT_CONFIG({
-            .fontId = FONT_UI_NORMAL,
-            .fontSize = 10.0 * state->ui.scale_factor,
-            .textColor = text_color,
-        }));
+        CLAY(CLAY_ID("Selection Indicator"), {
+            .layout = {
+                .sizing = {
+                    .height = CLAY_SIZING_FIXED(16 * scale),
+                },
+                .padding = { .left = 10.0 * scale, .right = 10.0 * scale },
+                .childAlignment = {
+                    .y = CLAY_ALIGN_Y_CENTER
+                },
+            },
+        }) {
+            CLAY_TEXT(selCount, CLAY_TEXT_CONFIG({
+                .fontId = FONT_UI_NORMAL,
+                .fontSize = 10.0 * state->ui.scale_factor,
+                .textColor = text_color,
+            }));
+        }
         BarDivider(state);
     }
 }
 
 void CursorPosition(AppState* state, Buffer *buf, Clay_Color text_color) {
-        char *pos = malloc(32 * sizeof(char));
-        snprintf(pos, 32, "%zu:%d", buf_get_line(buf), get_column(buf));
-        bar_strings_push(pos);
-        Clay_String cursor_position = {
-             .chars = pos,
-             .length = strlen(pos),
-        };
+    float scale = state->ui.scale_factor;
+    char *pos = malloc(32 * sizeof(char));
+    snprintf(pos, 32, "%zu:%d", buf_get_line(buf), get_column(buf));
+    bar_strings_push(pos);
+    Clay_String cursor_position = {
+         .chars = pos,
+         .length = strlen(pos),
+    };
+    CLAY(CLAY_ID("Cursor Position"), {
+        .layout = {
+            .sizing = {
+                .height = CLAY_SIZING_FIXED(16 * scale),
+            },
+            .padding = { .left = 10.0 * scale, .right = 10.0 * scale },
+            .childAlignment = {
+                .y = CLAY_ALIGN_Y_CENTER
+            },
+        },
+    }) {
         CLAY_TEXT(cursor_position, CLAY_TEXT_CONFIG({
             .fontId = FONT_UI_NORMAL,
             .fontSize = 10.0 * state->ui.scale_factor,
             .textColor = text_color,
         }));
+    }
 }
 
 void StatusBar(AppState *state) {
@@ -261,10 +308,6 @@ void StatusBar(AppState *state) {
             .sizing = {
                 .width = CLAY_SIZING_GROW(0),
             },
-            .padding = {
-                 .right = 10.0 * scale,
-            },
-            .childGap = 10.0 * scale,
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
         },
         .border = {

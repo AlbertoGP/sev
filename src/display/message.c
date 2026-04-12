@@ -1,6 +1,7 @@
 #include <SDL3_ttf/SDL_ttf.h>
 
 #include "message.h"
+#include "decoration.h"
 #include "tab.h"
 #include "theme.h"
 #include "tooltip.h"
@@ -26,7 +27,7 @@ void MessageArea(AppState *state) {
                 .width = CLAY_SIZING_FIT(0, 500.0 * state->ui.scale_factor),
                 .height = CLAY_SIZING_FIXED(16 * state->ui.scale_factor)
             },
-            .padding = { .left = padding },
+            .padding = { .left = padding, .right = padding },
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
             .childGap = padding
         },
@@ -41,15 +42,7 @@ void MessageArea(AppState *state) {
             .fontSize = 10.0 * state->ui.scale_factor,
             .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
         }));
-        CLAY_AUTO_ID({
-            .layout = {
-                .sizing = {
-                    .height = 12.0 * state->ui.scale_factor,
-                    .width = CLAY_SIZING_FIXED(2),
-                }
-            },
-            .backgroundColor = ui_resolve_color(state, state->ui.roles.border_inactive)
-        }) {}
     }
+    BarDivider(state);
     TextTooltip(state, hovered, 999, "View Message Log");
 }
