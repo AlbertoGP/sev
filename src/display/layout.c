@@ -35,7 +35,7 @@ static void GlobalHeader(AppState *state) {
     }
 }
 
-Clay_RenderCommandArray create_app_layout(AppState *state) {
+Clay_RenderCommandArray create_app_layout(AppState *state, float delta_time) {
     Clay_Sizing layoutExpand = {
         .width  = CLAY_SIZING_GROW(0),
         .height = CLAY_SIZING_GROW(0)
@@ -72,5 +72,5 @@ Clay_RenderCommandArray create_app_layout(AppState *state) {
         WhichKey(state);
     MinibufPalette(state);
 
-    return Clay_EndLayout();
+    return Clay_EndLayout(delta_time);
 }

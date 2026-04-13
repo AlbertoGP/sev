@@ -1,4 +1,5 @@
 #include <SDL3/SDL.h>
+#include <stdint.h>
 
 #include "state.h"
 #include "display/layout.h"
@@ -49,12 +50,14 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         }
     }
 #endif
-    state->last_frame_ns = SDL_GetTicksNS();
+    uint64_t new_time = SDL_GetTicksNS();
+    float delta_time = ((float) SDL_GetTicksNS() - state->last_frame_ns) / 1e9;
+    state->last_frame_ns = new_time;
 
     /* Draw to the screen */
     SDL_SetRenderDrawColor(state->rendererData.renderer, 0, 0, 0, 255);
     SDL_RenderClear(state->rendererData.renderer);
-    Clay_RenderCommandArray render_commands = create_app_layout(state);
+    Clay_RenderCommandArray render_commands = create_app_layout(state, delta_time);
     tab_flush_pending_close();
     welcome_flush_pending();
     SDL_Clay_RenderClayCommands(&state->rendererData, &render_commands);
@@ -63,7 +66,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     bar_free_strings();
     if (state->needs_extra_frame) {
         state->input.desired_cursor = SDL_SYSTEM_CURSOR_DEFAULT;
-        Clay_RenderCommandArray render_commands = create_app_layout(state);
+        Clay_RenderCommandArray render_commands = create_app_layout(state, delta_time);
         SDL_Clay_RenderClayCommands(&state->rendererData, &render_commands);
         pane_free_strings();
         bar_free_strings();
