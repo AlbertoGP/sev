@@ -168,10 +168,6 @@ bool buffer_clear(Buffer *buf) {
     buf->num_lines = 1;
     buf->num_chars = 0;
     buf->col_saved = buf->col = 1;
-    if (buf->file_name[0] == '\0') {
-        buf->is_modified = true;
-    }
-
     uint64_t next_id = buf->lt.next_line_id;
     line_table_destroy(&buf->lt);
     buf->lt = new_lt;
@@ -318,7 +314,7 @@ bool buffer_insert(char *file_name) {
     }
 
     fclose(f);
-    if (inserted)
+    if (inserted && buf->file_name[0] != '\0')
         buf->is_modified = true;
     return true;
 }
