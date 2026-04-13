@@ -50,5 +50,5 @@ Mode *mode_lookup(const char *name, ModeType type);
 // Look up a mode by name in either registry
 Mode *mode_lookup_any(const char *name);
 
-// Get fundamental-mode (creates if needed)
-Mode *mode_get_fundamental(void);
+// Get the default major mode (text-mode); creates a bootstrap stub if Scheme hasn't run yet
+Mode *mode_get_default(void);

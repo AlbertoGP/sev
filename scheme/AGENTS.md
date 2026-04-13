@@ -37,7 +37,7 @@ init.scm               ← imports all modules; sets global keybindings, mouse/w
 Command infrastructure. `defcommand`, `defvar`, `defun` macros for self-documenting definitions. `call-interactively` resolves interactive specs via CPS traversal and invokes commands (cached by C at init). `set-key!` wraps `%set-key!` and records the reverse binding for `where-is`. `bind-prefix!` registers prefix keymaps. Spec handlers registered with `register-spec-handler!` handle async argument collection (e.g. `minibuffer-read`).
 
 ### (editor mode)
-Major/minor mode wrappers over C primitives. `define-major-mode`, `define-minor-mode`, buffer-local variables (`set-local!`/`get-local`), `register-mode-icon/full`. Pre-defines `fundamental-mode` and `display-line-numbers-mode`.
+Major/minor mode wrappers over C primitives. `define-major-mode`, `define-minor-mode`, buffer-local variables (`set-local!`/`get-local`), `register-mode-icon/full`. Pre-defines base categories `prog-mode` and `text-mode` (the default mode), plus `display-line-numbers-mode`.
 
 ### (editor icon)
 Icon registration (`register-icon` wrapping `%register-icon!`), tab close/icon SVGs, default scale variables.

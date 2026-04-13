@@ -82,12 +82,12 @@ Mode *mode_lookup_any(const char *name) {
     return mode_lookup(name, MODE_MINOR);
 }
 
-Mode *mode_get_fundamental(void) {
-    Mode *m = mode_lookup("fundamental-mode", MODE_MAJOR);
+Mode *mode_get_default(void) {
+    Mode *m = mode_lookup("text-mode", MODE_MAJOR);
     if (m) return m;
 
-    // Create fundamental-mode
-    m = mode_create("fundamental-mode", MODE_MAJOR, NULL);
+    // Bootstrap: create text-mode before Scheme has registered it
+    m = mode_create("text-mode", MODE_MAJOR, NULL);
     if (!m) return NULL;
 
     mode_register(m);

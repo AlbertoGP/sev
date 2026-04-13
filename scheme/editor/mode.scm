@@ -161,9 +161,6 @@
                    (not (eq? mode 'prog-mode)))))
           %all-major-modes))
 
-;; Define fundamental-mode as the default major mode
-(define-major-mode 'fundamental-mode "Fundamental")
-
 ;; Base categories for settings inheritance
 (define-major-mode 'prog-mode "Prog")
 (define-major-mode 'text-mode "Plain Text" 'plaintext-icon)

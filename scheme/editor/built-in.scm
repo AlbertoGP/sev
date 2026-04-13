@@ -96,7 +96,7 @@
          (ext  (if name (file-extension name) "")))
     (let loop ((alist *auto-mode-alist*))
       (cond
-        ((null? alist) (%ts-disable!) (%set-major-mode 'fundamental-mode))
+        ((null? alist) (%ts-disable!) (%set-major-mode 'text-mode))
         ((string=? (caar alist) ext) ((cdar alist)))
         (else (loop (cdr alist)))))))
 

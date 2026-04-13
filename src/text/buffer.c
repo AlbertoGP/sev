@@ -121,10 +121,10 @@ Buffer *buffer_create(const char *name) {
         buf->prev = list;
     }
 
-    // Set fundamental-mode as the default major mode (no-op before scheme_init)
-    Mode *fundamental = mode_get_fundamental();
-    if (fundamental)
-        buffer_set_major_mode(buf, fundamental);
+    // Set text-mode as the default major mode (no-op before scheme_init)
+    Mode *default_mode = mode_get_default();
+    if (default_mode)
+        buffer_set_major_mode(buf, default_mode);
 
     // Enable evil-normal-mode if registered (no-op before scheme_init)
     Mode *evil = mode_lookup("evil-normal-mode", MODE_MINOR);
