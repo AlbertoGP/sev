@@ -24,8 +24,7 @@ Buffer *buffer_create(const char *name);
 // Removes all characters and marks from the specified buffer.
 bool buffer_clear(Buffer *buf);
 // Deletes the specified buffer. If the specified buffer is the current one,
-// the next buffer in the chain becomes the current one. If no buffers are
-// left, the initial "scratch" buffer is automatically recreated.
+// the next buffer in the chain becomes the current one.
 bool buffer_delete(Buffer *buf);
 // Returns a pointer to the currently selected buffer.
 Buffer *buffer_get_current(void);

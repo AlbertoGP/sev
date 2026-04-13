@@ -2,7 +2,7 @@
 compile: build run
 
 build:
-	gcc ./src/*.c ./src/clay/*.c ./src/command/*.c ./src/display/*.c ./src/text/*.c -o ./out/sev -lSDL3 -lSDL3_image -lSDL3_ttf -lchibi-scheme -ltree-sitter -ltree-sitter-scheme -lm \
+	gcc -Wall -Wextra ./src/*.c ./src/clay/*.c ./src/command/*.c ./src/display/*.c ./src/text/*.c -o ./out/sev -lSDL3 -lSDL3_image -lSDL3_ttf -lchibi-scheme -ltree-sitter -ltree-sitter-scheme -lm \
 		&& cp ./scheme/init.scm ./out/scheme/init.scm \
 		&& mkdir -p ./out/scheme/editor \
 		&& mkdir -p ./out/scheme/editor/evil \

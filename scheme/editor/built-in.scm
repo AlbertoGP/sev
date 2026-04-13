@@ -207,16 +207,6 @@
                   (message (string-append "Buffer renamed to " new-name))
                   (message (string-append "Name already in use: " new-name))))))))
 
-(defcommand (scratch-buffer)
-  "editor: scratch buffer\nSwitch to the *scratch* buffer, creating it if it does not exist."
-  (interactive)
-  (if (no-panes?)
-      (%tab-new! "*scratch*")
-      (unless (%tab-set-buffer! "*scratch*")
-        (%buffer-create "*scratch*")
-        (%tab-set-buffer! "*scratch*")))
-  (message "Switched to *scratch*"))
-
 (defcommand (switch-to-buffer)
   "editor: switch buffer\nSwitch the current tab to a named buffer."
   (interactive)

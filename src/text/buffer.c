@@ -27,10 +27,6 @@ bool buffer_list_init(void) {
     bl.list = NULL;
     bl.current = NULL;
 
-    if (!buffer_create("*scratch*")) {
-        return false;
-    }
-
     return true;
 }
 
@@ -184,10 +180,6 @@ bool buffer_delete(Buffer *buf) {
     if (!buf) return false;
 
     buffer_destroy(buf);
-    // In the event that this was the only open buffer
-    if (!bl.list) {
-        buffer_create("*scratch*");
-    }
 
     return true;
 }
