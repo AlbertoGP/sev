@@ -147,7 +147,7 @@
     (mode.replace      . red)
     (mode.select       . yellow)
     (mode.pending      . pink)
-    (mode.minibuffer   . cyan)
+    (mode.minibuffer   . blue)
     ;; mode labels
     (label.normal      . fg-0)
     (label.insert      . fg-0)

@@ -37,16 +37,22 @@ void bar_strings_push(char *p) {
 void ModePill(AppState *state, Buffer *buf) {
     CachedRoles roles = state->ui.roles;
 
-    sexp mode_symbol = sexp_intern(state->chibi.ctx, "mode-name", -1);
-    sexp mode_val = vartable_get(buffer_get_locals(buf), mode_symbol, SEXP_FALSE);
-    const char* modeStr = sexp_to_cstring(state->chibi.ctx, mode_val, "ERROR");
+    bool is_welcome = (state->input.current_focus == FOCUS_WELCOME);
+
+    const char* modeStr = "Normal";
+    if (buf && !is_welcome) {
+        sexp mode_symbol = sexp_intern(state->chibi.ctx, "mode-name", -1);
+        sexp mode_val = vartable_get(buffer_get_locals(buf), mode_symbol, SEXP_FALSE);
+        modeStr = sexp_to_cstring(state->chibi.ctx, mode_val, "ERROR");
+    }
+
     Clay_String modeName = {
         .chars = modeStr,
         .length = strlen(modeStr),
         .isStaticallyAllocated = true
     };
 
-    ModeIconEntry *icon = mode_icon_for_current_buffer();
+    ModeIconEntry *icon = (buf && !is_welcome) ? mode_icon_for_current_buffer() : mode_icon_get("evil-normal-mode");
     Clay_Color mode_bg = icon
         ? ui_resolve_color(state, icon->role_mode_bg)
         : ui_resolve_color(state, roles.mode_normal);
@@ -298,7 +304,7 @@ void CursorPosition(AppState* state, Buffer *buf, Clay_Color text_color) {
 
 void StatusBar(AppState *state) {
     Buffer *buf = buffer_get_current();
-    if (!buf) return;
+    if (!buf && state->input.current_focus != FOCUS_WELCOME) return;
 
     CachedRoles roles = state->ui.roles;
 

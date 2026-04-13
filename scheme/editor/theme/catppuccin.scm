@@ -40,7 +40,8 @@
     (flamingo  . "#f2cdcd")
     (rosewater . "#f5e0dc"))
   'canonical-map *catppuccin-canonical-map*
-  'overrides '((mode.normal . lavender)))
+  'overrides '((mode.normal     . lavender)
+               (mode.minibuffer . lavender)))
 
 (define-theme
   'catppuccin-macchiato
@@ -74,7 +75,8 @@
     (flamingo  . "#f0c6c6")
     (rosewater . "#f4dbd6"))
   'canonical-map *catppuccin-canonical-map*
-  'overrides '((mode.normal . lavender)))
+  'overrides '((mode.normal     . lavender)
+               (mode.minibuffer . lavender)))
 
 (define-theme
   'catppuccin-frappe
@@ -108,7 +110,8 @@
     (flamingo  . "#eebebe")
     (rosewater . "#f2d5cf"))
   'canonical-map *catppuccin-canonical-map*
-  'overrides '((mode.normal . lavender)))
+  'overrides '((mode.normal     . lavender)
+               (mode.minibuffer . lavender)))
 
 (define-theme
   'catppuccin-latte
@@ -143,12 +146,13 @@
     (rosewater . "#dc8a78"))
   'canonical-map *catppuccin-canonical-map*
   'overrides
-  '((mode.normal     . lavender)
-    (label.normal    . bg-0)
-    (label.insert    . bg-0)
-    (label.replace   . bg-0)
-    (label.select    . bg-0)
-    (label.pending   . bg-0)
+  '((mode.normal      . lavender)
+    (mode.minibuffer  . lavender)
+    (label.normal     . bg-0)
+    (label.insert     . bg-0)
+    (label.replace    . bg-0)
+    (label.select     . bg-0)
+    (label.pending    . bg-0)
     (label.minibuffer . bg-0)))
 
 (activate-theme 'catppuccin-macchiato)

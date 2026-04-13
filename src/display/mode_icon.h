@@ -29,3 +29,6 @@ bool mode_icon_register(const char *mode_name, const char *filename,
 // Find the first matching entry for the current buffer's active minor modes.
 // Returns NULL if no match.
 ModeIconEntry *mode_icon_for_current_buffer(void);
+
+// Find an entry by exact mode name. Returns NULL if no match.
+ModeIconEntry *mode_icon_get(const char *mode_name);

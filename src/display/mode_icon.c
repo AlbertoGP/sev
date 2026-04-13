@@ -37,6 +37,14 @@ ModeIconEntry *mode_icon_for_current_buffer(void) {
     return NULL;
 }
 
+ModeIconEntry *mode_icon_get(const char *mode_name) {
+    for (int i = 0; i < entry_count; i++) {
+        if (strcmp(entries[i].mode_name, mode_name) == 0)
+            return &entries[i];
+    }
+    return NULL;
+}
+
 // --- Scheme bindings ---
 
 // (%register-mode-icon! mode-name filename role-bg role-label role-cursor cursor-type-sym)

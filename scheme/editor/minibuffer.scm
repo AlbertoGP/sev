@@ -4,7 +4,7 @@
 (define-minor-mode 'minibuffer-mode minibuffer-map #t)
 
 ;; Dedicated cursor style: sky-coloured thin bar, distinct from evil cursors
-(register-mode-icon/full 'minibuffer-mode "icon-insert.svg"
+(register-mode-icon/full 'minibuffer-mode "icon-normal.svg"
                          'mode.minibuffer 'label.minibuffer
                          'cursor.minibuffer 'thin)
 
