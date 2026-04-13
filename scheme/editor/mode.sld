@@ -11,7 +11,7 @@
     register-mode-icon register-mode-icon/full
     toggle-line-numbers toggle-relative-line-numbers
     toggle-visual-line-numbers toggle-wrap-lines
-    scheme-mode
+    text-mode scheme-mode
     set-mode-parent! derived-mode? mode-derives-from?
     list-writable-major-modes set-buffer-mode
     user-settings-rules apply-buffer-settings
