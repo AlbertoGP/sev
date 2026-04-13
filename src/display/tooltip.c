@@ -114,15 +114,28 @@ void TextTooltip(AppState *state, bool is_hovered, int unique_id, const char *te
 }
 
 typedef struct {
-    AppState *state;
-    char      label[128];
-    char      binding[64];
+    AppState   *state;
+    const char *label;
+    const char *binding; // may be NULL
 } TextBindingTooltipData;
 
-static TextBindingTooltipData s_text_binding_tip;
+// Static buffers that outlive the layout pass so Clay_String.chars remain valid
+// through render command generation. Only written inside the render callback,
+// which is called at most once per frame (for the single visible tooltip).
+static char s_label_buf[128];
+static char s_binding_buf[64];
 
 static void text_binding_tooltip_render(void *user_data) {
     TextBindingTooltipData *d = user_data;
+    strncpy(s_label_buf, d->label, sizeof(s_label_buf) - 1);
+    s_label_buf[sizeof(s_label_buf) - 1] = '\0';
+    if (d->binding) {
+        strncpy(s_binding_buf, d->binding, sizeof(s_binding_buf) - 1);
+        s_binding_buf[sizeof(s_binding_buf) - 1] = '\0';
+    } else {
+        s_binding_buf[0] = '\0';
+    }
+
     float    scale = d->state->ui.scale_factor;
     uint16_t fsz   = (uint16_t)(12.0f * scale);
     CLAY_AUTO_ID({
@@ -132,14 +145,14 @@ static void text_binding_tooltip_render(void *user_data) {
             .childAlignment  = { .y = CLAY_ALIGN_Y_CENTER }
         }
     }) {
-        Clay_String label_cs = { .chars = d->label, .length = (int32_t)strlen(d->label) };
+        Clay_String label_cs = { .chars = s_label_buf, .length = (int32_t)strlen(s_label_buf) };
         CLAY_TEXT(label_cs, CLAY_TEXT_CONFIG({
             .fontId    = FONT_UI_NORMAL,
             .fontSize  = fsz,
             .textColor = ui_resolve_color(d->state, d->state->ui.roles.text_primary)
         }));
-        if (d->binding[0]) {
-            Clay_String kb = { .chars = d->binding, .length = (int32_t)strlen(d->binding) };
+        if (s_binding_buf[0]) {
+            Clay_String kb = { .chars = s_binding_buf, .length = (int32_t)strlen(s_binding_buf) };
             Keybinding(d->state, kb, fsz);
         }
     }
@@ -147,14 +160,6 @@ static void text_binding_tooltip_render(void *user_data) {
 
 void TextTooltipWithBinding(AppState *state, bool is_hovered, int unique_id,
                             const char *label, const char *binding) {
-    s_text_binding_tip.state = state;
-    strncpy(s_text_binding_tip.label,   label,   sizeof(s_text_binding_tip.label)   - 1);
-    s_text_binding_tip.label[sizeof(s_text_binding_tip.label) - 1] = '\0';
-    if (binding) {
-        strncpy(s_text_binding_tip.binding, binding, sizeof(s_text_binding_tip.binding) - 1);
-        s_text_binding_tip.binding[sizeof(s_text_binding_tip.binding) - 1] = '\0';
-    } else {
-        s_text_binding_tip.binding[0] = '\0';
-    }
-    Tooltip(state, is_hovered, unique_id, text_binding_tooltip_render, &s_text_binding_tip);
+    TextBindingTooltipData d = { state, label, binding };
+    Tooltip(state, is_hovered, unique_id, text_binding_tooltip_render, &d);
 }
