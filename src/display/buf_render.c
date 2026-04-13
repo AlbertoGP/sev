@@ -12,6 +12,7 @@
 #include "../clay/renderer.h"
 #include "../text/buffer.h"
 #include "../text/buffer_type.h"
+#include "../text/diff.h"
 #include "../text/line.h"
 
 // --- Shared rendering context ---
@@ -38,6 +39,9 @@ typedef struct {
     bool             wrap_lines;        // false = nowrap + hscroll
     float            scroll_x;         // horizontal scroll offset (0 in wrap mode)
     float            gutter_width;
+    float            diff_marker_w;        // fixed px width of the change-slot stripe
+    const uint8_t   *diff_markers;         // per-logical-line flags (LineChangeKind), or NULL
+    int              diff_markers_count;
     size_t           cursor_logical_line;
     char            *lnum_strs;         // slab for formatted line number strings
     Clay_BoundingBox box;
@@ -148,6 +152,15 @@ static bool BufRender_SetupGeometry(BufRenderCtx *ctx, Clay_ElementId id) {
         gutter_width = (float)w + ctx->padding;
     }
     ctx->gutter_width = gutter_width;
+
+    // Fixed slot along the gutter's left edge for diff change markers.
+    // Width is carved out of ctx->padding, so total gutter-col width is
+    // unchanged — digits stay put regardless of whether the slot is
+    // drawing a colour or is transparent.
+    float marker_w = 5.0f * ctx->state->ui.scale_factor;
+    if (marker_w < 2.0f) marker_w = 2.0f;
+    if (marker_w > ctx->padding) marker_w = ctx->padding;
+    ctx->diff_marker_w = marker_w;
 
     // Read tab-width from buffer-local variable.
     sexp tabw_sym = sexp_intern(ctx->state->chibi.ctx, "tab-width", -1);
@@ -313,6 +326,8 @@ static void BufRender_GutterCell(BufRenderCtx *ctx, size_t i, VisualLine *vl) {
     }
     Clay_Color bg = ui_resolve_color(ctx->state, ctx->state->ui.roles.line_bg);
 
+    size_t logical = line_index_at(ctx->lt, vl->byte_start);
+
     size_t str_idx    = i - ctx->first_vline;
     char  *str        = ctx->lnum_strs ? ctx->lnum_strs + str_idx * LNUM_STR_LEN : NULL;
     size_t slen       = 0;
@@ -324,7 +339,6 @@ static void BufRender_GutterCell(BufRenderCtx *ctx, size_t i, VisualLine *vl) {
         } else if (vl->visual_index > 0) {
             show_number = false;
         } else {
-            size_t logical = line_index_at(ctx->lt, vl->byte_start);
             if (ctx->line_num_type == 1) {
                 slen = snprintf(str, LNUM_STR_LEN, "%zu", logical + 1);
             } else {
@@ -337,33 +351,116 @@ static void BufRender_GutterCell(BufRenderCtx *ctx, size_t i, VisualLine *vl) {
         }
     }
 
+    // Diff flags for this logical line (bitfield of LineChangeKind).
+    uint8_t diff_flags = 0;
+    if (ctx->diff_markers && (int)logical < ctx->diff_markers_count)
+        diff_flags = ctx->diff_markers[logical];
+
+    // Change-slot colour: transparent unless the line is added/modified.
+    Clay_Color slot_bg = (Clay_Color){0};
+    if (diff_flags & LINE_CHANGE_ADDED)
+        slot_bg = ui_resolve_color(ctx->state, ctx->state->ui.roles.diff_added);
+    else if (diff_flags & LINE_CHANGE_MODIFIED)
+        slot_bg = ui_resolve_color(ctx->state, ctx->state->ui.roles.diff_modified);
+
+    // Deletion squares only sit on the first visual row of a logical line,
+    // so wrapped lines don't get duplicate squares.
+    bool draw_del_above = (diff_flags & LINE_CHANGE_DEL_ABOVE) && vl->visual_index == 0;
+    bool draw_del_below = (diff_flags & LINE_CHANGE_DEL_BELOW) && is_last;
+
+    float marker_w    = ctx->diff_marker_w;
+    float left_pad    = ctx->padding - marker_w;
+    if (left_pad < 0) left_pad = 0;
+
     CLAY(CLAY_IDI_LOCAL("LineNum", (int32_t)i), {
         .layout = {
             .sizing = {
                 .width  = CLAY_SIZING_GROW(0),
                 .height = CLAY_SIZING_FIXED(ctx->line_height)
             },
-            .padding        = ctx->line_num_type
-                ? (Clay_Padding){ .left = ctx->padding, .right = ctx->padding }
-                : (Clay_Padding){0},
-            .childAlignment = { .x = CLAY_ALIGN_X_RIGHT },
+            .layoutDirection = CLAY_LEFT_TO_RIGHT,
         },
         .backgroundColor = (cursor_on_line && ctx->buf->select_mode == SELECT_NONE)
             ? (Clay_Color){ bg.r, bg.g, bg.b, 128 } : (Clay_Color){0},
     }) {
-        if (show_number && slen > 0) {
-            bool is_current = (ctx->line_num_type != 3) &&
-                (line_index_at(ctx->lt, vl->byte_start) == ctx->cursor_logical_line);
-            bool in_sel = vline_in_selection(ctx, vl);
-            Clay_String numStr = { .chars = str, .length = slen };
-            CLAY_TEXT(numStr, CLAY_TEXT_CONFIG({
-                .fontId    = ctx->font_id,
-                .fontSize  = ctx->font_size,
-                .textColor = ui_resolve_color(ctx->state,
-                    (is_current || in_sel) && ctx->cp->active
-                        ? ctx->state->ui.roles.text_linenum
-                        : ctx->state->ui.roles.text_faded),
-            }));
+        // Change-slot: fixed-width strip at the left edge. Always laid out
+        // (so digit alignment is stable), coloured only when there is a
+        // change on this line.
+        CLAY(CLAY_IDI_LOCAL("DiffSlot", (int32_t)i), {
+            .layout = {
+                .sizing = { .width  = CLAY_SIZING_FIXED(marker_w),
+                            .height = CLAY_SIZING_GROW(0) },
+            },
+            .backgroundColor = slot_bg,
+        }) {
+            if (draw_del_above) {
+                Clay_Color del = ui_resolve_color(ctx->state,
+                    ctx->state->ui.roles.diff_deleted);
+                CLAY(CLAY_IDI_LOCAL("DelAbove", (int32_t)i), {
+                    .floating = {
+                        .attachTo = CLAY_ATTACH_TO_PARENT,
+                        .attachPoints = {
+                            .element = CLAY_ATTACH_POINT_LEFT_TOP,
+                            .parent  = CLAY_ATTACH_POINT_LEFT_TOP,
+                        },
+                        .zIndex = 5,
+                    },
+                    .layout = {
+                        .sizing = { .width  = CLAY_SIZING_FIXED(marker_w),
+                                    .height = CLAY_SIZING_FIXED(marker_w) },
+                    },
+                    .backgroundColor = del,
+                }) {}
+            }
+            if (draw_del_below) {
+                Clay_Color del = ui_resolve_color(ctx->state,
+                    ctx->state->ui.roles.diff_deleted);
+                CLAY(CLAY_IDI_LOCAL("DelBelow", (int32_t)i), {
+                    .floating = {
+                        .attachTo = CLAY_ATTACH_TO_PARENT,
+                        .attachPoints = {
+                            .element = CLAY_ATTACH_POINT_LEFT_BOTTOM,
+                            .parent  = CLAY_ATTACH_POINT_LEFT_BOTTOM,
+                        },
+                        .zIndex = 5,
+                    },
+                    .layout = {
+                        .sizing = { .width  = CLAY_SIZING_FIXED(marker_w),
+                                    .height = CLAY_SIZING_FIXED(marker_w) },
+                    },
+                    .backgroundColor = del,
+                }) {}
+            }
+        }
+        // Number column: remaining gutter width, right-aligned digits.
+        CLAY(CLAY_IDI_LOCAL("LineNumText", (int32_t)i), {
+            .layout = {
+                .sizing = {
+                    .width  = CLAY_SIZING_GROW(0),
+                    .height = CLAY_SIZING_GROW(0),
+                },
+                .padding        = ctx->line_num_type
+                    ? (Clay_Padding){ .left = (uint16_t)left_pad,
+                                      .right = (uint16_t)ctx->padding }
+                    : (Clay_Padding){0},
+                .childAlignment = { .x = CLAY_ALIGN_X_RIGHT,
+                                    .y = CLAY_ALIGN_Y_CENTER },
+            },
+        }) {
+            if (show_number && slen > 0) {
+                bool is_current = (ctx->line_num_type != 3) &&
+                    (logical == ctx->cursor_logical_line);
+                bool in_sel = vline_in_selection(ctx, vl);
+                Clay_String numStr = { .chars = str, .length = slen };
+                CLAY_TEXT(numStr, CLAY_TEXT_CONFIG({
+                    .fontId    = ctx->font_id,
+                    .fontSize  = ctx->font_size,
+                    .textColor = ui_resolve_color(ctx->state,
+                        (is_current || in_sel) && ctx->cp->active
+                            ? ctx->state->ui.roles.text_linenum
+                            : ctx->state->ui.roles.text_faded),
+                }));
+            }
         }
     }
 }
@@ -745,6 +842,12 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
     char *chars = buffer_text(buf);
     tab_register_string(chars);
 
+    // Per-frame diff markers against the last-saved snapshot. NULL when the
+    // buffer has never been saved or is currently unmodified.
+    int diff_n = 0;
+    uint8_t *diff_markers = buffer_get_line_markers(buf, &diff_n);
+    if (diff_markers) tab_register_string((char *)diff_markers);
+
     // Pre-read horizontal scroll from cache before layout (same two-frame pattern as sub_offset).
     // This value is used for both the clip childOffset and cursor/selection offsets so they
     // are always in sync within the same frame.
@@ -767,6 +870,8 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
         .padding   = 32.0f * state->ui.scale_factor,
         // scroll_x matches the clip childOffset so cursor/selection float correctly.
         .scroll_x  = scroll_x_pre,
+        .diff_markers       = diff_markers,
+        .diff_markers_count = diff_n,
     };
 
     // Compute bracket highlight positions for this frame.

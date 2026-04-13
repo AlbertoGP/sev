@@ -56,6 +56,12 @@ typedef struct Buffer {
     Time file_time;
     bool is_modified;
 
+    // Text as of the last successful buffer_read/buffer_write; NULL if the
+    // buffer has never been read from or written to a file. Used as the
+    // baseline for gutter change highlights.
+    char  *saved_text;
+    size_t saved_len;
+
     Change *undo_head;
     Change *redo_head;
     Change *current_change;

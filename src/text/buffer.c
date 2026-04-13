@@ -52,6 +52,8 @@ static void buffer_destroy(Buffer *buf) {
         gb_free(buf->contents);
         buf->contents = NULL;
     }
+    free(buf->saved_text);
+    buf->saved_text = NULL;
     line_table_destroy(&buf->lt);
 
     free(buf);
@@ -158,6 +160,10 @@ bool buffer_clear(Buffer *buf) {
 
     gb_free(buf->contents);
     buf->contents = new_gb;
+
+    free(buf->saved_text);
+    buf->saved_text = NULL;
+    buf->saved_len  = 0;
 
     buf->point.pos = 0;
     buf->cur_line = 1;
@@ -268,7 +274,15 @@ bool buffer_write(void) {
     if (text) {
         size_t len = strlen(text);
         fwrite(text, 1, len, f);
-        free(text);
+
+        // Snapshot for gutter-diff baseline. Transfers ownership of `text`.
+        free(buf->saved_text);
+        buf->saved_text = text;
+        buf->saved_len  = len;
+    } else {
+        free(buf->saved_text);
+        buf->saved_text = NULL;
+        buf->saved_len  = 0;
     }
     fclose(f);
 
@@ -329,6 +343,16 @@ bool buffer_read(void) {
     }
 
     fclose(f);
+
+    // Snapshot the in-memory representation (not the raw file bytes) so the
+    // diff baseline matches exactly what `buffer_text()` will return on the
+    // next compare — insert_string may normalize content.
+    {
+        char *text = buffer_text(buf);
+        free(buf->saved_text);
+        buf->saved_text = text;
+        buf->saved_len  = text ? strlen(text) : 0;
+    }
 
     buf->file_time.mtime.tv_sec = time(NULL);
     buf->file_time.mtime.tv_nsec = 0;

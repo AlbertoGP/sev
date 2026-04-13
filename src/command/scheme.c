@@ -633,6 +633,9 @@ void scheme_init(AppState *state) {
     INTERN_ROLE(text_command, "text.command");
     INTERN_ROLE(text_prefix, "text.prefix");
     INTERN_ROLE(text_linenum, "text.linenum");
+    INTERN_ROLE(diff_added,    "diff.added");
+    INTERN_ROLE(diff_modified, "diff.modified");
+    INTERN_ROLE(diff_deleted,  "diff.deleted");
     INTERN_ROLE(selection,       "selection");
     INTERN_ROLE(selection_hover, "selection.hover");
     INTERN_ROLE(message_hover,   "message.hover");

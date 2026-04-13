@@ -42,6 +42,7 @@ set(SRC_FILES
     src/text/buffer.c
     src/text/buffer_edit.c
     src/text/change.c
+    src/text/diff.c
     src/text/gap.c
     src/text/line.c
     src/text/mark.c
