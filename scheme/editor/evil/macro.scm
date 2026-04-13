@@ -69,7 +69,3 @@
   (let ((ch (string (integer->char (+ (char->integer #\a) i)))))
     (set-key! normal-map (string-append "@ " ch) 'evil-play-macro)))
 (set-key! normal-map "@ @" 'evil-play-last-macro)
-
-;;; Activate
-(evil-mode)
-(evil-normal)

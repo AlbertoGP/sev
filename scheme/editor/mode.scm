@@ -202,14 +202,16 @@
     (set-local! 'wrap-lines/explicit? #t)))
 
 ;; Plain text major mode — the default/fallback mode
-(define (text-mode)
+(defun (text-mode)
+  "Enable plain text mode in the current buffer."
   (%ts-disable!)
   (set-major-mode! 'text-mode))
 
 ;; Scheme major mode — activates tree-sitter highlighting
 (define-major-mode 'scheme-mode "Scheme" 'scheme-icon)
 (set-mode-parent! 'scheme-mode 'prog-mode)
-(define (scheme-mode)
+(defun (scheme-mode)
+  "Enable Scheme mode in the current buffer."
   (%ts-enable!)
   (set-major-mode! 'scheme-mode))
 

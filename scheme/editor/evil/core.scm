@@ -387,7 +387,7 @@
     (else #f)))
 
 ;; Enable evil mode
-(defcommand (evil-mode)
+(defun (evil-mode)
   "vim: enable vim mode\nEnable vim-like modal editing."
   (enable-minor-mode 'evil-normal-mode))
 
