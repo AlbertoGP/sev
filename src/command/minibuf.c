@@ -248,6 +248,17 @@ static void major_modes_provider(AppState *state, const char *input) {
 }
 
 static void major_mode_apply(sexp ctx, sexp sym) {
+    // Prefer calling the mode's own command procedure (e.g. scheme-mode),
+    // which runs mode-specific setup (TS enable/disable, etc.) before
+    // switching the mode. Fall back to set-major-mode! for modes that
+    // don't define a dedicated command.
+    sexp mode_fn = sexp_env_ref(ctx, G->chibi.env, sym, SEXP_FALSE);
+    if (sexp_procedurep(mode_fn)) {
+        sexp result = sexp_apply(ctx, mode_fn, SEXP_NULL);
+        if (sexp_exceptionp(result))
+            sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+        return;
+    }
     sexp fn = sexp_env_ref(ctx, G->chibi.env,
                            sexp_intern(ctx, "set-major-mode!", -1), SEXP_FALSE);
     if (fn == SEXP_FALSE) return;
