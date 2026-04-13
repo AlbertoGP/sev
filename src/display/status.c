@@ -205,6 +205,7 @@ void MajorModeIndicator(AppState *state, Buffer *buf, Clay_Color text_color) {
 }
 
 void SelectionIndicator(AppState *state, Buffer *buf, Clay_Color text_color) {
+    if (state->input.current_focus == FOCUS_WELCOME) return;
     if (buf->select_mode != SELECT_NONE) {
         float scale = state->ui.scale_factor;
 
@@ -267,6 +268,7 @@ void SelectionIndicator(AppState *state, Buffer *buf, Clay_Color text_color) {
 }
 
 void CursorPosition(AppState* state, Buffer *buf, Clay_Color text_color) {
+    if (state->input.current_focus == FOCUS_WELCOME) return;
     float scale = state->ui.scale_factor;
     char *pos = malloc(32 * sizeof(char));
     snprintf(pos, 32, "%zu:%d", buf_get_line(buf), get_column(buf));
