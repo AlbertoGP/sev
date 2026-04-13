@@ -69,9 +69,15 @@ static Clay_Sizing tab_layout_expand = {
 static ScissoredRectData sel_pool[SCISSORED_RECT_POOL_SIZE];
 static int sel_pool_idx = 0;
 
+static TriangleRenderData tri_pool[TRIANGLE_POOL_SIZE];
+static int tri_pool_idx = 0;
+
 #define LNUM_STR_LEN 12
 
-void buf_render_reset(void) { sel_pool_idx = 0; }
+void buf_render_reset(void) {
+    sel_pool_idx = 0;
+    tri_pool_idx = 0;
+}
 
 // --- Static helpers ---
 
@@ -393,8 +399,11 @@ static void BufRender_GutterCell(BufRenderCtx *ctx, size_t i, VisualLine *vl) {
             },
             .backgroundColor = slot_bg,
         }) {
-            if (draw_del_above) {
-                Clay_Color del = ui_resolve_color(ctx->state,
+            if (draw_del_above && tri_pool_idx < TRIANGLE_POOL_SIZE) {
+                TriangleRenderData *t = &tri_pool[tri_pool_idx++];
+                t->type  = CUSTOM_TYPE_TRIANGLE;
+                t->half  = TRIANGLE_HALF_TL;
+                t->color = ui_resolve_color(ctx->state,
                     ctx->state->ui.roles.diff_deleted);
                 CLAY(CLAY_IDI_LOCAL("DelAbove", (int32_t)i), {
                     .floating = {
@@ -409,11 +418,14 @@ static void BufRender_GutterCell(BufRenderCtx *ctx, size_t i, VisualLine *vl) {
                         .sizing = { .width  = CLAY_SIZING_FIXED(marker_w),
                                     .height = CLAY_SIZING_FIXED(marker_w) },
                     },
-                    .backgroundColor = del,
+                    .custom = { .customData = t },
                 }) {}
             }
-            if (draw_del_below) {
-                Clay_Color del = ui_resolve_color(ctx->state,
+            if (draw_del_below && tri_pool_idx < TRIANGLE_POOL_SIZE) {
+                TriangleRenderData *t = &tri_pool[tri_pool_idx++];
+                t->type  = CUSTOM_TYPE_TRIANGLE;
+                t->half  = TRIANGLE_HALF_BL;
+                t->color = ui_resolve_color(ctx->state,
                     ctx->state->ui.roles.diff_deleted);
                 CLAY(CLAY_IDI_LOCAL("DelBelow", (int32_t)i), {
                     .floating = {
@@ -422,13 +434,14 @@ static void BufRender_GutterCell(BufRenderCtx *ctx, size_t i, VisualLine *vl) {
                             .element = CLAY_ATTACH_POINT_LEFT_BOTTOM,
                             .parent  = CLAY_ATTACH_POINT_LEFT_BOTTOM,
                         },
+                        .offset = { .y = 1.0 },
                         .zIndex = 5,
                     },
                     .layout = {
                         .sizing = { .width  = CLAY_SIZING_FIXED(marker_w),
                                     .height = CLAY_SIZING_FIXED(marker_w) },
                     },
-                    .backgroundColor = del,
+                    .custom = { .customData = t },
                 }) {}
             }
         }

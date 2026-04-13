@@ -15,7 +15,15 @@ typedef struct {
 typedef enum {
     CUSTOM_TYPE_CURSOR,
     CUSTOM_TYPE_SCISSORED_RECT,
+    CUSTOM_TYPE_TRIANGLE,
 } CustomRenderType;
+
+typedef enum {
+    TRIANGLE_HALF_TL = 0,  // right angle at top-left:     TL, TR, BL
+    TRIANGLE_HALF_TR,      // right angle at top-right:    TR, BR, TL
+    TRIANGLE_HALF_BL,      // right angle at bottom-left:  BL, TL, BR
+    TRIANGLE_HALF_BR,      // right angle at bottom-right: BR, BL, TR
+} TriangleHalf;
 
 // Per-frame pool for cursor render data; up to CURSOR_POOL_SIZE cursors/frame.
 #define CURSOR_POOL_SIZE 16
@@ -46,6 +54,15 @@ typedef struct {
     float      clip_x, clip_y, clip_w, clip_h;
     Clay_Color color;
 } ScissoredRectData;
+
+// Solid-color right triangle filling one half of the element's bounding box.
+#define TRIANGLE_POOL_SIZE 256
+
+typedef struct {
+    int        type;   // CUSTOM_TYPE_TRIANGLE (must be first field)
+    int        half;   // TriangleHalf
+    Clay_Color color;
+} TriangleRenderData;
 
 void SDL_Clay_RenderClayCommands(Clay_SDL3RendererData *rendererData, Clay_RenderCommandArray *rcommands);
 void SDL_Clay_DestroyTextCache(void);

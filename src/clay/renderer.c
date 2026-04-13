@@ -488,6 +488,53 @@ void SDL_Clay_RenderClayCommands(Clay_SDL3RendererData *rendererData, Clay_Rende
                 int *type_ptr = (int *)rcmd->renderData.custom.customData;
                 if (!type_ptr) break;
 
+                if (*type_ptr == CUSTOM_TYPE_TRIANGLE) {
+                    TriangleRenderData *t = (TriangleRenderData *)type_ptr;
+                    float x0 = rect.x, y0 = rect.y;
+                    float x1 = rect.x + rect.w, y1 = rect.y + rect.h;
+                    float tl_x = x0, tl_y = y0;
+                    float tr_x = x1, tr_y = y0;
+                    float bl_x = x0, bl_y = y1;
+                    float br_x = x1, br_y = y1;
+                    float vx[3], vy[3];
+                    switch (t->half) {
+                    case TRIANGLE_HALF_TL:
+                        vx[0] = tl_x; vy[0] = tl_y;
+                        vx[1] = tr_x; vy[1] = tr_y;
+                        vx[2] = bl_x; vy[2] = bl_y;
+                        break;
+                    case TRIANGLE_HALF_TR:
+                        vx[0] = tr_x; vy[0] = tr_y;
+                        vx[1] = br_x; vy[1] = br_y;
+                        vx[2] = tl_x; vy[2] = tl_y;
+                        break;
+                    case TRIANGLE_HALF_BL:
+                        vx[0] = bl_x; vy[0] = bl_y;
+                        vx[1] = tl_x; vy[1] = tl_y;
+                        vx[2] = br_x; vy[2] = br_y;
+                        break;
+                    case TRIANGLE_HALF_BR:
+                    default:
+                        vx[0] = br_x; vy[0] = br_y;
+                        vx[1] = bl_x; vy[1] = bl_y;
+                        vx[2] = tr_x; vy[2] = tr_y;
+                        break;
+                    }
+                    SDL_FColor fc = {
+                        t->color.r / 255.0f, t->color.g / 255.0f,
+                        t->color.b / 255.0f, t->color.a / 255.0f
+                    };
+                    SDL_Vertex verts[3] = {
+                        { .position = { vx[0], vy[0] }, .color = fc },
+                        { .position = { vx[1], vy[1] }, .color = fc },
+                        { .position = { vx[2], vy[2] }, .color = fc },
+                    };
+                    int idx[3] = { 0, 1, 2 };
+                    SDL_SetRenderDrawBlendMode(rendererData->renderer, SDL_BLENDMODE_BLEND);
+                    SDL_RenderGeometry(rendererData->renderer, NULL, verts, 3, idx, 3);
+                    break;
+                }
+
                 if (*type_ptr == CUSTOM_TYPE_SCISSORED_RECT) {
                     ScissoredRectData *s = (ScissoredRectData *)type_ptr;
                     SDL_Rect old_clip;
