@@ -5,7 +5,9 @@
 #include <SDL3_ttf/SDL_ttf.h>
 
 #include "cursor.h"
+#include "icon.h"
 #include "keybinding.h"
+#include "major_mode_info.h"
 #include "theme.h"
 #include "vline.h"
 #include "text_surface.h"
@@ -165,13 +167,14 @@ void MinibufPalette(AppState *state) {
                         .chars  = state->minibuf.items[abs_idx].label,
                         .length = (int32_t)strlen(state->minibuf.items[abs_idx].label)
                     };
-                    bool has_kb = state->minibuf.items[abs_idx].keybinding[0] != '\0';
+                    bool has_kb   = state->minibuf.items[abs_idx].keybinding[0] != '\0';
+                    bool has_icon = state->minibuf.items[abs_idx].icon_name[0] != '\0';
                     CLAY(CLAY_IDI_LOCAL("MinibufItem", i), {
                         .layout = {
                             .sizing         = { .width = CLAY_SIZING_GROW(0) },
                             .padding        = CLAY_PADDING_ALL(pad),
                             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
-                            .childGap       = (uint16_t)(pad * 2)
+                            .childGap       = (uint16_t)(pad)
                         },
                         .backgroundColor = Clay_Hovered()
                             ? sel_hover
@@ -181,6 +184,18 @@ void MinibufPalette(AppState *state) {
                         .cornerRadius = CLAY_CORNER_RADIUS(4.0f * scale)
                     }) {
                     if (Clay_Hovered()) state->input.desired_cursor = SDL_SYSTEM_CURSOR_POINTER;
+                        if (has_icon) {
+                            SDL_Texture *tex = icon_get(state->minibuf.items[abs_idx].icon_name, state, 12, 12);
+                            CLAY(CLAY_IDI_LOCAL("MinibufItemIcon", i), {
+                                .layout = {
+                                    .sizing = {
+                                        .width  = CLAY_SIZING_FIXED(12.0f * scale),
+                                        .height = CLAY_SIZING_FIXED(12.0f * scale)
+                                    }
+                                },
+                                .image = tex
+                            }) {}
+                        }
                         CLAY(CLAY_IDI_LOCAL("MinibufItemLabel", i), {
                             .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } }
                         }) {

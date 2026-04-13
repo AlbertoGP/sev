@@ -9,6 +9,7 @@
 #include "mode.h"
 #include "scheme_internal.h"
 #include "../text/buffer.h"
+#include "../display/major_mode_info.h"
 
 // ---- Shared provider utility ------------------------------------------------
 
@@ -232,6 +233,9 @@ static void major_modes_provider(AppState *state, const char *input) {
                 strncpy(item->label, sexp_string_data(dstr), MINIBUF_LABEL_MAX - 1);
                 sexp sym_str = sexp_symbol_to_string(ctx, sym);
                 strncpy(item->sym_name, sexp_string_data(sym_str), MINIBUF_LABEL_MAX - 1);
+                MajorModeInfoEntry *minfo = major_mode_info_get(item->sym_name);
+                if (minfo && minfo->icon_name[0])
+                    strncpy(item->icon_name, minfo->icon_name, sizeof(item->icon_name) - 1);
                 state->minibuf.all_item_count++;
             }
             qsort(state->minibuf.all_items, state->minibuf.all_item_count,
