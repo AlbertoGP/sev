@@ -21,28 +21,31 @@ void MessageArea(AppState *state) {
     bool hovered = false;
     Clay_Color hovered_bg = ui_resolve_color(state, state->ui.roles.message_hover);
     uint16_t padding = 10.0 * state->ui.scale_factor;
-    CLAY(CLAY_ID("Echo Area"), {
-        .layout = {
-            .sizing = {
-                .width = CLAY_SIZING_FIT(0, 500.0 * state->ui.scale_factor),
-                .height = CLAY_SIZING_FIXED(16 * state->ui.scale_factor)
+
+    if (message_string.length) {
+        CLAY(CLAY_ID("Echo Area"), {
+            .layout = {
+                .sizing = {
+                    .width = CLAY_SIZING_FIT(0, 500.0 * state->ui.scale_factor),
+                    .height = CLAY_SIZING_FIXED(16 * state->ui.scale_factor)
+                },
+                .padding = { .left = padding, .right = padding },
+                .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
+                .childGap = padding
             },
-            .padding = { .left = padding, .right = padding },
-            .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
-            .childGap = padding
-        },
-        .clip = CLAY_CLIP_TO_NONE,
-        .backgroundColor = Clay_Hovered() ? hovered_bg : (Clay_Color){0}
-    }){
-        Clay_OnHover(HandleMessageAreaClick, NULL);
-        hovered = Clay_Hovered();
-        if (hovered) state->input.desired_cursor = SDL_SYSTEM_CURSOR_POINTER;
-        CLAY_TEXT(message_string, CLAY_TEXT_CONFIG({
-            .fontId = FONT_UI_NORMAL,
-            .fontSize = 10.0 * state->ui.scale_factor,
-            .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
-        }));
+            .clip = CLAY_CLIP_TO_NONE,
+            .backgroundColor = Clay_Hovered() ? hovered_bg : (Clay_Color){0}
+        }){
+            Clay_OnHover(HandleMessageAreaClick, NULL);
+            hovered = Clay_Hovered();
+            if (hovered) state->input.desired_cursor = SDL_SYSTEM_CURSOR_POINTER;
+            CLAY_TEXT(message_string, CLAY_TEXT_CONFIG({
+                .fontId = FONT_UI_NORMAL,
+                .fontSize = 10.0 * state->ui.scale_factor,
+                .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
+            }));
+        }
+        TextTooltip(state, hovered, 999, "View Message Log");
     }
     BarDivider(state);
-    TextTooltip(state, hovered, 999, "View Message Log");
 }
