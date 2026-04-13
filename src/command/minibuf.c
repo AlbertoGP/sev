@@ -265,7 +265,7 @@ sexp scm_minibuffer_activate_major_modes(sexp ctx, sexp self, sexp n) {
     G->minibuf.selected       = 0;
     G->minibuf.item_scroll    = 0;
 
-    sexp prompt = sexp_c_string(ctx, "Set major mode...", -1);
+    sexp prompt = sexp_c_string(ctx, "Select a language...", -1);
     sexp ret = scm_minibuffer_activate(ctx, self, n, prompt, SEXP_FALSE, SEXP_FALSE);
     major_modes_provider(G, "");
     return ret;

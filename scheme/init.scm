@@ -31,10 +31,10 @@
 (bind-prefix! base-spc-map "b" base-buffer-map)
 
 ;; SPC f — file operations (always available: open creates a pane if none)
-(define file-map (make-keymap))
-(%set-keymap-name! file-map "file/find")
-(set-key! file-map "o" 'open-file)
-(bind-prefix! base-spc-map "f" file-map)
+(define base-f-map (make-keymap))
+(%set-keymap-name! base-f-map "file/find")
+(set-key! base-f-map "o" 'open-file)
+(bind-prefix! base-spc-map "f" base-f-map)
 
 ;; SPC h — help (always available)
 (define help-map (make-keymap))
@@ -53,11 +53,11 @@
 (bind-prefix! base-spc-map "p" project-map)
 
 ;; SPC t — tab operations
-(define base-tab-map (make-keymap))
-(%set-keymap-name! base-tab-map "tabs/theme")
-(set-key! base-tab-map "n" 'tab-new)
-(set-key! base-tab-map "h" 'theme-picker)
-(bind-prefix! base-spc-map "t" base-tab-map)
+(define base-t-map (make-keymap))
+(%set-keymap-name! base-t-map "tabs/theme")
+(set-key! base-t-map "n" 'tab-new)
+(set-key! base-t-map "h" 'theme-picker)
+(bind-prefix! base-spc-map "t" base-t-map)
 
 ;; ── Pane keymap ───────────────────────────────────────────────────────────────
 ;; Bindings that only make sense when at least one pane is open.
@@ -141,12 +141,13 @@
 (bind-prefix! pane-spc-map "s" split-map)
 
 ;; SPC l — line numbers
-(define line-numbers-map (make-keymap))
-(%set-keymap-name! line-numbers-map "line-numbers")
-(set-key! line-numbers-map "n" 'toggle-line-numbers)
-(set-key! line-numbers-map "r" 'toggle-relative-line-numbers)
-(set-key! line-numbers-map "v" 'toggle-visual-line-numbers)
-(bind-prefix! pane-spc-map "l" line-numbers-map)
+(define base-l-map (make-keymap))
+(%set-keymap-name! base-l-map "line/language")
+(set-key! base-l-map "n" 'toggle-line-numbers)
+(set-key! base-l-map "r" 'toggle-relative-line-numbers)
+(set-key! base-l-map "v" 'toggle-visual-line-numbers)
+(set-key! base-l-map "s" 'set-buffer-mode)
+(bind-prefix! pane-spc-map "l" base-l-map)
 
 ;; ── Mouse handlers ────────────────────────────────────────────────────────────
 
