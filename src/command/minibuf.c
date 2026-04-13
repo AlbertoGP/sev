@@ -386,7 +386,8 @@ sexp scm_minibuffer_activate(sexp ctx, sexp self, sexp n,
             sexp_release_object(ctx, G->minibuf.on_submit);
         if (G->minibuf.on_cancel != SEXP_FALSE)
             sexp_release_object(ctx, G->minibuf.on_cancel);
-        G->minibuf.prev_buf   = buffer_get_current();
+        Buffer *cur = buffer_get_current();
+        G->minibuf.prev_buf   = (cur != G->minibuf.buf) ? cur : NULL;
         G->minibuf.prev_focus = G->input.current_focus;
         G->input.current_focus = FOCUS_MINIBUFFER;
         buffer_clear(G->minibuf.buf);
@@ -446,7 +447,8 @@ sexp scm_minibuffer_submit(sexp ctx, sexp self, sexp n) {
             G->input.current_focus = G->minibuf.prev_focus;
             buffer_set_current(G->minibuf.prev_buf);
             G->needs_redraw = true;
-            minibuf_invoke_command(ctx, "evil-normal");
+            if (G->minibuf.prev_buf)
+                minibuf_invoke_command(ctx, "evil-normal");
         }
 
         if (cb_submit != SEXP_FALSE) sexp_release_object(ctx, cb_submit);
@@ -482,7 +484,8 @@ sexp scm_minibuffer_submit(sexp ctx, sexp self, sexp n) {
         buffer_set_current(G->minibuf.prev_buf);
         G->needs_redraw = true;
         // Full dismiss: return the calling buffer to normal-mode.
-        minibuf_invoke_command(ctx, "evil-normal");
+        if (G->minibuf.prev_buf)
+            minibuf_invoke_command(ctx, "evil-normal");
     }
 
     if (cb_submit != SEXP_FALSE) {
@@ -537,7 +540,8 @@ sexp scm_minibuffer_cancel(sexp ctx, sexp self, sexp n) {
         buffer_set_current(G->minibuf.prev_buf);
         G->needs_redraw = true;
         // Full dismiss: return the calling buffer to normal-mode.
-        minibuf_invoke_command(ctx, "evil-normal");
+        if (G->minibuf.prev_buf)
+            minibuf_invoke_command(ctx, "evil-normal");
     }
 
     if (cb_cancel != SEXP_FALSE) {
