@@ -435,10 +435,7 @@ uint8_t *diff_line_markers(const DiffResult *result) {
         }
         cursor += nIns;
 
-        // Deletion squares attach to surviving line boundaries for pure
-        // deletions only. Mixed triples (d > i > 0) rely on the modified
-        // stripes to convey the change.
-        if (nDel > 0 && nIns == 0) {
+        if (nDel > nIns) {
             if (cursor > 0) out[cursor - 1]   |= LINE_CHANGE_DEL_BELOW;
             if (cursor < result->n_to) out[cursor] |= LINE_CHANGE_DEL_ABOVE;
         }
