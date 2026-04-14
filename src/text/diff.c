@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <SDL3/SDL_timer.h>
+
 // Max line length: 2^13 = 8192 bytes. Longer lines trigger a binary-file
 // reject. The lower LENGTH_MASK_SZ bits of DLine.h encode the line length.
 #define LENGTH_MASK_SZ  13
@@ -445,8 +447,50 @@ uint8_t *diff_line_markers(const DiffResult *result) {
 
 uint8_t *buffer_get_line_markers(Buffer *buf, int *out_n_lines) {
     if (out_n_lines) *out_n_lines = 0;
-    if (!buf || !buf->saved_text || !buf->is_modified) return NULL;
 
+    // Fast path: unchanged and unmodified
+    if (!buf || !buf->saved_text || !buf->is_modified) {
+        if (buf && buf->diff_markers) {
+            free(buf->diff_markers);
+            buf->diff_markers = NULL;
+            buf->diff_markers_count = 0;
+        }
+        return NULL;
+    }
+
+    uint64_t now = SDL_GetTicks();
+    bool should_compute = false;
+    
+    // Check if the file was edited since we last computed diffs
+    if (buf->diff_last_edit_seq != buf->edit_sequence) {
+        if (buf->diff_debounce_timer_start == 0) {
+            // First edit (leading edge): compute immediately and start debounce window
+            should_compute = true;
+            buf->diff_debounce_timer_start = now;
+        } else if (now - buf->diff_debounce_timer_start >= 150) {
+            // Debounce window expired with pending edits (trailing edge update)
+            should_compute = true;
+            buf->diff_debounce_timer_start = now;
+        }
+    } else if (buf->diff_debounce_timer_start != 0) {
+        // No pending edits, but timer is active. Clear it if expired.
+        if (now - buf->diff_debounce_timer_start >= 150) {
+            buf->diff_debounce_timer_start = 0;
+        }
+    }
+
+    // Always compute if we don't have markers yet
+    if (!buf->diff_markers) {
+        should_compute = true;
+    }
+
+    // Sub-150ms trailing edits return cached array
+    if (!should_compute) {
+        if (out_n_lines) *out_n_lines = buf->diff_markers_count;
+        return buf->diff_markers;
+    }
+
+    // Time to compute!
     char *current = buffer_text(buf);
     if (!current) return NULL;
     size_t current_len = strlen(current);
@@ -461,7 +505,15 @@ uint8_t *buffer_get_line_markers(Buffer *buf, int *out_n_lines) {
     if (!r.edits) return NULL;
 
     uint8_t *markers = diff_line_markers(&r);
-    if (out_n_lines) *out_n_lines = r.n_to;
+    int new_count = r.n_to;
     diff_result_free(&r);
+
+    if (buf->diff_markers) free(buf->diff_markers);
+    buf->diff_markers = markers;
+    buf->diff_markers_count = new_count;
+    buf->diff_last_edit_seq = buf->edit_sequence;
+    buf->diff_debounce_timer_start = 0;
+
+    if (out_n_lines) *out_n_lines = new_count;
     return markers;
 }

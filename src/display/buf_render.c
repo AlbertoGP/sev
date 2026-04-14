@@ -859,7 +859,6 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
     // buffer has never been saved or is currently unmodified.
     int diff_n = 0;
     uint8_t *diff_markers = buffer_get_line_markers(buf, &diff_n);
-    if (diff_markers) tab_register_string((char *)diff_markers);
 
     // Pre-read horizontal scroll from cache before layout (same two-frame pattern as sub_offset).
     // This value is used for both the clip childOffset and cursor/selection offsets so they

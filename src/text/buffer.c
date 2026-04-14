@@ -54,6 +54,8 @@ static void buffer_destroy(Buffer *buf) {
     }
     free(buf->saved_text);
     buf->saved_text = NULL;
+    free(buf->diff_markers);
+    buf->diff_markers = NULL;
     line_table_destroy(&buf->lt);
 
     free(buf);
@@ -164,6 +166,9 @@ bool buffer_clear(Buffer *buf) {
     free(buf->saved_text);
     buf->saved_text = NULL;
     buf->saved_len  = 0;
+    free(buf->diff_markers);
+    buf->diff_markers = NULL;
+    buf->diff_markers_count = 0;
 
     buf->point.pos = 0;
     buf->cur_line = 1;

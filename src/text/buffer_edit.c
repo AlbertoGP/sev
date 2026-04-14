@@ -43,6 +43,7 @@ void insert_char(Buffer *buf, char c) {
     update_point(buf);
     change_record_insert(buf, pos_before, &c, 1);
     ts_buffer_reparse(buf);
+    buf->edit_sequence++;
 }
 
 void insert_codepoint(Buffer *buf, uint32_t cp) {
@@ -66,6 +67,7 @@ void insert_codepoint(Buffer *buf, uint32_t cp) {
     update_point(buf);
     change_record_insert(buf, pos_before, bytes, len);
     ts_buffer_reparse(buf);
+    buf->edit_sequence++;
 }
 
 void insert_string(Buffer *buf, const char *s) {
@@ -143,6 +145,7 @@ bool delete_chars(Buffer *buf, int count) {
     buf->num_chars = gb_used(buf->contents);
     update_point(buf);
     buf->col_saved = get_column(buf);
+    buf->edit_sequence++;
     return true;
 }
 

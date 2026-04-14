@@ -62,6 +62,12 @@ typedef struct Buffer {
     char  *saved_text;
     size_t saved_len;
 
+    uint8_t *diff_markers;
+    int diff_markers_count;
+    uint32_t diff_last_edit_seq;
+    uint64_t diff_debounce_timer_start;
+    uint32_t edit_sequence;
+
     Change *undo_head;
     Change *redo_head;
     Change *current_change;
