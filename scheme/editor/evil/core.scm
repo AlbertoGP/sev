@@ -119,8 +119,8 @@
 (set-key! pending-map "9" 'evil-digit-argument)
 (set-key! pending-map "g g" 'evil-motion-gg)
 (set-key! pending-map "G" 'evil-motion-G)
-(set-key! pending-map "d" 'evil-op-delete)
-(set-key! pending-map "c" 'evil-op-change)
+(set-key! pending-map "d" 'evil-d)
+(set-key! pending-map "c" 'evil-c)
 
 ;; Register selection state
 (define current-evil-register #\")

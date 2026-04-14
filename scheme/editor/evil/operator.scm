@@ -349,7 +349,7 @@
 ;;;
 
 (set-key! normal-map "y"  'evil-y)
-(set-key! pending-map "y" 'evil-op-yank)   ; yy = yank line
+(set-key! pending-map "y" 'evil-y)   ; yy = yank line
 
 (define (evil-paste-after)
   (let* ((reg current-evil-register)
