@@ -30,6 +30,17 @@ run:
 clean:
 	rm -f ./out/sev
 
+# Unit tests
+.PHONY: test
+test:
+	mkdir -p ./out && \
+	gcc -Wall -Wextra -I./test/unity -I./src \
+	    ./test/unity/unity.c ./test/test_dead_keystroke.c ./test/test_stubs.c \
+	    ./src/text/*.c \
+	    -o ./out/sev_test \
+	    -lchibi-scheme -ltree-sitter -ltree-sitter-scheme -lSDL3 -lm \
+	    && ./out/sev_test
+
 # Website
 website-sync-wasm:
 	cp build-wasm/app.html build-wasm/app.js build-wasm/app.wasm build-wasm/app.data website/public/demo/

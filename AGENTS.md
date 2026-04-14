@@ -89,6 +89,10 @@ Clay immediate-mode UI with SDL3 renderer backend. Layout defined in `layout.c`:
 - **Buffer-local vars from C**: `vartable_get(buffer_get_locals(buf), sexp_intern(ctx, "name", -1), default)`
 - **Scheme global vars from C**: `sexp_env_ref(ctx, state->chibi.env, sym, default)`
 
+## Testing
+
+- The Unity testing library (by throwtheswitch.org) is included in `/test/unity/`
+
 ## Dependencies
 
 Vendored as git submodules in `vendored/`:

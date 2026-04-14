@@ -102,6 +102,7 @@ bool point_set(Location loc) {
     gb_point_set(buf->contents, loc.pos);
     buf->col = 0;
     update_point(buf);
+    update_line(buf);
     return true;
 }
 
