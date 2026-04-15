@@ -9,10 +9,14 @@
 
 (include "test/scheme/helpers.scm")
 (include "test/scheme/vim/motion-test.scm")
+(include "test/scheme/vim/operator-test.scm")
+(include "test/scheme/vim/visual-test.scm")
 
 (test-begin "sev-scheme")
 
 (run-vim-motion-tests)
+(run-vim-operator-tests)
+(run-vim-visual-tests)
 
 (define runner (test-runner-current))
 (define *fail-count* (test-runner-fail-count runner))

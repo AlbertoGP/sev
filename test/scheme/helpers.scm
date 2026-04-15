@@ -17,3 +17,23 @@
   (let ((count (if (pair? rest) (car rest) 1))
         (proc (motion-ref name)))
     (when proc (proc count))))
+
+;;; Full buffer contents as a string — used by operator/visual tests to
+;;; assert buffer state after a destructive command.
+(define (buffer-text)
+  (%buffer-substring 0 (buffer-length)))
+
+;;; Set up a visual-mode selection: mark #\< at anchor, point at cur, and
+;;; the given select mode (1=char, 2=line). Assumes caller already seeded
+;;; the buffer.
+(define (select! anchor cur mode)
+  (point-set! anchor)
+  (%mark-set-to-point! #\<)
+  (point-set! cur)
+  (%select-mode-set! mode))
+
+;;; Reset the unnamed register so one test's residue can't mask the next
+;;; test's assertion.
+(define (clear-reg!)
+  (%register-set! #\" "")
+  (%register-set-shape! #\" 'charwise))
