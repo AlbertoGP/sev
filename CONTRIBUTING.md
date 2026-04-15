@@ -45,7 +45,7 @@ make vg             # run under Valgrind
 
 The entire Vim modal editing system lives in `scheme/editor/vim/` — motions, operators, text objects, macros, visual mode. New vim commands, text objects, and motions are pure Scheme. Themes, commands, and modes are the same.
 
-See `scheme/AGENTS.md` for step-by-step workflows for each type of addition.
+See `scheme/README.md` for step-by-step workflows for each type of addition.
 
 ### C core
 
@@ -62,7 +62,7 @@ We need more documentation!
 - Short term goal: every subdirectory should have a README.md. Scheme documentation strings for commands / functions / variables should be more informative.
 - Long term goal: expansive user documentation readable from within the app (along the lines of Emacs's `info-mode`)
 
-The `scheme/AGENTS.md` file documents the full C FFI and module system. The per-subsystem `AGENTS.md` files describe architecture and patterns. Improvements to any of these help future contributors ramp up faster.
+The `scheme/README.md` file documents the full C FFI and module system. The per-subsystem `README.md` files describe architecture and patterns. Improvements to any of these help future contributors ramp up faster.
 
 ## Code Style
 
