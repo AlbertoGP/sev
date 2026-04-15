@@ -1,6 +1,7 @@
 build-desktop/
 build-wasm/
 out/
+sev-scheme.log
 website/dist/
 website/node_modules/
 website/.astro/

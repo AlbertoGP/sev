@@ -2,16 +2,18 @@
 // or display subsystems. The test only exercises text-subsystem code paths,
 // so these can be no-ops / static storage.
 //
-// We do initialize a minimal chibi-scheme context because `reset_buffer_scale`
-// (called from `buffer_create` via a static-inline display header) reads
-// `default-buffer-scale` from the scheme env. That's the narrowest real dep —
-// everything else is stubbed.
+// `reset_buffer_scale` (called from `buffer_create` via a static-inline
+// display header) reads `default-buffer-scale` from the scheme env, so
+// tests must call `test_stubs_init_minimal_chibi()` before creating any
+// buffer — except the scheme-layer test binary, which calls its own
+// fuller `scheme_test_init()` and should not call this one.
 
 #include <chibi/eval.h>
 
 #include "../src/state.h"
 #include "../src/command/keyevent.h"
 #include "../src/command/mode.h"
+#include "test_stubs.h"
 
 static AppState g_fake_state;
 AppState *G = &g_fake_state;
@@ -26,8 +28,7 @@ void modelist_destroy(ModeList *ml) { (void)ml; }
 Mode *mode_get_default(void)        { return NULL; }
 Mode *mode_lookup(const char *name, ModeType type) { (void)name; (void)type; return NULL; }
 
-__attribute__((constructor))
-static void init_fake_chibi_ctx(void) {
+void test_stubs_init_minimal_chibi(void) {
     sexp_scheme_init();
     sexp ctx = sexp_make_eval_context(NULL, NULL, NULL, 0, 0);
     sexp env = sexp_load_standard_env(ctx, NULL, SEXP_SEVEN);

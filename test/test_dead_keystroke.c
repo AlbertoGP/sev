@@ -17,6 +17,7 @@
 
 #include "unity/unity.h"
 
+#include "test_stubs.h"
 #include "../src/text/buffer.h"
 #include "../src/text/location.h"
 
@@ -30,6 +31,7 @@ static void write_fixture(const char *path, int n_lines) {
 }
 
 void setUp(void) {
+    test_stubs_init_minimal_chibi();
     buffer_list_init();
 }
 
