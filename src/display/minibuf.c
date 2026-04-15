@@ -7,7 +7,6 @@
 #include "cursor.h"
 #include "icon.h"
 #include "keybinding.h"
-#include "major_mode_info.h"
 #include "theme.h"
 #include "vline.h"
 #include "text_surface.h"

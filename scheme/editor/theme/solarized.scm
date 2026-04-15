@@ -4,7 +4,7 @@
     (fg-text     . text-0)
     (fg-text-dim . text-2)
     (fg-warm     . text-1)
-    (selection-bg . (alpha bg-0 0.4)))) ; semi-transparent panel bg for selections
+    (selection-bg . (alpha blue 0.4)))) ; semi-transparent panel bg for selections
 ; blue, cyan, green, yellow, orange, red match canonical names directly
 
 (define-theme
@@ -39,12 +39,26 @@
     (magenta   . "#d33682"))
   'canonical-map *solarized-canonical-map*
   'overrides
-  '((label.normal     . bg-1)
+  '((pane.bg          . bg-1)
+    (line.bg          . bg-0)
+    (tab.active       . bg-1)
+    (tab.hover        . bg-1)
+    (tab.close        . bg-0)
+    (cursor.normal     . blue)
+    (cursor.insert     . blue)
+    (cursor.replace    . blue)
+    (cursor.select     . blue)
+    (cursor.pending    . blue)
+    (cursor.minibuffer . blue)
+    (label.normal     . bg-1)
     (label.insert     . bg-1)
     (label.replace    . bg-1)
     (label.select     . bg-1)
     (label.pending    . bg-1)
-    (label.minibuffer . bg-1)))
+    (label.minibuffer . bg-1)
+    (border.active    . (alpha orange 0.4))
+    (selection.hover  . bg-0)
+    (hl.string        . cyan)))
 
 (define-theme
   'solarized-light
