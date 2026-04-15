@@ -128,14 +128,14 @@ All commands, keybindings, modes, and themes are defined in Scheme. Drop your co
 (activate-theme 'my-theme)
 ```
 
-The full Vim modal editing system — motions, operators, text objects, macros — is implemented in `scheme/editor/evil/`. It's a good reference for what's possible without touching C.
+The full Vim modal editing system — motions, operators, text objects, macros — is implemented in `scheme/editor/vim/`. It's a good reference for what's possible without touching C.
 
 ## Project Organisation
 
 ```
 ├── resources/    fonts and SVG icons
 ├── scheme/       all Scheme scripts (commands, modes, keybindings, themes)
-│   └── editor/   R7RS modules: command, mode, evil, theme, minibuffer, …
+│   └── editor/   R7RS modules: command, mode, vim, theme, minibuffer, …
 ├── src/          C source (~12k LOC)
 │   ├── command/  input handling, keymaps, command dispatch, Scheme bridge
 │   ├── text/     buffers, marks, lines, registers, undo

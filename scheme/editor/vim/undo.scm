@@ -1,19 +1,19 @@
 ;;; undo.scm - Undo, redo, dot repeat
 
 ;; Undo
-(defcommand (evil-undo)
+(defcommand (vim-undo)
   "vim: undo\nUndo last change."
   (unless (buffer-read-only?)
     (%undo)))
 
 ;; Redo
-(defcommand (evil-redo)
+(defcommand (vim-redo)
   "vim: redo\nRedo last undone change."
   (unless (buffer-read-only?)
     (%redo)))
 
 ;; Line restore
-(defcommand (evil-line-restore)
+(defcommand (vim-line-restore)
   "vim: line restore\nRestore line to its state before edits began on it."
   (unless (buffer-read-only?)
     (%begin-change)
@@ -21,7 +21,7 @@
     (%end-change)))
 
 ;; Replay helpers for dottable operations
-(define (evil-replay-setup setup)
+(define (vim-replay-setup setup)
   (case setup
     ((insert) #t)
     ((replace) #t)
@@ -37,7 +37,7 @@
     ((paste-before-linewise) (line-start))
     (else #t)))
 
-(define (evil-insert-text text)
+(define (vim-insert-text text)
   (let ((len (string-length text)))
     (let loop ((i 0))
       (when (< i len)
@@ -45,11 +45,11 @@
         (loop (+ i 1))))))
 
 ;; Dot repeat
-(defcommand (evil-repeat)
+(defcommand (vim-repeat)
   "vim: repeat last change"
   (unless (buffer-read-only?)
   (let ((ri (%change-last-repeat-info))
-        (user-count evil-count))
+        (user-count vim-count))
     (when (repeat-info? ri)
       (let ((count (or user-count (ri-op-count ri))))
         (cond
@@ -69,16 +69,16 @@
                  (point-set! saved)
                  (op-proc (make-range start end2 'char)))
                ;; If operator entered insert mode and we have typed text, replay it
-               (if (and (%buffer-has-minor-mode? 'evil-insert-mode)
+               (if (and (%buffer-has-minor-mode? 'vim-insert-mode)
                         (ri-insert-text ri)
                         (> (string-length (ri-insert-text ri)) 0))
                    (begin
-                     (evil-insert-text (ri-insert-text ri))
+                     (vim-insert-text (ri-insert-text ri))
                      (%change-set-repeat-info! ri)
                      (%end-change)
-                     (evil-normal))
-                   (if (%buffer-has-minor-mode? 'evil-insert-mode)
-                       (set! evil-pending-repeat-info ri)
+                     (vim-normal))
+                   (if (%buffer-has-minor-mode? 'vim-insert-mode)
+                       (set! vim-pending-repeat-info ri)
                        (begin
                          (%change-set-repeat-info! ri)
                          (%end-change)))))))
@@ -93,16 +93,16 @@
                    (%begin-change)
                    (op-proc r)
                    ;; If operator entered insert mode and we have typed text, replay it
-                   (if (and (%buffer-has-minor-mode? 'evil-insert-mode)
+                   (if (and (%buffer-has-minor-mode? 'vim-insert-mode)
                             (ri-insert-text ri)
                             (> (string-length (ri-insert-text ri)) 0))
                        (begin
-                         (evil-insert-text (ri-insert-text ri))
+                         (vim-insert-text (ri-insert-text ri))
                          (%change-set-repeat-info! ri)
                          (%end-change)
-                         (evil-normal))
-                       (if (%buffer-has-minor-mode? 'evil-insert-mode)
-                           (set! evil-pending-repeat-info ri)
+                         (vim-normal))
+                       (if (%buffer-has-minor-mode? 'vim-insert-mode)
+                           (set! vim-pending-repeat-info ri)
                            (begin
                              (%change-set-repeat-info! ri)
                              (%end-change)))))))))
@@ -128,7 +128,7 @@
                           (loop (+ i 1))))
                       (point-set! (- (point-get) 1))))))
                (else
-                (evil-replay-setup (ri-setup ri))
+                (vim-replay-setup (ri-setup ri))
                 (if (eq? (ri-setup ri) 'replace)
                     ;; Replace mode: delete then insert per character
                     (let* ((text (ri-insert-text ri))
@@ -142,27 +142,27 @@
                           (insert-char (string-ref text i))
                           (loop (+ i 1)))))
                     ;; Normal insert
-                    (evil-insert-text (ri-insert-text ri)))))
+                    (vim-insert-text (ri-insert-text ri)))))
              (%change-set-repeat-info! ri)
              (%end-change)))
           (else #f)))))
-  (set! evil-count #f)
+  (set! vim-count #f)
   (message-clear)))
 
 ;; Count accumulation
-(defcommand (evil-digit-argument)
+(defcommand (vim-digit-argument)
   "vim: accumulate count prefix"
   (let ((ch (last-key-char)))
     (when (and ch (not (eq? ch #f)))
       (let ((digit (- (char->integer ch) (char->integer #\0))))
-        (set! evil-count (+ (* (or evil-count 0) 10) digit))
-        (message-echo (string-append (or evil-op-echo "") (number->string evil-count) "-"))))))
+        (set! vim-count (+ (* (or vim-count 0) 10) digit))
+        (message-echo (string-append (or vim-op-echo "") (number->string vim-count) "-"))))))
 
 ;; 0 key: line-start or append zero to count
-(defcommand (evil-zero)
+(defcommand (vim-zero)
   "vim: line start or append 0 to count"
-  (if evil-count
+  (if vim-count
       (begin
-        (set! evil-count (* evil-count 10))
-        (message-echo (string-append (or evil-op-echo "") (number->string evil-count) "-")))
-      (evil-execute-motion 'motion-0)))
+        (set! vim-count (* vim-count 10))
+        (message-echo (string-append (or vim-op-echo "") (number->string vim-count) "-")))
+      (vim-execute-motion 'motion-0)))

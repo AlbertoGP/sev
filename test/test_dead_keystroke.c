@@ -50,7 +50,7 @@ void test_first_j_after_file_load_moves_point(void) {
     // Precondition: point is at the top of the file.
     TEST_ASSERT_EQUAL_UINT(0, point_get(buf).pos);
 
-    // Act: the first `j` — this is what evil-motion-j calls.
+    // Act: the first `j` — this is what vim-motion-j calls.
     point_move_by_line(1);
 
     // SANITY CHECK: the second call should advance normally. If this fails,

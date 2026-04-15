@@ -52,7 +52,7 @@ void ModePill(AppState *state, Buffer *buf) {
         .isStaticallyAllocated = true
     };
 
-    ModeIconEntry *icon = (buf && !is_welcome) ? mode_icon_for_current_buffer() : mode_icon_get("evil-normal-mode");
+    ModeIconEntry *icon = (buf && !is_welcome) ? mode_icon_for_current_buffer() : mode_icon_get("vim-normal-mode");
     Clay_Color mode_bg = icon
         ? ui_resolve_color(state, icon->role_mode_bg)
         : ui_resolve_color(state, roles.mode_normal);

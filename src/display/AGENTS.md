@@ -59,7 +59,7 @@ UI component layer built on Clay. Each frame, declares the full layout hierarchy
 - **VLineCache lives per-Tab**: cache keys are (tab_width, font_id, font_size) — any change triggers full rebuild
 - **Tabs are owned by `PANE_DISPLAY` nodes**: no global tab list; each display pane has its own circular doubly-linked list
 - **Pane tree is always a binary tree** of splits terminating in `PANE_DISPLAY` leaves; root NULL means welcome screen
-- **Macro recording indicator**: driven by `state->macro_recording` (C flag), not `evil-recording-mode` minor mode
+- **Macro recording indicator**: driven by `state->macro_recording` (C flag), not `vim-recording-mode` minor mode
 - **Tooltip timer is one-shot**: fires `SDL_EVENT_USER` with code `TOOLTIP_SHOW_EVENT`; `event.c` must dispatch this to `tooltip_handle_show()`
 
 ## BufferPane Rendering Details

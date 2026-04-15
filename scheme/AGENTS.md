@@ -25,7 +25,7 @@ C primitives are exposed as `(editor primitives)`, registered synthetically in `
 (editor minibuffer)    ← imports primitives, command, mode
 (editor which-key)     ← imports primitives, command
   ↑
-(editor evil)          ← imports primitives, command, mode
+(editor vim)           ← imports primitives, command, mode
 (editor theme)         ← imports primitives only
 
 init.scm               ← imports all modules; sets global keybindings, mouse/welcome handlers, runs startup
@@ -51,16 +51,16 @@ Minibuffer keymap and mode (`minibuffer-mode`). `minibuffer-read` activates the 
 ### (editor which-key)
 `which-key-toggle` command wrapping `%which-key-toggle`.
 
-### (editor evil)
-Vim-like modal editing split across `scheme/editor/evil/`, all included in one scope by `evil.sld`.
+### (editor vim)
+Vim-like modal editing split across `scheme/editor/vim/`, all included in one scope by `vim.sld`.
 
-- **`core.scm`** — keymap declarations, all static key bindings (normal/insert/select/pending/command maps), mode registration and icons for the 6 evil minor modes, UTF-8 helpers, mode transition commands, state machine records, motion/operator/text-object registries, character classification, and the three dispatch functions (`evil-execute-motion`, `evil-enter-operator`, `evil-execute-text-object`).
-- **`undo.scm`** — `evil-undo`/`evil-redo`/`evil-line-restore`, dot-repeat infrastructure, count helpers.
+- **`core.scm`** — keymap declarations, all static key bindings (normal/insert/select/pending/command maps), mode registration and icons for the 6 vim minor modes, UTF-8 helpers, mode transition commands, state machine records, motion/operator/text-object registries, character classification, and the three dispatch functions (`vim-execute-motion`, `vim-enter-operator`, `vim-execute-text-object`).
+- **`undo.scm`** — `vim-undo`/`vim-redo`/`vim-line-restore`, dot-repeat infrastructure, count helpers.
 - **`motion.scm`** — motion registrations (h/j/k/l/0/$/^/w/b/e/W/B/E/goto-line/current-line), mark commands, jump list commands, f/F/t/T character-seek.
 - **`operator.scm`** — register helpers, delete/change/yank operators, character replace, compound entry commands, yank/paste commands.
 - **`text-object.scm`** — pair/quote/tag search helpers, text object registrations (word/WORD/sentence/paragraph/brackets/quotes/tags), dynamic `i`/`a` key bindings.
 - **`visual.scm`** — visual selection helpers, visual operator commands, visual mode key bindings.
-- **`macro.scm`** — `evil-recording-mode`, macro commands (`evil-start-macro`, `evil-stop-macro`, `evil-play-macro`), dynamic `q`/`@` bindings, activation calls.
+- **`macro.scm`** — `vim-recording-mode`, macro commands (`vim-start-macro`, `vim-stop-macro`, `vim-play-macro`), dynamic `q`/`@` bindings, activation calls.
 
 ### (editor theme)
 Theme registration and activation. `define-theme` stores a theme record in `*themes*`. `activate-theme` runs the three-step activation pipeline (see below). Bundled themes live in `scheme/editor/theme/`.
@@ -76,7 +76,7 @@ Loaded by `scheme.c`. Imports all `(editor ...)` modules. Sets global keybinding
 - Lookup order: minor mode keymaps → major mode keymap → global keymap (each traverses parent chain)
 - Only one major mode per buffer; multiple minor modes allowed
 - Minor modes with `allows_input: true` (insert, replace, minibuffer) capture unbound chars as `self-insert`
-- Evil state is pure Scheme; C only provides motion/edit primitives
+- Vim state is pure Scheme; C only provides motion/edit primitives
 - Theme activation is immediate; no persistence layer
 
 ## Common Modification Workflows
@@ -88,17 +88,17 @@ Loaded by `scheme.c`. Imports all `(editor ...)` modules. Sets global keybinding
 4. Export from the module's `.sld`
 5. `(set-key! keymap "key" 'name)`
 
-### Adding a new evil motion
-1. `(register-motion! 'name (lambda (count) ...))` in `evil/motion.scm`; lambda must move point
-2. `defcommand` wrapper calling `(evil-execute-motion 'name)`
-3. Bind in `normal-map`, `pending-map`, `select-map` (bindings in `evil/core.scm` or inline)
-4. Export from `editor/evil.sld`
+### Adding a new vim motion
+1. `(register-motion! 'name (lambda (count) ...))` in `vim/motion.scm`; lambda must move point
+2. `defcommand` wrapper calling `(vim-execute-motion 'name)`
+3. Bind in `normal-map`, `pending-map`, `select-map` (bindings in `vim/core.scm` or inline)
+4. Export from `editor/vim.sld`
 
-### Adding a new evil operator
-1. `(register-operator! 'name (lambda (range) ...))` in `evil/operator.scm`
-2. `defcommand` wrapper calling `(evil-enter-operator 'name)`
-3. Bind in `normal-map`; visual binding goes in `evil/visual.scm`
-4. Export from `editor/evil.sld`
+### Adding a new vim operator
+1. `(register-operator! 'name (lambda (range) ...))` in `vim/operator.scm`
+2. `defcommand` wrapper calling `(vim-enter-operator 'name)`
+3. Bind in `normal-map`; visual binding goes in `vim/visual.scm`
+4. Export from `editor/vim.sld`
 
 ### Adding a new mode
 1. `(define-minor-mode 'name keymap [allows-input])` or `(define-major-mode 'name "Display Name" [icon-or-#f [keymap]])` in `mode.scm`

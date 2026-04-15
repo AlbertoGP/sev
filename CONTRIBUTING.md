@@ -43,7 +43,7 @@ make vg             # run under Valgrind
 
 ### Scheme layer (no C required)
 
-The entire Vim modal editing system lives in `scheme/editor/evil/` — motions, operators, text objects, macros, visual mode. New evil commands, text objects, and motions are pure Scheme. Themes, commands, and modes are the same.
+The entire Vim modal editing system lives in `scheme/editor/vim/` — motions, operators, text objects, macros, visual mode. New vim commands, text objects, and motions are pure Scheme. Themes, commands, and modes are the same.
 
 See `scheme/AGENTS.md` for step-by-step workflows for each type of addition.
 

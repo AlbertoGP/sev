@@ -126,10 +126,10 @@ Buffer *buffer_create(const char *name) {
     if (default_mode)
         buffer_set_major_mode(buf, default_mode);
 
-    // Enable evil-normal-mode if registered (no-op before scheme_init)
-    Mode *evil = mode_lookup("evil-normal-mode", MODE_MINOR);
-    if (evil) {
-        buffer_enable_minor_mode(buf, evil);
+    // Enable vim-normal-mode if registered (no-op before scheme_init)
+    Mode *vim = mode_lookup("vim-normal-mode", MODE_MINOR);
+    if (vim) {
+        buffer_enable_minor_mode(buf, vim);
         sexp ctx = G->chibi.ctx;
         sexp key = sexp_intern(ctx, "mode-name", -1);
         sexp val = sexp_c_string(ctx, "Normal", -1);

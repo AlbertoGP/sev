@@ -5,7 +5,7 @@
 (define cursor-blink #t)
 
 (import (editor command) (editor mode) (editor icon)
-        (editor built-in) (editor evil) (editor theme)
+        (editor built-in) (editor vim) (editor theme)
         (editor minibuffer) (editor which-key))
 
 ;; ── Global keymap (base) ─────────────────────────────────────────────────────
@@ -69,8 +69,8 @@
 (%set-keymap-name!   pane-keymap "pane")
 
 ;; Mode / escape
-(set-key! pane-keymap "escape"     'evil-normal)
-(set-key! pane-keymap "ctrl-["     'evil-normal)
+(set-key! pane-keymap "escape"     'vim-normal)
+(set-key! pane-keymap "ctrl-["     'vim-normal)
 
 ;; Tab navigation
 (set-key! pane-keymap "ctrl-tab"       'tab-next)
@@ -88,15 +88,15 @@
 (set-key! pane-keymap "ctrl-="     'increase-buffer-scale)
 (set-key! pane-keymap "ctrl--"     'decrease-buffer-scale)
 
-;; Evil motions (cursor movement)
-(set-key! pane-keymap "h"       'evil-motion-h)
-(set-key! pane-keymap "j"       'evil-motion-j)
-(set-key! pane-keymap "k"       'evil-motion-k)
-(set-key! pane-keymap "l"       'evil-motion-l)
-(set-key! pane-keymap "left"    'evil-motion-h)
-(set-key! pane-keymap "down"    'evil-motion-j)
-(set-key! pane-keymap "up"      'evil-motion-k)
-(set-key! pane-keymap "right"   'evil-motion-l)
+;; Vim motions (cursor movement)
+(set-key! pane-keymap "h"       'vim-motion-h)
+(set-key! pane-keymap "j"       'vim-motion-j)
+(set-key! pane-keymap "k"       'vim-motion-k)
+(set-key! pane-keymap "l"       'vim-motion-l)
+(set-key! pane-keymap "left"    'vim-motion-h)
+(set-key! pane-keymap "down"    'vim-motion-j)
+(set-key! pane-keymap "up"      'vim-motion-k)
+(set-key! pane-keymap "right"   'vim-motion-l)
 
 ;; Pane navigation
 (set-key! pane-keymap "ctrl-h"     'pane-navigate-left)
@@ -155,22 +155,22 @@
 (%set-mouse-click-handler!
   (lambda (button buf-pos clicks)
     (when (= button 1)
-      (when (%buffer-has-minor-mode? 'evil-select-mode)
-        (evil-normal))
+      (when (%buffer-has-minor-mode? 'vim-select-mode)
+        (vim-normal))
       (point-set! buf-pos))))
 
 ;; Drag: on first motion enter visual-char mode anchored at the click position
 ;; (the click handler already moved point there), then track cursor.
-;; In evil buffers this activates evil-select-mode; in others point just follows.
+;; In vim buffers this activates vim-select-mode; in others point just follows.
 (%set-mouse-drag-handler!
   (lambda (current-pos start-pos)
-    (when (and (not (%buffer-has-minor-mode? 'evil-select-mode))
-               (or (%buffer-has-minor-mode? 'evil-normal-mode)
-                   (%buffer-has-minor-mode? 'evil-insert-mode)
-                   (%buffer-has-minor-mode? 'evil-replace-mode)))
-      ;; Point is at start-pos (set by click handler); evil-select anchors
-      ;; mark < there, then enables evil-select-mode with SELECT_REGULAR.
-      (evil-select))
+    (when (and (not (%buffer-has-minor-mode? 'vim-select-mode))
+               (or (%buffer-has-minor-mode? 'vim-normal-mode)
+                   (%buffer-has-minor-mode? 'vim-insert-mode)
+                   (%buffer-has-minor-mode? 'vim-replace-mode)))
+      ;; Point is at start-pos (set by click handler); vim-select anchors
+      ;; mark < there, then enables vim-select-mode with SELECT_REGULAR.
+      (vim-select))
     (point-set! current-pos)))
 
 ;; ── Welcome keymap ────────────────────────────────────────────────────────────

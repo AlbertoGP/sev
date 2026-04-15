@@ -3,7 +3,7 @@
 
 (define-minor-mode 'minibuffer-mode minibuffer-map #t)
 
-;; Dedicated cursor style: sky-coloured thin bar, distinct from evil cursors
+;; Dedicated cursor style: sky-coloured thin bar, distinct from vim cursors
 (register-mode-icon/full 'minibuffer-mode "icon-normal.svg"
                          'mode.minibuffer 'label.minibuffer
                          'cursor.minibuffer 'thin)

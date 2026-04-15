@@ -295,7 +295,7 @@ static void theme_confirm(sexp ctx, sexp sym) {
 }
 
 // Call a named command via the cached call-interactively.
-// Used to push/pop evil mode on minibuffer focus transitions.
+// Used to push/pop vim mode on minibuffer focus transitions.
 static void minibuf_invoke_command(sexp ctx, const char *name) {
     if (G->chibi.call_interactively == SEXP_FALSE) return;
     sexp sym = sexp_intern(ctx, name, -1);
@@ -326,11 +326,11 @@ bool minibuf_init(AppState *state) {
     if (mode)
         buffer_enable_minor_mode(buf, mode);
 
-    // buffer_create() auto-enables evil-normal-mode on every new buffer;
-    // remove it so the minibuf is fully isolated from evil keybindings.
-    Mode *evil = mode_lookup("evil-normal-mode", MODE_MINOR);
-    if (evil)
-        buffer_disable_minor_mode(buf, evil);
+    // buffer_create() auto-enables vim-normal-mode on every new buffer;
+    // remove it so the minibuf is fully isolated from vim keybindings.
+    Mode *vim = mode_lookup("vim-normal-mode", MODE_MINOR);
+    if (vim)
+        buffer_disable_minor_mode(buf, vim);
 
     return true;
 }
@@ -448,7 +448,7 @@ sexp scm_minibuffer_submit(sexp ctx, sexp self, sexp n) {
             buffer_set_current(G->minibuf.prev_buf);
             G->needs_redraw = true;
             if (G->minibuf.prev_buf)
-                minibuf_invoke_command(ctx, "evil-normal");
+                minibuf_invoke_command(ctx, "vim-normal");
         }
 
         if (cb_submit != SEXP_FALSE) sexp_release_object(ctx, cb_submit);
@@ -485,7 +485,7 @@ sexp scm_minibuffer_submit(sexp ctx, sexp self, sexp n) {
         G->needs_redraw = true;
         // Full dismiss: return the calling buffer to normal-mode.
         if (G->minibuf.prev_buf)
-            minibuf_invoke_command(ctx, "evil-normal");
+            minibuf_invoke_command(ctx, "vim-normal");
     }
 
     if (cb_submit != SEXP_FALSE) {
@@ -541,7 +541,7 @@ sexp scm_minibuffer_cancel(sexp ctx, sexp self, sexp n) {
         G->needs_redraw = true;
         // Full dismiss: return the calling buffer to normal-mode.
         if (G->minibuf.prev_buf)
-            minibuf_invoke_command(ctx, "evil-normal");
+            minibuf_invoke_command(ctx, "vim-normal");
     }
 
     if (cb_cancel != SEXP_FALSE) {

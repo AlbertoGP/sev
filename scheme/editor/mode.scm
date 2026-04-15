@@ -131,7 +131,7 @@
     (%get-local name default)))
 
 ;; Register a mode icon with full control over theme roles and cursor type.
-;; Used by evil.scm for per-mode colors.
+;; Used by vim core for per-mode colors.
 (define (register-mode-icon/full mode-name filename
                                  role-bg role-label role-cursor cursor-type)
   (%register-mode-icon! mode-name filename role-bg role-label role-cursor cursor-type))

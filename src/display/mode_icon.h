@@ -12,7 +12,7 @@
 #define MODE_ICON_MAX 32
 
 typedef struct ModeIconEntry {
-    const char *mode_name;       // e.g. "evil-normal-mode"
+    const char *mode_name;       // e.g. "vim-normal-mode"
     char icon_name[64];          // references icon registry
     sexp role_mode_bg;           // interned e.g. 'mode.normal
     sexp role_label;             // interned e.g. 'label.normal

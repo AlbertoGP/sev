@@ -1,6 +1,6 @@
 ;;; visual.scm - Visual mode operators and selection
 
-(define (evil-visual-range)
+(define (vim-visual-range)
   (let* ((anchor (%mark-position #\<))
          (point (point-get))
          (sel-min (min anchor point))
@@ -23,7 +23,7 @@
         (- le 1)
         le)))
 
-(define (evil-rect-bounds)
+(define (vim-rect-bounds)
   (let* ((anchor (%mark-position #\<))
          (point  (point-get))
          (la (%position-line anchor))
@@ -32,34 +32,34 @@
          (cb (- point  (%line-start-position lb))))
     (list (min la lb) (max la lb) (min ca cb) (+ (max ca cb) 1))))
 
-(define (evil-visual-rect-insert)
-  (let* ((b (evil-rect-bounds))
+(define (vim-visual-rect-insert)
+  (let* ((b (vim-rect-bounds))
          (row-min (list-ref b 0)) (row-max (list-ref b 1))
          (col-min (list-ref b 2)))
     (%begin-change)
-    (set! evil-rect-insert-info (list row-min row-max col-min #f))
-    (set! evil-pending-repeat-info
+    (set! vim-rect-insert-info (list row-min row-max col-min #f))
+    (set! vim-pending-repeat-info
       (make-repeat-info 'op-rect-insert 1 #f #f #f #f 'rect-insert #f))
     (point-set! (min (+ (%line-start-position row-min) col-min)
                      (%line-end-position row-min)))
-    (evil-insert)))
+    (vim-insert)))
 
-(define (evil-visual-rect-append)
-  (let* ((b (evil-rect-bounds))
+(define (vim-visual-rect-append)
+  (let* ((b (vim-rect-bounds))
          (row-min (list-ref b 0)) (row-max (list-ref b 1))
          (col-max (list-ref b 3))
          (ragged? (= (%select-mode-get) 4)))
     (%begin-change)
-    (set! evil-rect-insert-info (list row-min row-max col-max ragged?))
-    (set! evil-pending-repeat-info
+    (set! vim-rect-insert-info (list row-min row-max col-max ragged?))
+    (set! vim-pending-repeat-info
       (make-repeat-info 'op-rect-append 1 #f #f #f #f 'rect-append #f))
     (point-set! (if ragged?
                     (line-content-end row-min)
                     (min (+ (%line-start-position row-min) col-max)
                          (%line-end-position row-min))))
-    (evil-insert)))
+    (vim-insert)))
 
-(define (evil-rect-apply op . rest)
+(define (vim-rect-apply op . rest)
   (let* ((ragged? (and (not (null? rest)) (car rest)))
          (anchor (%mark-position #\<))
          (point (point-get))
@@ -86,7 +86,7 @@
       (point-set! (min (+ ls col-min)
                        (%line-end-position row-min))))))
 
-(define (evil-visual-delete)
+(define (vim-visual-delete)
   (%begin-change)
   (let ((mode (%select-mode-get)))
     (if (rect-mode? mode)
@@ -105,8 +105,8 @@
           (let collect ((line row-min) (parts '()))
             (if (> line row-max)
                 (let* ((text (string-join-newlines (reverse parts)))
-                       (saved-reg current-evil-register))
-                  (evil-register-write! text 'blockwise)
+                       (saved-reg current-vim-register))
+                  (vim-register-write! text 'blockwise)
                   (let ((actual (if (char-upper-case? saved-reg)
                                     (char-downcase saved-reg)
                                     saved-reg)))
@@ -121,9 +121,9 @@
                                   (%buffer-substring start end)
                                   "")))
                   (collect (+ line 1) (cons chunk parts)))))
-          (evil-rect-apply delete-range ragged?))
+          (vim-rect-apply delete-range ragged?))
         (let* ((shape (if (= mode 2) 'linewise 'charwise))
-               (range (evil-visual-range)))
+               (range (vim-visual-range)))
           (let* ((start (range-start range))
                  (end   (range-end range))
                  (text  (%buffer-substring start end))
@@ -135,34 +135,34 @@
                                  (char=? (char-at (- start 1)) #\newline))
                             (- start 1)
                             start)))
-            (evil-register-write! text shape)
+            (vim-register-write! text shape)
             (point-set! start)
             (delete-range start end)))))
   (%change-set-repeat-info!
     (make-repeat-info 'op-delete 1 #f #f
-                      evil-last-visual-text-object
-                      evil-last-visual-text-object-kind #f #f))
+                      vim-last-visual-text-object
+                      vim-last-visual-text-object-kind #f #f))
   (%end-change)
-  (evil-normal))
+  (vim-normal))
 
-(define (evil-visual-change)
+(define (vim-visual-change)
   (%begin-change)
-  (set! evil-pending-repeat-info
+  (set! vim-pending-repeat-info
     (make-repeat-info 'op-change 1 #f #f
-                      evil-last-visual-text-object
-                      evil-last-visual-text-object-kind #f #f))
+                      vim-last-visual-text-object
+                      vim-last-visual-text-object-kind #f #f))
   (let ((mode (%select-mode-get)))
     (if (rect-mode? mode)
         ;; rectangle: delete rect, enter insert at upper-left
-        (let* ((b (evil-rect-bounds))
+        (let* ((b (vim-rect-bounds))
                (row-min (list-ref b 0)) (row-max (list-ref b 1))
                (col-min (list-ref b 2))
                (ragged? (= mode 4)))
-          (set! evil-rect-insert-info (list row-min row-max col-min #f))
-          (evil-rect-apply delete-range ragged?)
-          (evil-insert))
+          (set! vim-rect-insert-info (list row-min row-max col-min #f))
+          (vim-rect-apply delete-range ragged?)
+          (vim-insert))
         ;; char or line
-        (let ((range (evil-visual-range)))
+        (let ((range (vim-visual-range)))
           (let* ((start (range-start range))
                  (end (range-end range))
                  ;; for line mode: strip trailing newline so we stay on same line
@@ -172,9 +172,9 @@
                           (- end 1) end)))
             (point-set! start)
             (delete-range start end)
-            (evil-insert))))))
+            (vim-insert))))))
 
-(define (evil-visual-yank)
+(define (vim-visual-yank)
   (let* ((mode (%select-mode-get))
          (anchor (%mark-position #\<))
          (cur-point (point-get))
@@ -194,8 +194,8 @@
           (let collect ((line row-min) (parts '()))
             (if (> line row-max)
                 (let* ((text (string-join-newlines (reverse parts)))
-                       (saved-reg current-evil-register))
-                  (evil-register-write! text 'blockwise)
+                       (saved-reg current-vim-register))
+                  (vim-register-write! text 'blockwise)
                   (let ((actual (if (char-upper-case? saved-reg)
                                     (char-downcase saved-reg)
                                     saved-reg)))
@@ -210,15 +210,15 @@
                                   (%buffer-substring start end)
                                   "")))
                   (collect (+ line 1) (cons chunk parts))))))
-        (let ((range (evil-visual-range)))
-          (evil-register-write!
+        (let ((range (vim-visual-range)))
+          (vim-register-write!
             (%buffer-substring (range-start range) (range-end range))
             (if (= mode 2) 'linewise 'charwise))))
     (point-set! sel-min)
-    (evil-normal)))
+    (vim-normal)))
 
-(define (evil-visual-paste)
-  (let* ((reg current-evil-register)
+(define (vim-visual-paste)
+  (let* ((reg current-vim-register)
          (text (if (char=? reg #\+)
                    (let ((s (%clipboard-get)))
                      (if (string=? s "") #f s))
@@ -228,7 +228,7 @@
       (%begin-change)
       (let ((mode (%select-mode-get)))
         (if (rect-mode? mode)
-            (let* ((b (evil-rect-bounds))
+            (let* ((b (vim-rect-bounds))
                    (row-min (list-ref b 0))
                    (row-max (list-ref b 1))
                    (col-min (list-ref b 2))
@@ -238,7 +238,7 @@
               ;; Collect deleted content top-to-bottom for register swap
               (let collect ((line row-min) (parts '()))
                 (if (> line row-max)
-                    (evil-register-write! (string-join-newlines (reverse parts)) 'blockwise)
+                    (vim-register-write! (string-join-newlines (reverse parts)) 'blockwise)
                     (let* ((ls (%line-start-position line))
                            (le (%line-end-position line))
                            (start (+ ls col-min))
@@ -268,7 +268,7 @@
                                (%line-end-position row-min))))
             ;; Char/line: delete selection, paste in place
             (let* ((shape-out (if (= mode 2) 'linewise 'charwise))
-                   (range (evil-visual-range))
+                   (range (vim-visual-range))
                    (r-start (range-start range))
                    (r-end   (range-end range))
                    (deleted (%buffer-substring r-start r-end))
@@ -278,7 +278,7 @@
                                        (char=? (char-at (- r-start 1)) #\newline))
                                   (- r-start 1)
                                   r-start)))
-              (evil-register-write! deleted shape-out)
+              (vim-register-write! deleted shape-out)
               (point-set! del-start)
               (delete-range del-start r-end)
               (cond
@@ -287,7 +287,7 @@
                         (cur-ls   (%line-start-position cur-line))
                         (col      (- (point-get) cur-ls))
                         (lines    (string-split-newlines text)))
-                   (evil-paste-block lines col)
+                   (vim-paste-block lines col)
                    (point-set! (+ (%line-start-position cur-line) col))))
                 ((eq? shape 'linewise)
                  (let ((stripped (strip-trailing-newline text)))
@@ -301,15 +301,15 @@
                    (%insert-string text)
                    (point-set! paste-start)))))))
       (%end-change)))
-  (set! current-evil-register #\")
-  (evil-normal))
+  (set! current-vim-register #\")
+  (vim-normal))
 
 ;;;
-;;; Linewise-force helper (used by evil-D and evil-X in visual mode)
+;;; Linewise-force helper (used by vim-D and vim-X in visual mode)
 ;;;
 
 ;; Delete all lines spanned by the current visual selection, regardless of select mode.
-(define (evil-visual-force-linewise-delete)
+(define (vim-visual-force-linewise-delete)
   (%begin-change)
   (let* ((anchor (%mark-position #\<))
          (cur-point (point-get))
@@ -325,95 +325,95 @@
                          (char=? (char-at (- start 1)) #\newline))
                     (- start 1)
                     start)))
-    (evil-register-write! text 'linewise)
+    (vim-register-write! text 'linewise)
     (point-set! start)
     (delete-range start end))
   (%change-set-repeat-info!
     (make-repeat-info 'op-delete 1 #f #f
-                      evil-last-visual-text-object
-                      evil-last-visual-text-object-kind #f #f))
+                      vim-last-visual-text-object
+                      vim-last-visual-text-object-kind #f #f))
   (%end-change)
-  (evil-normal))
+  (vim-normal))
 
 ;;;
 ;;; Mode-aware commands (normal + visual dispatch)
 ;;;
 
-(defcommand (evil-A)
+(defcommand (vim-A)
   "vim: append to line or selection\nIn normal mode, move to end of line and enter insert mode.\nIn visual mode, enter insert mode at the right column of each line in the rectangle."
   (if (> (%select-mode-get) 0)
-      (evil-visual-rect-append)
+      (vim-visual-rect-append)
       (append-line)))
 
-(defcommand (evil-I)
+(defcommand (vim-I)
   "vim: insert at line start or selection\nIn normal mode, move to first non-blank and enter insert mode.\nIn visual mode, enter insert mode at the left column of each line in the rectangle."
   (if (> (%select-mode-get) 0)
-      (evil-visual-rect-insert)
+      (vim-visual-rect-insert)
       (insert-at-start)))
 
-(defcommand (evil-d)
+(defcommand (vim-d)
   "vim: delete operator or selection\nIn normal mode, enter operator-pending state; combine with a motion to delete.\nIn visual mode, delete the selection."
   (unless (buffer-read-only?)
     (if (> (%select-mode-get) 0)
-        (evil-visual-delete)
-        (evil-op-delete))))
+        (vim-visual-delete)
+        (vim-op-delete))))
 
-(defcommand (evil-c)
+(defcommand (vim-c)
   "vim: change operator or selection\nIn normal mode, enter operator-pending state; combine with a motion to change.\nIn visual mode, delete the selection and enter insert mode."
   (unless (buffer-read-only?)
     (if (> (%select-mode-get) 0)
-        (evil-visual-change)
-        (evil-op-change))))
+        (vim-visual-change)
+        (vim-op-change))))
 
-(defcommand (evil-y)
+(defcommand (vim-y)
   "vim: yank operator or selection\nIn normal mode, enter operator-pending state; combine with a motion to yank.\nIn visual mode, yank the selection."
   (if (> (%select-mode-get) 0)
-      (evil-visual-yank)
-      (evil-op-yank)))
+      (vim-visual-yank)
+      (vim-op-yank)))
 
-(defcommand (evil-x)
+(defcommand (vim-x)
   "vim: delete character or selection\nIn normal mode, delete character(s) forward.\nIn visual mode, delete the selection."
   (unless (buffer-read-only?)
     (if (> (%select-mode-get) 0)
-        (evil-visual-delete)
-        (evil-x-impl))))
+        (vim-visual-delete)
+        (vim-x-impl))))
 
-(defcommand (evil-p)
+(defcommand (vim-p)
   "vim: paste after cursor or into selection\nIn normal mode, paste register contents after the cursor.\nIn visual mode, paste register contents replacing the selection."
   (unless (buffer-read-only?)
     (if (> (%select-mode-get) 0)
-        (evil-visual-paste)
-        (evil-paste-after))))
+        (vim-visual-paste)
+        (vim-paste-after))))
 
-(defcommand (evil-P)
+(defcommand (vim-P)
   "vim: paste before cursor or into selection\nIn normal mode, paste register contents before the cursor.\nIn visual mode, paste register contents replacing the selection."
   (unless (buffer-read-only?)
     (if (> (%select-mode-get) 0)
-        (evil-visual-paste)
-        (evil-paste-before))))
+        (vim-visual-paste)
+        (vim-paste-before))))
 
 ;; Visual mode operator bindings
-(set-key! select-map "d" 'evil-d)
-(set-key! select-map "x" 'evil-x)
-(set-key! select-map "c" 'evil-c)
-(set-key! select-map "s" 'evil-c)
-(set-key! select-map "D" 'evil-D)
-(set-key! select-map "C" 'evil-c)
-(set-key! select-map "S" 'evil-S)
-(set-key! select-map "X" 'evil-X)
-(set-key! select-map "y" 'evil-y)
-(set-key! select-map "I" 'evil-I)
-(set-key! select-map "A" 'evil-A)
-(set-key! select-map "p" 'evil-p)
-(set-key! select-map "P" 'evil-P)
+(set-key! select-map "d" 'vim-d)
+(set-key! select-map "x" 'vim-x)
+(set-key! select-map "c" 'vim-c)
+(set-key! select-map "s" 'vim-c)
+(set-key! select-map "D" 'vim-D)
+(set-key! select-map "C" 'vim-c)
+(set-key! select-map "S" 'vim-S)
+(set-key! select-map "X" 'vim-X)
+(set-key! select-map "y" 'vim-y)
+(set-key! select-map "I" 'vim-I)
+(set-key! select-map "A" 'vim-A)
+(set-key! select-map "p" 'vim-p)
+(set-key! select-map "P" 'vim-P)
 
 ;; Visual mode motion bindings
-(set-key! select-map "w" 'evil-motion-w)
-(set-key! select-map "b" 'evil-motion-b)
-(set-key! select-map "e" 'evil-motion-e)
-(set-key! select-map "W" 'evil-motion-W)
-(set-key! select-map "B" 'evil-motion-B)
-(set-key! select-map "E" 'evil-motion-E)
-(set-key! select-map "%" 'evil-motion-%)
-(set-key! select-map "g g" 'evil-motion-gg)
-(set-key! select-map "G" 'evil-motion-G)
+(set-key! select-map "w" 'vim-motion-w)
+(set-key! select-map "b" 'vim-motion-b)
+(set-key! select-map "e" 'vim-motion-e)
+(set-key! select-map "W" 'vim-motion-W)
+(set-key! select-map "B" 'vim-motion-B)
+(set-key! select-map "E" 'vim-motion-E)
+(set-key! select-map "%" 'vim-motion-%)
+(set-key! select-map "g g" 'vim-motion-gg)
+(set-key! select-map "G" 'vim-motion-G)
