@@ -388,6 +388,13 @@ sexp scm_line_restore(sexp ctx, sexp self, sexp n) {
         return SEXP_VOID;
     }
 
+    // Save local copy: delete_chars() frees buf->line_restore_text when it
+    // removes the trailing \n of the line (buffer_edit.c delete_chars path).
+    size_t restore_len = buf->line_restore_len;
+    char *restore_text = malloc(restore_len);
+    if (!restore_text) return SEXP_VOID;
+    memcpy(restore_text, buf->line_restore_text, restore_len);
+
     const LineTable *lt = buffer_get_line_table(buf);
     size_t li = line_index_at(lt, point_get(buf).pos);
     size_t start = lt->lines[li].start;
@@ -402,11 +409,14 @@ sexp scm_line_restore(sexp ctx, sexp self, sexp n) {
     }
 
     // Insert snapshot text
-    for (size_t i = 0; i < buf->line_restore_len; i++) {
-        insert_char(buf, buf->line_restore_text[i]);
+    for (size_t i = 0; i < restore_len; i++) {
+        insert_char(buf, restore_text[i]);
     }
+    free(restore_text);
 
-    // Move to line start
-    point_to_line_start(buf);
+    // Return to the start of the restored line. The insert loop above advances
+    // point past the trailing \n, so point_to_line_start would land on the
+    // NEXT line rather than the restored one.
+    point_set((Location){.pos = start});
     return SEXP_VOID;
 }

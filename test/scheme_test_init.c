@@ -16,6 +16,7 @@
 #include "../src/state.h"
 #include "../src/command/scheme_bindings.h"
 #include "../src/text/buffer.h"
+#include "../src/text/change.h"
 
 extern AppState *G;
 
@@ -130,11 +131,27 @@ STUB0(stub_clear_palette)
 STUB0(stub_clear_roles)
 STUB0(stub_clipboard_get)
 STUB1(stub_clipboard_set)
-STUB1(stub_macro_start)
-STUB0(stub_macro_stop)
+static sexp real_macro_start(sexp ctx, sexp self, sexp n, sexp sname) {
+    (void)self; (void)n;
+    if (!sexp_charp(sname)) return SEXP_VOID;
+    char ch = (char)sexp_unbox_character(sname);
+    if (ch < 'a' || ch > 'z') return SEXP_VOID;
+    if (G->macro_recording) return SEXP_VOID;
+    G->macro_recording = true;
+    G->macro_skip_next = true;
+    G->macro_target_reg = (int)(ch - 'a');
+    G->macro_buf_len = 0;
+    return SEXP_VOID;
+}
+static sexp real_macro_stop(sexp ctx, sexp self, sexp n) {
+    (void)ctx; (void)self; (void)n;
+    G->macro_recording = false;
+    return SEXP_VOID;
+}
 STUB1(stub_macro_play)
-static sexp stub_macro_recording_p(sexp ctx, sexp self, sexp n) {
-    (void)ctx; (void)self; (void)n; return SEXP_FALSE;
+static sexp real_macro_recording_p(sexp ctx, sexp self, sexp n) {
+    (void)ctx; (void)self; (void)n;
+    return G->macro_recording ? SEXP_TRUE : SEXP_FALSE;
 }
 STUB3(stub_minibuffer_activate)
 STUB0(stub_minibuffer_submit)
@@ -169,6 +186,7 @@ static sexp scm_test_reset_buffer(sexp ctx, sexp self, sexp n, sexp stext) {
         return sexp_user_exception(ctx, self, "expected string", stext);
     Buffer *buf = buffer_get_current();
     if (!buf) return sexp_user_exception(ctx, self, "no current buffer", SEXP_FALSE);
+    change_free_all(buf, ctx);  // clear undo/redo so tests don't bleed state
     buffer_clear(buf);
     insert_string(buf, sexp_string_data(stext));
     point_set((Location){.pos = 0});
@@ -351,10 +369,10 @@ void scheme_test_init(void) {
     SDEF("%clear-roles!",       0, stub_clear_roles);
     SDEF("%clipboard-get",      0, stub_clipboard_get);
     SDEF("%clipboard-set!",     1, stub_clipboard_set);
-    SDEF("%macro-start!",       1, stub_macro_start);
-    SDEF("%macro-stop!",        0, stub_macro_stop);
-    SDEF("%macro-play",         1, stub_macro_play);
-    SDEF("%macro-recording?",   0, stub_macro_recording_p);
+    SDEF("%macro-start!",       1, real_macro_start);
+    SDEF("%macro-stop!",        0, real_macro_stop);
+    SDEF("%macro-play",         1, stub_macro_play);   // key_dispatch dep — stays stubbed
+    SDEF("%macro-recording?",   0, real_macro_recording_p);
     SDEF("%minibuffer-activate",3, stub_minibuffer_activate);
     SDEF("%minibuffer-submit",  0, stub_minibuffer_submit);
     SDEF("%minibuffer-cancel",  0, stub_minibuffer_cancel);
