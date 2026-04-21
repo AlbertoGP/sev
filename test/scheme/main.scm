@@ -13,6 +13,8 @@
 (include "test/scheme/vim/visual-test.scm")
 (include "test/scheme/vim/undo-test.scm")
 (include "test/scheme/vim/macro-test.scm")
+(include "test/scheme/vim/text-object-test.scm")
+(include "test/scheme/vim/core-test.scm")
 
 (test-begin "sev-scheme")
 
@@ -21,6 +23,8 @@
 (run-vim-visual-tests)
 (run-vim-undo-tests)
 (run-vim-macro-tests)
+(run-vim-text-object-tests)
+(run-vim-core-tests)
 
 (define runner (test-runner-current))
 (define *fail-count* (test-runner-fail-count runner))

@@ -4,6 +4,9 @@
           (srfi 9) (srfi 69)
           (editor primitives) (editor command) (editor mode))
   (export
+    vim-word-char? vim-whitespace? vim-punctuation?
+    utf8-byte-len-at count-chars-in-range
+    text-object-for-char
     vim-normal vim-insert vim-replace
     vim-select vim-select-line vim-select-rectangle vim-visual-dollar
     rect-mode?

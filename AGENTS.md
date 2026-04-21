@@ -93,6 +93,8 @@ Clay immediate-mode UI with SDL3 renderer backend. Layout defined in `layout.c`:
 
 - The Unity testing library (by throwtheswitch.org) is included in `/test/unity/`
 
+- See `test/README.md` for info about testing and common flows to add tests.
+
 ## Dependencies
 
 Vendored as git submodules in `vendored/`:
