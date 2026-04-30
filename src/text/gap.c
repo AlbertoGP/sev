@@ -175,7 +175,7 @@ char *gb_text(GapBuf *buf) {
 }
 
 char gb_char_at(GapBuf *buf, size_t index) {
-    if (index > gb_used(buf)) return '\0';
+    if (index >= gb_used(buf)) return '\0';
     if (index < gb_front(buf)) {
         return buf->buffer[index];
     } else {
