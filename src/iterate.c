@@ -64,8 +64,16 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         tab_free_strings();
         pane_free_strings();
         bar_free_strings();
-        render_commands = create_app_layout(state, delta_time);
         state->needs_extra_frame = false;
+        render_commands = create_app_layout(state, delta_time);
+        /* If the second pass itself requested another extra frame (e.g. new
+         * element still missing bounding box data), push a wakeup event so
+         * SDL doesn't sleep until the next external event. */
+        if (state->needs_extra_frame) {
+            SDL_Event ev = {0};
+            ev.type = SDL_EVENT_USER;
+            SDL_PushEvent(&ev);
+        }
     }
 
     /* Skip GPU work when layout output is unchanged (and not animating/forced) */

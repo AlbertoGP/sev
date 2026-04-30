@@ -18,14 +18,12 @@ static void HandleWelcomeRowClick(Clay_ElementId id, Clay_PointerData p, void *u
     (void)id;
     if (p.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
     pending_welcome_cmd = (const char *)userData;
-    G->needs_extra_frame = true;
 }
 
 static void HandleProjectRowClick(Clay_ElementId id, Clay_PointerData p, void *userData) {
     (void)id;
     if (p.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
     pending_project_path = (const char *)userData;
-    G->needs_extra_frame = true;
 }
 
 void welcome_flush_pending(void) {

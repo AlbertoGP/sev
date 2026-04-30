@@ -579,31 +579,30 @@ sexp scm_pane_navigate_right(sexp ctx, sexp self, sexp n) {
 }
 
 sexp scm_pane_v_split_increase(sexp ctx, sexp self, sexp n) {
-    G->needs_extra_frame = true; message_clear();
+    message_clear();
     if (pane_v_split_increase()) message_send("pane-v-split-increase");
     return SEXP_VOID;
 }
 
 sexp scm_pane_v_split_decrease(sexp ctx, sexp self, sexp n) {
-    G->needs_extra_frame = true; message_clear();
+    message_clear();
     if (pane_v_split_decrease()) message_send("pane-v-split-decrease");
     return SEXP_VOID;
 }
 
 sexp scm_pane_h_split_increase(sexp ctx, sexp self, sexp n) {
-    G->needs_extra_frame = true; message_clear();
+    message_clear();
     if (pane_h_split_increase()) message_send("pane-h-split-increase");
     return SEXP_VOID;
 }
 
 sexp scm_pane_h_split_decrease(sexp ctx, sexp self, sexp n) {
-    G->needs_extra_frame = true; message_clear();
+    message_clear();
     if (pane_h_split_decrease()) message_send("pane-h-split-decrease");
     return SEXP_VOID;
 }
 
 sexp scm_split_vertical(sexp ctx, sexp self, sexp n) {
-    G->needs_extra_frame = true;
     Pane *pane = pane_get_active();
     if (pane) pane_split_vertical(pane);
     message_send("split-vertical");
@@ -611,7 +610,6 @@ sexp scm_split_vertical(sexp ctx, sexp self, sexp n) {
 }
 
 sexp scm_split_horizontal(sexp ctx, sexp self, sexp n) {
-    G->needs_extra_frame = true;
     Pane *pane = pane_get_active();
     if (pane) pane_split_horizontal(pane);
     message_send("split-horizontal");

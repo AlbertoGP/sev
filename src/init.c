@@ -153,7 +153,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     }
 #endif
 
-    state->needs_extra_frame = true;
     state->animating = false;
     state->last_frame_ns = 0;
     cursor_flash_reset(state);

@@ -34,8 +34,6 @@ static sexp scm_eval_buffer(sexp ctx, sexp self, sexp n) {
     free(eval_src);
 
     if (sexp_exceptionp(result)) {
-        G->needs_extra_frame = true;
-
         sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
         str = sexp_write_to_string(ctx, sexp_exception_message(result));
         Pane *pane = pane_split_horizontal(pane_get_active());
@@ -87,7 +85,6 @@ static sexp scm_pop_to_buffer(sexp ctx, sexp self, sexp n, sexp sname) {
     }
     tab_set_buffer(pane->content.active_tab, buf);
     pane_set_active(pane);
-    G->needs_extra_frame = true;
     return SEXP_VOID;
 }
 

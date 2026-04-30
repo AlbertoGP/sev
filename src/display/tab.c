@@ -198,7 +198,6 @@ void tab_close(void) {
 }
 
 sexp scm_tab_close(sexp ctx, sexp self, sexp n) {
-    G->needs_extra_frame = true;
     tab_close();
     message_send("tab-close");
     return SEXP_VOID;
@@ -273,6 +272,7 @@ void tab_flush_pending_close(void) {
         close_tab(pending_close_pane, pending_close_tab);
         pending_close_pane = NULL;
         pending_close_tab  = NULL;
+        G->needs_extra_frame = true;
     }
     if (pending_new_tab_pane) {
         if (!pending_new_tab_pane->content.active) pane_set_active(pending_new_tab_pane);
@@ -282,6 +282,7 @@ void tab_flush_pending_close(void) {
         if (sexp_exceptionp(result))
             sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
         pending_new_tab_pane = NULL;
+        G->needs_extra_frame = true;
     }
     G->input.middle_pressed_this_frame = false;
     G->input.left_double_click_this_frame = false;
