@@ -1827,10 +1827,11 @@ Clay_LayoutElementHashMapItem* Clay__AddHashMapItem(Clay_ElementId elementId, Cl
     int32_t indexToUse = 0;
     if (context->layoutElementsHashMapFreeList.length > 0) {
         indexToUse = Clay__int32_tArray_GetValue(&context->layoutElementsHashMapFreeList, context->layoutElementsHashMapFreeList.length - 1);
-        if (indexToUse == hashItemPrevious) {
-            int x = 5;
+        if (indexToUse != hashItemPrevious) {
+            context->layoutElementsHashMapFreeList.length--;
+        } else {
+            indexToUse = context->layoutElementsHashMapInternal.length;
         }
-        context->layoutElementsHashMapFreeList.length--;
     } else {
         indexToUse = context->layoutElementsHashMapInternal.length;
     }
@@ -4746,16 +4747,14 @@ Clay_RenderCommandArray Clay_EndLayout(float deltaTime) {
     for (int i = 0; i < context->layoutElementsHashMap.capacity; ++i) {
         int32_t currentElementIndex = context->layoutElementsHashMap.internalArray[i];
         int32_t previousElementIndex = -1;
-        int32_t listDepth = 0;
         while (currentElementIndex != -1) {
             Clay_LayoutElementHashMapItem* currentItem = Clay__LayoutElementHashMapItemArray_Get(&context->layoutElementsHashMapInternal, currentElementIndex);
             int32_t nextIndex = currentItem->nextIndex;
             // Needs to be pruned
             if (currentItem->generation <= context->generation) {
                 // If it's the very top of the bucket, rewrite the first bucket pointer
-                if (listDepth == 0) {
+                if (previousElementIndex == -1) {
                     Clay__int32_tArray_Set(&context->layoutElementsHashMap, i, nextIndex);
-                    listDepth--;
                 } else {
                     // Rewrite previous pointer
                     Clay_LayoutElementHashMapItem* previousItem = Clay__LayoutElementHashMapItemArray_Get(&context->layoutElementsHashMapInternal, previousElementIndex);
@@ -4764,11 +4763,11 @@ Clay_RenderCommandArray Clay_EndLayout(float deltaTime) {
                 // Delete the underlying item and add it to the freelist
                 Clay__LayoutElementHashMapItemArray_Set(&context->layoutElementsHashMapInternal, currentElementIndex, CLAY__INIT(Clay_LayoutElementHashMapItem) { .nextIndex = -1 });
                 Clay__int32_tArray_Add(&context->layoutElementsHashMapFreeList, currentElementIndex);
+            } else {
+                previousElementIndex = currentElementIndex;
             }
 
-            previousElementIndex = currentElementIndex;
             currentElementIndex = nextIndex;
-            listDepth++;
         }
     }
 
