@@ -197,6 +197,9 @@ void point_to_line_start(Buffer *buf);
 void point_to_line_end(Buffer *buf);
 
 char *buffer_text(Buffer *buf);
+// Returns a cached serialisation of the gap buffer. Valid until the next edit.
+// The caller must NOT free this pointer; it is owned by the buffer.
+const char *buffer_text_cached(Buffer *buf);
 char char_at_point(void);
 char char_from_point(int n);
 int buf_char_at(Buffer *buf, size_t index);

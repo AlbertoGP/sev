@@ -54,6 +54,8 @@ static void buffer_destroy(Buffer *buf) {
     }
     free(buf->saved_text);
     buf->saved_text = NULL;
+    free(buf->text_cache);
+    buf->text_cache = NULL;
     free(buf->diff_markers);
     buf->diff_markers = NULL;
     line_table_destroy(&buf->lt);

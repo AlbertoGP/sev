@@ -73,6 +73,9 @@ typedef struct Buffer {
     Change *current_change;
     int suppress_recording;
 
+    char    *text_cache;
+    uint32_t text_cache_seq;
+
     char *line_restore_text;
     size_t line_restore_len;
     size_t line_restore_line;

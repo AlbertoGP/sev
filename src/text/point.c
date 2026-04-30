@@ -340,6 +340,15 @@ char *buffer_text(Buffer *buf) {
     return gb_text(buf->contents);
 }
 
+const char *buffer_text_cached(Buffer *buf) {
+    if (buf->text_cache && buf->text_cache_seq == buf->edit_sequence)
+        return buf->text_cache;
+    free(buf->text_cache);
+    buf->text_cache = gb_text(buf->contents);
+    buf->text_cache_seq = buf->edit_sequence;
+    return buf->text_cache;
+}
+
 char char_at_point(void) {
     Buffer *buf = buffer_get_current();
     if (point_get(buf).pos == get_char_count(buf)) return '\0';

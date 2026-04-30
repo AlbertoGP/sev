@@ -852,8 +852,7 @@ void BufferContentRender(AppState *state, ContentPane *cp, Tab *tab, int32_t ind
     Buffer *buf = tab->content.buffer.buffer;
     if (!buf) return;
 
-    char *chars = buffer_text(buf);
-    tab_register_string(chars);
+    const char *chars = buffer_text_cached(buf);
 
     // Per-frame diff markers against the last-saved snapshot. NULL when the
     // buffer has never been saved or is currently unmodified.

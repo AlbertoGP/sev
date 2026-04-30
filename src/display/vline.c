@@ -343,7 +343,7 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
     const LineTable *lt = buffer_get_line_table(buf);
     if (!lt || !lt->lines) return;
 
-    const char *text = buffer_text(buf);
+    const char *text = buffer_text_cached(buf);
     if (!text) { cache->full_rebuild = true; return; }
 
     if (full_rebuild) {
@@ -387,7 +387,6 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
             cache->index = old_index;
             cache->index_cap = old_index_cap;
             cache->full_rebuild = true;
-            free((char*)text);
             vline_rebuild(cache, buf, renderer, pane_width, font_id, font_size, tab_width, wrap_lines, render_gen);
             return;
         }
@@ -456,8 +455,6 @@ void vline_rebuild(VLineCache *cache, struct Buffer *buf,
             cache->target_scroll_x = max_scroll_x;
         }
     }
-
-    free((char*)text);
 
     // Shrink if underutilized
     vline_cache_shrink(cache);
