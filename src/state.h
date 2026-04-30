@@ -198,7 +198,6 @@ typedef struct {
 typedef struct AppState {
     SDL_Window *window;
     Clay_SDL3RendererData rendererData;
-    bool needs_redraw;
     bool needs_extra_frame;
     bool animating;
     uint32_t render_gen;

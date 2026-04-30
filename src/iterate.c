@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #include "state.h"
+#include "clay/renderer.h"
 #include "display/layout.h"
 #include "display/pane.h"
 #include "display/status.h"
@@ -26,21 +27,16 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     Uint64 now = SDL_GetTicksNS();
 
-    /* Idle: nothing to do */
-    if (!state->needs_redraw && !state->needs_extra_frame && !state->animating) {
+    if (!state->animating) {
         set_callback_rate(false);
 #ifndef __EMSCRIPTEN__
         SDL_Delay(16);
 #endif
-        return SDL_APP_CONTINUE;
-    }
-
-    set_callback_rate(state->animating);
-
+    } else {
+        set_callback_rate(true);
 #ifndef __EMSCRIPTEN__
-    /* Animation FPS cap (desktop only - browser uses requestAnimationFrame) */
-    static const Uint64 FRAME_NS = 1000000000ULL / 60;
-    if (state->animating) {
+        /* Animation FPS cap (desktop only - browser uses requestAnimationFrame) */
+        static const Uint64 FRAME_NS = 1000000000ULL / 60;
         if (state->last_frame_ns != 0) {
             Uint64 elapsed = now - state->last_frame_ns;
             if (elapsed < FRAME_NS) {
@@ -48,29 +44,43 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 return SDL_APP_CONTINUE;
             }
         }
-    }
 #endif
+    }
+
     uint64_t new_time = SDL_GetTicksNS();
-    float delta_time = ((float) SDL_GetTicksNS() - state->last_frame_ns) / 1e9;
+    float delta_time = ((float) new_time - state->last_frame_ns) / 1e9;
     state->last_frame_ns = new_time;
+
+    /* Build layout */
+    Clay_RenderCommandArray render_commands = create_app_layout(state, delta_time);
+    tab_flush_pending_close();
+    welcome_flush_pending();
+
+    /* Extra-frame pass: geometry-dependent elements need a second layout with
+     * correct bounding boxes; skip the change check and always render. */
+    bool force_render = state->needs_extra_frame;
+    if (force_render) {
+        state->input.desired_cursor = SDL_SYSTEM_CURSOR_DEFAULT;
+        tab_free_strings();
+        pane_free_strings();
+        bar_free_strings();
+        render_commands = create_app_layout(state, delta_time);
+        state->needs_extra_frame = false;
+    }
+
+    /* Skip GPU work when layout output is unchanged (and not animating/forced) */
+    if (!force_render && !state->animating
+            && !SDL_Clay_CommandsChanged(&state->rendererData, &render_commands)) {
+        tab_free_strings();
+        pane_free_strings();
+        bar_free_strings();
+        return SDL_APP_CONTINUE;
+    }
 
     /* Draw to the screen */
     SDL_SetRenderDrawColor(state->rendererData.renderer, 0, 0, 0, 255);
     SDL_RenderClear(state->rendererData.renderer);
-    Clay_RenderCommandArray render_commands = create_app_layout(state, delta_time);
-    tab_flush_pending_close();
-    welcome_flush_pending();
     SDL_Clay_RenderClayCommands(&state->rendererData, &render_commands);
-    tab_free_strings();
-    pane_free_strings();
-    bar_free_strings();
-    if (state->needs_extra_frame) {
-        state->input.desired_cursor = SDL_SYSTEM_CURSOR_DEFAULT;
-        Clay_RenderCommandArray render_commands = create_app_layout(state, delta_time);
-        SDL_Clay_RenderClayCommands(&state->rendererData, &render_commands);
-        pane_free_strings();
-        bar_free_strings();
-    }
 
     /* Update system cursor: geometric resize overrides layout's desired_cursor */
     {
@@ -88,16 +98,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     SDL_RenderPresent(state->rendererData.renderer);
 
-    /* Reset dirty flags; if any render pass requested more work, carry it forward
-     * and push a wakeup event so SDL breaks out of waitevent sleep. */
-    state->needs_redraw = state->needs_extra_frame;
-    state->needs_extra_frame = false;
-    if (state->needs_redraw) {
-        SDL_Event ev = {0};
-        ev.type = SDL_EVENT_USER;
-        ev.user.code = 0; /* unrecognised → no-op in SDL_AppEvent, just wakes SDL */
-        SDL_PushEvent(&ev);
-    }
+    tab_free_strings();
+    pane_free_strings();
+    bar_free_strings();
 
     return SDL_APP_CONTINUE;
 }

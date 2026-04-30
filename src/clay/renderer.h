@@ -4,11 +4,19 @@
 
 #include "clay.h"
 
+#define PREV_COMMANDS_MAX 4096
+
+typedef struct {
+    Clay_RenderCommand buf[PREV_COMMANDS_MAX];
+    int32_t            length;
+} PrevCommandSnapshot;
+
 typedef struct {
     SDL_Renderer *renderer;
     TTF_TextEngine *textEngine;
     TTF_Font **fonts;
     const char **font_paths;
+    PrevCommandSnapshot prev_commands;
 } Clay_SDL3RendererData;
 
 // ── Custom render types ───────────────────────────────────────────────────────
@@ -66,6 +74,8 @@ typedef struct {
 
 void SDL_Clay_RenderClayCommands(Clay_SDL3RendererData *rendererData, Clay_RenderCommandArray *rcommands);
 void SDL_Clay_DestroyTextCache(void);
+// Returns true if rcommands differs from the previous frame's snapshot, and updates the snapshot.
+bool SDL_Clay_CommandsChanged(Clay_SDL3RendererData *rendererData, Clay_RenderCommandArray *rcommands);
 // Returns the font instance used for rendering at the given size.
 // Use this (not fonts[id] + TTF_SetFontSize) for measurements so that
 // measurement and rendering use identical metrics.

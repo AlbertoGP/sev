@@ -148,6 +148,5 @@ sexp scm_set_cursor_override(sexp ctx, sexp self, sexp n, sexp stype) {
         else if (strcmp(s, "under") == 0)  ct = CURSOR_UNDER;
         cursor_type_override = (int)ct;
     }
-    G->needs_redraw = true;
     return SEXP_VOID;
 }

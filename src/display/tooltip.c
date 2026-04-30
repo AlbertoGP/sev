@@ -24,7 +24,6 @@ void tooltip_handle_show(AppState *state) {
         ts->timer   = 0;
         ts->spawn_x = state->input.mouse_x;
         ts->spawn_y = state->input.mouse_y;
-        state->needs_redraw = true;
     }
 }
 
@@ -45,7 +44,6 @@ void Tooltip(AppState *state, bool is_hovered, int unique_id,
         ts->tracked_id = 0;
         if (ts->visible) {
             ts->visible = false;
-            state->needs_redraw = true;
         }
     }
 

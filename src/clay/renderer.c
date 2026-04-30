@@ -335,6 +335,21 @@ static void SDL_Clay_RenderBorderArc(
 static SDL_Rect scissor_stack[8];
 static int      scissor_depth = 0;
 
+bool SDL_Clay_CommandsChanged(Clay_SDL3RendererData *rendererData, Clay_RenderCommandArray *rcommands) {
+    PrevCommandSnapshot *snap = &rendererData->prev_commands;
+    int32_t len = rcommands->length;
+
+    bool changed = (len != snap->length) ||
+                   (len > 0 && memcmp(snap->buf, rcommands->internalArray,
+                                      len * sizeof(Clay_RenderCommand)) != 0);
+
+    snap->length = len;
+    if (len > 0 && len <= PREV_COMMANDS_MAX)
+        memcpy(snap->buf, rcommands->internalArray, len * sizeof(Clay_RenderCommand));
+
+    return changed;
+}
+
 void SDL_Clay_RenderClayCommands(Clay_SDL3RendererData *rendererData, Clay_RenderCommandArray *rcommands)
 {
     scissor_depth = 0;

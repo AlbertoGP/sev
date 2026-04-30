@@ -482,7 +482,6 @@ sexp scm_buffer_close(sexp ctx, sexp self, sexp n, sexp sname) {
 
     sync_active_buffer();
     buffer_delete(buf);
-    G->needs_redraw = true;
     return SEXP_TRUE;
 }
 
@@ -556,55 +555,55 @@ void PaneContent(AppState *state, Pane *pane, int32_t index, float width, float 
 // --- Scheme bindings ---
 
 sexp scm_pane_navigate_up(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true; message_clear();
+    message_clear();
     if (pane_navigate_up()) message_send("pane-navigate-up");
     return SEXP_VOID;
 }
 
 sexp scm_pane_navigate_down(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true; message_clear();
+    message_clear();
     if (pane_navigate_down()) message_send("pane-navigate-down");
     return SEXP_VOID;
 }
 
 sexp scm_pane_navigate_left(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true; message_clear();
+    message_clear();
     if (pane_navigate_left()) message_send("pane-navigate-left");
     return SEXP_VOID;
 }
 
 sexp scm_pane_navigate_right(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true; message_clear();
+    message_clear();
     if (pane_navigate_right()) message_send("pane-navigate-right");
     return SEXP_VOID;
 }
 
 sexp scm_pane_v_split_increase(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true; G->needs_extra_frame = true; message_clear();
+    G->needs_extra_frame = true; message_clear();
     if (pane_v_split_increase()) message_send("pane-v-split-increase");
     return SEXP_VOID;
 }
 
 sexp scm_pane_v_split_decrease(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true; G->needs_extra_frame = true; message_clear();
+    G->needs_extra_frame = true; message_clear();
     if (pane_v_split_decrease()) message_send("pane-v-split-decrease");
     return SEXP_VOID;
 }
 
 sexp scm_pane_h_split_increase(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true; G->needs_extra_frame = true; message_clear();
+    G->needs_extra_frame = true; message_clear();
     if (pane_h_split_increase()) message_send("pane-h-split-increase");
     return SEXP_VOID;
 }
 
 sexp scm_pane_h_split_decrease(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true; G->needs_extra_frame = true; message_clear();
+    G->needs_extra_frame = true; message_clear();
     if (pane_h_split_decrease()) message_send("pane-h-split-decrease");
     return SEXP_VOID;
 }
 
 sexp scm_split_vertical(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true; G->needs_extra_frame = true;
+    G->needs_extra_frame = true;
     Pane *pane = pane_get_active();
     if (pane) pane_split_vertical(pane);
     message_send("split-vertical");
@@ -612,7 +611,7 @@ sexp scm_split_vertical(sexp ctx, sexp self, sexp n) {
 }
 
 sexp scm_split_horizontal(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true; G->needs_extra_frame = true;
+    G->needs_extra_frame = true;
     Pane *pane = pane_get_active();
     if (pane) pane_split_horizontal(pane);
     message_send("split-horizontal");
@@ -655,7 +654,6 @@ static void jump_apply(JumpList *jl) {
     point_set(j->point);
     update_line(buf);
     save_current_column(buf);
-    G->needs_redraw = true;
 }
 
 sexp scm_jump_backward(sexp ctx, sexp self, sexp n) {

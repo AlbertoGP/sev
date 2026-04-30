@@ -152,7 +152,6 @@ bool delete_chars(Buffer *buf, int count) {
 // --- Scheme bindings ---
 
 sexp scm_insert_char(sexp ctx, sexp self, sexp n, sexp ch) {
-    G->needs_redraw = true;
     sexp_assert_type(ctx, sexp_charp, SEXP_CHAR, ch);
     insert_codepoint(buffer_get_current(), (uint32_t)sexp_unbox_character(ch));
 
@@ -161,7 +160,6 @@ sexp scm_insert_char(sexp ctx, sexp self, sexp n, sexp ch) {
 }
 
 sexp scm_self_insert(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
     KeyEvent last = last_event;
 
     if (last.type != KEYEVENT_CHAR) return SEXP_VOID;
@@ -185,7 +183,6 @@ sexp scm_set_replace_mode(sexp ctx, sexp self, sexp n, sexp val) {
 }
 
 sexp scm_delete_char(sexp ctx, sexp self, sexp n, sexp count) {
-    G->needs_redraw = true;
 
     int count_unboxed = sexp_unbox_fixnum(count);
     size_t point = point_get(buffer_get_current()).pos;
@@ -204,7 +201,6 @@ sexp scm_delete_char(sexp ctx, sexp self, sexp n, sexp count) {
 SCM_CMD(scm_newline, (insert_char(buffer_get_current(), '\n'), message_clear()))
 
 sexp scm_insert_tab(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
     Buffer *buf = buffer_get_current();
     sexp itm_sym = sexp_intern(ctx, "indent-tabs-mode", -1);
     sexp itm_val = vartable_get(buffer_get_locals(buf), itm_sym, SEXP_TRUE);
@@ -225,7 +221,6 @@ sexp scm_insert_tab(sexp ctx, sexp self, sexp n) {
 }
 
 sexp scm_delete_backward_char(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
     Buffer *buf = buffer_get_current();
     size_t point = point_get(buf).pos;
     message_clear();
@@ -245,7 +240,6 @@ sexp scm_delete_backward_char(sexp ctx, sexp self, sexp n) {
 }
 
 sexp scm_delete_forward_char(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
     Buffer *buf = buffer_get_current();
     size_t point = point_get(buf).pos;
     size_t chars = get_char_count(buf);
@@ -260,7 +254,6 @@ sexp scm_delete_forward_char(sexp ctx, sexp self, sexp n) {
 }
 
 sexp scm_delete_range(sexp ctx, sexp self, sexp n, sexp sstart, sexp send) {
-    G->needs_redraw = true;
     Buffer *buf = buffer_get_current();
     int start = sexp_unbox_fixnum(sstart);
     int end = sexp_unbox_fixnum(send);
@@ -283,7 +276,6 @@ sexp scm_delete_range(sexp ctx, sexp self, sexp n, sexp sstart, sexp send) {
 }
 
 sexp scm_insert_string(sexp ctx, sexp self, sexp n, sexp stext) {
-    G->needs_redraw = true;
     sexp_assert_type(ctx, sexp_stringp, SEXP_STRING, stext);
     insert_string(buffer_get_current(), sexp_string_data(stext));
     return SEXP_VOID;
@@ -304,7 +296,6 @@ sexp scm_end_change(sexp ctx, sexp self, sexp n) {
 }
 
 sexp scm_undo(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
     Buffer *buf = buffer_get_current();
     if (!buf || !buf->undo_head) {
         message_send("No further undo information");
@@ -315,7 +306,6 @@ sexp scm_undo(sexp ctx, sexp self, sexp n) {
 }
 
 sexp scm_redo(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
     Buffer *buf = buffer_get_current();
     if (!buf || !buf->redo_head) {
         message_send("No further redo information");
@@ -377,7 +367,6 @@ sexp scm_change_current_inserts(sexp ctx, sexp self, sexp n) {
 }
 
 sexp scm_line_restore(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
     Buffer *buf = buffer_get_current();
     if (!buf || !buf->line_restore_text) {
         message_send("No line snapshot");

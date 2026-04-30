@@ -217,7 +217,6 @@ static void reset_key_state(AppState *state) {
     state->input.current_map = state->input.global_map;
     state->which_key.active = false;
     state->which_key.prefix_str[0] = '\0';
-    state->needs_redraw = true;
     if (was_mid_prefix) message_echo_clear();
 }
 
@@ -297,7 +296,6 @@ static void key_dispatch_inner(AppState *state, const KeyEvent *ev) {
         if (state->which_key.enabled) {
             state->which_key.active = true;
             state->which_key.keymap = b->keymap;
-            state->needs_redraw = true;
         }
         goto record_macro;  // prefix key: record for macro replay
     }

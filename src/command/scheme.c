@@ -25,7 +25,6 @@ static sexp scm_quit(sexp ctx, sexp self, sexp n) {
 }
 
 static sexp scm_eval_buffer(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
 
     sexp_gc_var2(result, str);
     sexp_gc_preserve2(ctx, result, str);
@@ -88,13 +87,11 @@ static sexp scm_pop_to_buffer(sexp ctx, sexp self, sexp n, sexp sname) {
     }
     tab_set_buffer(pane->content.active_tab, buf);
     pane_set_active(pane);
-    G->needs_redraw = true;
     G->needs_extra_frame = true;
     return SEXP_VOID;
 }
 
 static sexp scm_clay_debug(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
     G->debug_open = !G->debug_open;
     Clay_SetDebugModeEnabled(G->debug_open);
 
@@ -190,7 +187,6 @@ static sexp scm_buffer_set_name(sexp ctx, sexp self, sexp n, sexp sname) {
     if (!sexp_stringp(sname))
         return sexp_user_exception(ctx, self, "buffer name must be a string", sname);
     bool ok = buffer_set_name(sexp_string_data(sname));
-    if (ok) G->needs_redraw = true;
     return ok ? SEXP_TRUE : SEXP_FALSE;
 }
 
@@ -232,7 +228,6 @@ static sexp scm_tab_set_buffer(sexp ctx, sexp self, sexp n, sexp sname) {
     if (existing) {
         pane->content.active_tab = existing;
         sync_active_buffer();
-        G->needs_redraw = true;
         return SEXP_TRUE;
     }
     if (buf != buffer_get_current())
@@ -243,13 +238,11 @@ static sexp scm_tab_set_buffer(sexp ctx, sexp self, sexp n, sexp sname) {
         if (!tab) return SEXP_FALSE;
         tab->is_preview = true;
         sync_active_buffer();
-        G->needs_redraw = true;
         return SEXP_TRUE;
     }
     // Current tab is preview: replace its buffer (remains preview).
     tab_set_buffer(pane->content.active_tab, buf);
     sync_active_buffer();
-    G->needs_redraw = true;
     return SEXP_TRUE;
 }
 
@@ -257,7 +250,6 @@ static sexp scm_tab_set_preview(sexp ctx, sexp self, sexp n, sexp sbool) {
     Pane *pane = pane_get_active();
     if (!pane || !pane->content.active_tab) return SEXP_FALSE;
     pane->content.active_tab->is_preview = sexp_truep(sbool);
-    G->needs_redraw = true;
     return SEXP_TRUE;
 }
 

@@ -36,7 +36,6 @@ void cursor_flash_reset(AppState *state) {
     state->cursor_flash_timer = 0;
     state->cursor_flash_gen++;
     state->cursor_visible = true;
-    state->needs_redraw = true;
     if (cursor_blink_enabled(state))
         state->cursor_flash_timer = SDL_AddTimer(500, cursor_flash_cb, state);
 }
@@ -119,7 +118,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             if (gen == state->cursor_flash_gen) {
                 if (cursor_blink_enabled(state)) {
                     state->cursor_visible = !state->cursor_visible;
-                    state->needs_redraw = true;
                     state->cursor_flash_gen++;
                     state->cursor_flash_timer = SDL_AddTimer(500, cursor_flash_cb, state);
                 } else {
@@ -141,7 +139,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         break;
 
     case SDL_EVENT_MOUSE_MOTION: {
-        state->needs_redraw = true;
         float x = event->motion.x;
         float y = event->motion.y;
         state->input.mouse_x = x;
@@ -152,7 +149,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         // Split divider drag.
         if (state->input.split_drag_pane && state->input.mouse_button_down) {
             pane_split_drag_update(state->input.split_drag_pane, x, y);
-            state->needs_redraw = true;
             break;
         }
 
@@ -171,7 +167,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 sc->scroll_offset = frac * max_sc;
                 sc->target_scroll = sc->scroll_offset;
             }
-            state->needs_redraw = true;
             break;
         }
 
@@ -192,7 +187,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 sc->scroll_x = frac * max_sc;
                 sc->target_scroll_x = sc->scroll_x;
             }
-            state->needs_redraw = true;
             break;
         }
 
@@ -257,7 +251,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             if (event->button.clicks == 2) {
                 if (split_hit->type == PANE_V_SPLIT) split_hit->v_split.left_width = 0.5f;
                 else                                 split_hit->h_split.top_height  = 0.5f;
-                state->needs_redraw = true;
             } else {
                 state->input.split_drag_pane    = split_hit;
                 state->input.split_drag_start_x = x;
@@ -296,7 +289,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             }
 
             state->input.scrollbar_drag_pane = hit;
-            state->needs_redraw = true;
             break;
         }
 
@@ -330,7 +322,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             }
 
             state->input.hscrollbar_drag_pane = hit;
-            state->needs_redraw = true;
             break;
         }
 
@@ -350,7 +341,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     }
 
     case SDL_EVENT_MOUSE_BUTTON_UP:
-        state->needs_redraw = true;
         Clay_SetPointerState((Clay_Vector2){event->button.x, event->button.y}, false);
         state->input.mouse_button_down    = false;
         state->input.mouse_drag_active    = false;
@@ -380,7 +370,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 state->minibuf.item_scroll += delta;
                 if (state->minibuf.item_scroll < 0) state->minibuf.item_scroll = 0;
                 if (state->minibuf.item_scroll > max_scroll) state->minibuf.item_scroll = max_scroll;
-                state->needs_redraw = true;
                 break;
             }
         }
@@ -422,7 +411,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         break;
 
     case SDL_EVENT_WINDOW_RESIZED: {
-        state->needs_redraw = true;
         int width, height;
         SDL_GetWindowSizeInPixels(state->window, &width, &height);
         Clay_SetLayoutDimensions((Clay_Dimensions) {(float) width, (float) height});
@@ -436,7 +424,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         int width, height;
         SDL_GetWindowSizeInPixels(state->window, &width, &height);
         Clay_SetLayoutDimensions((Clay_Dimensions) {(float) width, (float) height});
-        state->needs_redraw = true;
         break;
     }
 

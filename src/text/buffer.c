@@ -182,7 +182,6 @@ bool buffer_clear(Buffer *buf) {
     buf->lt.lines[0].line_id = buf->lt.next_line_id++;
 
     // Force redraw
-    if (G) G->needs_redraw = true;
 
     return true;
 }

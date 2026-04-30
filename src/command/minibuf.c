@@ -360,7 +360,6 @@ static void minibuf_pop(sexp ctx) {
     Location loc = { frame->saved_point };
     point_set(loc);
 
-    G->needs_redraw = true;
 }
 
 sexp scm_minibuffer_activate(sexp ctx, sexp self, sexp n,
@@ -405,7 +404,6 @@ sexp scm_minibuffer_activate(sexp ctx, sexp self, sexp n,
         sexp_preserve_object(ctx, G->minibuf.on_cancel);
 
     G->minibuf.active = true;
-    G->needs_redraw   = true;
 
     return SEXP_VOID;
 }
@@ -446,7 +444,6 @@ sexp scm_minibuffer_submit(sexp ctx, sexp self, sexp n) {
             G->minibuf.active = false;
             G->input.current_focus = G->minibuf.prev_focus;
             buffer_set_current(G->minibuf.prev_buf);
-            G->needs_redraw = true;
             if (G->minibuf.prev_buf)
                 minibuf_invoke_command(ctx, "vim-normal");
         }
@@ -482,7 +479,6 @@ sexp scm_minibuffer_submit(sexp ctx, sexp self, sexp n) {
         G->minibuf.active = false;
         G->input.current_focus = G->minibuf.prev_focus;
         buffer_set_current(G->minibuf.prev_buf);
-        G->needs_redraw = true;
         // Full dismiss: return the calling buffer to normal-mode.
         if (G->minibuf.prev_buf)
             minibuf_invoke_command(ctx, "vim-normal");
@@ -538,7 +534,6 @@ sexp scm_minibuffer_cancel(sexp ctx, sexp self, sexp n) {
         }
         G->input.current_focus = G->minibuf.prev_focus;
         buffer_set_current(G->minibuf.prev_buf);
-        G->needs_redraw = true;
         // Full dismiss: return the calling buffer to normal-mode.
         if (G->minibuf.prev_buf)
             minibuf_invoke_command(ctx, "vim-normal");
@@ -642,7 +637,6 @@ sexp scm_minibuffer_select_next(sexp ctx, sexp self, sexp n) {
             G->minibuf.preview_action(ctx,
                 sexp_intern(ctx, G->minibuf.items[G->minibuf.selected].sym_name, -1));
     }
-    G->needs_redraw = true;
     return SEXP_VOID;
 }
 
@@ -655,6 +649,5 @@ sexp scm_minibuffer_select_prev(sexp ctx, sexp self, sexp n) {
             G->minibuf.preview_action(ctx,
                 sexp_intern(ctx, G->minibuf.items[G->minibuf.selected].sym_name, -1));
     }
-    G->needs_redraw = true;
     return SEXP_VOID;
 }

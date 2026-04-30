@@ -145,7 +145,6 @@ bool tab_new_with_buffer(const char *buf_name, bool always_create) {
         if (existing) {
             active->content.active_tab = existing;
             sync_active_buffer();
-            G->needs_redraw = true;
             return true;
         }
         Tab *t = display_tab_new(active, buf);
@@ -153,7 +152,6 @@ bool tab_new_with_buffer(const char *buf_name, bool always_create) {
     }
 
     sync_active_buffer();
-    G->needs_redraw = true;
     return true;
 }
 
@@ -200,7 +198,7 @@ void tab_close(void) {
 }
 
 sexp scm_tab_close(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true; G->needs_extra_frame = true;
+    G->needs_extra_frame = true;
     tab_close();
     message_send("tab-close");
     return SEXP_VOID;
@@ -475,7 +473,6 @@ void TabBar(AppState *state, Pane *dp, int32_t index) {
 // --- Scheme bindings ---
 
 sexp scm_tab_next(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
     message_clear();
     Pane *active = pane_get_active();
     if (active && display_tab_next(active)) message_send("tab-next");
@@ -483,7 +480,6 @@ sexp scm_tab_next(sexp ctx, sexp self, sexp n) {
 }
 
 sexp scm_tab_prev(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
     message_clear();
     Pane *active = pane_get_active();
     if (active && display_tab_prev(active)) message_send("tab-prev");

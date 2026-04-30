@@ -370,7 +370,6 @@ const LineTable *buffer_get_line_table(Buffer *buf) {
 // --- Scheme bindings ---
 
 sexp scm_point_move(sexp ctx, sexp self, sexp n, sexp count) {
-    G->needs_redraw = true;
 
     int count_unboxed = sexp_unbox_fixnum(count);
     size_t point = point_get(buffer_get_current()).pos;
@@ -387,7 +386,6 @@ sexp scm_point_move(sexp ctx, sexp self, sexp n, sexp count) {
 }
 
 sexp scm_point_move_by_line(sexp ctx, sexp self, sexp n, sexp count) {
-    G->needs_redraw = true;
     point_move_by_line(sexp_unbox_fixnum(count));
     return SEXP_VOID;
 }
@@ -396,7 +394,6 @@ SCM_CMD(scm_next_line, point_move_by_line(1))
 SCM_CMD(scm_prev_line, point_move_by_line(-1))
 
 sexp scm_forward_char(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
     message_clear();
     size_t point = point_get(buffer_get_current()).pos;
     size_t chars = get_char_count(buffer_get_current());
@@ -407,7 +404,6 @@ sexp scm_forward_char(sexp ctx, sexp self, sexp n) {
 }
 
 sexp scm_backward_char(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
     message_clear();
     size_t point = point_get(buffer_get_current()).pos;
     if (point == 0)
@@ -420,14 +416,12 @@ SCM_CMD(scm_point_to_line_start, point_to_line_start(buffer_get_current()))
 SCM_CMD(scm_point_to_line_end,   point_to_line_end(buffer_get_current()))
 
 sexp scm_skip_whitespace(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
     while (char_at_point() == ' ' || char_at_point() == '\t')
         point_move(1);
     return SEXP_VOID;
 }
 
 sexp scm_set_column(sexp ctx, sexp self, sexp n, sexp column) {
-    G->needs_redraw = true;
     set_column(sexp_unbox_fixnum(column), false);
     return SEXP_VOID;
 }
@@ -444,7 +438,6 @@ sexp scm_point_get(sexp ctx, sexp self, sexp n) {
 }
 
 sexp scm_point_set_to(sexp ctx, sexp self, sexp n, sexp pos) {
-    G->needs_redraw = true;
     Buffer *buf = buffer_get_current();
     int p = sexp_unbox_fixnum(pos);
     int num_chars = (int)get_char_count(buf);
@@ -476,7 +469,6 @@ sexp scm_last_key_char(sexp ctx, sexp self, sexp n) {
 }
 
 sexp scm_goto_line(sexp ctx, sexp self, sexp n, sexp line_num) {
-    G->needs_redraw = true;
     Buffer *buf = buffer_get_current();
     int line = sexp_unbox_fixnum(line_num);
     int total = (int)get_line_count(buf);
@@ -610,7 +602,6 @@ bool buffer_jump_to_matching_bracket(Buffer *buf) {
 }
 
 sexp scm_jump_to_matching_bracket(sexp ctx, sexp self, sexp n) {
-    G->needs_redraw = true;
     Buffer *buf = buffer_get_current();
     return buffer_jump_to_matching_bracket(buf) ? SEXP_TRUE : SEXP_FALSE;
 }

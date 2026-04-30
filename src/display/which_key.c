@@ -302,6 +302,5 @@ sexp scm_which_key_toggle(sexp ctx, sexp self, sexp n) {
     char msg[64];
     sprintf(msg, "Key completion prompt %s", G->which_key.enabled ? "enabled" : "disabled");
     message_send(msg);
-    G->needs_redraw = true;
     return SEXP_VOID;
 }

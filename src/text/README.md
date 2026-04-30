@@ -45,8 +45,7 @@ Text model layer. Owns all mutable text state: gap buffer storage, logical line 
 2. Call `line_insert_char()` or `line_delete_char()` to keep line table in sync
 3. Call `change_record_insert/delete()` to track undo history
 4. Update `buf->num_chars`, `buf->num_lines` if they change
-5. Set `G->needs_redraw = true`
-6. Add Scheme binding (`scm_*` function) and register in `src/command/scheme.c`
+5. Add Scheme binding (`scm_*` function) and register in `src/command/scheme.c`
 
 ### Adding a new mark type
 
