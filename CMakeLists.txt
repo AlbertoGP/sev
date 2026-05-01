@@ -221,13 +221,7 @@ else()
     # Desktop build
     # ------------------------------------------------------------
 
-    # Default to vendored deps on macOS (no system SDL3 packages),
-    # system packages on Linux
-    if(APPLE)
-        option(USE_VENDORED "Build vendored SDL3/chibi instead of using system packages" ON)
-    else()
-        option(USE_VENDORED "Build vendored SDL3/chibi instead of using system packages" OFF)
-    endif()
+    option(USE_VENDORED "Build vendored SDL3/chibi instead of using system packages" ON)
 
     message(STATUS "Configuring for desktop build (vendored=${USE_VENDORED})")
 
