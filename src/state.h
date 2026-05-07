@@ -18,6 +18,8 @@
 #define RECENT_PROJECTS_MAX 5
 #define COMMAND_STATS_MAX   256
 
+#define FOLDER_DIALOG_EVENT 3
+
 typedef struct {
     char    path[PATH_MAX];
     int64_t last_opened;
@@ -215,6 +217,8 @@ typedef struct AppState {
     WhichKeyState which_key;
     TooltipState  tooltip;
     FileScanner   scanner;
+
+    char pending_folder_dialog[PATH_MAX];
 
     // Cursor flashing
     bool        cursor_visible;

@@ -1,4 +1,5 @@
 #include <math.h>
+#include <unistd.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_mouse.h>
 #include <chibi/eval.h>
@@ -6,10 +7,13 @@
 #include "state.h"
 #include "cursor_flash.h"
 #include "command/keyboard.h"
+#include "command/message.h"
 #include "command/minibuf.h"
 #include "display/pane.h"
 #include "display/tooltip.h"
 #include "display/vline.h"
+#include "file_scanner.h"
+#include "state_io.h"
 #include "text/buffer.h"
 
 #define CURSOR_FLASH_EVENT 1
@@ -127,6 +131,21 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             }
         } else if (event->user.code == TOOLTIP_SHOW_EVENT) {
             tooltip_handle_show(state);
+        } else if (event->user.code == FOLDER_DIALOG_EVENT) {
+            if (state->pending_folder_dialog[0]) {
+                if (chdir(state->pending_folder_dialog) == 0) {
+                    state_io_update_recent_project(state, state->pending_folder_dialog);
+                    scanner_restart(&state->scanner);
+                    char msg[PATH_MAX + 32];
+                    snprintf(msg, sizeof(msg), "Opened project %s", state->pending_folder_dialog);
+                    message_echo(msg);
+                } else {
+                    char msg[PATH_MAX + 48];
+                    snprintf(msg, sizeof(msg), "Cannot open project: %s", state->pending_folder_dialog);
+                    message_echo(msg);
+                }
+                state->pending_folder_dialog[0] = '\0';
+            }
         }
         break;
 

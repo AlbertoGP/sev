@@ -183,16 +183,18 @@
 (defcommand (open-project)
   "project: open\nOpen a project directory, changing the working directory to it."
   (interactive)
-  (minibuffer-read "Open project: "
-    (lambda (path)
-      (if (string=? path "")
-          (message "Path cannot be empty")
-          (if (not (%chdir path))
-              (message (string-append "Cannot open project: " path))
-              (begin
-                (%update-recent-project! path)
-                (%scanner-start!)
-                (message (string-append "Opened project " path))))))))
+  (if (not (%show-open-folder-dialog))
+      (minibuffer-read "Open project: "
+        (lambda (path)
+          (if (string=? path "")
+              (message "Path cannot be empty")
+              (if (not (%chdir path))
+                  (message (string-append "Cannot open project: " path))
+                  (begin
+                    (%update-recent-project! path)
+                    (%scanner-start!)
+                    (message (string-append "Opened project " path)))))))))
+
 
 (defcommand (read-file)
   "editor: paste file at cursor\nInsert the contents of a file at the point in the current buffer without moving point or other text."

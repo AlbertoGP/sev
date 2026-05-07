@@ -1,4 +1,7 @@
 #include <SDL3/SDL_events.h>
+#ifndef __EMSCRIPTEN__
+#include <SDL3/SDL_dialog.h>
+#endif
 #include <chibi/eval.h>
 #include <chibi/sexp.h>
 #ifndef __EMSCRIPTEN__
@@ -258,6 +261,31 @@ static sexp scm_tab_set_preview(sexp ctx, sexp self, sexp n, sexp sbool) {
 }
 
 
+#ifndef __EMSCRIPTEN__
+static void folder_dialog_callback(void *userdata, const char * const *filelist, int filter) {
+    (void)filter;
+    AppState *state = (AppState *)userdata;
+    if (!filelist || !filelist[0]) return;
+    SDL_strlcpy(state->pending_folder_dialog, filelist[0], PATH_MAX);
+    SDL_Event ev = {0};
+    ev.type = SDL_EVENT_USER;
+    ev.user.code = FOLDER_DIALOG_EVENT;
+    SDL_PushEvent(&ev);
+}
+
+static sexp scm_show_open_folder_dialog(sexp ctx, sexp self, sexp n) {
+    (void)ctx; (void)self; (void)n;
+    SDL_ShowOpenFolderDialog(folder_dialog_callback, G, G->window, NULL, false);
+    return SEXP_TRUE;
+}
+#else
+static sexp scm_show_open_folder_dialog(sexp ctx, sexp self, sexp n) {
+    (void)ctx; (void)self; (void)n;
+    return SEXP_FALSE;
+}
+#endif
+
+
 void scheme_init(AppState *state) {
     G = state;
     sexp_scheme_init();
@@ -490,10 +518,11 @@ void scheme_init(AppState *state) {
     SDEF("%which-key-toggle", 0, scm_which_key_toggle);
 
     // State I/O primitives
-    SDEF("%record-command-usage",   1, scm_record_command_usage);
-    SDEF("%update-recent-project!", 1, scm_update_recent_project);
-    SDEF("%chdir",                  1, scm_chdir);
-    SDEF("%open-recent-project!",   1, scm_open_recent_project);
+    SDEF("%record-command-usage",      1, scm_record_command_usage);
+    SDEF("%update-recent-project!",    1, scm_update_recent_project);
+    SDEF("%chdir",                     1, scm_chdir);
+    SDEF("%open-recent-project!",      1, scm_open_recent_project);
+    SDEF("%show-open-folder-dialog",   0, scm_show_open_folder_dialog);
 
     // Jump list primitives
     SDEF("%jump-push!",     0, scm_jump_push);
@@ -598,7 +627,7 @@ void scheme_init(AppState *state) {
         "%minibuffer-activate-file-picker "
         "%scanner-start! "
         "%which-key-toggle "
-        "%record-command-usage %update-recent-project! %chdir %open-recent-project! "
+        "%record-command-usage %update-recent-project! %chdir %open-recent-project! %show-open-folder-dialog "
         "%jump-push! %jump-backward! %jump-forward! "
         "jump-to-matching-bracket "
         "%set-mouse-click-handler! %set-mouse-drag-handler! "
