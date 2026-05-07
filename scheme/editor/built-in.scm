@@ -88,7 +88,8 @@
 ;; Alist mapping file extensions to mode-activation procedures.
 (define *auto-mode-alist*
   (list (cons "scm" scheme-mode)
-        (cons "sld" scheme-mode)))
+        (cons "sld" scheme-mode)
+        (cons "json" json-mode)))
 
 ;; Activate the appropriate major mode for the current buffer based on filename.
 (define (set-auto-mode!)

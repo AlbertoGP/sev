@@ -419,6 +419,7 @@ void scheme_init(AppState *state) {
     SDEF("%ts-tree-string", 0, scm_ts_tree_string);
     SDEF("%ts-enable!", 0, scm_ts_enable);
     SDEF("%ts-disable!", 0, scm_ts_disable);
+    SDEF("%ts-enable-json!", 0, scm_ts_enable_json);
     SDEF("clay-debug", 0, scm_clay_debug);
     SDEF("prefix-arg", 0, scm_prefix_arg);
     SDEF("%set-keymap-parent!", 2, scm_set_keymap_parent);
@@ -590,7 +591,7 @@ void scheme_init(AppState *state) {
         "%pane-navigate-left %pane-navigate-right "
         "%pane-v-split-increase %pane-v-split-decrease "
         "%pane-h-split-increase %pane-h-split-decrease "
-        "eval-buffer %ts-tree-string %ts-enable! %ts-disable! clay-debug prefix-arg "
+        "eval-buffer %ts-tree-string %ts-enable! %ts-disable! %ts-enable-json! clay-debug prefix-arg "
         "%set-keymap-parent! %set-keymap-name! %bind-prefix! "
         "%read-key-binding %set-key-unbound-cb! %set-mode-allows-input! ignore "
         "%buffer-has-minor-mode? "

@@ -37,5 +37,6 @@ void ts_buffer_free(Buffer *buf);
 
 // Enable tree-sitter for buf (init + full parse). No-op if already enabled.
 void ts_buffer_enable(Buffer *buf);
+void ts_buffer_enable_json(Buffer *buf);
 // Disable tree-sitter for buf (free parser/tree, clear all hl spans).
 void ts_buffer_disable(Buffer *buf);

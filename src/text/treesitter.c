@@ -7,6 +7,7 @@
 #include "buffer_type.h"
 #include "line.h"
 #include "../../vendored/tree-sitter-scheme/bindings/c/tree-sitter-scheme.h"
+#include "../../vendored/tree-sitter-json/bindings/c/tree-sitter-json.h"
 #include <chibi/eval.h>
 
 // highlights.scm from vendored/tree-sitter-scheme/queries/highlights.scm
@@ -100,6 +101,18 @@ static const char SCHEME_HIGHLIGHTS_SCM[] =
     " (block_comment)\n"
     " (directive)] @comment\n";
 
+// highlights.scm from vendored/tree-sitter-json/queries/highlights.scm
+// Bracket punctuation added beyond the upstream query.
+static const char JSON_HIGHLIGHTS_SCM[] =
+    "(pair\n"
+    "  key: (_) @string.special.key)\n"
+    "(string) @string\n"
+    "(number) @number\n"
+    "[(null) (true) (false)] @constant.builtin\n"
+    "(escape_sequence) @escape\n"
+    "(comment) @comment\n"
+    "[\"{\" \"}\" \"[\" \"]\"] @punctuation.bracket\n";
+
 // Map a capture name (no leading @) to an HLKind.
 // Returns HL_DEFAULT for captures we don't assign a distinct color to.
 static HLKind capture_name_to_kind(const char *name, uint32_t len) {
@@ -107,6 +120,7 @@ static HLKind capture_name_to_kind(const char *name, uint32_t len) {
     case 6:
         if (memcmp(name, "number", 6) == 0) return HL_NUMBER;
         if (memcmp(name, "string", 6) == 0) return HL_STRING;
+        if (memcmp(name, "escape", 6) == 0) return HL_STRING;
         break;
     case 7:
         if (memcmp(name, "comment", 7) == 0) return HL_COMMENT;
@@ -120,6 +134,9 @@ static HLKind capture_name_to_kind(const char *name, uint32_t len) {
     case 16:
         if (memcmp(name, "constant.builtin", 16) == 0) return HL_CONSTANT;
         if (memcmp(name, "function.builtin", 16) == 0) return HL_BUILTIN;
+        break;
+    case 18:
+        if (memcmp(name, "string.special.key", 18) == 0) return HL_KEYWORD;
         break;
     case 19:
         if (memcmp(name, "punctuation.bracket", 19) == 0) return HL_BRACKET;
@@ -458,6 +475,37 @@ sexp scm_ts_enable(sexp ctx, sexp self, sexp n) {
 sexp scm_ts_disable(sexp ctx, sexp self, sexp n) {
     Buffer *buf = buffer_get_current();
     if (buf) ts_buffer_disable(buf);
+    return SEXP_VOID;
+}
+
+void ts_buffer_init_json(Buffer *buf) {
+    buf->ts.language = tree_sitter_json();
+    buf->ts.tree     = NULL;
+    buf->ts.parser   = ts_parser_new();
+    if (!buf->ts.parser) return;
+    ts_parser_set_language(buf->ts.parser, buf->ts.language);
+
+    uint32_t err_offset;
+    TSQueryError err_type;
+    buf->ts.hl_query = ts_query_new(
+        buf->ts.language,
+        JSON_HIGHLIGHTS_SCM,
+        (uint32_t)strlen(JSON_HIGHLIGHTS_SCM),
+        &err_offset, &err_type);
+    if (!buf->ts.hl_query)
+        fprintf(stderr, "ts: JSON highlight query failed at offset %u (error %d)\n",
+                err_offset, (int)err_type);
+}
+
+void ts_buffer_enable_json(Buffer *buf) {
+    if (buf->ts.parser) return;
+    ts_buffer_init_json(buf);
+    ts_buffer_parse(buf);
+}
+
+sexp scm_ts_enable_json(sexp ctx, sexp self, sexp n) {
+    Buffer *buf = buffer_get_current();
+    if (buf) ts_buffer_enable_json(buf);
     return SEXP_VOID;
 }
 

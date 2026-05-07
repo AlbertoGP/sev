@@ -73,9 +73,16 @@ add_library(tree-sitter-scheme STATIC
 set_target_properties(tree-sitter-scheme PROPERTIES C_STANDARD 11 POSITION_INDEPENDENT_CODE ON)
 target_include_directories(tree-sitter-scheme PRIVATE vendored/tree-sitter-scheme/src)
 
+add_library(tree-sitter-json STATIC
+    vendored/tree-sitter-json/src/parser.c
+)
+set_target_properties(tree-sitter-json PROPERTIES C_STANDARD 11 POSITION_INDEPENDENT_CODE ON)
+target_include_directories(tree-sitter-json PRIVATE vendored/tree-sitter-json/src)
+
 target_include_directories(app PRIVATE
     vendored/tree-sitter/lib/include
     vendored/tree-sitter-scheme/bindings/c
+    vendored/tree-sitter-json/bindings/c
 )
 
 # ------------------------------------------------------------
@@ -215,6 +222,7 @@ if(EMSCRIPTEN)
         chibi::libchibi-scheme
         tree-sitter
         tree-sitter-scheme
+        tree-sitter-json
     )
 
 else()
@@ -282,6 +290,7 @@ else()
             chibi::libchibi-scheme
             tree-sitter
             tree-sitter-scheme
+            tree-sitter-json
         )
 
         # Copy vendored chibi-scheme stdlib next to binary so it can find modules
@@ -295,7 +304,7 @@ else()
         find_package(SDL3_image REQUIRED)
         find_package(SDL3_ttf REQUIRED)
 
-        target_link_libraries(app PUBLIC SDL3::SDL3 SDL3_image::SDL3_image SDL3_ttf::SDL3_ttf chibi-scheme tree-sitter tree-sitter-scheme m)
+        target_link_libraries(app PUBLIC SDL3::SDL3 SDL3_image::SDL3_image SDL3_ttf::SDL3_ttf chibi-scheme tree-sitter tree-sitter-scheme tree-sitter-json m)
     endif()
 
 endif()

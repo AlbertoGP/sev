@@ -191,3 +191,4 @@ sexp scm_open_recent_project(sexp ctx, sexp self, sexp n, sexp sidx);
 sexp scm_ts_tree_string(sexp ctx, sexp self, sexp n);
 sexp scm_ts_enable(sexp ctx, sexp self, sexp n);
 sexp scm_ts_disable(sexp ctx, sexp self, sexp n);
+sexp scm_ts_enable_json(sexp ctx, sexp self, sexp n);

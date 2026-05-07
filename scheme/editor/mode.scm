@@ -215,6 +215,14 @@
   (%ts-enable!)
   (set-major-mode! 'scheme-mode))
 
+;; JSON major mode — activates tree-sitter JSON highlighting
+(define-major-mode 'json-mode "JSON" 'json-icon)
+(set-mode-parent! 'json-mode 'prog-mode)
+(defun (json-mode)
+  "Enable JSON mode in the current buffer."
+  (%ts-enable-json!)
+  (set-major-mode! 'json-mode))
+
 ;; Line number display
 (define-minor-mode 'display-line-numbers-mode)
 
