@@ -178,6 +178,7 @@
     (hl.builtin        . (:color cyan))
     (hl.operator       . (:color fg-text))
     (hl.bracket        . (:color accent-0))
+    (hl.property       . (:color blue))
     (hl.bracket.match  . (:color fg-warm :bg selection-bg))))
 
 ;;; --- Activation ---

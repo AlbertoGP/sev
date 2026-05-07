@@ -136,7 +136,7 @@ static HLKind capture_name_to_kind(const char *name, uint32_t len) {
         if (memcmp(name, "function.builtin", 16) == 0) return HL_BUILTIN;
         break;
     case 18:
-        if (memcmp(name, "string.special.key", 18) == 0) return HL_KEYWORD;
+        if (memcmp(name, "string.special.key", 18) == 0) return HL_PROPERTY;
         break;
     case 19:
         if (memcmp(name, "punctuation.bracket", 19) == 0) return HL_BRACKET;
