@@ -10,6 +10,7 @@ set(SRC_FILES
     src/event.c
     src/quit.c
     src/state_io.c
+    src/file_scanner.c
     src/clay/renderer.c
     src/clay/init.c
     src/command/keyboard.c

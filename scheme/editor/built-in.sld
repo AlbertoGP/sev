@@ -22,5 +22,6 @@
     line-start-skip-whitespace join-line
     save-buffer save-buffer-as open-file open-project read-file
     buffer-new buffer-rename switch-to-buffer buffer-close tab-new
-    eval-expression)
+    eval-expression
+    file-picker file-picker-open!)
   (include "built-in.scm"))

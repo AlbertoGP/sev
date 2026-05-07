@@ -13,3 +13,4 @@ sexp scm_minibuffer_activate_commands(sexp ctx, sexp self, sexp n);
 sexp scm_minibuffer_activate_themes(sexp ctx, sexp self, sexp n);
 sexp scm_minibuffer_select_next(sexp ctx, sexp self, sexp n);
 sexp scm_minibuffer_select_prev(sexp ctx, sexp self, sexp n);
+sexp scm_minibuffer_activate_file_picker(sexp ctx, sexp self, sexp n);

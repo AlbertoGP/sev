@@ -8,6 +8,8 @@
 #include <SDL3/SDL.h>
 #include <chibi/eval.h>
 
+#include "file_scanner.h"
+
 #include "clay/renderer.h"
 #include "command/keyevent.h"
 #include "text/register.h"
@@ -212,6 +214,7 @@ typedef struct AppState {
 
     WhichKeyState which_key;
     TooltipState  tooltip;
+    FileScanner   scanner;
 
     // Cursor flashing
     bool        cursor_visible;

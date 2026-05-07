@@ -3,6 +3,7 @@
 
 #include "state.h"
 #include "state_io.h"
+#include "file_scanner.h"
 #include "clay/renderer.h"
 #include "display/pane.h"
 #include "text/buffer.h"
@@ -14,6 +15,8 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Application failed to run");
     }
 
+    scanner_shutdown(&((AppState *)appstate)->scanner);
+    scanner_free(&((AppState *)appstate)->scanner);
     pane_quit();
     buffer_list_quit();
 

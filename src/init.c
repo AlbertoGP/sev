@@ -12,6 +12,7 @@
 
 #include "state.h"
 #include "state_io.h"
+#include "file_scanner.h"
 #include "cursor_flash.h"
 #include "clay/init.h"
 #include "command/keymap.h"
@@ -126,6 +127,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     if (!pane_init(state)) {
         fprintf(stderr, "Failed to initialise pane system.");
+        return SDL_APP_FAILURE;
+    }
+
+    if (!scanner_init(&state->scanner)) {
+        fprintf(stderr, "Failed to initialise file scanner.");
         return SDL_APP_FAILURE;
     }
 

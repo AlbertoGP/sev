@@ -14,6 +14,7 @@
 (set-key! global-keymap "ctrl-q" 'quit)
 (set-key! global-keymap "ctrl-e" 'eval-expression)
 (set-key! global-keymap "ctrl-shift-p" 'command-palette)
+(set-key! global-keymap "ctrl-p" 'file-picker)
 (set-key! global-keymap ":" 'command-palette)
 (set-key! global-keymap "alt-0" 'reset-global-scale)
 (set-key! global-keymap "alt-=" 'increase-global-scale)
@@ -33,7 +34,7 @@
 ;; SPC f — file operations (always available: open creates a pane if none)
 (define base-f-map (make-keymap))
 (%set-keymap-name! base-f-map "file/find")
-(set-key! base-f-map "o" 'open-file)
+(set-key! base-f-map "o" 'file-picker)
 (bind-prefix! base-spc-map "f" base-f-map)
 
 ;; SPC h — help (always available)

@@ -158,6 +158,28 @@
                       (%tab-set-buffer! filename)
                       (message (string-append "Switched to buffer " filename))))))))))
 
+(define (file-picker-open! path)
+  (if (file-exists? path)
+      (begin
+        (%jump-push!)
+        (when (no-panes?) (%tab-new! path) (%tab-set-preview! #t))
+        (if (%buffer-create path)
+            (begin
+              (%tab-set-buffer! path)
+              (%set-buffer-file-name! path)
+              (if (%buffer-read)
+                  (message (string-append "Opened " path))
+                  (message (string-append "Failed to read " path)))
+              (set-auto-mode!))
+            (begin
+              (%tab-set-buffer! path)
+              (message (string-append "Switched to " path)))))
+      (message (string-append "File not found: " path))))
+
+(defcommand (file-picker)
+  "editor: find file\nOpen the async file picker (Ctrl-P)."
+  (%minibuffer-activate-file-picker))
+
 (defcommand (open-project)
   "project: open\nOpen a project directory, changing the working directory to it."
   (interactive)
@@ -169,6 +191,7 @@
               (message (string-append "Cannot open project: " path))
               (begin
                 (%update-recent-project! path)
+                (%scanner-start!)
                 (message (string-append "Opened project " path))))))))
 
 (defcommand (read-file)

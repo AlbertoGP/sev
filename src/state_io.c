@@ -16,6 +16,7 @@
 #include "state_io.h"
 #include "command/message.h"
 #include "command/scheme_internal.h"
+#include "file_scanner.h"
 
 #define STATE_IO_MAX_TOKENS 2048
 
@@ -390,6 +391,7 @@ sexp scm_open_recent_project(sexp ctx, sexp self, sexp n, sexp sidx) {
     const char *path = state->recent_projects[order[idx - 1]].path;
     if (chdir(path) != 0) return SEXP_FALSE;
     state_io_update_recent_project(state, path);
+    scanner_restart(&state->scanner);
     static char msg[PATH_MAX + 32];
     snprintf(msg, sizeof(msg), "Opened project %s", path);
     message_echo(msg);

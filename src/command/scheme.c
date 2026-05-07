@@ -9,6 +9,7 @@
 #include "minibuf.h"
 #include "scheme.h"
 #include "scheme_bindings.h"
+#include "../file_scanner.h"
 #include "../text/buffer.h"
 #include "../text/buffer_type.h"
 #include "../text/var.h"
@@ -16,6 +17,12 @@
 #include "../display/tab.h"
 
 AppState *G;   // global app state for commands
+
+static sexp scm_scanner_start(sexp ctx, sexp self, sexp n) {
+    (void)ctx; (void)self; (void)n;
+    scanner_restart(&G->scanner);
+    return SEXP_VOID;
+}
 
 static sexp scm_quit(sexp ctx, sexp self, sexp n) {
     SDL_Event quit_event;
@@ -474,6 +481,10 @@ void scheme_init(AppState *state) {
     SDEF("%minibuffer-activate-major-modes!",     0, scm_minibuffer_activate_major_modes);
     SDEF("%minibuffer-select-next",       0, scm_minibuffer_select_next);
     SDEF("%minibuffer-select-prev",       0, scm_minibuffer_select_prev);
+    SDEF("%minibuffer-activate-file-picker", 0, scm_minibuffer_activate_file_picker);
+
+    // File scanner primitives
+    SDEF("%scanner-start!", 0, scm_scanner_start);
 
     // Which-key primitives
     SDEF("%which-key-toggle", 0, scm_which_key_toggle);
@@ -584,6 +595,8 @@ void scheme_init(AppState *state) {
         "%minibuffer-activate-describe-variable %minibuffer-activate-themes "
         "%minibuffer-activate-major-modes! "
         "%minibuffer-select-next %minibuffer-select-prev "
+        "%minibuffer-activate-file-picker "
+        "%scanner-start! "
         "%which-key-toggle "
         "%record-command-usage %update-recent-project! %chdir %open-recent-project! "
         "%jump-push! %jump-backward! %jump-forward! "

@@ -10,6 +10,7 @@
 #include "scheme_internal.h"
 #include "../text/buffer.h"
 #include "../display/major_mode_info.h"
+#include "../file_scanner.h"
 
 // ---- Shared provider utility ------------------------------------------------
 
@@ -597,6 +598,45 @@ sexp scm_minibuffer_activate_commands(sexp ctx, sexp self, sexp n) {
     G->minibuf.selected       = 0;
     G->minibuf.item_scroll    = 0;
     sexp prompt = sexp_c_string(ctx, "Execute command...", -1);
+    return scm_minibuffer_activate(ctx, self, n, prompt, SEXP_FALSE, SEXP_FALSE);
+}
+
+// ---- File picker provider ---------------------------------------------------
+
+static void file_picker_provider(AppState *state, const char *input) {
+    bool filter = input && input[0] != '\0';
+    state->minibuf.item_count = 0;
+    FileIndex *idx = &state->scanner.index;
+    for (size_t i = 0; i < idx->count && state->minibuf.item_count < MINIBUF_ITEMS_MAX; i++) {
+        FileEntry *e = &idx->entries[i];
+        if (filter && strstr(e->path, input) == NULL) continue;
+        MinibufItem *item = &state->minibuf.items[state->minibuf.item_count++];
+        memset(item, 0, sizeof(*item));
+        strncpy(item->label,    e->path, MINIBUF_LABEL_MAX - 1);
+        strncpy(item->sym_name, e->path, MINIBUF_LABEL_MAX - 1);
+    }
+    clamp_selected(state);
+}
+
+static void file_picker_submit_action(sexp ctx, sexp sym) {
+    sexp str = sexp_symbol_to_string(ctx, sym);
+    sexp fn = sexp_env_ref(ctx, G->chibi.env,
+                           sexp_intern(ctx, "file-picker-open!", -1), SEXP_FALSE);
+    if (fn == SEXP_FALSE) return;
+    sexp result = sexp_apply(ctx, fn, sexp_list1(ctx, str));
+    if (sexp_exceptionp(result))
+        sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+}
+
+sexp scm_minibuffer_activate_file_picker(sexp ctx, sexp self, sexp n) {
+    G->minibuf.provider       = file_picker_provider;
+    G->minibuf.preview_action = NULL;
+    G->minibuf.submit_action  = file_picker_submit_action;
+    G->minibuf.all_item_count = 0;
+    G->minibuf.item_count     = 0;
+    G->minibuf.selected       = 0;
+    G->minibuf.item_scroll    = 0;
+    sexp prompt = sexp_c_string(ctx, "Find file...", -1);
     return scm_minibuffer_activate(ctx, self, n, prompt, SEXP_FALSE, SEXP_FALSE);
 }
 

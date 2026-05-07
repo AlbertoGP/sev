@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #include "state.h"
+#include "file_scanner.h"
 #include "clay/renderer.h"
 #include "display/layout.h"
 #include "display/pane.h"
@@ -24,6 +25,12 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     AppState *state = (AppState*) appstate;
     state->input.desired_cursor = SDL_SYSTEM_CURSOR_DEFAULT;
     state->render_gen++;
+
+    if (scanner_drain(&state->scanner) && state->minibuf.active) {
+        SDL_Event ev = {0};
+        ev.type = SDL_EVENT_USER;
+        SDL_PushEvent(&ev);
+    }
 
     Uint64 now = SDL_GetTicksNS();
 
