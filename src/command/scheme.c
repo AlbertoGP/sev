@@ -300,6 +300,23 @@ void scheme_init(AppState *state) {
         return;
     }
 
+#ifndef __EMSCRIPTEN__
+    // Prepend the lib/ directory next to the binary to the module path before
+    // loading the standard env so chibi can find init-7.scm without requiring
+    // a system-wide chibi-scheme installation.
+    char *basePath = (char *)SDL_GetBasePath();
+    char libPath[1024];
+    snprintf(libPath, sizeof(libPath), "%slib", basePath);
+    {
+        sexp_gc_var2(ldir, lpath);
+        sexp_gc_preserve2(ctx, ldir, lpath);
+        ldir = sexp_c_string(ctx, libPath, -1);
+        lpath = sexp_cons(ctx, ldir, sexp_global(ctx, SEXP_G_MODULE_PATH));
+        sexp_global(ctx, SEXP_G_MODULE_PATH) = lpath;
+        sexp_gc_release2(ctx);
+    }
+#endif
+
     sexp env = sexp_load_standard_env(ctx, NULL, SEXP_SEVEN);
     if (sexp_exceptionp(env)) {
         fprintf(stderr, "ERROR: failed to load standard env\n");
@@ -551,7 +568,6 @@ void scheme_init(AppState *state) {
     #ifdef __EMSCRIPTEN__
     #define RESOURCES_PATH "/resources/"
     #else
-    char* basePath = (char*)SDL_GetBasePath();
     char resourcesPath[1024];
     snprintf(resourcesPath, sizeof(resourcesPath), "%sscheme/", basePath);
     #define RESOURCES_PATH resourcesPath
