@@ -59,7 +59,7 @@ cd sev
 ```bash
 cmake -S . -B build-desktop
 cmake --build build-desktop
-./build-desktop/app
+./build-desktop/Sev
 ```
 
 ### WebAssembly
