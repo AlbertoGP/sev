@@ -58,6 +58,7 @@ set(SRC_FILES
 
 # Create executable
 add_executable(app ${SRC_FILES})
+set_target_properties(app PROPERTIES OUTPUT_NAME "Sev")
 
 # ------------------------------------------------------------
 # Tree-sitter (vendored, always static)
@@ -234,6 +235,22 @@ else()
         enable_language(OBJC)
         target_sources(app PRIVATE src/platform/macos.m)
         target_link_libraries(app PRIVATE "-framework Cocoa")
+
+        set_target_properties(app PROPERTIES
+            MACOSX_BUNDLE TRUE
+            MACOSX_BUNDLE_BUNDLE_NAME "Sev"
+            MACOSX_BUNDLE_GUI_IDENTIFIER "com.example.sev"
+            MACOSX_BUNDLE_BUNDLE_VERSION "1.0.0"
+            MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0"
+            MACOSX_BUNDLE_ICON_FILE "AppIcon.icns"
+        )
+        set(APP_ICON resources/AppIcon.icns)
+        set_source_files_properties(${APP_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+        target_sources(app PRIVATE ${APP_ICON})
+
+        set(RESOURCE_DEST "$<TARGET_BUNDLE_CONTENT_DIR:app>/Resources")
+    else()
+        set(RESOURCE_DEST "$<TARGET_FILE_DIR:app>")
     endif()
 
     option(USE_VENDORED "Build vendored SDL3/chibi instead of using system packages" ON)
@@ -243,9 +260,9 @@ else()
     # Copy resources and scheme folders for desktop builds
     add_custom_command(TARGET app POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/resources $<TARGET_FILE_DIR:app>/resources
+        ${CMAKE_SOURCE_DIR}/resources ${RESOURCE_DEST}/resources
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/scheme $<TARGET_FILE_DIR:app>/scheme
+        ${CMAKE_SOURCE_DIR}/scheme ${RESOURCE_DEST}/scheme
     )
 
     if(USE_VENDORED)
@@ -302,7 +319,7 @@ else()
         # Copy vendored chibi-scheme stdlib next to binary so it can find modules
         add_custom_command(TARGET app POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_SOURCE_DIR}/vendored/chibi-scheme/lib $<TARGET_FILE_DIR:app>/lib
+            ${CMAKE_SOURCE_DIR}/vendored/chibi-scheme/lib ${RESOURCE_DEST}/lib
         )
     else()
         # Use system SDL3 packages (Linux)
