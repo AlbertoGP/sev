@@ -15,7 +15,6 @@
 (set-key! global-keymap "ctrl-e" 'eval-expression)
 (set-key! global-keymap "ctrl-shift-p" 'command-palette)
 (set-key! global-keymap "ctrl-p" 'file-picker)
-(set-key! global-keymap ":" 'command-palette)
 (set-key! global-keymap "alt-0" 'reset-global-scale)
 (set-key! global-keymap "alt-=" 'increase-global-scale)
 (set-key! global-keymap "alt--" 'decrease-global-scale)
@@ -182,6 +181,8 @@
 (%set-keymap-parent! welcome-map global-keymap)
 (%set-keymap-name!   welcome-map "welcome")
 (%set-welcome-keymap! welcome-map)
+
+(set-key! welcome-map ":" 'command-palette)
 
 (defcommand (open-recent-1) "project: open most recent" (interactive) (%open-recent-project! 1))
 (defcommand (open-recent-2) "project: open 2nd most recent" (interactive) (%open-recent-project! 2))

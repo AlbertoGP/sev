@@ -61,6 +61,7 @@
 (set-key! normal-map "G" 'vim-motion-G)
 (set-key! normal-map "ctrl-o" 'vim-jump-backward)
 (set-key! normal-map "ctrl-i" 'vim-jump-forward)
+(set-key! normal-map ":" 'command-palette)
 
 ;; Insert mode bindings
 (set-key! insert-map "h" 'self-insert)
@@ -80,6 +81,7 @@
 (set-key! insert-map "ctrl-v"   'vim-insert-paste-clipboard)
 
 ;; Select (visual) mode bindings
+(set-key! select-map ":" 'command-palette)
 (set-key! select-map "v" 'vim-select)
 (set-key! select-map "V" 'vim-select-line)
 (set-key! select-map "ctrl-v" 'vim-select-rectangle)
