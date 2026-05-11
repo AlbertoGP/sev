@@ -35,6 +35,15 @@ static void GlobalHeader(AppState *state) {
         },
         .backgroundColor = ui_resolve_color(state, state->ui.roles.bar_bg),
     }) {
+        if (state->ui.titlebar_height > 0.0f &&
+                Clay_Hovered() &&
+                state->input.left_double_click_this_frame) {
+            if (SDL_GetWindowFlags(state->window) & SDL_WINDOW_MAXIMIZED)
+                SDL_RestoreWindow(state->window);
+            else
+                SDL_MaximizeWindow(state->window);
+        }
+
         SDL_Texture *app_tex = icon_get("tab-icon", state, (int)icon_size, (int)icon_size);
         CLAY(CLAY_ID("App Icon"), {
             .layout = {

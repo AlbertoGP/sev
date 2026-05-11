@@ -10,14 +10,16 @@ MacOSTitlebarInfo macos_setup_titlebar(SDL_Window *sdl_window) {
         props, SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL);
     if (!win) return info;
 
-    win.styleMask |= NSWindowStyleMaskFullSizeContentView;
-    win.titlebarAppearsTransparent = YES;
-    win.titleVisibility = NSWindowTitleHidden;
-
-    CGFloat total = win.frame.size.height;
+    // Measure titlebar height before setting titlebarAppearsTransparent, because
+    // that property makes contentLayoutRect report the full frame height instead.
+    CGFloat total   = win.frame.size.height;
     CGFloat content = win.contentLayoutRect.size.height;
     if (content > 0.0 && total > content)
         info.titlebar_height = (float)(total - content);
+
+    win.styleMask |= NSWindowStyleMaskFullSizeContentView;
+    win.titlebarAppearsTransparent = YES;
+    win.titleVisibility = NSWindowTitleHidden;
 
     NSButton *zoom = [win standardWindowButton:NSWindowZoomButton];
     if (zoom) {
