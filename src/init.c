@@ -4,6 +4,10 @@
 #include <emscripten.h>
 #endif
 
+#ifdef __APPLE__
+#include "platform/macos.h"
+#endif
+
 #define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL.h>
@@ -108,6 +112,15 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     state->ui.dpi_scale = (dpi > 0.0f) ? dpi : 1.0f;
     state->ui.user_scale = 1.0f;
     state->ui.scale_factor = state->ui.dpi_scale * state->ui.user_scale;
+
+#ifdef __APPLE__
+    {
+        MacOSTitlebarInfo tb = macos_setup_titlebar(state->window);
+        state->ui.titlebar_height     = tb.titlebar_height     * state->ui.dpi_scale;
+        state->ui.titlebar_left_inset = tb.traffic_light_width * state->ui.dpi_scale;
+    }
+#endif
+
     scheme_init(state);
 
     if (!state_io_load(state)) {

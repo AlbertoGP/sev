@@ -230,6 +230,12 @@ else()
     # Desktop build
     # ------------------------------------------------------------
 
+    if(APPLE)
+        enable_language(OBJC)
+        target_sources(app PRIVATE src/platform/macos.m)
+        target_link_libraries(app PRIVATE "-framework Cocoa")
+    endif()
+
     option(USE_VENDORED "Build vendored SDL3/chibi instead of using system packages" ON)
 
     message(STATUS "Configuring for desktop build (vendored=${USE_VENDORED})")

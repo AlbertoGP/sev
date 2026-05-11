@@ -136,6 +136,8 @@ typedef struct UIState {
     float dpi_scale;          // display pixel density (e.g. 2.0 on retina)
     float user_scale;         // user zoom level (default from Scheme)
     float scale_factor;       // effective scale = dpi_scale * user_scale
+    float titlebar_height;    // macOS: title bar height in physical px (0 elsewhere)
+    float titlebar_left_inset; // macOS: physical px reserved for traffic lights (0 elsewhere)
 } UIState;
 
 // Forward declaration so Minibuf's provider pointer can reference AppState.

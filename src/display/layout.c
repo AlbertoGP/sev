@@ -10,14 +10,27 @@
 #include "../state.h"
 
 static void GlobalHeader(AppState *state) {
-    float icon_size = 24.0f * state->ui.scale_factor;
+    float scale     = state->ui.scale_factor;
+    float icon_size = 24.0f * scale;
+    float natural_h = icon_size + 4.0f * scale;
+    float height    = (state->ui.titlebar_height > natural_h)
+                      ? state->ui.titlebar_height : natural_h;
+    float pad_left  = (state->ui.titlebar_left_inset > 0.0f)
+                      ? state->ui.titlebar_left_inset : 5.0f * scale;
+    float pad       = 5.0f * scale;
+
     CLAY(CLAY_ID("Global Header"), {
         .layout = {
             .sizing = {
                 .width  = CLAY_SIZING_GROW(0),
-                .height = CLAY_SIZING_FIXED(icon_size + 4 * state->ui.scale_factor),
+                .height = CLAY_SIZING_FIXED(height),
             },
-            .padding = CLAY_PADDING_ALL(5 * state->ui.scale_factor),
+            .padding = {
+                .left   = (uint16_t)pad_left,
+                .right  = (uint16_t)pad,
+                .top    = (uint16_t)pad,
+                .bottom = (uint16_t)pad,
+            },
             .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
         },
         .backgroundColor = ui_resolve_color(state, state->ui.roles.bar_bg),
