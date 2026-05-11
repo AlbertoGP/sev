@@ -454,7 +454,8 @@ void ts_buffer_highlight(Buffer *buf) {
 }
 
 void ts_buffer_enable(Buffer *buf) {
-    if (buf->ts.parser) return;
+    if (buf->ts.parser && buf->ts.language == tree_sitter_scheme()) return;
+    ts_buffer_free(buf);
     ts_buffer_init(buf);
     ts_buffer_parse(buf);
 }
@@ -498,7 +499,8 @@ void ts_buffer_init_json(Buffer *buf) {
 }
 
 void ts_buffer_enable_json(Buffer *buf) {
-    if (buf->ts.parser) return;
+    if (buf->ts.parser && buf->ts.language == tree_sitter_json()) return;
+    ts_buffer_free(buf);
     ts_buffer_init_json(buf);
     ts_buffer_parse(buf);
 }
