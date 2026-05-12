@@ -386,8 +386,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
                 my >= state->minibuf.palette_y &&
                 my <  state->minibuf.palette_y + state->minibuf.palette_h;
             if (over_palette) {
-                int delta = (int)event->wheel.y;
-                if (event->wheel.direction == SDL_MOUSEWHEEL_NORMAL) delta = -delta;
+                int delta = -(int)event->wheel.y;
                 int max_scroll = state->minibuf.item_count - MINIBUF_VISIBLE_ITEMS;
                 state->minibuf.item_scroll += delta;
                 if (state->minibuf.item_scroll < 0) state->minibuf.item_scroll = 0;
@@ -406,9 +405,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 
             // Vertical scroll.
             if (cache->count > 0 && event->wheel.y != 0) {
-                float delta_px = event->wheel.y * px_per_line * 3.0f;
-                if (event->wheel.direction == SDL_MOUSEWHEEL_NORMAL)
-                    delta_px = -delta_px;
+                float delta_px = -event->wheel.y * px_per_line * 3.0f;
 
                 cache->scroll_offset += delta_px;
                 float max_scroll = (cache->count > 1)
@@ -421,8 +418,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             // Horizontal scroll (nowrap mode only).
             if (!cache->wrap_lines && event->wheel.x != 0) {
                 float dx = event->wheel.x * px_per_line * 3.0f;
-                if (event->wheel.direction == SDL_MOUSEWHEEL_NORMAL)
-                    dx = -dx;
                 float text_w = scroll_hit->content.text_origin_w;
                 float max_scroll_x = cache->max_line_width > text_w
                                      ? cache->max_line_width - text_w : 0.0f;
