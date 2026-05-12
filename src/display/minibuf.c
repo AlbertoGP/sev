@@ -64,7 +64,21 @@ void MinibufPalette(AppState *state) {
         cursor_x = text_measure_tab_aware(&state->rendererData, FONT_UI_NORMAL, font_size, minibuf_text, point_pos, 4);
     }
 
-    float pad    = 5.0f * scale;
+    float pad         = 5.0f * scale;
+    float container_w = 520.0f * scale - 4.0f * pad;
+
+    float scroll_offset = 0.0f;
+    if (!placeholder) {
+        float total_w = text_measure_tab_aware(
+            &state->rendererData, FONT_UI_NORMAL, font_size,
+            minibuf_text, text_len, 4);
+        float cursor_w_px = scale >= 2.0f ? 2.0f * scale : 1.0f;
+        float max_offset = total_w > container_w ? total_w - container_w : 0.0f;
+        if (cursor_x + cursor_w_px > container_w)
+            scroll_offset = cursor_x + cursor_w_px - container_w;
+        if (scroll_offset > max_offset)
+            scroll_offset = max_offset;
+    }
     int   line_h = vline_get_line_height(&state->rendererData, FONT_UI_NORMAL, font_size);
 
     Clay_Color text_color = placeholder
@@ -129,14 +143,23 @@ void MinibufPalette(AppState *state) {
             },
         }) {
             int32_t mb_run = 0;
-            CLAY_AUTO_ID({ .layout = { .layoutDirection = CLAY_LEFT_TO_RIGHT }}) {
+            CLAY_AUTO_ID({
+                .layout = {
+                    .sizing = {
+                        .width  = CLAY_SIZING_GROW(0),
+                        .height = CLAY_SIZING_FIXED((float)line_h)
+                    },
+                    .layoutDirection = CLAY_LEFT_TO_RIGHT
+                },
+                .clip = { .horizontal = true, .childOffset = { .x = -scroll_offset } }
+            }) {
                 text_emit_tab_aware(&state->rendererData, &mb_run, NULL,
                                     FONT_UI_NORMAL, font_size, 4, line_h,
                                     text_color, (Clay_Color){0},
                                     display_str.chars, display_str.length);
             }
             if (state->cursor_visible)
-                Cursor(state, 0, cursor_x + 2.0f * pad, 8.0f * scale, line_h,
+                Cursor(state, 0, cursor_x - scroll_offset + 2.0f * pad, 8.0f * scale, line_h,
                        0.0f, 0.0f, 65535.0f, 65535.0f,
                        FONT_UI_NORMAL, font_size, 151);
         }
@@ -196,7 +219,8 @@ void MinibufPalette(AppState *state) {
                             }) {}
                         }
                         CLAY(CLAY_IDI_LOCAL("MinibufItemLabel", i), {
-                            .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } }
+                            .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } },
+                            .clip = { .horizontal = true }
                         }) {
                             CLAY_TEXT(label, CLAY_TEXT_CONFIG({
                                 .fontId    = FONT_UI_NORMAL,
