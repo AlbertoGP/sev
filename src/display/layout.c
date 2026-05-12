@@ -10,7 +10,7 @@
 #include "../state.h"
 
 static void GlobalHeader(AppState *state) {
-    float scale     = state->ui.scale_factor;
+    float scale     = state->ui.dpi_scale;
     float icon_size = 24.0f * scale;
     float natural_h = icon_size + 4.0f * scale;
     float height    = (state->ui.titlebar_height > natural_h)
