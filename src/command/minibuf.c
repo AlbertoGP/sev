@@ -361,6 +361,7 @@ static void minibuf_pop(sexp ctx) {
     Location loc = { frame->saved_point };
     point_set(loc);
 
+    G->minibuf.text_scroll = 0.0f;
 }
 
 sexp scm_minibuffer_activate(sexp ctx, sexp self, sexp n,
@@ -380,6 +381,7 @@ sexp scm_minibuffer_activate(sexp ctx, sexp self, sexp n,
         frame->saved_point = point_get(G->minibuf.buf).pos;
         G->minibuf.stack_depth++;
         buffer_clear(G->minibuf.buf);
+        G->minibuf.text_scroll = 0.0f;
     } else {
         // Release any stale callbacks
         if (G->minibuf.on_submit != SEXP_FALSE)
@@ -391,6 +393,7 @@ sexp scm_minibuffer_activate(sexp ctx, sexp self, sexp n,
         G->minibuf.prev_focus = G->input.current_focus;
         G->input.current_focus = FOCUS_MINIBUFFER;
         buffer_clear(G->minibuf.buf);
+        G->minibuf.text_scroll = 0.0f;
     }
 
     const char *prompt = sexp_string_data(sprompt);

@@ -67,17 +67,25 @@ void MinibufPalette(AppState *state) {
     float pad         = 5.0f * scale;
     float container_w = 520.0f * scale - 4.0f * pad;
 
-    float scroll_offset = 0.0f;
+    float scroll_offset = state->minibuf.text_scroll;
     if (!placeholder) {
         float total_w = text_measure_tab_aware(
             &state->rendererData, FONT_UI_NORMAL, font_size,
             minibuf_text, text_len, 4);
         float cursor_w_px = scale >= 2.0f ? 2.0f * scale : 1.0f;
         float max_offset = total_w > container_w ? total_w - container_w : 0.0f;
-        if (cursor_x + cursor_w_px > container_w)
+        // Scroll left only when cursor leaves the visible area on the left.
+        if (cursor_x < scroll_offset)
+            scroll_offset = cursor_x;
+        // Scroll right only when cursor leaves the visible area on the right.
+        if (cursor_x + cursor_w_px > scroll_offset + container_w)
             scroll_offset = cursor_x + cursor_w_px - container_w;
+        // Clamp: no gap past end of text (e.g. after backspacing).
         if (scroll_offset > max_offset)
             scroll_offset = max_offset;
+        state->minibuf.text_scroll = scroll_offset;
+    } else {
+        state->minibuf.text_scroll = 0.0f;
     }
     int   line_h = vline_get_line_height(&state->rendererData, FONT_UI_NORMAL, font_size);
 

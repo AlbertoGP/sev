@@ -186,6 +186,7 @@ typedef struct {
     int         item_count;
     int         selected;
     int         item_scroll;
+    float       text_scroll;
 } Minibuf;
 
 typedef struct {
