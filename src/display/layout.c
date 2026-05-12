@@ -13,9 +13,14 @@ static void GlobalHeader(AppState *state) {
     float scale     = state->ui.dpi_scale;
     float icon_size = 24.0f * scale;
     float natural_h = icon_size + 4.0f * scale;
-    float height    = (state->ui.titlebar_height > natural_h)
+#ifdef __APPLE__
+    bool is_fullscreen = (SDL_GetWindowFlags(state->window) & SDL_WINDOW_FULLSCREEN) != 0;
+#else
+    bool is_fullscreen = false;
+#endif
+    float height    = (!is_fullscreen && state->ui.titlebar_height > natural_h)
                       ? state->ui.titlebar_height : natural_h;
-    float pad_left  = (state->ui.titlebar_left_inset > 0.0f)
+    float pad_left  = (!is_fullscreen && state->ui.titlebar_left_inset > 0.0f)
                       ? state->ui.titlebar_left_inset : 5.0f * scale;
     float pad       = 5.0f * scale;
 
