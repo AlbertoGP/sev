@@ -10,6 +10,7 @@
 (register-icon 'plaintext-icon "icon-plaintext.svg" 'text.primary)
 (register-icon 'scheme-icon "icon-scheme.svg" 'text.primary)
 (register-icon 'json-icon "icon-json.svg" 'text.primary)
+(register-icon 'icon-unknown-extension "icon-unknown-extension.svg" 'text.primary)
 
 (register-icon 'new-icon "icon-plus.svg" 'text.primary)
 (register-icon 'open-icon "icon-open.svg" 'text.primary)

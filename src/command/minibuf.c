@@ -606,6 +606,17 @@ sexp scm_minibuffer_activate_commands(sexp ctx, sexp self, sexp n) {
 
 // ---- File picker provider ---------------------------------------------------
 
+static const char *file_picker_icon_for_ext(const char *basename) {
+    const char *ext = strrchr(basename, '.');
+    if (!ext) return "icon-unknown-extension";
+    ext++;
+    if (strcmp(ext, "scm") == 0 || strcmp(ext, "sld") == 0) return "scheme-icon";
+    if (strcmp(ext, "json") == 0) return "json-icon";
+    if (strcmp(ext, "md")   == 0) return "plaintext-icon";
+    if (strcmp(ext, "txt")  == 0) return "plaintext-icon";
+    return "icon-unknown-extension";
+}
+
 static void file_picker_provider(AppState *state, const char *input) {
     bool filter = input && input[0] != '\0';
     state->minibuf.item_count = 0;
@@ -615,8 +626,14 @@ static void file_picker_provider(AppState *state, const char *input) {
         if (filter && strstr(e->path, input) == NULL) continue;
         MinibufItem *item = &state->minibuf.items[state->minibuf.item_count++];
         memset(item, 0, sizeof(*item));
-        strncpy(item->label,    e->path, MINIBUF_LABEL_MAX - 1);
         strncpy(item->sym_name, e->path, MINIBUF_LABEL_MAX - 1);
+        strncpy(item->label, e->basename, MINIBUF_LABEL_MAX - 1);
+        size_t dir_len = (size_t)(e->basename - e->path);
+        if (dir_len > 0)
+            snprintf(item->suffix, MINIBUF_LABEL_MAX, "%.*s", (int)dir_len, e->path);
+        strncpy(item->icon_name,
+                file_picker_icon_for_ext(e->basename),
+                sizeof(item->icon_name) - 1);
     }
     clamp_selected(state);
 }

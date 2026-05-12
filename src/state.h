@@ -154,6 +154,7 @@ typedef struct {
     char sym_name[MINIBUF_LABEL_MAX]; // symbol name, interned at submit
     char icon_name[64];               // icon registry key, or "" if none
     char keybinding[64];              // first keybinding string, or "" if none
+    char suffix[MINIBUF_LABEL_MAX];   // secondary text rendered smaller/grayed after label
 } MinibufItem;
 
 typedef struct {

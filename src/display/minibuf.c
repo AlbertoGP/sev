@@ -197,8 +197,14 @@ void MinibufPalette(AppState *state) {
                         .chars  = state->minibuf.items[abs_idx].label,
                         .length = (int32_t)strlen(state->minibuf.items[abs_idx].label)
                     };
-                    bool has_kb   = state->minibuf.items[abs_idx].keybinding[0] != '\0';
-                    bool has_icon = state->minibuf.items[abs_idx].icon_name[0] != '\0';
+                    bool has_kb     = state->minibuf.items[abs_idx].keybinding[0] != '\0';
+                    bool has_icon   = state->minibuf.items[abs_idx].icon_name[0] != '\0';
+                    bool has_suffix = state->minibuf.items[abs_idx].suffix[0] != '\0';
+                    Clay_String suffix_str = {
+                        .chars  = state->minibuf.items[abs_idx].suffix,
+                        .length = (int32_t)strlen(state->minibuf.items[abs_idx].suffix)
+                    };
+                    uint16_t suffix_font_size = (uint16_t)(10.0f * scale);
                     CLAY(CLAY_IDI_LOCAL("MinibufItem", i), {
                         .layout = {
                             .sizing         = { .width = CLAY_SIZING_GROW(0) },
@@ -227,7 +233,11 @@ void MinibufPalette(AppState *state) {
                             }) {}
                         }
                         CLAY(CLAY_IDI_LOCAL("MinibufItemLabel", i), {
-                            .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } },
+                            .layout = {
+                                .sizing         = { .width = CLAY_SIZING_GROW(0) },
+                                .childGap       = (uint16_t)(pad),
+                                .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
+                            },
                             .clip = { .horizontal = true }
                         }) {
                             CLAY_TEXT(label, CLAY_TEXT_CONFIG({
@@ -236,6 +246,14 @@ void MinibufPalette(AppState *state) {
                                 .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
                                 .wrapMode  = CLAY_TEXT_WRAP_NONE
                             }));
+                            if (has_suffix) {
+                                CLAY_TEXT(suffix_str, CLAY_TEXT_CONFIG({
+                                    .fontId    = FONT_UI_NORMAL,
+                                    .fontSize  = suffix_font_size,
+                                    .textColor = ui_resolve_color(state, state->ui.roles.text_key),
+                                    .wrapMode  = CLAY_TEXT_WRAP_NONE
+                                }));
+                            }
                         }
                         if (has_kb) {
                             Clay_String kb = {
