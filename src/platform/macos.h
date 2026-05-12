@@ -8,4 +8,5 @@ typedef struct {
 } MacOSTitlebarInfo;
 
 MacOSTitlebarInfo macos_setup_titlebar(SDL_Window *sdl_window);
+void macos_reapply_titlebar(SDL_Window *sdl_window);
 #endif

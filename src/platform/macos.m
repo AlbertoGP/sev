@@ -29,3 +29,14 @@ MacOSTitlebarInfo macos_setup_titlebar(SDL_Window *sdl_window) {
 
     return info;
 }
+
+void macos_reapply_titlebar(SDL_Window *sdl_window) {
+    SDL_PropertiesID props = SDL_GetWindowProperties(sdl_window);
+    NSWindow *win = (__bridge NSWindow *)SDL_GetPointerProperty(
+        props, SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL);
+    if (!win) return;
+
+    win.styleMask |= NSWindowStyleMaskFullSizeContentView;
+    win.titlebarAppearsTransparent = YES;
+    win.titleVisibility = NSWindowTitleHidden;
+}

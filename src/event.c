@@ -5,6 +5,9 @@
 #include <chibi/eval.h>
 
 #include "state.h"
+#ifdef __APPLE__
+#include "platform/macos.h"
+#endif
 #include "cursor_flash.h"
 #include "command/keyboard.h"
 #include "command/message.h"
@@ -428,6 +431,12 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             }
         }
         break;
+
+#ifdef __APPLE__
+    case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
+        macos_reapply_titlebar(state->window);
+        break;
+#endif
 
     case SDL_EVENT_WINDOW_RESIZED: {
         int width, height;
