@@ -30,7 +30,8 @@
     open-line-below open-line-above
     append-char substitute-char
     vim-start-macro vim-stop-macro vim-play-macro vim-play-last-macro
-    vim-jump-backward vim-jump-forward)
+    vim-jump-backward vim-jump-forward
+    vim-search-open vim-search-next vim-search-prev)
   (include "vim/core.scm")
   (include "vim/undo.scm")
   (include "vim/motion.scm")

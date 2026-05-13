@@ -341,8 +341,8 @@ void scheme_init(AppState *state) {
     state->chibi.ctx = ctx;
     state->chibi.env = env;
 
-    sexp_gc_var2(global_km, pane_km);
-    sexp_gc_preserve2(ctx, global_km, pane_km);
+    sexp_gc_var3(global_km, pane_km, search_km);
+    sexp_gc_preserve3(ctx, global_km, pane_km, search_km);
 
     // DON'T register custom types for now - just use built-in CPOINTER
     global_km = sexp_make_cpointer(
@@ -369,7 +369,19 @@ void scheme_init(AppState *state) {
                     sexp_intern(ctx, "pane-keymap", -1),
                     pane_km);
 
-    sexp_gc_release2(ctx);
+    search_km = sexp_make_cpointer(
+        ctx,
+        SEXP_CPOINTER,
+        state->input.search_map,
+        SEXP_FALSE,
+        0
+    );
+
+    sexp_env_define(ctx, env,
+                    sexp_intern(ctx, "search-keymap", -1),
+                    search_km);
+
+    sexp_gc_release3(ctx);
 
     #define SDEF(a, b, c) sexp_define_foreign(ctx, env, a, b, c)
 
@@ -551,6 +563,15 @@ void scheme_init(AppState *state) {
     SDEF("%set-mouse-click-handler!", 1, scm_set_mouse_click_handler);
     SDEF("%set-mouse-drag-handler!",  1, scm_set_mouse_drag_handler);
 
+    // In-buffer search primitives
+    SDEF("%search-open!",       0, scm_search_open);
+    SDEF("%search-next!",       0, scm_search_next);
+    SDEF("%search-prev!",       0, scm_search_prev);
+    SDEF("search-self-insert",  0, scm_search_self_insert);
+    SDEF("%search-backspace!",  0, scm_search_backspace);
+    SDEF("%search-confirm!",    0, scm_search_confirm);
+    SDEF("%search-cancel!",     0, scm_search_cancel);
+
     // Mark / selection primitives
     SDEF("%mark-set-to-point!", 1, scm_mark_set_to_point);
     SDEF("%select-mode-set!", 1, scm_select_mode_set);
@@ -648,7 +669,9 @@ void scheme_init(AppState *state) {
         "%jump-push! %jump-backward! %jump-forward! "
         "jump-to-matching-bracket "
         "%set-mouse-click-handler! %set-mouse-drag-handler! "
-        "global-keymap pane-keymap eval) "
+        "%search-open! %search-next! %search-prev! "
+        "search-self-insert %search-backspace! %search-confirm! %search-cancel! "
+        "global-keymap pane-keymap search-keymap eval) "
         "%editor-env '()))",
         -1, meta);
     if (sexp_exceptionp(result)) {
@@ -724,6 +747,8 @@ void scheme_init(AppState *state) {
     INTERN_ROLE(hl_bracket,          "hl.bracket");
     INTERN_ROLE(hl_property,         "hl.property");
     INTERN_ROLE(hl_bracket_match,    "hl.bracket.match");
+    INTERN_ROLE(hl_search,           "hl.search");
+    INTERN_ROLE(hl_search_active,    "hl.search.active");
 
     #undef INTERN_ROLE
 

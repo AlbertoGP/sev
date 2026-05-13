@@ -61,7 +61,28 @@
 (set-key! normal-map "G" 'vim-motion-G)
 (set-key! normal-map "ctrl-o" 'vim-jump-backward)
 (set-key! normal-map "ctrl-i" 'vim-jump-forward)
+(set-key! normal-map "/" 'vim-search-open)
+(set-key! normal-map "n" 'vim-search-next)
+(set-key! normal-map "N" 'vim-search-prev)
 (set-key! normal-map ":" 'command-palette)
+
+;; Search commands
+(defcommand (vim-search-open)
+  "search: open search bar\nOpen the in-buffer search bar."
+  (%search-open!))
+
+(defcommand (vim-search-next)
+  "search: next match\nJump to the next search match."
+  (%search-next!))
+
+(defcommand (vim-search-prev)
+  "search: previous match\nJump to the previous search match."
+  (%search-prev!))
+
+;; Search bar keybindings
+(set-key! search-keymap "backspace" 'search-backspace)
+(set-key! search-keymap "return"    'search-confirm)
+(set-key! search-keymap "escape"    'search-cancel)
 
 ;; Insert mode bindings
 (set-key! insert-map "h" 'self-insert)

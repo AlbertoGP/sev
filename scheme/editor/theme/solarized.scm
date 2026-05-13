@@ -60,7 +60,9 @@
     (label.minibuffer . bg-1)
     (border.active    . (alpha orange 0.4))
     (selection.hover  . bg-0)
-    (hl.string        . cyan)))
+    (hl.string        . cyan)
+    (hl.search        . (alpha yellow 0.35))
+    (hl.search.active . (alpha orange 0.55))))
 
 (define-theme
   'solarized-light
@@ -117,4 +119,6 @@
     (label.minibuffer . bg-1)
     (border.active    . (alpha orange 0.25))
     (selection.hover  . bg-0)
-    (hl.string        . cyan)))
+    (hl.string        . cyan)
+    (hl.search        . (alpha yellow 0.3))
+    (hl.search.active . (alpha orange 0.5))))

@@ -25,8 +25,12 @@ bool init_input(AppState *state) {
     Keymap *pane = keymap_create();
     if (!pane) { free(global); return false; }
 
+    Keymap *search = keymap_create();
+    if (!search) { free(global); free(pane); return false; }
+
     state->input.global_map  = global;
     state->input.pane_map    = pane;
+    state->input.search_map  = search;
     state->input.current_map = global;
     state->input.key_intercept_cb  = SEXP_FALSE;
     state->input.key_intercept_map = NULL;
@@ -324,6 +328,21 @@ record_macro:
 
 void key_dispatch(AppState *state, const KeyEvent *ev) {
     last_event = *ev;
+
+    if (state->input.current_focus == FOCUS_SEARCH) {
+        reset_key_state(state);
+        Binding *b = state->input.search_map
+                     ? keymap_lookup(state->input.search_map, ev) : NULL;
+        if (!b && ev->type == KEYEVENT_CHAR && ev->mods == MOD_NONE) {
+            static Binding si;
+            si.type        = BINDING_COMMAND;
+            si.command_sym = sexp_intern(state->chibi.ctx, "search-self-insert", -1);
+            b = &si;
+        }
+        if (b && b->type == BINDING_COMMAND)
+            execute_command(state, b);
+        return;
+    }
 
     if (state->input.current_focus == FOCUS_MINIBUFFER) {
         Buffer *saved = buffer_get_current();

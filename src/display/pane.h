@@ -8,6 +8,7 @@
 
 #include "tab.h"
 #include "../state.h"
+#include "../text/search.h"
 
 typedef enum {
     DIR_UP,
@@ -44,6 +45,9 @@ typedef struct ContentPane {
     bool  has_scrollbar;
     float scrollbar_thumb_y;  // screen y of thumb top (absolute, updated each frame)
     float scrollbar_thumb_h;  // thumb height in pixels
+
+    // In-buffer search session (per-pane; persists across bar open/close).
+    SearchSession search;
 
     // Horizontal scrollbar hit-test region (updated each frame, nowrap mode only).
     bool  has_hscrollbar;
@@ -155,6 +159,10 @@ void pane_free_strings(void);
 
 // Push current buffer position onto the active pane's active tab's jump list.
 void pane_push_jump(void);
+
+// Handle a key event while FOCUS_SEARCH is active.
+// Called directly by key_dispatch() bypassing the normal keymap chain.
+void search_handle_key(AppState *state, const KeyEvent *ev);
 
 // Scheme bindings.
 #include <chibi/sexp.h>

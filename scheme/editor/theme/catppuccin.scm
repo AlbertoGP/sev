@@ -40,8 +40,10 @@
     (flamingo  . "#f2cdcd")
     (rosewater . "#f5e0dc"))
   'canonical-map *catppuccin-canonical-map*
-  'overrides '((mode.normal     . lavender)
-               (mode.minibuffer . lavender)))
+  'overrides '((mode.normal      . lavender)
+               (mode.minibuffer  . lavender)
+               (hl.search        . (alpha yellow 0.3))
+               (hl.search.active . (alpha peach  0.5))))
 
 (define-theme
   'catppuccin-macchiato
@@ -75,8 +77,10 @@
     (flamingo  . "#f0c6c6")
     (rosewater . "#f4dbd6"))
   'canonical-map *catppuccin-canonical-map*
-  'overrides '((mode.normal     . lavender)
-               (mode.minibuffer . lavender)))
+  'overrides '((mode.normal      . lavender)
+               (mode.minibuffer  . lavender)
+               (hl.search        . (alpha yellow 0.3))
+               (hl.search.active . (alpha peach  0.5))))
 
 (define-theme
   'catppuccin-frappe
@@ -110,8 +114,10 @@
     (flamingo  . "#eebebe")
     (rosewater . "#f2d5cf"))
   'canonical-map *catppuccin-canonical-map*
-  'overrides '((mode.normal     . lavender)
-               (mode.minibuffer . lavender)))
+  'overrides '((mode.normal      . lavender)
+               (mode.minibuffer  . lavender)
+               (hl.search        . (alpha yellow 0.3))
+               (hl.search.active . (alpha peach  0.5))))
 
 (define-theme
   'catppuccin-latte
@@ -153,6 +159,8 @@
     (label.replace    . bg-0)
     (label.select     . bg-0)
     (label.pending    . bg-0)
-    (label.minibuffer . bg-0)))
+    (label.minibuffer . bg-0)
+    (hl.search        . (alpha yellow 0.3))
+    (hl.search.active . (alpha peach  0.5))))
 
 (activate-theme 'catppuccin-macchiato)

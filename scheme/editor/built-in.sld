@@ -23,5 +23,6 @@
     save-buffer save-buffer-as open-file open-project read-file
     buffer-new buffer-rename switch-to-buffer buffer-close tab-new
     eval-expression
-    file-picker file-picker-open!)
+    file-picker file-picker-open!
+    search-backspace search-confirm search-cancel)
   (include "built-in.scm"))

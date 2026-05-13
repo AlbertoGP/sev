@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -6,9 +7,13 @@
 #include "pane.h"
 #include "tab.h"
 #include "theme.h"
+#include "../command/keyevent.h"
 #include "../command/message.h"
 #include "../command/scheme_internal.h"
+#include "../text/buffer.h"
 #include "../text/buffer_type.h"
+
+extern KeyEvent last_event;  // defined in command/keymap.c
 
 static Pane *root_pane = NULL;
 
@@ -225,6 +230,7 @@ void pane_destroy(Pane *pane) {
             tab_free(t);
             t = next;
         }
+        search_session_free(&pane->content.search);
     }
     free(pane);
 }
@@ -491,6 +497,70 @@ void pane_free_strings(void) {
     // String cleanup moved to tab_free_strings() in tab.c.
 }
 
+static void SearchBar(AppState *state, Pane *pane, int32_t index) {
+    SearchSession *s = &pane->content.search;
+    if (!s->bar_open) return;
+
+    float sf = state->ui.scale_factor;
+    CLAY(CLAY_IDI_LOCAL("SearchBar", index), {
+        .layout = {
+            .sizing = { .width = CLAY_SIZING_GROW(0) },
+            .layoutDirection = CLAY_LEFT_TO_RIGHT,
+            .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
+            .padding = {
+                .left   = (uint16_t)(8 * sf),
+                .right  = (uint16_t)(8 * sf),
+                .top    = (uint16_t)(4 * sf),
+                .bottom = (uint16_t)(4 * sf),
+            },
+            .childGap = (uint16_t)(6 * sf),
+        },
+        .backgroundColor = ui_resolve_color(state, state->ui.roles.pane_bg),
+        .border = {
+            .width = { .bottom = 2 },
+            .color = ui_resolve_color(state, state->ui.roles.border_active),
+        },
+    }) {
+        uint16_t font_sz = (uint16_t)(13 * sf);
+
+        CLAY_TEXT(CLAY_STRING("/"), CLAY_TEXT_CONFIG({
+            .fontId    = FONT_UI_NORMAL,
+            .fontSize  = font_sz,
+            .textColor = ui_resolve_color(state, state->ui.roles.text_faded),
+        }));
+
+        Clay_String qstr = {
+            .chars               = s->query,
+            .length              = (int32_t)s->query_len,
+            .isStaticallyAllocated = true,
+        };
+        CLAY_TEXT(qstr, CLAY_TEXT_CONFIG({
+            .fontId    = FONT_BUF_NORMAL,
+            .fontSize  = font_sz,
+            .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
+        }));
+
+        CLAY_AUTO_ID({
+            .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } }
+        }) {}
+
+        // count_str is pre-formatted and stored in the SearchSession (stable per-pane memory).
+        const char *count_chars = s->query_len == 0 ? "0/0" : s->count_str;
+        Clay_String cstr = {
+            .chars               = count_chars,
+            .length              = (int32_t)strlen(count_chars),
+            .isStaticallyAllocated = true,
+        };
+        CLAY_TEXT(cstr, CLAY_TEXT_CONFIG({
+            .fontId    = FONT_UI_NORMAL,
+            .fontSize  = (uint16_t)(12 * sf),
+            .textColor = s->query_len && s->match_count
+              ? ui_resolve_color(state, state->ui.roles.text_primary)
+              : ui_resolve_color(state, state->ui.roles.text_faded),
+        }));
+    }
+}
+
 static void LeafPane(AppState *state, Pane *pane, int32_t index, float width, float height) {
     Clay_ElementId cpane_id = CLAY_IDI_LOCAL("ContentPane", index);
     CLAY(cpane_id, {
@@ -504,6 +574,7 @@ static void LeafPane(AppState *state, Pane *pane, int32_t index, float width, fl
         .backgroundColor = ui_resolve_color(state, state->ui.roles.pane_bg)
     }) {
         TabBar(state, pane, index);
+        SearchBar(state, pane, index);
         BufferContentRender(state, &pane->content, pane->content.active_tab, index, cpane_id);
     }
 }
@@ -550,6 +621,78 @@ void PaneContent(AppState *state, Pane *pane, int32_t index, float width, float 
     if (pane->type == PANE_V_SPLIT) VSplitPane(state, pane, index, width, height);
     if (pane->type == PANE_H_SPLIT) HSplitPane(state, pane, index, width, height);
     if (pane->type == PANE_CONTENT) LeafPane(state, pane, index, width, height);
+}
+
+// --- Search ---
+
+static void search_recompute_current(Pane *pane) {
+    if (!pane || !pane->content.active_tab) return;
+    Buffer *buf = pane->content.active_tab->content.buffer.buffer;
+    if (!buf) return;
+    const char *text = buffer_text_cached(buf);
+    search_session_recompute(&pane->content.search, text, strlen(text));
+}
+
+static void search_jump_to_active(Pane *pane) {
+    if (!pane) return;
+    SearchSession *s = &pane->content.search;
+    if (s->match_count == 0) return;
+    Buffer *buf = buffer_get_current();
+    if (!buf) return;
+    Location loc = { .pos = s->matches[s->active_match_index].start };
+    point_set(loc);
+    update_line(buf);
+    save_current_column(buf);
+}
+
+void search_handle_key(AppState *state, const KeyEvent *ev) {
+    Pane *pane = pane_get_active();
+    if (!pane) { state->input.current_focus = FOCUS_PANE; return; }
+    SearchSession *s = &pane->content.search;
+
+    if (ev->type == KEYEVENT_SPECIAL) {
+        switch (ev->keycode) {
+        case KEY_BACKSPACE:
+            while (s->query_len > 0 && (s->query[s->query_len - 1] & 0xC0) == 0x80)
+                s->query_len--;
+            if (s->query_len > 0) s->query_len--;
+            s->query[s->query_len] = '\0';
+            search_recompute_current(pane);
+            break;
+        case KEY_RETURN:
+            state->input.current_focus = FOCUS_PANE;
+            search_jump_to_active(pane);
+            break;
+        case KEY_ESC:
+            s->bar_open    = false;
+            s->active      = false;
+            s->match_count = 0;
+            s->query_len   = 0;
+            s->query[0]    = '\0';
+            state->input.current_focus = FOCUS_PANE;
+            break;
+        default:
+            break;
+        }
+        return;
+    }
+
+    if (ev->type == KEYEVENT_CHAR && ev->mods == MOD_NONE) {
+        uint32_t cp = ev->codepoint;
+        char utf8[5] = {0};
+        int len;
+        if      (cp < 0x80)    { utf8[0] = (char)cp;                                                             len = 1; }
+        else if (cp < 0x800)   { utf8[0] = (char)(0xC0|(cp>>6));  utf8[1] = (char)(0x80|(cp&0x3F));             len = 2; }
+        else if (cp < 0x10000) { utf8[0] = (char)(0xE0|(cp>>12)); utf8[1] = (char)(0x80|((cp>>6)&0x3F));  utf8[2] = (char)(0x80|(cp&0x3F));            len = 3; }
+        else                   { utf8[0] = (char)(0xF0|(cp>>18)); utf8[1] = (char)(0x80|((cp>>12)&0x3F)); utf8[2] = (char)(0x80|((cp>>6)&0x3F)); utf8[3] = (char)(0x80|(cp&0x3F)); len = 4; }
+
+        if (s->query_len + (size_t)len < SEARCH_QUERY_MAX) {
+            memcpy(s->query + s->query_len, utf8, (size_t)len);
+            s->query_len += (size_t)len;
+            s->query[s->query_len] = '\0';
+            search_recompute_current(pane);
+        }
+    }
 }
 
 // --- Scheme bindings ---
@@ -690,5 +833,96 @@ sexp scm_set_mouse_drag_handler(sexp ctx, sexp self, sexp n, sexp cb) {
         sexp_release_object(ctx, G->input.mouse_drag_cb);
     G->input.mouse_drag_cb = cb;
     if (cb != SEXP_FALSE) sexp_preserve_object(ctx, cb);
+    return SEXP_VOID;
+}
+
+sexp scm_search_open(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane) return SEXP_VOID;
+    SearchSession *s = &pane->content.search;
+    Buffer *buf = buffer_get_current();
+    s->point     = buf ? point_get(buf).pos : 0;
+    s->query_len = 0;
+    s->query[0]  = '\0';
+    s->match_count = 0;
+    s->active_match_index = 0;
+    s->active   = true;
+    s->bar_open = true;
+    G->input.current_focus = FOCUS_SEARCH;
+    return SEXP_VOID;
+}
+
+sexp scm_search_self_insert(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane) return SEXP_VOID;
+    SearchSession *s = &pane->content.search;
+    if (last_event.type != KEYEVENT_CHAR) return SEXP_VOID;
+    uint32_t cp = last_event.codepoint;
+    char utf8[5] = {0};
+    int len;
+    if      (cp < 0x80)    { utf8[0] = (char)cp;                                                             len = 1; }
+    else if (cp < 0x800)   { utf8[0] = (char)(0xC0|(cp>>6));  utf8[1] = (char)(0x80|(cp&0x3F));             len = 2; }
+    else if (cp < 0x10000) { utf8[0] = (char)(0xE0|(cp>>12)); utf8[1] = (char)(0x80|((cp>>6)&0x3F));  utf8[2] = (char)(0x80|(cp&0x3F));            len = 3; }
+    else                   { utf8[0] = (char)(0xF0|(cp>>18)); utf8[1] = (char)(0x80|((cp>>12)&0x3F)); utf8[2] = (char)(0x80|((cp>>6)&0x3F)); utf8[3] = (char)(0x80|(cp&0x3F)); len = 4; }
+    if (s->query_len + (size_t)len < SEARCH_QUERY_MAX) {
+        memcpy(s->query + s->query_len, utf8, (size_t)len);
+        s->query_len += (size_t)len;
+        s->query[s->query_len] = '\0';
+        search_recompute_current(pane);
+    }
+    return SEXP_VOID;
+}
+
+sexp scm_search_backspace(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane) return SEXP_VOID;
+    SearchSession *s = &pane->content.search;
+    while (s->query_len > 0 && (s->query[s->query_len - 1] & 0xC0) == 0x80)
+        s->query_len--;
+    if (s->query_len > 0) s->query_len--;
+    s->query[s->query_len] = '\0';
+    search_recompute_current(pane);
+    return SEXP_VOID;
+}
+
+sexp scm_search_confirm(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane) return SEXP_VOID;
+    // Keep bar_open so the counter stays visible; only close on escape.
+    G->input.current_focus = FOCUS_PANE;
+    search_jump_to_active(pane);
+    return SEXP_VOID;
+}
+
+sexp scm_search_cancel(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane) return SEXP_VOID;
+    SearchSession *s = &pane->content.search;
+    s->bar_open    = false;
+    s->active      = false;
+    s->match_count = 0;
+    s->query_len   = 0;
+    s->query[0]    = '\0';
+    G->input.current_focus = FOCUS_PANE;
+    return SEXP_VOID;
+}
+
+sexp scm_search_next(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane) return SEXP_VOID;
+    SearchSession *s = &pane->content.search;
+    if (!s->active || s->match_count == 0) return SEXP_VOID;
+    search_session_next_match(s);
+    search_jump_to_active(pane);
+    return SEXP_VOID;
+}
+
+sexp scm_search_prev(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane) return SEXP_VOID;
+    SearchSession *s = &pane->content.search;
+    if (!s->active || s->match_count == 0) return SEXP_VOID;
+    search_session_prev_match(s);
+    search_jump_to_active(pane);
     return SEXP_VOID;
 }

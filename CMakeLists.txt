@@ -257,12 +257,14 @@ else()
 
     message(STATUS "Configuring for desktop build (vendored=${USE_VENDORED})")
 
-    # Copy resources and scheme folders for desktop builds
-    add_custom_command(TARGET app POST_BUILD
+    # Copy resources and scheme folders for desktop builds.
+    # Use a dedicated ALL target so scheme/.sld changes are picked up even
+    # when no C source has changed (POST_BUILD only fires on relink).
+    add_custom_target(copy_scheme ALL
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/resources ${RESOURCE_DEST}/resources
+            ${CMAKE_SOURCE_DIR}/resources ${RESOURCE_DEST}/resources
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/scheme ${RESOURCE_DEST}/scheme
+            ${CMAKE_SOURCE_DIR}/scheme ${RESOURCE_DEST}/scheme
     )
 
     if(USE_VENDORED)

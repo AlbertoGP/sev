@@ -48,6 +48,7 @@ typedef enum {
     FOCUS_PANE,
     FOCUS_WELCOME,
     FOCUS_MINIBUFFER,
+    FOCUS_SEARCH,
 } FocusTarget;
 
 typedef struct {
@@ -56,6 +57,7 @@ typedef struct {
     struct Keymap *pane_map;       // searched only when pane_get_root() != NULL; parent = global_map
     struct Keymap *current_map;
     struct Keymap *welcome_map;             // NULL until registered from Scheme
+    struct Keymap *search_map;              // keymap active when FOCUS_SEARCH
     KeyEvent last_event;
     sexp         key_intercept_cb;         // SEXP_FALSE if inactive
     struct Keymap *key_intercept_map;      // current traversal position
@@ -110,6 +112,8 @@ typedef struct CachedRoles {
     sexp hl_bracket;
     sexp hl_property;
     sexp hl_bracket_match;
+    sexp hl_search;
+    sexp hl_search_active;
 } CachedRoles;
 
 typedef struct CachedSymbols {

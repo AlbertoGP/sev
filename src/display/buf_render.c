@@ -72,11 +72,16 @@ static int sel_pool_idx = 0;
 static TriangleRenderData tri_pool[TRIANGLE_POOL_SIZE];
 static int tri_pool_idx = 0;
 
+#define SEARCH_RECT_POOL_SIZE 2048
+static ScissoredRectData srch_pool[SEARCH_RECT_POOL_SIZE];
+static int srch_pool_idx = 0;
+
 #define LNUM_STR_LEN 12
 
 void buf_render_reset(void) {
-    sel_pool_idx = 0;
-    tri_pool_idx = 0;
+    sel_pool_idx  = 0;
+    tri_pool_idx  = 0;
+    srch_pool_idx = 0;
 }
 
 // --- Static helpers ---
@@ -612,6 +617,61 @@ static void BufRender_SelectionCell(BufRenderCtx *ctx, size_t i, VisualLine *vl)
 }
 
 
+static void BufRender_SearchCell(BufRenderCtx *ctx, size_t i, VisualLine *vl) {
+    SearchSession *s = &ctx->cp->search;
+    if (!s->active || s->match_count == 0 || s->query_len == 0) return;
+
+    size_t line_start = vl->byte_start;
+    size_t line_end   = vl->byte_end;
+
+    for (size_t m = 0; m < s->match_count; m++) {
+        size_t ms = s->matches[m].start;
+        size_t me = s->matches[m].end;
+
+        if (me <= line_start || ms >= line_end) continue;
+
+        size_t hl_start = ms > line_start ? ms : line_start;
+        size_t hl_end   = me < line_end   ? me : line_end;
+        if (hl_end <= hl_start) continue;
+
+        float srch_x = 0.0f;
+        if (hl_start > line_start) {
+            srch_x = text_measure_tab_aware(&ctx->state->rendererData, ctx->font_id, ctx->font_size,
+                                            ctx->chars + line_start,
+                                            hl_start - line_start, ctx->tab_width);
+        }
+        float srch_w = text_measure_tab_aware(&ctx->state->rendererData, ctx->font_id, ctx->font_size,
+                                              ctx->chars + hl_start,
+                                              hl_end - hl_start, ctx->tab_width);
+        if (srch_w <= 0 || srch_pool_idx >= SEARCH_RECT_POOL_SIZE) continue;
+
+        bool is_active = (m == s->active_match_index);
+        sexp role = is_active ? ctx->state->ui.roles.hl_search_active
+                              : ctx->state->ui.roles.hl_search;
+
+        ScissoredRectData *sr = &srch_pool[srch_pool_idx++];
+        sr->type   = CUSTOM_TYPE_SCISSORED_RECT;
+        sr->clip_x = ctx->box.x + ctx->padding + ctx->gutter_width;
+        sr->clip_y = ctx->box.y;
+        sr->clip_w = ctx->box.width - ctx->padding - ctx->gutter_width;
+        sr->clip_h = ctx->text_height;
+        sr->color  = ui_resolve_color(ctx->state, role);
+        CLAY(CLAY_IDI_LOCAL("Srch", (int32_t)(i * 128 + (int32_t)m)), {
+            .floating = {
+                .attachTo = CLAY_ATTACH_TO_PARENT,
+                .offset   = { .x = srch_x, .y = 0 }
+            },
+            .layout = {
+                .sizing = {
+                    .width  = CLAY_SIZING_FIXED(srch_w),
+                    .height = CLAY_SIZING_FIXED(ctx->line_height)
+                }
+            },
+            .custom = { .customData = sr },
+        }) {}
+    }
+}
+
 // Emit a segment [seg_s, seg_e) that may contain tab characters, emitting text and tab blocks.
 #define EMIT_SEGMENT(seg_s, seg_e, role_expr) do { \
     TextStyle _er_style = ui_resolve_text_style(ctx->state, (role_expr), \
@@ -723,6 +783,7 @@ static void BufRender_TextRow(BufRenderCtx *ctx, size_t i) {
         if (cursor_on_line && ctx->cp->active && ctx->state->cursor_visible)
             BufRender_CursorCell(ctx, i, cursor_offset);
         BufRender_SelectionCell(ctx, i, vl);
+        BufRender_SearchCell(ctx, i, vl);
         BufRender_TextCell(ctx, vl);
     }
 }

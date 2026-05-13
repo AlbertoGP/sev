@@ -267,3 +267,16 @@
           (message (string-append "Opened tab " buf-name)))
         (message (string-append "Failed to create tab " buf-name)))))
 
+
+;; In-buffer search bar commands (search-mode keybindings)
+(defcommand (search-backspace)
+  "search: delete character\nDelete the last character from the search query."
+  (%search-backspace!))
+
+(defcommand (search-confirm)
+  "search: confirm\nConfirm search and jump to the first match after the cursor."
+  (%search-confirm!))
+
+(defcommand (search-cancel)
+  "search: cancel\nCancel search and clear highlights."
+  (%search-cancel!))
