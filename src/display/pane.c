@@ -4,10 +4,13 @@
 #include <string.h>
 
 #include "buf_render.h"
+#include "icon.h"
 #include "pane.h"
 #include "tab.h"
 #include "theme.h"
+#include "tooltip.h"
 #include "../command/keyevent.h"
+#include "../command/keymap.h"
 #include "../command/message.h"
 #include "../command/scheme_internal.h"
 #include "../text/buffer.h"
@@ -497,6 +500,19 @@ void pane_free_strings(void) {
     // String cleanup moved to tab_free_strings() in tab.c.
 }
 
+static void HandleCloseSearch(Clay_ElementId id, Clay_PointerData ptr, void *ud) {
+    if (ptr.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
+    Pane *pane = (Pane *)ud;
+    if (!pane) return;
+    SearchSession *s = &pane->content.search;
+    s->bar_open    = false;
+    s->active      = false;
+    s->match_count = 0;
+    s->query_len   = 0;
+    s->query[0]    = '\0';
+    G->input.current_focus = FOCUS_PANE;
+}
+
 static void SearchBar(AppState *state, Pane *pane, int32_t index) {
     SearchSession *s = &pane->content.search;
     if (!s->bar_open) return;
@@ -540,6 +556,34 @@ static void SearchBar(AppState *state, Pane *pane, int32_t index) {
             .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
         }));
 
+        // Zero-width anchor for the floating cursor — out of flow, so it never
+        // shifts the spacer or match counter regardless of cursor visibility.
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = {
+                    .width  = CLAY_SIZING_FIXED(0),
+                    .height = CLAY_SIZING_FIXED(font_sz),
+                }
+            },
+        }) {
+            if (state->input.current_focus == FOCUS_SEARCH && state->cursor_visible) {
+                CLAY_AUTO_ID({
+                    .floating = {
+                        .attachTo = CLAY_ATTACH_TO_PARENT,
+                        .offset   = { .x = 0, .y = 0 },
+                        .zIndex   = 10,
+                    },
+                    .layout = {
+                        .sizing = {
+                            .width  = CLAY_SIZING_FIXED(2 * sf),
+                            .height = CLAY_SIZING_FIXED(font_sz),
+                        }
+                    },
+                    .backgroundColor = ui_get_cursor_color(state),
+                }) {}
+            }
+        }
+
         CLAY_AUTO_ID({
             .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } }
         }) {}
@@ -558,6 +602,30 @@ static void SearchBar(AppState *state, Pane *pane, int32_t index) {
               ? ui_resolve_color(state, state->ui.roles.text_primary)
               : ui_resolve_color(state, state->ui.roles.text_faded),
         }));
+
+        bool search_close_hovered = false;
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = { .width = CLAY_SIZING_FIXED(15 * sf), .height = CLAY_SIZING_FIXED(15 * sf) },
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
+            },
+            .cornerRadius    = CLAY_CORNER_RADIUS(8 * sf),
+            .backgroundColor = Clay_Hovered()
+                ? ui_resolve_color(state, state->ui.roles.tab_close)
+                : (Clay_Color){0}
+        }) {
+            SDL_Texture *icon = icon_get("tab-close", state, 7, 7);
+            CLAY_AUTO_ID({
+                .layout = { .sizing = { .width = 7.0f * sf, .height = 7.0f * sf } },
+                .image  = { .imageData = icon },
+            }) {}
+            Clay_OnHover(HandleCloseSearch, pane);
+            search_close_hovered = Clay_Hovered();
+        }
+        char binding[64] = {0};
+        keymap_where_is_first(state, "search-cancel", binding, sizeof(binding));
+        TextTooltipWithBinding(state, search_close_hovered, index + 1024,
+                               "Close Search Bar", binding[0] ? binding : NULL);
     }
 }
 
@@ -925,4 +993,10 @@ sexp scm_search_prev(sexp ctx, sexp self, sexp n) {
     search_session_prev_match(s);
     search_jump_to_active(pane);
     return SEXP_VOID;
+}
+
+sexp scm_search_bar_open_p(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane) return SEXP_FALSE;
+    return pane->content.search.bar_open ? SEXP_TRUE : SEXP_FALSE;
 }

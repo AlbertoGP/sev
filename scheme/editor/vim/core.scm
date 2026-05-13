@@ -284,6 +284,8 @@
                           (%buffer-has-minor-mode? 'vim-replace-mode)
                           (%buffer-has-minor-mode? 'vim-select-mode)
                           (%buffer-has-minor-mode? 'vim-pending-mode))))
+  (unless was-editing?
+    (when (%search-bar-open?) (%search-cancel!)))
   ;; Finalize insert/replace session change (only meaningful when panes exist)
   (unless (no-panes?)
     (when (%change-active?)

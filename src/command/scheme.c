@@ -571,6 +571,7 @@ void scheme_init(AppState *state) {
     SDEF("%search-backspace!",  0, scm_search_backspace);
     SDEF("%search-confirm!",    0, scm_search_confirm);
     SDEF("%search-cancel!",     0, scm_search_cancel);
+    SDEF("%search-bar-open?",   0, scm_search_bar_open_p);
 
     // Mark / selection primitives
     SDEF("%mark-set-to-point!", 1, scm_mark_set_to_point);
@@ -670,7 +671,7 @@ void scheme_init(AppState *state) {
         "jump-to-matching-bracket "
         "%set-mouse-click-handler! %set-mouse-drag-handler! "
         "%search-open! %search-next! %search-prev! "
-        "search-self-insert %search-backspace! %search-confirm! %search-cancel! "
+        "search-self-insert %search-backspace! %search-confirm! %search-cancel! %search-bar-open? "
         "global-keymap pane-keymap search-keymap eval) "
         "%editor-env '()))",
         -1, meta);
