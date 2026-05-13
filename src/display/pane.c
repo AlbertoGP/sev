@@ -610,6 +610,8 @@ static void SearchBar(AppState *state, Pane *pane, int32_t index) {
             }
         }
 
+        bool nav_disabled = !s->query_len || !s->match_count;
+
         bool search_prev_hovered = false;
         CLAY_AUTO_ID({
             .layout = {
@@ -617,17 +619,22 @@ static void SearchBar(AppState *state, Pane *pane, int32_t index) {
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
             },
             .cornerRadius    = CLAY_CORNER_RADIUS(8 * sf),
-            .backgroundColor = Clay_Hovered()
+            .backgroundColor = (!nav_disabled && Clay_Hovered())
                 ? ui_resolve_color(state, state->ui.roles.tab_close)
                 : (Clay_Color){0}
         }) {
-            SDL_Texture *prev_icon = icon_get("caret-left", state, 10, 10);
+            SDL_Texture *prev_icon = icon_get(
+                nav_disabled ? "caret-left-faded" : "caret-left", state, 10, 10);
             CLAY_AUTO_ID({
                 .layout = { .sizing = { .width = 10.0f * sf, .height = 10.0f * sf } },
                 .image  = { .imageData = prev_icon },
             }) {}
-            Clay_OnHover(HandleSearchPrev, pane);
+            if (!nav_disabled) Clay_OnHover(HandleSearchPrev, pane);
             search_prev_hovered = Clay_Hovered();
+            if (search_prev_hovered)
+                state->input.desired_cursor = nav_disabled
+                    ? SDL_SYSTEM_CURSOR_NOT_ALLOWED
+                    : SDL_SYSTEM_CURSOR_POINTER;
         }
         char prev_binding[64] = {0};
         keymap_where_is_first(state, "vim-search-prev", prev_binding, sizeof(prev_binding));
@@ -641,17 +648,22 @@ static void SearchBar(AppState *state, Pane *pane, int32_t index) {
                 .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
             },
             .cornerRadius    = CLAY_CORNER_RADIUS(8 * sf),
-            .backgroundColor = Clay_Hovered()
+            .backgroundColor = (!nav_disabled && Clay_Hovered())
                 ? ui_resolve_color(state, state->ui.roles.tab_close)
                 : (Clay_Color){0}
         }) {
-            SDL_Texture *next_icon = icon_get("caret-right", state, 10, 10);
+            SDL_Texture *next_icon = icon_get(
+                nav_disabled ? "caret-right-faded" : "caret-right", state, 10, 10);
             CLAY_AUTO_ID({
                 .layout = { .sizing = { .width = 10.0f * sf, .height = 10.0f * sf } },
                 .image  = { .imageData = next_icon },
             }) {}
-            Clay_OnHover(HandleSearchNext, pane);
+            if (!nav_disabled) Clay_OnHover(HandleSearchNext, pane);
             search_next_hovered = Clay_Hovered();
+            if (search_next_hovered)
+                state->input.desired_cursor = nav_disabled
+                    ? SDL_SYSTEM_CURSOR_NOT_ALLOWED
+                    : SDL_SYSTEM_CURSOR_POINTER;
         }
         char next_binding[64] = {0};
         keymap_where_is_first(state, "vim-search-next", next_binding, sizeof(next_binding));

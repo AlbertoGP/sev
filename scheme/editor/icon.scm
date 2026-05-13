@@ -14,6 +14,8 @@
 
 (register-icon 'caret-left "icon-caret-left.svg" 'text.primary)
 (register-icon 'caret-right "icon-caret-right.svg" 'text.primary)
+(register-icon 'caret-left-faded "icon-caret-left.svg" 'text.faded)
+(register-icon 'caret-right-faded "icon-caret-right.svg" 'text.faded)
 
 (register-icon 'new-icon "icon-plus.svg" 'text.primary)
 (register-icon 'open-icon "icon-open.svg" 'text.primary)
