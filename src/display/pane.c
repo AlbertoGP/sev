@@ -7,6 +7,7 @@
 #include "icon.h"
 #include "pane.h"
 #include "tab.h"
+#include "text_surface.h"
 #include "theme.h"
 #include "tooltip.h"
 #include "../command/keyevent.h"
@@ -538,50 +539,39 @@ static void SearchBar(AppState *state, Pane *pane, int32_t index) {
         },
     }) {
         uint16_t font_sz = (uint16_t)(13 * sf);
-
-        CLAY_TEXT(CLAY_STRING("/"), CLAY_TEXT_CONFIG({
-            .fontId    = FONT_UI_NORMAL,
-            .fontSize  = font_sz,
-            .textColor = ui_resolve_color(state, state->ui.roles.text_faded),
-        }));
+        float cursor_x = s->query_len > 0
+            ? text_measure_tab_aware(&state->rendererData, FONT_BUF_NORMAL, font_sz,
+                                     s->query, s->query_len, 4)
+            : 0.0f;
 
         Clay_String qstr = {
             .chars               = s->query,
             .length              = (int32_t)s->query_len,
             .isStaticallyAllocated = true,
         };
-        CLAY_TEXT(qstr, CLAY_TEXT_CONFIG({
+        CLAY_TEXT(qstr.length ? qstr : CLAY_STRING("Search..."), CLAY_TEXT_CONFIG({
             .fontId    = FONT_BUF_NORMAL,
             .fontSize  = font_sz,
-            .textColor = ui_resolve_color(state, state->ui.roles.text_primary),
+            .textColor = qstr.length
+              ? ui_resolve_color(state, state->ui.roles.text_primary)
+              : ui_resolve_color(state, state->ui.roles.text_faded),
         }));
-
-        // Zero-width anchor for the floating cursor — out of flow, so it never
-        // shifts the spacer or match counter regardless of cursor visibility.
-        CLAY_AUTO_ID({
-            .layout = {
-                .sizing = {
-                    .width  = CLAY_SIZING_FIXED(0),
-                    .height = CLAY_SIZING_FIXED(font_sz),
-                }
-            },
-        }) {
-            if (state->input.current_focus == FOCUS_SEARCH && state->cursor_visible) {
-                CLAY_AUTO_ID({
-                    .floating = {
-                        .attachTo = CLAY_ATTACH_TO_PARENT,
-                        .offset   = { .x = 0, .y = 0 },
-                        .zIndex   = 10,
-                    },
-                    .layout = {
-                        .sizing = {
-                            .width  = CLAY_SIZING_FIXED(2 * sf),
-                            .height = CLAY_SIZING_FIXED(font_sz),
-                        }
-                    },
-                    .backgroundColor = ui_get_cursor_color(state),
-                }) {}
-            }
+        if (state->input.current_focus == FOCUS_SEARCH && state->cursor_visible) {
+            float cw = sf >= 2.0f ? 2.0f * sf : 1.0f;
+            CLAY_AUTO_ID({
+                .floating = {
+                    .attachTo = CLAY_ATTACH_TO_PARENT,
+                    .offset   = { .x = cursor_x + 8.0f * sf, .y = 4.0f * sf },
+                    .zIndex   = 10,
+                },
+                .layout = {
+                    .sizing = {
+                        .width  = CLAY_SIZING_FIXED(cw),
+                        .height = CLAY_SIZING_FIXED(font_sz),
+                    }
+                },
+                .backgroundColor = ui_get_cursor_color(state),
+            }) {}
         }
 
         CLAY_AUTO_ID({
