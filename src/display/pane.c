@@ -501,6 +501,28 @@ void pane_free_strings(void) {
     // String cleanup moved to tab_free_strings() in tab.c.
 }
 
+static void search_jump_to_active(Pane *pane);
+
+static void HandleSearchPrev(Clay_ElementId id, Clay_PointerData ptr, void *ud) {
+    if (ptr.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
+    Pane *pane = (Pane *)ud;
+    if (!pane) return;
+    SearchSession *s = &pane->content.search;
+    if (!s->active || s->match_count == 0) return;
+    search_session_prev_match(s);
+    search_jump_to_active(pane);
+}
+
+static void HandleSearchNext(Clay_ElementId id, Clay_PointerData ptr, void *ud) {
+    if (ptr.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
+    Pane *pane = (Pane *)ud;
+    if (!pane) return;
+    SearchSession *s = &pane->content.search;
+    if (!s->active || s->match_count == 0) return;
+    search_session_next_match(s);
+    search_jump_to_active(pane);
+}
+
 static void HandleCloseSearch(Clay_ElementId id, Clay_PointerData ptr, void *ud) {
     if (ptr.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
     Pane *pane = (Pane *)ud;
@@ -587,6 +609,54 @@ static void SearchBar(AppState *state, Pane *pane, int32_t index) {
                 }) {}
             }
         }
+
+        bool search_prev_hovered = false;
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = { .width = CLAY_SIZING_FIXED(15 * sf), .height = CLAY_SIZING_FIXED(15 * sf) },
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
+            },
+            .cornerRadius    = CLAY_CORNER_RADIUS(8 * sf),
+            .backgroundColor = Clay_Hovered()
+                ? ui_resolve_color(state, state->ui.roles.tab_close)
+                : (Clay_Color){0}
+        }) {
+            SDL_Texture *prev_icon = icon_get("caret-left", state, 10, 10);
+            CLAY_AUTO_ID({
+                .layout = { .sizing = { .width = 10.0f * sf, .height = 10.0f * sf } },
+                .image  = { .imageData = prev_icon },
+            }) {}
+            Clay_OnHover(HandleSearchPrev, pane);
+            search_prev_hovered = Clay_Hovered();
+        }
+        char prev_binding[64] = {0};
+        keymap_where_is_first(state, "vim-search-prev", prev_binding, sizeof(prev_binding));
+        TextTooltipWithBinding(state, search_prev_hovered, index + 1025,
+                               "Select Previous Match", prev_binding[0] ? prev_binding : NULL);
+
+        bool search_next_hovered = false;
+        CLAY_AUTO_ID({
+            .layout = {
+                .sizing = { .width = CLAY_SIZING_FIXED(15 * sf), .height = CLAY_SIZING_FIXED(15 * sf) },
+                .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
+            },
+            .cornerRadius    = CLAY_CORNER_RADIUS(8 * sf),
+            .backgroundColor = Clay_Hovered()
+                ? ui_resolve_color(state, state->ui.roles.tab_close)
+                : (Clay_Color){0}
+        }) {
+            SDL_Texture *next_icon = icon_get("caret-right", state, 10, 10);
+            CLAY_AUTO_ID({
+                .layout = { .sizing = { .width = 10.0f * sf, .height = 10.0f * sf } },
+                .image  = { .imageData = next_icon },
+            }) {}
+            Clay_OnHover(HandleSearchNext, pane);
+            search_next_hovered = Clay_Hovered();
+        }
+        char next_binding[64] = {0};
+        keymap_where_is_first(state, "vim-search-next", next_binding, sizeof(next_binding));
+        TextTooltipWithBinding(state, search_next_hovered, index + 1026,
+                               "Select Next Match", next_binding[0] ? next_binding : NULL);
 
         // count_str is pre-formatted and stored in the SearchSession (stable per-pane memory).
         const char *count_chars = s->query_len == 0 ? "0/0" : s->count_str;

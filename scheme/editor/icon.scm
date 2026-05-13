@@ -12,6 +12,9 @@
 (register-icon 'json-icon "icon-json.svg" 'text.primary)
 (register-icon 'icon-unknown-extension "icon-unknown-extension.svg" 'text.primary)
 
+(register-icon 'caret-left "icon-caret-left.svg" 'text.primary)
+(register-icon 'caret-right "icon-caret-right.svg" 'text.primary)
+
 (register-icon 'new-icon "icon-plus.svg" 'text.primary)
 (register-icon 'open-icon "icon-open.svg" 'text.primary)
 (register-icon 'help-icon "icon-help.svg" 'text.primary)
