@@ -527,8 +527,8 @@ static void SearchBar(AppState *state, Pane *pane, int32_t index) {
             .padding = {
                 .left   = (uint16_t)(8 * sf),
                 .right  = (uint16_t)(8 * sf),
-                .top    = (uint16_t)(4 * sf),
-                .bottom = (uint16_t)(4 * sf),
+                .top    = (uint16_t)(8 * sf),
+                .bottom = (uint16_t)(8 * sf),
             },
             .childGap = (uint16_t)(6 * sf),
         },
@@ -538,7 +538,7 @@ static void SearchBar(AppState *state, Pane *pane, int32_t index) {
             .color = ui_resolve_color(state, state->ui.roles.border_active),
         },
     }) {
-        uint16_t font_sz = (uint16_t)(13 * sf);
+        uint16_t font_sz = (uint16_t)(12 * sf);
         float cursor_x = s->query_len > 0
             ? text_measure_tab_aware(&state->rendererData, FONT_BUF_NORMAL, font_sz,
                                      s->query, s->query_len, 4)
@@ -549,36 +549,44 @@ static void SearchBar(AppState *state, Pane *pane, int32_t index) {
             .length              = (int32_t)s->query_len,
             .isStaticallyAllocated = true,
         };
-        CLAY_TEXT(qstr.length ? qstr : CLAY_STRING("Search..."), CLAY_TEXT_CONFIG({
-            .fontId    = FONT_BUF_NORMAL,
-            .fontSize  = font_sz,
-            .textColor = !qstr.length
-              ? ui_resolve_color(state, state->ui.roles.text_faded)
-              : (s->match_count == 0
-                  ? ui_resolve_color(state, state->ui.roles.search_no_match)
-                  : ui_resolve_color(state, state->ui.roles.text_primary)),
-        }));
-        if (state->input.current_focus == FOCUS_SEARCH && state->cursor_visible) {
-            float cw = sf >= 2.0f ? 2.0f * sf : 1.0f;
-            CLAY_AUTO_ID({
-                .floating = {
-                    .attachTo = CLAY_ATTACH_TO_PARENT,
-                    .offset   = { .x = cursor_x + 8.0f * sf, .y = 4.0f * sf },
-                    .zIndex   = 10,
-                },
-                .layout = {
-                    .sizing = {
-                        .width  = CLAY_SIZING_FIXED(cw),
-                        .height = CLAY_SIZING_FIXED(font_sz),
-                    }
-                },
-                .backgroundColor = ui_get_cursor_color(state),
-            }) {}
-        }
-
         CLAY_AUTO_ID({
-            .layout = { .sizing = { .width = CLAY_SIZING_GROW(0) } }
-        }) {}
+                    .layout = {
+                        .sizing = { .width = CLAY_SIZING_GROW(0) },
+                        .padding = { .top = 4 * sf, .bottom = 4 * sf, .left = 8 * sf, .right = 8 * sf }
+                    },
+                    .border = {
+                        .color = ui_resolve_color(state, state->ui.roles.border_inactive),
+                        .width = CLAY_BORDER_OUTSIDE(2)
+                    },
+                    .cornerRadius = CLAY_CORNER_RADIUS(5*sf)
+                }) {
+            CLAY_TEXT(qstr.length ? qstr : CLAY_STRING("Search..."), CLAY_TEXT_CONFIG({
+                .fontId    = FONT_BUF_NORMAL,
+                .fontSize  = font_sz,
+                .textColor = !qstr.length
+                ? ui_resolve_color(state, state->ui.roles.text_faded)
+                : (s->match_count == 0
+                    ? ui_resolve_color(state, state->ui.roles.search_no_match)
+                    : ui_resolve_color(state, state->ui.roles.text_primary)),
+            }));
+            if (state->input.current_focus == FOCUS_SEARCH && state->cursor_visible) {
+                float cw = sf >= 2.0f ? 2.0f * sf : 1.0f;
+                CLAY_AUTO_ID({
+                    .floating = {
+                        .attachTo = CLAY_ATTACH_TO_PARENT,
+                        .offset   = { .x = cursor_x + 8 * sf, .y = 4.0f * sf },
+                        .zIndex   = 10,
+                    },
+                    .layout = {
+                        .sizing = {
+                            .width  = CLAY_SIZING_FIXED(cw),
+                            .height = CLAY_SIZING_FIXED(font_sz),
+                        }
+                    },
+                    .backgroundColor = ui_get_cursor_color(state),
+                }) {}
+            }
+        }
 
         // count_str is pre-formatted and stored in the SearchSession (stable per-pane memory).
         const char *count_chars = s->query_len == 0 ? "0/0" : s->count_str;
@@ -589,7 +597,7 @@ static void SearchBar(AppState *state, Pane *pane, int32_t index) {
         };
         CLAY_TEXT(cstr, CLAY_TEXT_CONFIG({
             .fontId    = FONT_UI_NORMAL,
-            .fontSize  = (uint16_t)(12 * sf),
+            .fontSize  = (uint16_t)(10 * sf),
             .textColor = s->query_len && s->match_count
               ? ui_resolve_color(state, state->ui.roles.text_primary)
               : ui_resolve_color(state, state->ui.roles.text_faded),
