@@ -552,9 +552,11 @@ static void SearchBar(AppState *state, Pane *pane, int32_t index) {
         CLAY_TEXT(qstr.length ? qstr : CLAY_STRING("Search..."), CLAY_TEXT_CONFIG({
             .fontId    = FONT_BUF_NORMAL,
             .fontSize  = font_sz,
-            .textColor = qstr.length
-              ? ui_resolve_color(state, state->ui.roles.text_primary)
-              : ui_resolve_color(state, state->ui.roles.text_faded),
+            .textColor = !qstr.length
+              ? ui_resolve_color(state, state->ui.roles.text_faded)
+              : (s->match_count == 0
+                  ? ui_resolve_color(state, state->ui.roles.search_no_match)
+                  : ui_resolve_color(state, state->ui.roles.text_primary)),
         }));
         if (state->input.current_focus == FOCUS_SEARCH && state->cursor_visible) {
             float cw = sf >= 2.0f ? 2.0f * sf : 1.0f;

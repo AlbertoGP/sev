@@ -750,6 +750,7 @@ void scheme_init(AppState *state) {
     INTERN_ROLE(hl_bracket_match,    "hl.bracket.match");
     INTERN_ROLE(hl_search,           "hl.search");
     INTERN_ROLE(hl_search_active,    "hl.search.active");
+    INTERN_ROLE(search_no_match,     "search.no-match");
 
     #undef INTERN_ROLE
 
