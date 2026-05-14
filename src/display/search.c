@@ -197,6 +197,10 @@ void SearchBar(AppState *state, Pane *pane, int32_t index) {
               : ui_resolve_color(state, state->ui.roles.text_faded),
         }));
 
+        CLAY_AUTO_ID({
+            .layout = { .sizing = { .width = CLAY_SIZING_FIXED(30 * sf) } }
+        }) {}
+
         bool search_close_hovered = false;
         CLAY_AUTO_ID({
             .layout = {
