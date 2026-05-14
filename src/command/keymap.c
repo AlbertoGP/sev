@@ -10,6 +10,7 @@
 #include "scheme_internal.h"
 #include "../text/buffer.h"
 #include "../display/pane.h"
+#include "../display/search.h"
 
 KeyEvent last_event;
 

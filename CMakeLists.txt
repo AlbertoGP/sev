@@ -31,6 +31,7 @@ set(SRC_FILES
     src/display/buf_render.c
     src/display/pane.c
     src/display/scale.c
+    src/display/search.c
     src/display/welcome.c
     src/display/status.c
     src/display/keybinding.c

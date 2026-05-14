@@ -157,10 +157,6 @@ void PaneContent(AppState *state, Pane *pane, int32_t index, float width, float 
 // Push current buffer position onto the active pane's active tab's jump list.
 void pane_push_jump(void);
 
-// Handle a key event while FOCUS_SEARCH is active.
-// Called directly by key_dispatch() bypassing the normal keymap chain.
-void search_handle_key(AppState *state, const KeyEvent *ev);
-
 // Scheme bindings.
 #include <chibi/sexp.h>
 sexp scm_pane_navigate_up(sexp ctx, sexp self, sexp n);
