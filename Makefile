@@ -2,7 +2,7 @@
 compile: build run
 
 build:
-	gcc -Wall -Wextra -I./vendored/tree-sitter-json/bindings/c ./src/*.c ./src/clay/*.c ./src/command/*.c ./src/display/*.c ./src/text/*.c ./vendored/tree-sitter-json/src/parser.c -o ./out/sev -lSDL3 -lSDL3_image -lSDL3_ttf -lchibi-scheme -ltree-sitter -ltree-sitter-scheme -lm \
+	gcc -Wall -Wextra -I./vendored/tree-sitter-json/bindings/c ./src/*.c ./src/clay/*.c ./src/command/*.c ./src/display/*.c ./src/platform/*.c ./src/text/*.c ./vendored/tree-sitter-json/src/parser.c -o ./out/sev -lSDL3 -lSDL3_image -lSDL3_ttf -lchibi-scheme -ltree-sitter -ltree-sitter-scheme -lm \
 		&& cp ./scheme/init.scm ./out/scheme/init.scm \
 		&& mkdir -p ./out/scheme/editor \
 		&& mkdir -p ./out/scheme/editor/vim \
@@ -18,7 +18,7 @@ debug: build-debug run
 build-debug:
 	gcc -g -O0 -fno-omit-frame-pointer -fsanitize=address -Wall -Wextra \
 	    -I./vendored/tree-sitter-json/bindings/c \
-	    ./src/*.c ./src/clay/*.c ./src/command/*.c ./src/display/*.c ./src/text/*.c \
+	    ./src/*.c ./src/clay/*.c ./src/command/*.c ./src/display/*.c ./src/platform/*.c ./src/text/*.c \
 	    ./vendored/tree-sitter-json/src/parser.c \
 	    -o ./out/sev \
 	    -lSDL3 -lSDL3_image -lSDL3_ttf -lchibi-scheme -ltree-sitter -ltree-sitter-scheme -lm \
