@@ -8,6 +8,9 @@
 #ifdef __APPLE__
 #include "platform/macos.h"
 #endif
+#ifndef __EMSCRIPTEN__
+#include "platform/dpi.h"
+#endif
 #include "cursor_flash.h"
 #include "command/keyboard.h"
 #include "command/message.h"
@@ -441,8 +444,15 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     }
 
     case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: {
-        float dpi = SDL_GetWindowDisplayScale(state->window);
-        state->ui.dpi_scale = (dpi > 0.0f) ? dpi : 1.0f;
+        float os_scale = SDL_GetWindowDisplayScale(state->window);
+        if (os_scale <= 0.0f) os_scale = 1.0f;
+#ifndef __EMSCRIPTEN__
+        if (os_scale <= 1.0f) {
+            float ppi = get_display_ppi(state->window);
+            os_scale = (ppi > 0.0f) ? fmaxf(ppi / 96.0f, 1.0f) : 1.0f;
+        }
+#endif
+        state->ui.dpi_scale = os_scale;
         state->ui.scale_factor = state->ui.dpi_scale * state->ui.user_scale;
         int width, height;
         SDL_GetWindowSizeInPixels(state->window, &width, &height);

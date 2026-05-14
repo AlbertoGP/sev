@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 
 #ifdef __EMSCRIPTEN__
@@ -6,6 +7,9 @@
 
 #ifdef __APPLE__
 #include "platform/macos.h"
+#endif
+#ifndef __EMSCRIPTEN__
+#include "platform/dpi.h"
 #endif
 
 #define SDL_MAIN_USE_CALLBACKS
@@ -108,8 +112,17 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
-    float dpi = SDL_GetWindowDisplayScale(state->window);
-    state->ui.dpi_scale = (dpi > 0.0f) ? dpi : 1.0f;
+    {
+        float os_scale = SDL_GetWindowDisplayScale(state->window);
+        if (os_scale <= 0.0f) os_scale = 1.0f;
+#ifndef __EMSCRIPTEN__
+        if (os_scale <= 1.0f) {
+            float ppi = get_display_ppi(state->window);
+            os_scale = (ppi > 0.0f) ? fmaxf(ppi / 96.0f, 1.0f) : 1.0f;
+        }
+#endif
+        state->ui.dpi_scale = os_scale;
+    }
     state->ui.user_scale = 1.0f;
     state->ui.scale_factor = state->ui.dpi_scale * state->ui.user_scale;
 

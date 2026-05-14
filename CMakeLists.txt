@@ -54,6 +54,7 @@ set(SRC_FILES
     src/text/var.c
     src/text/jump_list.c
     src/text/treesitter.c
+    src/platform/dpi.c
 )
 
 # Create executable
@@ -330,6 +331,16 @@ else()
         find_package(SDL3_ttf REQUIRED)
 
         target_link_libraries(app PUBLIC SDL3::SDL3 SDL3_image::SDL3_image SDL3_ttf::SDL3_ttf chibi-scheme tree-sitter tree-sitter-scheme tree-sitter-json m)
+    endif()
+
+    # X11 physical PPI detection (Linux/non-Apple desktop, optional)
+    if(NOT APPLE)
+        find_package(X11 QUIET)
+        if(X11_FOUND)
+            target_compile_definitions(app PRIVATE HAVE_X11=1)
+            target_link_libraries(app PRIVATE ${X11_LIBRARIES})
+            target_include_directories(app PRIVATE ${X11_INCLUDE_DIR})
+        endif()
     endif()
 
 endif()

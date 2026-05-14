@@ -40,3 +40,18 @@ void macos_reapply_titlebar(SDL_Window *sdl_window) {
     win.titlebarAppearsTransparent = YES;
     win.titleVisibility = NSWindowTitleHidden;
 }
+
+float macos_get_display_ppi(SDL_Window *sdl_window) {
+    SDL_PropertiesID props = SDL_GetWindowProperties(sdl_window);
+    NSWindow *win = (__bridge NSWindow *)SDL_GetPointerProperty(
+        props, SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL);
+    if (!win || !win.screen) return 0.0f;
+
+    CGDirectDisplayID display_id = (CGDirectDisplayID)
+        [win.screen.deviceDescription[@"NSScreenNumber"] unsignedIntValue];
+    CGSize size_mm = CGDisplayScreenSize(display_id);
+    if (size_mm.width <= 0.0) return 0.0f;
+
+    size_t px_wide = CGDisplayPixelsWide(display_id);
+    return (float)(px_wide / (size_mm.width / 25.4));
+}
