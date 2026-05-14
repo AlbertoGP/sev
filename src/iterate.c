@@ -69,7 +69,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     if (force_render) {
         state->input.desired_cursor = SDL_SYSTEM_CURSOR_DEFAULT;
         tab_free_strings();
-        pane_free_strings();
         bar_free_strings();
         state->needs_extra_frame = false;
         render_commands = create_app_layout(state, delta_time);
@@ -87,7 +86,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     if (!force_render && !state->animating
             && !SDL_Clay_CommandsChanged(&state->rendererData, &render_commands)) {
         tab_free_strings();
-        pane_free_strings();
         bar_free_strings();
         return SDL_APP_CONTINUE;
     }
@@ -114,7 +112,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_RenderPresent(state->rendererData.renderer);
 
     tab_free_strings();
-    pane_free_strings();
     bar_free_strings();
 
     return SDL_APP_CONTINUE;

@@ -19,7 +19,7 @@ UI component layer built on Clay. Each frame, declares the full layout hierarchy
 
 - **layout.c / layout.h** — Top-level frame entry point. Calls `tab_cb_reset()`, `buf_render_reset()`, `cursor_cb_reset()` before `Clay_BeginLayout()`. Assembles the hierarchy above.
 
-- **pane.c / pane.h** — Pane tree: binary tree of `PANE_V_SPLIT`, `PANE_H_SPLIT`, and `PANE_DISPLAY` leaves. `PANE_DISPLAY` leaves own a doubly-linked tab list (`DisplayContent.list`, `DisplayContent.active_tab`). `DisplayContent` stores per-frame geometry (origin, size, gutter width, line height, font) for mouse hit-testing via `pane_at_coords()`. `PaneContent()` recurses the tree: for splits it subdivides space, for display leaves it renders `TabBar` then `BufferPane`. `pane_free_strings()` **must** be called after each frame. `pane_push_jump()` pushes the current position onto the active tab's jump list.
+- **pane.c / pane.h** — Pane tree: binary tree of `PANE_V_SPLIT`, `PANE_H_SPLIT`, and `PANE_DISPLAY` leaves. `PANE_DISPLAY` leaves own a doubly-linked tab list (`DisplayContent.list`, `DisplayContent.active_tab`). `DisplayContent` stores per-frame geometry (origin, size, gutter width, line height, font) for mouse hit-testing via `pane_at_coords()`. `PaneContent()` recurses the tree: for splits it subdivides space, for display leaves it renders `TabBar` then `BufferPane`. `pane_push_jump()` pushes the current position onto the active tab's jump list.
 
 - **vline.c / vline.h** — Visual line cache. Maps logical lines → wrapped visual lines. Owned per-`Tab` (not per-pane). Full rebuild on cache key change (width, font_id, font_size); incremental when only text changes (uses `Line.version`). Word-boundary wrapping with 4-char tab stops. Doubles on growth, shrinks at <25%.
 
@@ -51,7 +51,7 @@ UI component layer built on Clay. Each frame, declares the full layout hierarchy
 
 ## Key Invariants
 
-- **String lifetime**: `pane_free_strings()`, `bar_free_strings()`, and `tab_free_strings()` must be called after `SDL_Clay_RenderClayCommands()` every frame — Clay doesn't own string data
+- **String lifetime**: `bar_free_strings()` and `tab_free_strings()` must be called after `SDL_Clay_RenderClayCommands()` every frame — Clay doesn't own string data
 - **`tab_cb_reset()`, `buf_render_reset()`, `cursor_cb_reset()` must be called** once per frame before `create_app_layout()`
 - **`welcome_flush_pending()` must be called** after rendering each frame — defers Scheme calls and `chdir` out of the Clay layout pass
 - **Active pane sync**: `sync_active_buffer()` must be called after any pane or tab switch

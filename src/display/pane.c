@@ -497,10 +497,6 @@ sexp scm_buffer_close(sexp ctx, sexp self, sexp n, sexp sname) {
 
 // --- Rendering ---
 
-void pane_free_strings(void) {
-    // String cleanup moved to tab_free_strings() in tab.c.
-}
-
 static void search_jump_to_active(Pane *pane);
 
 static void HandleSearchPrev(Clay_ElementId id, Clay_PointerData ptr, void *ud) {

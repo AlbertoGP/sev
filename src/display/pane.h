@@ -154,9 +154,6 @@ void pane_split_drag_update(Pane *split, float x, float y);
 // Clay component for rendering pane contents.
 void PaneContent(AppState *state, Pane *pane, int32_t index, float width, float height);
 
-// No-op kept for call-site compatibility; string cleanup now in tab_free_strings().
-void pane_free_strings(void);
-
 // Push current buffer position onto the active pane's active tab's jump list.
 void pane_push_jump(void);
 
