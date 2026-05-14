@@ -9,4 +9,5 @@ typedef struct {
 
 MacOSTitlebarInfo macos_setup_titlebar(SDL_Window *sdl_window);
 void macos_reapply_titlebar(SDL_Window *sdl_window);
+float macos_get_display_ppi(SDL_Window *sdl_window);
 #endif

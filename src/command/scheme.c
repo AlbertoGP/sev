@@ -18,6 +18,7 @@
 #include "../text/var.h"
 #include "../display/pane.h"
 #include "../display/tab.h"
+#include "../display/scale.h"
 
 AppState *G;   // global app state for commands
 
@@ -801,6 +802,7 @@ void scheme_init(AppState *state) {
             result = sexp_load(ctx, sexp_c_string(ctx, user_init, -1), env);
             if (sexp_exceptionp(result))
                 sexp_print_exception(ctx, result, sexp_current_error_port(ctx));
+            reset_scale(state);
         }
     }
 #endif

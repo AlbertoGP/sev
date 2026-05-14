@@ -8,11 +8,15 @@
 #ifdef __APPLE__
 #include "platform/macos.h"
 #endif
+#ifndef __EMSCRIPTEN__
+#include "platform/dpi.h"
+#endif
 #include "cursor_flash.h"
 #include "command/keyboard.h"
 #include "command/message.h"
 #include "command/minibuf.h"
 #include "display/pane.h"
+#include "display/scale.h"
 #include "display/tooltip.h"
 #include "display/vline.h"
 #include "file_scanner.h"
@@ -441,9 +445,16 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
     }
 
     case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: {
-        float dpi = SDL_GetWindowDisplayScale(state->window);
-        state->ui.dpi_scale = (dpi > 0.0f) ? dpi : 1.0f;
-        state->ui.scale_factor = state->ui.dpi_scale * state->ui.user_scale;
+        float os_scale = SDL_GetWindowDisplayScale(state->window);
+        if (os_scale <= 0.0f) os_scale = 1.0f;
+#ifndef __EMSCRIPTEN__
+        if (os_scale <= 1.0f) {
+            float ppi = get_display_ppi(state->window);
+            os_scale = (ppi > 0.0f) ? fmaxf(ppi / 96.0f, 1.0f) : 1.0f;
+        }
+#endif
+        state->ui.dpi_scale = os_scale;
+        ui_recompute_scale(state);
         int width, height;
         SDL_GetWindowSizeInPixels(state->window, &width, &height);
         Clay_SetLayoutDimensions((Clay_Dimensions) {(float) width, (float) height});
