@@ -619,7 +619,7 @@ static void BufRender_SelectionCell(BufRenderCtx *ctx, size_t i, VisualLine *vl)
 
 static void BufRender_SearchCell(BufRenderCtx *ctx, size_t i, VisualLine *vl) {
     SearchSession *s = &ctx->cp->search;
-    if (!s->active || s->match_count == 0 || s->query_len == 0) return;
+    if (!s->active || s->match_count == 0) return;
 
     size_t line_start = vl->byte_start;
     size_t line_end   = vl->byte_end;

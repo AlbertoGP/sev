@@ -42,6 +42,7 @@
   'canonical-map *catppuccin-canonical-map*
   'overrides '((mode.normal      . lavender)
                (mode.minibuffer  . lavender)
+               (mode.search      . lavender)
                (hl.search        . (alpha yellow 0.3))
                (hl.search.active . (alpha peach  0.5))))
 
@@ -79,6 +80,7 @@
   'canonical-map *catppuccin-canonical-map*
   'overrides '((mode.normal      . lavender)
                (mode.minibuffer  . lavender)
+               (mode.search      . lavender)
                (hl.search        . (alpha yellow 0.3))
                (hl.search.active . (alpha peach  0.5))))
 
@@ -116,6 +118,7 @@
   'canonical-map *catppuccin-canonical-map*
   'overrides '((mode.normal      . lavender)
                (mode.minibuffer  . lavender)
+               (mode.search      . lavender)
                (hl.search        . (alpha yellow 0.3))
                (hl.search.active . (alpha peach  0.5))))
 
@@ -154,12 +157,14 @@
   'overrides
   '((mode.normal      . lavender)
     (mode.minibuffer  . lavender)
+    (mode.search      . lavender)
     (label.normal     . bg-0)
     (label.insert     . bg-0)
     (label.replace    . bg-0)
     (label.select     . bg-0)
     (label.pending    . bg-0)
     (label.minibuffer . bg-0)
+    (label.search     . bg-0)
     (hl.search        . (alpha yellow 0.3))
     (hl.search.active . (alpha peach  0.5))))
 

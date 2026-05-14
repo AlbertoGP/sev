@@ -102,11 +102,11 @@ typedef struct CachedRoles {
     sexp selection_hover;
     sexp message_hover;
     sexp mode_normal, mode_insert, mode_replace, mode_select;
-    sexp mode_command, mode_pending, mode_minibuffer, mode_help;
+    sexp mode_command, mode_pending, mode_minibuffer, mode_search, mode_help;
     sexp label_normal, label_insert, label_replace, label_select;
-    sexp label_command, label_pending, label_minibuffer, label_help;
+    sexp label_command, label_pending, label_minibuffer, label_search, label_help;
     sexp cursor_normal, cursor_insert, cursor_replace, cursor_select;
-    sexp cursor_command, cursor_pending, cursor_minibuffer, cursor_help;
+    sexp cursor_command, cursor_pending, cursor_minibuffer, cursor_search, cursor_help;
     sexp macro_indicator, macro_bg;
     sexp hl_keyword, hl_string, hl_comment, hl_number;
     sexp hl_constant, hl_function, hl_builtin, hl_operator;

@@ -280,3 +280,11 @@
 (defcommand (search-cancel)
   "search: cancel\nCancel search and clear highlights."
   (%search-cancel!))
+
+(defcommand (search-forward-char)
+  "search: move cursor forward one character"
+  (%search-forward-char!))
+
+(defcommand (search-backward-char)
+  "search: move cursor backward one character"
+  (%search-backward-char!))

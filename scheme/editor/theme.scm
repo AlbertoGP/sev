@@ -152,6 +152,7 @@
     (mode.select       . yellow)
     (mode.pending      . pink)
     (mode.minibuffer   . blue)
+    (mode.search       . blue)
     ;; mode labels
     (label.normal      . fg-0)
     (label.insert      . fg-0)
@@ -159,6 +160,7 @@
     (label.select      . fg-0)
     (label.pending     . fg-0)
     (label.minibuffer  . fg-0)
+    (label.search      . fg-0)
     ;; cursors
     (cursor.normal     . fg-warm)
     (cursor.insert     . fg-warm)
@@ -166,6 +168,7 @@
     (cursor.select     . fg-warm)
     (cursor.pending    . fg-warm)
     (cursor.minibuffer . fg-warm)
+    (cursor.search     . fg-warm)
     ;; macro
     (macro.indicator   . red)
     (macro.bg          . fg-2)

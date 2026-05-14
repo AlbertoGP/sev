@@ -3,22 +3,28 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "buffer.h"
 #include "search.h"
 
 void search_session_free(SearchSession *s) {
+    if (s->query_buf) {
+        buffer_delete(s->query_buf);
+        s->query_buf = NULL;
+    }
     free(s->matches);
     s->matches   = NULL;
     s->match_cap = 0;
 }
 
-void search_session_recompute(SearchSession *s, const char *text, size_t text_len) {
+void search_session_recompute(SearchSession *s, const char *text, size_t text_len,
+                               const char *query, size_t query_len) {
     s->match_count = 0;
-    if (s->query_len == 0 || text_len == 0) return;
+    if (query_len == 0 || text_len == 0) return;
 
     const char *p   = text;
     const char *end = text + text_len;
     while (p < end) {
-        const char *hit = memmem(p, (size_t)(end - p), s->query, s->query_len);
+        const char *hit = memmem(p, (size_t)(end - p), query, query_len);
         if (!hit) break;
 
         if (s->match_count >= s->match_cap) {
@@ -30,7 +36,7 @@ void search_session_recompute(SearchSession *s, const char *text, size_t text_le
         }
         s->matches[s->match_count++] = (SearchMatch){
             .start = (size_t)(hit - text),
-            .end   = (size_t)(hit - text) + s->query_len
+            .end   = (size_t)(hit - text) + query_len
         };
         p = hit + 1;
     }

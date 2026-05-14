@@ -569,8 +569,10 @@ void scheme_init(AppState *state) {
     SDEF("%search-next!",       0, scm_search_next);
     SDEF("%search-prev!",       0, scm_search_prev);
     SDEF("search-self-insert",  0, scm_search_self_insert);
-    SDEF("%search-backspace!",  0, scm_search_backspace);
-    SDEF("%search-confirm!",    0, scm_search_confirm);
+    SDEF("%search-backspace!",       0, scm_search_backspace);
+    SDEF("%search-forward-char!",   0, scm_search_forward_char);
+    SDEF("%search-backward-char!",  0, scm_search_backward_char);
+    SDEF("%search-confirm!",        0, scm_search_confirm);
     SDEF("%search-cancel!",     0, scm_search_cancel);
     SDEF("%search-bar-open?",   0, scm_search_bar_open_p);
 
@@ -672,7 +674,7 @@ void scheme_init(AppState *state) {
         "jump-to-matching-bracket "
         "%set-mouse-click-handler! %set-mouse-drag-handler! "
         "%search-open! %search-next! %search-prev! "
-        "search-self-insert %search-backspace! %search-confirm! %search-cancel! %search-bar-open? "
+        "search-self-insert %search-backspace! %search-forward-char! %search-backward-char! %search-confirm! %search-cancel! %search-bar-open? "
         "global-keymap pane-keymap search-keymap eval) "
         "%editor-env '()))",
         -1, meta);
@@ -719,6 +721,7 @@ void scheme_init(AppState *state) {
     INTERN_ROLE(mode_command, "mode.command");
     INTERN_ROLE(mode_pending, "mode.pending");
     INTERN_ROLE(mode_minibuffer, "mode.minibuffer");
+    INTERN_ROLE(mode_search,    "mode.search");
     INTERN_ROLE(mode_help, "mode.help");
     INTERN_ROLE(label_normal, "label.normal");
     INTERN_ROLE(label_insert, "label.insert");
@@ -727,6 +730,7 @@ void scheme_init(AppState *state) {
     INTERN_ROLE(label_command, "label.command");
     INTERN_ROLE(label_pending, "label.pending");
     INTERN_ROLE(label_minibuffer, "label.minibuffer");
+    INTERN_ROLE(label_search,    "label.search");
     INTERN_ROLE(label_help, "label.help");
     INTERN_ROLE(cursor_normal, "cursor.normal");
     INTERN_ROLE(cursor_insert, "cursor.insert");
@@ -735,6 +739,7 @@ void scheme_init(AppState *state) {
     INTERN_ROLE(cursor_command, "cursor.command");
     INTERN_ROLE(cursor_pending, "cursor.pending");
     INTERN_ROLE(cursor_minibuffer, "cursor.minibuffer");
+    INTERN_ROLE(cursor_search,    "cursor.search");
     INTERN_ROLE(cursor_help, "cursor.help");
     INTERN_ROLE(macro_indicator, "macro.indicator");
     INTERN_ROLE(macro_bg, "macro.bg");

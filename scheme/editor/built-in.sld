@@ -24,5 +24,6 @@
     buffer-new buffer-rename switch-to-buffer buffer-close tab-new
     eval-expression
     file-picker file-picker-open!
-    search-backspace search-confirm search-cancel)
+    search-backspace search-confirm search-cancel
+    search-forward-char search-backward-char)
   (include "built-in.scm"))

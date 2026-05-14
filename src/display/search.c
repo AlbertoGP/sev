@@ -2,12 +2,15 @@
 
 #include <string.h>
 
+#include "cursor.h"
 #include "icon.h"
 #include "pane.h"
 #include "text_surface.h"
 #include "theme.h"
 #include "tooltip.h"
+#include "vline.h"
 #include "../command/keymap.h"
+#include "../command/mode.h"
 #include "../command/scheme_internal.h"
 #include "../text/buffer.h"
 
@@ -43,16 +46,30 @@ static void HandleCloseSearch(Clay_ElementId id, Clay_PointerData ptr, void *ud)
     s->bar_open    = false;
     s->active      = false;
     s->match_count = 0;
-    s->query_len   = 0;
-    s->query[0]    = '\0';
     G->input.current_focus = FOCUS_PANE;
 }
 
 void SearchBar(AppState *state, Pane *pane, int32_t index) {
     SearchSession *s = &pane->content.search;
-    if (!s->bar_open) return;
+    if (!s->bar_open || !s->query_buf) return;
 
     float sf = state->ui.scale_factor;
+    uint16_t font_sz = (uint16_t)(12 * sf);
+    int line_h = vline_get_line_height(&state->rendererData, FONT_BUF_NORMAL, font_sz);
+
+    Buffer *saved = buffer_get_current();
+    buffer_set_current(s->query_buf);
+
+    const char *query_text = buffer_text_cached(s->query_buf);
+    size_t text_len = query_text ? strlen(query_text) : 0;
+    size_t point_pos = point_get(s->query_buf).pos;
+    if (point_pos > text_len) point_pos = text_len;
+
+    float cursor_x = (text_len > 0 && point_pos > 0)
+        ? text_measure_tab_aware(&state->rendererData, FONT_BUF_NORMAL, font_sz,
+                                 query_text, point_pos, 4)
+        : 0.0f;
+
     CLAY(CLAY_IDI_LOCAL("SearchBar", index), {
         .layout = {
             .sizing = { .width = CLAY_SIZING_GROW(0) },
@@ -72,15 +89,9 @@ void SearchBar(AppState *state, Pane *pane, int32_t index) {
             .color = ui_resolve_color(state, state->ui.roles.border_active),
         },
     }) {
-        uint16_t font_sz = (uint16_t)(12 * sf);
-        float cursor_x = s->query_len > 0
-            ? text_measure_tab_aware(&state->rendererData, FONT_BUF_NORMAL, font_sz,
-                                     s->query, s->query_len, 4)
-            : 0.0f;
-
         Clay_String qstr = {
-            .chars               = s->query,
-            .length              = (int32_t)s->query_len,
+            .chars               = query_text,
+            .length              = (int32_t)text_len,
             .isStaticallyAllocated = true,
         };
         CLAY_AUTO_ID({
@@ -103,26 +114,13 @@ void SearchBar(AppState *state, Pane *pane, int32_t index) {
                     ? ui_resolve_color(state, state->ui.roles.search_no_match)
                     : ui_resolve_color(state, state->ui.roles.text_primary)),
             }));
-            if (state->input.current_focus == FOCUS_SEARCH && state->cursor_visible) {
-                float cw = sf >= 2.0f ? 2.0f * sf : 1.0f;
-                CLAY_AUTO_ID({
-                    .floating = {
-                        .attachTo = CLAY_ATTACH_TO_PARENT,
-                        .offset   = { .x = cursor_x + 8 * sf, .y = 4.0f * sf },
-                        .zIndex   = 10,
-                    },
-                    .layout = {
-                        .sizing = {
-                            .width  = CLAY_SIZING_FIXED(cw),
-                            .height = CLAY_SIZING_FIXED(font_sz),
-                        }
-                    },
-                    .backgroundColor = ui_get_cursor_color(state),
-                }) {}
-            }
+            if (state->input.current_focus == FOCUS_SEARCH && state->cursor_visible)
+                Cursor(state, 0, cursor_x + 8 * sf, 4.0f * sf, line_h,
+                       0.0f, 0.0f, 65535.0f, 65535.0f,
+                       FONT_BUF_NORMAL, font_sz, 10);
         }
 
-        bool nav_disabled = !s->query_len || !s->match_count;
+        bool nav_disabled = !text_len || !s->match_count;
 
         bool search_prev_hovered = false;
         CLAY_AUTO_ID({
@@ -183,7 +181,7 @@ void SearchBar(AppState *state, Pane *pane, int32_t index) {
                                "Select Next Match", next_binding[0] ? next_binding : NULL);
 
         // count_str is pre-formatted and stored in the SearchSession (stable per-pane memory).
-        const char *count_chars = s->query_len == 0 ? "0/0" : s->count_str;
+        const char *count_chars = text_len == 0 ? "0/0" : s->count_str;
         Clay_String cstr = {
             .chars               = count_chars,
             .length              = (int32_t)strlen(count_chars),
@@ -192,7 +190,7 @@ void SearchBar(AppState *state, Pane *pane, int32_t index) {
         CLAY_TEXT(cstr, CLAY_TEXT_CONFIG({
             .fontId    = FONT_UI_NORMAL,
             .fontSize  = (uint16_t)(10 * sf),
-            .textColor = s->query_len && s->match_count
+            .textColor = text_len && s->match_count
               ? ui_resolve_color(state, state->ui.roles.text_primary)
               : ui_resolve_color(state, state->ui.roles.text_faded),
         }));
@@ -225,14 +223,20 @@ void SearchBar(AppState *state, Pane *pane, int32_t index) {
         TextTooltipWithBinding(state, search_close_hovered, index + 1024,
                                "Close Search Bar", binding[0] ? binding : NULL);
     }
+
+    buffer_set_current(saved);
 }
 
 static void search_recompute_current(Pane *pane) {
     if (!pane || !pane->content.active_tab) return;
     Buffer *buf = pane->content.active_tab->content.buffer.buffer;
     if (!buf) return;
+    SearchSession *s = &pane->content.search;
+    if (!s->query_buf) return;
+    const char *query = buffer_text_cached(s->query_buf);
+    size_t query_len = query ? strlen(query) : 0;
     const char *text = buffer_text_cached(buf);
-    search_session_recompute(&pane->content.search, text, strlen(text));
+    search_session_recompute(s, text, strlen(text), query, query_len);
 }
 
 static void search_jump_to_active(Pane *pane) {
@@ -251,14 +255,12 @@ void search_handle_key(AppState *state, const KeyEvent *ev) {
     Pane *pane = pane_get_active();
     if (!pane) { state->input.current_focus = FOCUS_PANE; return; }
     SearchSession *s = &pane->content.search;
+    if (!s->query_buf) return;
 
     if (ev->type == KEYEVENT_SPECIAL) {
         switch (ev->keycode) {
         case KEY_BACKSPACE:
-            while (s->query_len > 0 && (s->query[s->query_len - 1] & 0xC0) == 0x80)
-                s->query_len--;
-            if (s->query_len > 0) s->query_len--;
-            s->query[s->query_len] = '\0';
+            delete_chars(s->query_buf, 1);
             search_recompute_current(pane);
             break;
         case KEY_RETURN:
@@ -269,8 +271,8 @@ void search_handle_key(AppState *state, const KeyEvent *ev) {
             s->bar_open    = false;
             s->active      = false;
             s->match_count = 0;
-            s->query_len   = 0;
-            s->query[0]    = '\0';
+            buffer_clear(s->query_buf);
+            s->text_scroll = 0.0f;
             state->input.current_focus = FOCUS_PANE;
             break;
         default:
@@ -280,20 +282,8 @@ void search_handle_key(AppState *state, const KeyEvent *ev) {
     }
 
     if (ev->type == KEYEVENT_CHAR && ev->mods == MOD_NONE) {
-        uint32_t cp = ev->codepoint;
-        char utf8[5] = {0};
-        int len;
-        if      (cp < 0x80)    { utf8[0] = (char)cp;                                                             len = 1; }
-        else if (cp < 0x800)   { utf8[0] = (char)(0xC0|(cp>>6));  utf8[1] = (char)(0x80|(cp&0x3F));             len = 2; }
-        else if (cp < 0x10000) { utf8[0] = (char)(0xE0|(cp>>12)); utf8[1] = (char)(0x80|((cp>>6)&0x3F));  utf8[2] = (char)(0x80|(cp&0x3F));            len = 3; }
-        else                   { utf8[0] = (char)(0xF0|(cp>>18)); utf8[1] = (char)(0x80|((cp>>12)&0x3F)); utf8[2] = (char)(0x80|((cp>>6)&0x3F)); utf8[3] = (char)(0x80|(cp&0x3F)); len = 4; }
-
-        if (s->query_len + (size_t)len < SEARCH_QUERY_MAX) {
-            memcpy(s->query + s->query_len, utf8, (size_t)len);
-            s->query_len += (size_t)len;
-            s->query[s->query_len] = '\0';
-            search_recompute_current(pane);
-        }
+        insert_codepoint(s->query_buf, ev->codepoint);
+        search_recompute_current(pane);
     }
 }
 
@@ -303,15 +293,22 @@ sexp scm_search_open(sexp ctx, sexp self, sexp n) {
     Pane *pane = pane_get_active();
     if (!pane) return SEXP_VOID;
     SearchSession *s = &pane->content.search;
+
+    if (!s->query_buf) {
+        s->query_buf = buffer_create("*search-query*");
+        if (!s->query_buf) return SEXP_VOID;
+        Mode *vim = mode_lookup("vim-normal-mode", MODE_MINOR);
+        if (vim) buffer_disable_minor_mode(s->query_buf, vim);
+        Mode *sm = mode_lookup("search-mode", MODE_MINOR);
+        if (sm) buffer_enable_minor_mode(s->query_buf, sm);
+    }
+
     Buffer *buf = buffer_get_current();
-    s->point     = buf ? point_get(buf).pos : 0;
-    s->query_len = 0;
-    s->query[0]  = '\0';
-    s->match_count = 0;
-    s->active_match_index = 0;
+    s->point    = buf ? point_get(buf).pos : 0;
     s->active   = true;
     s->bar_open = true;
     G->input.current_focus = FOCUS_SEARCH;
+    search_recompute_current(pane);
     return SEXP_VOID;
 }
 
@@ -319,20 +316,9 @@ sexp scm_search_self_insert(sexp ctx, sexp self, sexp n) {
     Pane *pane = pane_get_active();
     if (!pane) return SEXP_VOID;
     SearchSession *s = &pane->content.search;
-    if (last_event.type != KEYEVENT_CHAR) return SEXP_VOID;
-    uint32_t cp = last_event.codepoint;
-    char utf8[5] = {0};
-    int len;
-    if      (cp < 0x80)    { utf8[0] = (char)cp;                                                             len = 1; }
-    else if (cp < 0x800)   { utf8[0] = (char)(0xC0|(cp>>6));  utf8[1] = (char)(0x80|(cp&0x3F));             len = 2; }
-    else if (cp < 0x10000) { utf8[0] = (char)(0xE0|(cp>>12)); utf8[1] = (char)(0x80|((cp>>6)&0x3F));  utf8[2] = (char)(0x80|(cp&0x3F));            len = 3; }
-    else                   { utf8[0] = (char)(0xF0|(cp>>18)); utf8[1] = (char)(0x80|((cp>>12)&0x3F)); utf8[2] = (char)(0x80|((cp>>6)&0x3F)); utf8[3] = (char)(0x80|(cp&0x3F)); len = 4; }
-    if (s->query_len + (size_t)len < SEARCH_QUERY_MAX) {
-        memcpy(s->query + s->query_len, utf8, (size_t)len);
-        s->query_len += (size_t)len;
-        s->query[s->query_len] = '\0';
-        search_recompute_current(pane);
-    }
+    if (!s->query_buf || last_event.type != KEYEVENT_CHAR) return SEXP_VOID;
+    insert_codepoint(s->query_buf, last_event.codepoint);
+    search_recompute_current(pane);
     return SEXP_VOID;
 }
 
@@ -340,11 +326,33 @@ sexp scm_search_backspace(sexp ctx, sexp self, sexp n) {
     Pane *pane = pane_get_active();
     if (!pane) return SEXP_VOID;
     SearchSession *s = &pane->content.search;
-    while (s->query_len > 0 && (s->query[s->query_len - 1] & 0xC0) == 0x80)
-        s->query_len--;
-    if (s->query_len > 0) s->query_len--;
-    s->query[s->query_len] = '\0';
+    if (!s->query_buf) return SEXP_VOID;
+    delete_chars(s->query_buf, 1);
     search_recompute_current(pane);
+    return SEXP_VOID;
+}
+
+sexp scm_search_forward_char(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane) return SEXP_VOID;
+    SearchSession *s = &pane->content.search;
+    if (!s->query_buf) return SEXP_VOID;
+    Buffer *saved = buffer_get_current();
+    buffer_set_current(s->query_buf);
+    point_move(1);
+    buffer_set_current(saved);
+    return SEXP_VOID;
+}
+
+sexp scm_search_backward_char(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane) return SEXP_VOID;
+    SearchSession *s = &pane->content.search;
+    if (!s->query_buf) return SEXP_VOID;
+    Buffer *saved = buffer_get_current();
+    buffer_set_current(s->query_buf);
+    point_move(-1);
+    buffer_set_current(saved);
     return SEXP_VOID;
 }
 
@@ -364,8 +372,6 @@ sexp scm_search_cancel(sexp ctx, sexp self, sexp n) {
     s->bar_open    = false;
     s->active      = false;
     s->match_count = 0;
-    s->query_len   = 0;
-    s->query[0]    = '\0';
     G->input.current_focus = FOCUS_PANE;
     return SEXP_VOID;
 }

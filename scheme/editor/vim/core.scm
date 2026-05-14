@@ -84,6 +84,13 @@
 (set-key! search-keymap "return"    'search-confirm)
 (set-key! search-keymap "escape"    'search-cancel)
 
+(set-key! search-keymap "left"  'search-backward-char)
+(set-key! search-keymap "right" 'search-forward-char)
+
+(define-minor-mode 'search-mode search-keymap #t)
+(register-mode-icon/full 'search-mode "icon-normal.svg"
+                         'mode.search 'label.search 'cursor.search 'thin)
+
 ;; Insert mode bindings
 (set-key! insert-map "h" 'self-insert)
 (set-key! insert-map "j" 'self-insert)
