@@ -8,9 +8,10 @@
 #include "theme.h"
 #include "which_key.h"
 #include "../state.h"
+#include "scale.h"
 
 static void GlobalHeader(AppState *state) {
-    float scale     = state->ui.dpi_scale;
+    float scale     = state->ui.dpi_scale * UI_PRESCALE;
     float icon_size = 24.0f * scale;
     float natural_h = icon_size + 4.0f * scale;
 #ifdef __APPLE__

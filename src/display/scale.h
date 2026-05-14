@@ -5,8 +5,10 @@
 #include "../state.h"
 #include "../text/buffer.h"
 
+#define UI_PRESCALE 1.25f
+
 static inline void ui_recompute_scale(AppState *state) {
-    state->ui.scale_factor = state->ui.dpi_scale * state->ui.user_scale;
+    state->ui.scale_factor = state->ui.dpi_scale * UI_PRESCALE * state->ui.user_scale;
 }
 
 static inline void reset_scale(AppState *state) {

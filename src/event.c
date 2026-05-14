@@ -16,6 +16,7 @@
 #include "command/message.h"
 #include "command/minibuf.h"
 #include "display/pane.h"
+#include "display/scale.h"
 #include "display/tooltip.h"
 #include "display/vline.h"
 #include "file_scanner.h"
@@ -453,7 +454,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
         }
 #endif
         state->ui.dpi_scale = os_scale;
-        state->ui.scale_factor = state->ui.dpi_scale * state->ui.user_scale;
+        ui_recompute_scale(state);
         int width, height;
         SDL_GetWindowSizeInPixels(state->window, &width, &height);
         Clay_SetLayoutDimensions((Clay_Dimensions) {(float) width, (float) height});

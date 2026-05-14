@@ -28,6 +28,7 @@
 #include "command/scheme.h"
 #include "display/icon.h"
 #include "display/pane.h"
+#include "display/scale.h"
 #include "text/buffer.h"
 
 /* This function runs once at startup. */
@@ -124,7 +125,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         state->ui.dpi_scale = os_scale;
     }
     state->ui.user_scale = 1.0f;
-    state->ui.scale_factor = state->ui.dpi_scale * state->ui.user_scale;
+    ui_recompute_scale(state);
 
 #ifdef __APPLE__
     {
