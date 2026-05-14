@@ -355,10 +355,23 @@ sexp scm_search_open(sexp ctx, sexp self, sexp n) {
     }
 
     Buffer *buf = buffer_get_current();
-    s->point      = buf ? point_get(buf).pos : 0;
-    s->active     = true;
-    s->bar_open   = true;
-    s->sel_active = false;
+    s->point    = buf ? point_get(buf).pos : 0;
+    s->active   = true;
+    s->bar_open = true;
+
+    const char *q = buffer_text_cached(s->query_buf);
+    size_t qlen = q ? strlen(q) : 0;
+    if (qlen > 0) {
+        buffer_set_current(s->query_buf);
+        Location end = { .pos = qlen };
+        point_set(end);
+        if (buf) buffer_set_current(buf);
+        s->sel_anchor = 0;
+        s->sel_active = true;
+    } else {
+        s->sel_active = false;
+    }
+
     G->input.current_focus = FOCUS_SEARCH;
     search_recompute_current(pane);
     return SEXP_VOID;
@@ -450,6 +463,8 @@ sexp scm_search_shift_backward_char(sexp ctx, sexp self, sexp n) {
 sexp scm_search_confirm(sexp ctx, sexp self, sexp n) {
     Pane *pane = pane_get_active();
     if (!pane) return SEXP_VOID;
+    SearchSession *s = &pane->content.search;
+    s->sel_active = false;
     // Keep bar_open so the counter stays visible; only close on escape.
     G->input.current_focus = FOCUS_PANE;
     search_jump_to_active(pane);
