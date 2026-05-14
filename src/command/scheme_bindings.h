@@ -57,6 +57,8 @@ sexp scm_search_self_insert(sexp ctx, sexp self, sexp n);
 sexp scm_search_backspace(sexp ctx, sexp self, sexp n);
 sexp scm_search_forward_char(sexp ctx, sexp self, sexp n);
 sexp scm_search_backward_char(sexp ctx, sexp self, sexp n);
+sexp scm_search_shift_forward_char(sexp ctx, sexp self, sexp n);
+sexp scm_search_shift_backward_char(sexp ctx, sexp self, sexp n);
 sexp scm_search_confirm(sexp ctx, sexp self, sexp n);
 sexp scm_search_cancel(sexp ctx, sexp self, sexp n);
 sexp scm_search_bar_open_p(sexp ctx, sexp self, sexp n);

@@ -288,3 +288,11 @@
 (defcommand (search-backward-char)
   "search: move cursor backward one character"
   (%search-backward-char!))
+
+(defcommand (search-shift-forward-char)
+  "search: move cursor right, extending selection"
+  (%search-shift-forward-char!))
+
+(defcommand (search-shift-backward-char)
+  "search: move cursor left, extending selection"
+  (%search-shift-backward-char!))

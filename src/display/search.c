@@ -70,6 +70,23 @@ void SearchBar(AppState *state, Pane *pane, int32_t index) {
                                  query_text, point_pos, 4)
         : 0.0f;
 
+    bool  has_sel = s->sel_active && text_len > 0;
+    float sel_x = 0.0f, sel_w = 0.0f;
+    if (has_sel) {
+        size_t anch    = s->sel_anchor < text_len ? s->sel_anchor : text_len;
+        size_t sel_min = anch < point_pos ? anch : point_pos;
+        size_t sel_max = anch > point_pos ? anch : point_pos;
+        sel_x = sel_min > 0
+            ? text_measure_tab_aware(&state->rendererData, FONT_BUF_NORMAL, font_sz,
+                                     query_text, sel_min, 4)
+            : 0.0f;
+        sel_w = sel_max > sel_min
+            ? text_measure_tab_aware(&state->rendererData, FONT_BUF_NORMAL, font_sz,
+                                     query_text + sel_min, sel_max - sel_min, 4)
+            : 0.0f;
+        if (sel_w == 0.0f) has_sel = false;
+    }
+
     CLAY(CLAY_IDI_LOCAL("SearchBar", index), {
         .layout = {
             .sizing = { .width = CLAY_SIZING_GROW(0) },
@@ -105,6 +122,22 @@ void SearchBar(AppState *state, Pane *pane, int32_t index) {
                     },
                     .cornerRadius = CLAY_CORNER_RADIUS(5*sf)
                 }) {
+            if (has_sel) {
+                CLAY_AUTO_ID({
+                    .floating = {
+                        .attachTo = CLAY_ATTACH_TO_PARENT,
+                        .offset   = { .x = sel_x + 8 * sf, .y = 4.0f * sf },
+                        .zIndex   = 5,
+                    },
+                    .layout = {
+                        .sizing = {
+                            .width  = CLAY_SIZING_FIXED(sel_w),
+                            .height = CLAY_SIZING_FIXED((float)line_h),
+                        }
+                    },
+                    .backgroundColor = ui_resolve_color(state, state->ui.roles.selection),
+                }) {}
+            }
             CLAY_TEXT(qstr.length ? qstr : CLAY_STRING("Search..."), CLAY_TEXT_CONFIG({
                 .fontId    = FONT_BUF_NORMAL,
                 .fontSize  = font_sz,
@@ -227,6 +260,23 @@ void SearchBar(AppState *state, Pane *pane, int32_t index) {
     buffer_set_current(saved);
 }
 
+static void search_selection_delete(SearchSession *s) {
+    if (!s->sel_active || !s->query_buf) return;
+    Buffer *saved = buffer_get_current();
+    buffer_set_current(s->query_buf);
+    size_t point_pos = point_get(s->query_buf).pos;
+    size_t anch      = s->sel_anchor;
+    size_t sel_min   = anch < point_pos ? anch : point_pos;
+    size_t sel_max   = anch > point_pos ? anch : point_pos;
+    if (sel_max > sel_min) {
+        Location loc = { .pos = sel_max };
+        point_set(loc);
+        delete_chars(s->query_buf, (int)(sel_max - sel_min));
+    }
+    s->sel_active = false;
+    buffer_set_current(saved);
+}
+
 static void search_recompute_current(Pane *pane) {
     if (!pane || !pane->content.active_tab) return;
     Buffer *buf = pane->content.active_tab->content.buffer.buffer;
@@ -271,6 +321,7 @@ void search_handle_key(AppState *state, const KeyEvent *ev) {
             s->bar_open    = false;
             s->active      = false;
             s->match_count = 0;
+            s->sel_active  = false;
             buffer_clear(s->query_buf);
             s->text_scroll = 0.0f;
             state->input.current_focus = FOCUS_PANE;
@@ -304,9 +355,10 @@ sexp scm_search_open(sexp ctx, sexp self, sexp n) {
     }
 
     Buffer *buf = buffer_get_current();
-    s->point    = buf ? point_get(buf).pos : 0;
-    s->active   = true;
-    s->bar_open = true;
+    s->point      = buf ? point_get(buf).pos : 0;
+    s->active     = true;
+    s->bar_open   = true;
+    s->sel_active = false;
     G->input.current_focus = FOCUS_SEARCH;
     search_recompute_current(pane);
     return SEXP_VOID;
@@ -317,6 +369,7 @@ sexp scm_search_self_insert(sexp ctx, sexp self, sexp n) {
     if (!pane) return SEXP_VOID;
     SearchSession *s = &pane->content.search;
     if (!s->query_buf || last_event.type != KEYEVENT_CHAR) return SEXP_VOID;
+    if (s->sel_active) search_selection_delete(s);
     insert_codepoint(s->query_buf, last_event.codepoint);
     search_recompute_current(pane);
     return SEXP_VOID;
@@ -327,7 +380,11 @@ sexp scm_search_backspace(sexp ctx, sexp self, sexp n) {
     if (!pane) return SEXP_VOID;
     SearchSession *s = &pane->content.search;
     if (!s->query_buf) return SEXP_VOID;
-    delete_chars(s->query_buf, 1);
+    if (s->sel_active) {
+        search_selection_delete(s);
+    } else {
+        delete_chars(s->query_buf, 1);
+    }
     search_recompute_current(pane);
     return SEXP_VOID;
 }
@@ -337,6 +394,7 @@ sexp scm_search_forward_char(sexp ctx, sexp self, sexp n) {
     if (!pane) return SEXP_VOID;
     SearchSession *s = &pane->content.search;
     if (!s->query_buf) return SEXP_VOID;
+    s->sel_active = false;
     Buffer *saved = buffer_get_current();
     buffer_set_current(s->query_buf);
     point_move(1);
@@ -349,8 +407,41 @@ sexp scm_search_backward_char(sexp ctx, sexp self, sexp n) {
     if (!pane) return SEXP_VOID;
     SearchSession *s = &pane->content.search;
     if (!s->query_buf) return SEXP_VOID;
+    s->sel_active = false;
     Buffer *saved = buffer_get_current();
     buffer_set_current(s->query_buf);
+    point_move(-1);
+    buffer_set_current(saved);
+    return SEXP_VOID;
+}
+
+sexp scm_search_shift_forward_char(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane) return SEXP_VOID;
+    SearchSession *s = &pane->content.search;
+    if (!s->query_buf) return SEXP_VOID;
+    Buffer *saved = buffer_get_current();
+    buffer_set_current(s->query_buf);
+    if (!s->sel_active) {
+        s->sel_anchor = point_get(s->query_buf).pos;
+        s->sel_active = true;
+    }
+    point_move(1);
+    buffer_set_current(saved);
+    return SEXP_VOID;
+}
+
+sexp scm_search_shift_backward_char(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane) return SEXP_VOID;
+    SearchSession *s = &pane->content.search;
+    if (!s->query_buf) return SEXP_VOID;
+    Buffer *saved = buffer_get_current();
+    buffer_set_current(s->query_buf);
+    if (!s->sel_active) {
+        s->sel_anchor = point_get(s->query_buf).pos;
+        s->sel_active = true;
+    }
     point_move(-1);
     buffer_set_current(saved);
     return SEXP_VOID;
@@ -372,6 +463,7 @@ sexp scm_search_cancel(sexp ctx, sexp self, sexp n) {
     s->bar_open    = false;
     s->active      = false;
     s->match_count = 0;
+    s->sel_active  = false;
     G->input.current_focus = FOCUS_PANE;
     return SEXP_VOID;
 }

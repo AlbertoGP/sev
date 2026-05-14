@@ -17,10 +17,12 @@ typedef struct {
     size_t         match_count;
     size_t         match_cap;
     size_t         active_match_index;
-    size_t         point;    // cursor position when search was opened
-    bool           active;   // session exists: highlights + n/N work
-    bool           bar_open; // search bar UI is visible
+    size_t         point;      // cursor position when search was opened
+    bool           active;     // session exists: highlights + n/N work
+    bool           bar_open;   // search bar UI is visible
     char           count_str[32]; // pre-formatted "N/M" or "no matches"; stable memory for Clay
+    size_t         sel_anchor; // fixed end of the text selection
+    bool           sel_active; // whether a selection is active
 } SearchSession;
 
 // Free dynamically allocated match storage and query buffer.

@@ -84,8 +84,10 @@
 (set-key! search-keymap "return"    'search-confirm)
 (set-key! search-keymap "escape"    'search-cancel)
 
-(set-key! search-keymap "left"  'search-backward-char)
-(set-key! search-keymap "right" 'search-forward-char)
+(set-key! search-keymap "left"        'search-backward-char)
+(set-key! search-keymap "right"       'search-forward-char)
+(set-key! search-keymap "shift-left"  'search-shift-backward-char)
+(set-key! search-keymap "shift-right" 'search-shift-forward-char)
 
 (define-minor-mode 'search-mode search-keymap #t)
 (register-mode-icon/full 'search-mode "icon-normal.svg"

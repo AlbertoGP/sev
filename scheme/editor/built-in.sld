@@ -25,5 +25,6 @@
     eval-expression
     file-picker file-picker-open!
     search-backspace search-confirm search-cancel
-    search-forward-char search-backward-char)
+    search-forward-char search-backward-char
+    search-shift-forward-char search-shift-backward-char)
   (include "built-in.scm"))
