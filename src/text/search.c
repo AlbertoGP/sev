@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #include "buffer.h"
 #include "search.h"
@@ -16,6 +17,14 @@ void search_session_free(SearchSession *s) {
     s->match_cap = 0;
 }
 
+static const char *find_case_insensitive(const char *hay, size_t hlen,
+                                         const char *ndl, size_t nlen) {
+    if (nlen > hlen) return NULL;
+    for (size_t i = 0; i <= hlen - nlen; i++)
+        if (strncasecmp(hay + i, ndl, nlen) == 0) return hay + i;
+    return NULL;
+}
+
 void search_session_recompute(SearchSession *s, const char *text, size_t text_len,
                                const char *query, size_t query_len) {
     s->match_count = 0;
@@ -24,7 +33,9 @@ void search_session_recompute(SearchSession *s, const char *text, size_t text_le
     const char *p   = text;
     const char *end = text + text_len;
     while (p < end) {
-        const char *hit = memmem(p, (size_t)(end - p), query, query_len);
+        const char *hit = s->case_sensitive
+            ? memmem(p, (size_t)(end - p), query, query_len)
+            : find_case_insensitive(p, (size_t)(end - p), query, query_len);
         if (!hit) break;
 
         if (s->match_count >= s->match_cap) {

@@ -17,6 +17,7 @@
 extern KeyEvent last_event;  // defined in command/keymap.c
 
 static void search_jump_to_active(Pane *pane);
+static void search_recompute_current(Pane *pane);
 
 static void HandleSearchPrev(Clay_ElementId id, Clay_PointerData ptr, void *ud) {
     if (ptr.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
@@ -36,6 +37,15 @@ static void HandleSearchNext(Clay_ElementId id, Clay_PointerData ptr, void *ud) 
     if (!s->active || s->match_count == 0) return;
     search_session_next_match(s);
     search_jump_to_active(pane);
+}
+
+static void HandleToggleCaseSensitive(Clay_ElementId id, Clay_PointerData ptr, void *ud) {
+    if (ptr.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
+    Pane *pane = (Pane *)ud;
+    if (!pane) return;
+    SearchSession *s = &pane->content.search;
+    s->case_sensitive = !s->case_sensitive;
+    search_recompute_current(pane);
 }
 
 static void HandleCloseSearch(Clay_ElementId id, Clay_PointerData ptr, void *ud) {
@@ -114,7 +124,8 @@ void SearchBar(AppState *state, Pane *pane, int32_t index) {
         CLAY_AUTO_ID({
                     .layout = {
                         .sizing = { .width = CLAY_SIZING_GROW(0) },
-                        .padding = { .top = 4 * sf, .bottom = 4 * sf, .left = 8 * sf, .right = 8 * sf }
+                        .padding = { .top = 4 * sf, .bottom = 4 * sf, .left = 8 * sf, .right = 8 * sf },
+                        .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
                     },
                     .border = {
                         .color = ui_resolve_color(state, state->ui.roles.border_inactive),
@@ -151,6 +162,39 @@ void SearchBar(AppState *state, Pane *pane, int32_t index) {
                 Cursor(state, 0, cursor_x + 8 * sf, 4.0f * sf, line_h,
                        0.0f, 0.0f, 65535.0f, 65535.0f,
                        FONT_BUF_NORMAL, font_sz, 10);
+
+            CLAY_AUTO_ID({
+                .layout = { .sizing = { .width = CLAY_SIZING_GROW() } }
+            }) {}
+
+            // Case sensitivity toggle
+            bool case_hovered = false;
+            CLAY(CLAY_IDI_LOCAL("SearchCaseToggle", index), {
+                .layout = {
+                    .sizing = { .width = CLAY_SIZING_FIXED(15 * sf), .height = CLAY_SIZING_FIXED(15 * sf) },
+                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
+                },
+                .cornerRadius    = CLAY_CORNER_RADIUS(4 * sf),
+                .backgroundColor = Clay_Hovered()
+                    ? ui_resolve_color(state, state->ui.roles.tab_close)
+                    : (Clay_Color){0}
+            }) {
+                SDL_Texture *case_tex = icon_get(
+                    s->case_sensitive ? "case-icon-active" : "case-icon", state, 11, 11);
+                CLAY_AUTO_ID({
+                    .layout = { .sizing = { .width = 11.0f * sf, .height = 11.0f * sf } },
+                    .image  = { .imageData = case_tex },
+                }) {}
+                Clay_OnHover(HandleToggleCaseSensitive, pane);
+                case_hovered = Clay_Hovered();
+                if (case_hovered)
+                    state->input.desired_cursor = SDL_SYSTEM_CURSOR_POINTER;
+            }
+            char case_binding[64] = {0};
+            keymap_where_is_first(state, "search-toggle-case", case_binding, sizeof(case_binding));
+            TextTooltipWithBinding(state, case_hovered, index + 1027,
+                                   "Match Case Sensitivity", case_binding[0] ? case_binding : NULL);
+
         }
 
         bool nav_disabled = !text_len || !s->match_count;
@@ -507,4 +551,13 @@ sexp scm_search_bar_open_p(sexp ctx, sexp self, sexp n) {
     Pane *pane = pane_get_active();
     if (!pane) return SEXP_FALSE;
     return pane->content.search.bar_open ? SEXP_TRUE : SEXP_FALSE;
+}
+
+sexp scm_search_toggle_case(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane) return SEXP_VOID;
+    SearchSession *s = &pane->content.search;
+    s->case_sensitive = !s->case_sensitive;
+    search_recompute_current(pane);
+    return SEXP_VOID;
 }

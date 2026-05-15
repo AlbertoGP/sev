@@ -296,3 +296,7 @@
 (defcommand (search-shift-backward-char)
   "search: move cursor left, extending selection"
   (%search-shift-backward-char!))
+
+(defcommand (search-toggle-case)
+  "search: toggle case sensitivity\nToggle case-sensitive matching in the search bar."
+  (%search-toggle-case!))

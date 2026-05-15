@@ -26,5 +26,6 @@
     file-picker file-picker-open!
     search-backspace search-confirm search-cancel
     search-forward-char search-backward-char
-    search-shift-forward-char search-shift-backward-char)
+    search-shift-forward-char search-shift-backward-char
+    search-toggle-case)
   (include "built-in.scm"))
