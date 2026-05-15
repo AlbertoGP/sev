@@ -40,7 +40,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     }
     *appstate = state;
 
-    if (!SDL_CreateWindowAndRenderer("sev", 800, 600,
+    if (!SDL_CreateWindowAndRenderer("sev", 1280, 720,
                                      SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY,
                                      &state->window, &state->rendererData.renderer)) {
         SDL_Log("Failed to create window and renderer = %s", SDL_GetError());
