@@ -10,6 +10,7 @@
 #include "../command/message.h"
 #include "../command/scheme_internal.h"
 #include "../state_io.h"
+#include "../file_scanner.h"
 
 static const char *pending_welcome_cmd = NULL;
 static const char *pending_project_path = NULL;
@@ -32,6 +33,7 @@ void welcome_flush_pending(void) {
         pending_project_path = NULL;
         if (chdir(path) == 0) {
             state_io_update_recent_project(G, path);
+            scanner_restart(&G->scanner);
             static char msg[PATH_MAX + 32];
             snprintf(msg, sizeof(msg), "Opened project %s", path);
             message_echo(msg);
