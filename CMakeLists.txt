@@ -181,31 +181,32 @@ if(EMSCRIPTEN)
         vendored/SDL_ttf/include
     )
     
-    # Build native bootstrap first (clear emscripten env vars)
-    execute_process(
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/native-chibi
-    )
+    # Pre-seed chibi-scheme's internal bootstrap directory with a native-compiler
+    # CMake cache. When cross-compiling, chibi-scheme spawns its own cmake in
+    # chibi-build/bootstrap-build; if that directory has no cache, the subprocess
+    # inherits CC=emcc from the emcmake environment and fails. Running cmake here
+    # first (with emscripten vars cleared) locks in the native compiler before
+    # chibi-scheme's execute_process runs.
+    set(CHIBI_BOOTSTRAP_BUILD_DIR "${CMAKE_BINARY_DIR}/chibi-build/bootstrap-build")
+    file(MAKE_DIRECTORY "${CHIBI_BOOTSTRAP_BUILD_DIR}")
     execute_process(
         COMMAND ${CMAKE_COMMAND} -E env --unset=CC --unset=CXX --unset=AR --unset=RANLIB
             ${CMAKE_COMMAND}
-            ${CMAKE_SOURCE_DIR}/vendored/chibi-scheme
+            -B "${CHIBI_BOOTSTRAP_BUILD_DIR}"
+            -S "${CMAKE_SOURCE_DIR}/vendored/chibi-scheme"
             -DCMAKE_BUILD_TYPE=Release
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/native-chibi
         RESULT_VARIABLE bootstrap_config_result
     )
     if(NOT bootstrap_config_result EQUAL 0)
         message(FATAL_ERROR "Failed to configure native chibi-scheme bootstrap")
     endif()
     execute_process(
-        COMMAND ${CMAKE_COMMAND} --build . --target chibi-scheme-bootstrap
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/native-chibi
+        COMMAND ${CMAKE_COMMAND} --build "${CHIBI_BOOTSTRAP_BUILD_DIR}" --target chibi-scheme-bootstrap
         RESULT_VARIABLE bootstrap_build_result
     )
     if(NOT bootstrap_build_result EQUAL 0)
         message(FATAL_ERROR "Failed to build native chibi-scheme bootstrap")
     endif()
-
-    set(CHIBI_BOOTSTRAP_EXECUTABLE "${CMAKE_BINARY_DIR}/native-chibi/chibi-scheme-bootstrap" CACHE FILEPATH "" FORCE)
 
     # Force static build so modules are embedded (required for WASM)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
