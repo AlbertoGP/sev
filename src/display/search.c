@@ -180,9 +180,9 @@ void SearchBar(AppState *state, Pane *pane, int32_t index) {
                     : (Clay_Color){0}
             }) {
                 SDL_Texture *case_tex = icon_get(
-                    s->case_sensitive ? "case-icon-active" : "case-icon", state, 11, 11);
+                    s->case_sensitive ? "case-icon-active" : "case-icon", state, 12, 12);
                 CLAY_AUTO_ID({
-                    .layout = { .sizing = { .width = 11.0f * sf, .height = 11.0f * sf } },
+                    .layout = { .sizing = { .width = 12.0f * sf, .height = 12.0f * sf } },
                     .image  = { .imageData = case_tex },
                 }) {}
                 Clay_OnHover(HandleToggleCaseSensitive, pane);
