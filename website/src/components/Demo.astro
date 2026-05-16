@@ -1,89 +1,108 @@
 ---
+
 ---
 
 <section id="demo-section" class="hidden px-6 py-16 bg-mantle">
-  <div class="max-w-[800px] mx-auto flex flex-col gap-4">
-    <div class="flex flex-col gap-2 sm:flex-row items-center sm:justify-between">
-      <h2 class="text-md sm:text-lg md:text-xl font-display text-blue">Live Demo</h2>
+    <div class="max-w-[1280px] mx-auto flex flex-col gap-4">
+        <div
+            class="flex flex-col gap-2 sm:flex-row items-center sm:justify-between"
+        >
+            <h2 class="text-md sm:text-lg md:text-xl font-display text-blue">
+                Live Demo
+            </h2>
             <div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
-        <span class="text-sm text-overlay1">~7 MB download on first load</span>
-        <button
-          id="fullscreen-btn"
-          class="px-3 py-1 text-sm rounded-lg bg-surface0 text-text hover:bg-surface1 transition-colors"
-        >Fullscreen</button>
-      </div>
+                <span class="text-sm text-overlay1"
+                    >~7 MB download on first load</span
+                >
+                <button
+                    id="fullscreen-btn"
+                    class="px-3 py-1 text-sm rounded-lg bg-surface0 text-text hover:bg-surface1 transition-colors"
+                    >Fullscreen</button
+                >
+            </div>
+        </div>
+        <div
+            class="relative rounded-md overflow-hidden border border-surface0 bg-mantle"
+        >
+            <div
+                id="demo-loading"
+                class="absolute inset-0 flex items-center justify-center text-overlay1 text-sm"
+            >
+                Loading…
+            </div>
+            <div
+                id="demo-canvas-wrap"
+                style="opacity: 0; transition: opacity 0.3s;"
+            >
+                <canvas
+                    id="canvas"
+                    class="block w-full"
+                    style="height: 520px;"
+                    oncontextmenu="event.preventDefault()"
+                    tabindex="-1"></canvas>
+            </div>
+        </div>
+        <p class="text-sm italic text-overlay0 text-center">
+            hint: try opening the demo project and demo-file.scm
+        </p>
     </div>
-    <div class="relative rounded-md overflow-hidden border border-surface0 bg-mantle">
-      <div id="demo-loading" class="absolute inset-0 flex items-center justify-center text-overlay1 text-sm">
-        Loading…
-      </div>
-      <div id="demo-canvas-wrap" style="opacity: 0; transition: opacity 0.3s;">
-        <canvas
-          id="canvas"
-          class="block w-full"
-          style="height: 520px;"
-          oncontextmenu="event.preventDefault()"
-          tabindex="-1"
-        ></canvas>
-      </div>
-    </div>
-    <p class="text-sm italic text-overlay0 text-center">hint: try opening the demo project and demo-file.scm</p>
-  </div>
 </section>
 
 <script>
-  const btn = document.getElementById('demo-btn') as HTMLButtonElement;
-  const section = document.getElementById('demo-section') as HTMLElement;
-  const loading = document.getElementById('demo-loading') as HTMLElement;
-  const canvasWrap = document.getElementById('demo-canvas-wrap') as HTMLElement;
-  const base = import.meta.env.BASE_URL;
+    const btn = document.getElementById("demo-btn") as HTMLButtonElement;
+    const section = document.getElementById("demo-section") as HTMLElement;
+    const loading = document.getElementById("demo-loading") as HTMLElement;
+    const canvasWrap = document.getElementById(
+        "demo-canvas-wrap",
+    ) as HTMLElement;
+    const base = import.meta.env.BASE_URL;
 
-  // Module must be a browser global before app.js executes
-  (window as any).Module = {
-    canvas: document.getElementById('canvas') as HTMLCanvasElement,
-    locateFile: (path: string) => `${base}demo/${path}`,
-    print: (...args: unknown[]) => console.log(...args),
-    setStatus(text: string) {
-      const m = (window as any).Module;
-      m.setStatus.last ??= { time: Date.now(), text: '' };
-      if (text === m.setStatus.last.text) return;
-      const now = Date.now();
-      const match = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
-      if (match && now - m.setStatus.last.time < 30) return;
-      m.setStatus.last = { time: now, text };
-      if (!text) {
-        loading.style.display = 'none';
-        canvasWrap.style.opacity = '1';
-      }
-    },
-    totalDependencies: 0,
-    monitorRunDependencies(remaining: number) {
-      const m = (window as any).Module;
-      m.totalDependencies = Math.max(m.totalDependencies, remaining);
-      m.setStatus(
-        remaining
-          ? `Preparing… (${m.totalDependencies - remaining}/${m.totalDependencies})`
-          : 'All downloads complete.'
-      );
-    },
-  };
+    // Module must be a browser global before app.js executes
+    (window as any).Module = {
+        canvas: document.getElementById("canvas") as HTMLCanvasElement,
+        locateFile: (path: string) => `${base}demo/${path}`,
+        print: (...args: unknown[]) => console.log(...args),
+        setStatus(text: string) {
+            const m = (window as any).Module;
+            m.setStatus.last ??= { time: Date.now(), text: "" };
+            if (text === m.setStatus.last.text) return;
+            const now = Date.now();
+            const match = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+            if (match && now - m.setStatus.last.time < 30) return;
+            m.setStatus.last = { time: now, text };
+            if (!text) {
+                loading.style.display = "none";
+                canvasWrap.style.opacity = "1";
+            }
+        },
+        totalDependencies: 0,
+        monitorRunDependencies(remaining: number) {
+            const m = (window as any).Module;
+            m.totalDependencies = Math.max(m.totalDependencies, remaining);
+            m.setStatus(
+                remaining
+                    ? `Preparing… (${m.totalDependencies - remaining}/${m.totalDependencies})`
+                    : "All downloads complete.",
+            );
+        },
+    };
 
-  let wasmInjected = false;
+    let wasmInjected = false;
 
-  // Show section first so SDL sees a canvas with real dimensions, then inject app.js
-  btn.addEventListener('click', () => {
-    section.classList.remove('hidden');
-    section.scrollIntoView({ behavior: 'smooth' });
-    if (!wasmInjected) {
-      wasmInjected = true;
-      const s = document.createElement('script');
-      s.src = `${base}demo/app.js`;
-      s.async = true;
-      document.body.appendChild(s);
-    }
-  });
+    // Show section first so SDL sees a canvas with real dimensions, then inject app.js
+    btn.addEventListener("click", () => {
+        section.classList.remove("hidden");
+        section.scrollIntoView({ behavior: "smooth" });
+        if (!wasmInjected) {
+            wasmInjected = true;
+            const s = document.createElement("script");
+            s.src = `${base}demo/app.js`;
+            s.async = true;
+            document.body.appendChild(s);
+        }
+    });
 
-  document.getElementById('fullscreen-btn')!.addEventListener('click', () => {
-    (window as any).Module?.requestFullscreen(true, false);
-  });
+    document.getElementById("fullscreen-btn")!.addEventListener("click", () => {
+        (window as any).Module?.requestFullscreen(true, false);
+    });
 </script>
