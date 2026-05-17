@@ -23,7 +23,8 @@ typedef struct {
     char           count_str[32]; // pre-formatted "N/M" or "no matches"; stable memory for Clay
     size_t         sel_anchor;    // fixed end of the text selection
     bool           sel_active;    // whether a selection is active
-    bool           case_sensitive; // when false, matching ignores case
+    bool           case_sensitive;  // when false, matching ignores case
+    bool           match_whole_words; // when true, only whole-word matches are valid
 } SearchSession;
 
 // Free dynamically allocated match storage and query buffer.

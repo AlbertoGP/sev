@@ -39,6 +39,15 @@ static void HandleSearchNext(Clay_ElementId id, Clay_PointerData ptr, void *ud) 
     search_jump_to_active(pane);
 }
 
+static void HandleToggleMatchWholeWords(Clay_ElementId id, Clay_PointerData ptr, void *ud) {
+    if (ptr.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
+    Pane *pane = (Pane *)ud;
+    if (!pane) return;
+    SearchSession *s = &pane->content.search;
+    s->match_whole_words = !s->match_whole_words;
+    search_recompute_current(pane);
+}
+
 static void HandleToggleCaseSensitive(Clay_ElementId id, Clay_PointerData ptr, void *ud) {
     if (ptr.state != CLAY_POINTER_DATA_PRESSED_THIS_FRAME) return;
     Pane *pane = (Pane *)ud;
@@ -125,7 +134,8 @@ void SearchBar(AppState *state, Pane *pane, int32_t index) {
                     .layout = {
                         .sizing = { .width = CLAY_SIZING_GROW(0) },
                         .padding = { .top = 4 * sf, .bottom = 4 * sf, .left = 8 * sf, .right = 8 * sf },
-                        .childAlignment = { .y = CLAY_ALIGN_Y_CENTER }
+                        .childAlignment = { .y = CLAY_ALIGN_Y_CENTER },
+                        .childGap = 4 * sf
                     },
                     .border = {
                         .color = ui_resolve_color(state, state->ui.roles.border_inactive),
@@ -194,6 +204,34 @@ void SearchBar(AppState *state, Pane *pane, int32_t index) {
             keymap_where_is_first(state, "search-toggle-case", case_binding, sizeof(case_binding));
             TextTooltipWithBinding(state, case_hovered, index + 1027,
                                    "Match Case Sensitivity", case_binding[0] ? case_binding : NULL);
+
+            // Match whole words toggle
+            bool word_hovered = false;
+            CLAY(CLAY_IDI_LOCAL("SearchWordToggle", index), {
+                .layout = {
+                    .sizing = { .width = CLAY_SIZING_FIXED(15 * sf), .height = CLAY_SIZING_FIXED(15 * sf) },
+                    .childAlignment = { .x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER }
+                },
+                .cornerRadius    = CLAY_CORNER_RADIUS(4 * sf),
+                .backgroundColor = Clay_Hovered()
+                    ? ui_resolve_color(state, state->ui.roles.tab_close)
+                    : (Clay_Color){0}
+            }) {
+                SDL_Texture *word_tex = icon_get(
+                    s->match_whole_words ? "word-icon-active" : "word-icon", state, 12, 12);
+                CLAY_AUTO_ID({
+                    .layout = { .sizing = { .width = 12.0f * sf, .height = 12.0f * sf } },
+                    .image  = { .imageData = word_tex },
+                }) {}
+                Clay_OnHover(HandleToggleMatchWholeWords, pane);
+                word_hovered = Clay_Hovered();
+                if (word_hovered)
+                    state->input.desired_cursor = SDL_SYSTEM_CURSOR_POINTER;
+            }
+            char word_binding[64] = {0};
+            keymap_where_is_first(state, "search-toggle-whole-words", word_binding, sizeof(word_binding));
+            TextTooltipWithBinding(state, word_hovered, index + 1028,
+                                   "Match Whole Words", word_binding[0] ? word_binding : NULL);
 
         }
 
@@ -558,6 +596,15 @@ sexp scm_search_toggle_case(sexp ctx, sexp self, sexp n) {
     if (!pane) return SEXP_VOID;
     SearchSession *s = &pane->content.search;
     s->case_sensitive = !s->case_sensitive;
+    search_recompute_current(pane);
+    return SEXP_VOID;
+}
+
+sexp scm_search_toggle_whole_words(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane) return SEXP_VOID;
+    SearchSession *s = &pane->content.search;
+    s->match_whole_words = !s->match_whole_words;
     search_recompute_current(pane);
     return SEXP_VOID;
 }

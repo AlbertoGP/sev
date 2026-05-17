@@ -78,7 +78,7 @@ test-scheme: stage-scheme
 
 # Website
 website-sync-wasm:
-	cp build-wasm/app.html build-wasm/app.js build-wasm/app.wasm build-wasm/app.data website/public/demo/
+	cp build-wasm/Sev.html build-wasm/Sev.js build-wasm/Sev.wasm build-wasm/Sev.data website/public/demo/
 
 website-dev: website-sync-wasm
 	cd website && bun run dev

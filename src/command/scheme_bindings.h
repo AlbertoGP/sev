@@ -63,6 +63,7 @@ sexp scm_search_confirm(sexp ctx, sexp self, sexp n);
 sexp scm_search_cancel(sexp ctx, sexp self, sexp n);
 sexp scm_search_bar_open_p(sexp ctx, sexp self, sexp n);
 sexp scm_search_toggle_case(sexp ctx, sexp self, sexp n);
+sexp scm_search_toggle_whole_words(sexp ctx, sexp self, sexp n);
 
 // --- display/tab.c ---
 sexp scm_tab_close(sexp ctx, sexp self, sexp n);

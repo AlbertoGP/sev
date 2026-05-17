@@ -17,8 +17,11 @@
 (register-icon 'caret-left-faded "icon-caret-left.svg" 'text.faded)
 (register-icon 'caret-right-faded "icon-caret-right.svg" 'text.faded)
 
-(register-icon 'case-icon        "case-icon.svg" 'text.primary)
-(register-icon 'case-icon-active "case-icon.svg" 'border.active)
+(register-icon 'case-icon        "icon-case.svg" 'text.primary)
+(register-icon 'case-icon-active "icon-case.svg" 'border.active)
+
+(register-icon 'word-icon        "icon-word.svg" 'text.primary)
+(register-icon 'word-icon-active "icon-word.svg" 'border.active)
 
 (register-icon 'new-icon "icon-plus.svg" 'text.primary)
 (register-icon 'open-icon "icon-open.svg" 'text.primary)

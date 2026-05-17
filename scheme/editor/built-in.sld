@@ -27,5 +27,6 @@
     search-backspace search-confirm search-cancel
     search-forward-char search-backward-char
     search-shift-forward-char search-shift-backward-char
-    search-toggle-case)
+    search-toggle-case
+    search-toggle-whole-words)
   (include "built-in.scm"))

@@ -25,6 +25,13 @@ static const char *find_case_insensitive(const char *hay, size_t hlen,
     return NULL;
 }
 
+static bool is_word_char(uint32_t cp) {
+    return (cp >= 'A' && cp <= 'Z') ||
+           (cp >= 'a' && cp <= 'z') ||
+           (cp >= '0' && cp <= '9') ||
+           cp == '_';
+}
+
 void search_session_recompute(SearchSession *s, const char *text, size_t text_len,
                                const char *query, size_t query_len) {
     s->match_count = 0;
@@ -37,6 +44,17 @@ void search_session_recompute(SearchSession *s, const char *text, size_t text_le
             ? memmem(p, (size_t)(end - p), query, query_len)
             : find_case_insensitive(p, (size_t)(end - p), query, query_len);
         if (!hit) break;
+
+        if (s->match_whole_words) {
+            size_t hit_start = (size_t)(hit - text);
+            size_t hit_end   = hit_start + query_len;
+            bool left_ok  = hit_start == 0 || !is_word_char((unsigned char)text[hit_start - 1]);
+            bool right_ok = hit_end == text_len || !is_word_char((unsigned char)text[hit_end]);
+            if (!left_ok || !right_ok) {
+                p = hit + 1;
+                continue;
+            }
+        }
 
         if (s->match_count >= s->match_cap) {
             size_t new_cap = s->match_cap ? s->match_cap * 2 : 64;

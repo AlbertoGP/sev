@@ -89,6 +89,7 @@
 (set-key! search-keymap "shift-left"  'search-shift-backward-char)
 (set-key! search-keymap "shift-right" 'search-shift-forward-char)
 (set-key! search-keymap "ctrl-alt-c"  'search-toggle-case)
+(set-key! search-keymap "ctrl-alt-w"  'search-toggle-whole-words)
 
 (define-minor-mode 'search-mode search-keymap #t)
 (register-mode-icon/full 'search-mode "icon-normal.svg"
