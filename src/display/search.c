@@ -422,14 +422,12 @@ void search_handle_key(AppState *state, const KeyEvent *ev) {
 
 // --- Scheme bindings ---
 
-sexp scm_search_open(sexp ctx, sexp self, sexp n) {
-    Pane *pane = pane_get_active();
-    if (!pane) return SEXP_VOID;
+static void search_open_impl(Pane *pane, bool backward) {
     SearchSession *s = &pane->content.search;
 
     if (!s->query_buf) {
         s->query_buf = buffer_create("*search-query*");
-        if (!s->query_buf) return SEXP_VOID;
+        if (!s->query_buf) return;
         Mode *vim = mode_lookup("vim-normal-mode", MODE_MINOR);
         if (vim) buffer_disable_minor_mode(s->query_buf, vim);
         Mode *sm = mode_lookup("search-mode", MODE_MINOR);
@@ -440,6 +438,7 @@ sexp scm_search_open(sexp ctx, sexp self, sexp n) {
     s->point    = buf ? point_get(buf).pos : 0;
     s->active   = true;
     s->bar_open = true;
+    s->backward = backward;
 
     const char *q = buffer_text_cached(s->query_buf);
     size_t qlen = q ? strlen(q) : 0;
@@ -456,6 +455,19 @@ sexp scm_search_open(sexp ctx, sexp self, sexp n) {
 
     G->input.current_focus = FOCUS_SEARCH;
     search_recompute_current(pane);
+}
+
+sexp scm_search_open(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane) return SEXP_VOID;
+    search_open_impl(pane, false);
+    return SEXP_VOID;
+}
+
+sexp scm_search_open_backward(sexp ctx, sexp self, sexp n) {
+    Pane *pane = pane_get_active();
+    if (!pane) return SEXP_VOID;
+    search_open_impl(pane, true);
     return SEXP_VOID;
 }
 
@@ -570,7 +582,8 @@ sexp scm_search_next(sexp ctx, sexp self, sexp n) {
     if (!pane) return SEXP_VOID;
     SearchSession *s = &pane->content.search;
     if (!s->active || s->match_count == 0) return SEXP_VOID;
-    search_session_next_match(s);
+    if (s->backward) search_session_prev_match(s);
+    else             search_session_next_match(s);
     search_jump_to_active(pane);
     return SEXP_VOID;
 }
@@ -580,7 +593,8 @@ sexp scm_search_prev(sexp ctx, sexp self, sexp n) {
     if (!pane) return SEXP_VOID;
     SearchSession *s = &pane->content.search;
     if (!s->active || s->match_count == 0) return SEXP_VOID;
-    search_session_prev_match(s);
+    if (s->backward) search_session_next_match(s);
+    else             search_session_prev_match(s);
     search_jump_to_active(pane);
     return SEXP_VOID;
 }

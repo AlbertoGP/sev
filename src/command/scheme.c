@@ -565,7 +565,8 @@ void scheme_init(AppState *state) {
     SDEF("%set-mouse-drag-handler!",  1, scm_set_mouse_drag_handler);
 
     // In-buffer search primitives
-    SDEF("%search-open!",       0, scm_search_open);
+    SDEF("%search-open!",           0, scm_search_open);
+    SDEF("%search-open-backward!",  0, scm_search_open_backward);
     SDEF("%search-next!",       0, scm_search_next);
     SDEF("%search-prev!",       0, scm_search_prev);
     SDEF("search-self-insert",  0, scm_search_self_insert);
@@ -677,7 +678,7 @@ void scheme_init(AppState *state) {
         "%jump-push! %jump-backward! %jump-forward! "
         "jump-to-matching-bracket "
         "%set-mouse-click-handler! %set-mouse-drag-handler! "
-        "%search-open! %search-next! %search-prev! "
+        "%search-open! %search-open-backward! %search-next! %search-prev! "
         "search-self-insert %search-backspace! %search-forward-char! %search-backward-char! %search-shift-forward-char! %search-shift-backward-char! %search-confirm! %search-cancel! %search-bar-open? %search-toggle-case! %search-toggle-whole-words! "
         "global-keymap pane-keymap search-keymap eval) "
         "%editor-env '()))",

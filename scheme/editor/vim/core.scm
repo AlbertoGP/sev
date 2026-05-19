@@ -62,6 +62,7 @@
 (set-key! normal-map "ctrl-o" 'vim-jump-backward)
 (set-key! normal-map "ctrl-i" 'vim-jump-forward)
 (set-key! normal-map "/" 'vim-search-open)
+(set-key! normal-map "?" 'vim-search-open-backward)
 (set-key! normal-map "n" 'vim-search-next)
 (set-key! normal-map "N" 'vim-search-prev)
 (set-key! normal-map ":" 'command-palette)
@@ -70,6 +71,10 @@
 (defcommand (vim-search-open)
   "search: open search bar\nOpen the in-buffer search bar."
   (%search-open!))
+
+(defcommand (vim-search-open-backward)
+  "search: open backward search bar\nOpen the in-buffer search bar, searching backwards."
+  (%search-open-backward!))
 
 (defcommand (vim-search-next)
   "search: next match\nJump to the next search match."

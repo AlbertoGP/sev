@@ -25,13 +25,15 @@ typedef struct {
     bool           sel_active;    // whether a selection is active
     bool           case_sensitive;  // when false, matching ignores case
     bool           match_whole_words; // when true, only whole-word matches are valid
+    bool           backward;        // when true, ? search: initial match and n/N are reversed
 } SearchSession;
 
 // Free dynamically allocated match storage and query buffer.
 void search_session_free(SearchSession *s);
 
 // Recompute all matches from buffer text. Updates active_match_index to
-// the first match at or after s->point. Call whenever query or text changes.
+// the first match at or after s->point (forward) or the last match at or
+// before s->point (backward). Call whenever query or text changes.
 void search_session_recompute(SearchSession *s, const char *text, size_t text_len,
                                const char *query, size_t query_len);
 

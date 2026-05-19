@@ -70,15 +70,23 @@ void search_session_recompute(SearchSession *s, const char *text, size_t text_le
         p = hit + 1;
     }
 
-    // Set active_match_index to first match at or after the search origin.
-    s->active_match_index = 0;
-    for (size_t i = 0; i < s->match_count; i++) {
-        if (s->matches[i].start >= s->point) {
-            s->active_match_index = i;
-            break;
+    if (s->backward) {
+        s->active_match_index = s->match_count - 1; // wrap: all ahead → last match
+        for (size_t i = s->match_count; i-- > 0; ) {
+            if (s->matches[i].start <= s->point) {
+                s->active_match_index = i;
+                break;
+            }
+        }
+    } else {
+        s->active_match_index = 0; // wrap: all behind → first match
+        for (size_t i = 0; i < s->match_count; i++) {
+            if (s->matches[i].start >= s->point) {
+                s->active_match_index = i;
+                break;
+            }
         }
     }
-    // All matches are before the origin; wraps to 0 (first match).
 
     if (s->match_count == 0)
         snprintf(s->count_str, sizeof(s->count_str), "0/0");
